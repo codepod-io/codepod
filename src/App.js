@@ -1,123 +1,235 @@
 import React, { useEffect, useRef, useState } from "react";
-import './tailwind.output.css';
-import "codemirror/lib/codemirror.css"
+import "./tailwind.output.css";
+import "codemirror/lib/codemirror.css";
 import "./App.css";
 import Editor from "@monaco-editor/react";
 
-import "codemirror/mode/python/python"
-import "codemirror/addon/search/match-highlighter"
+import "codemirror/mode/python/python";
+import "codemirror/addon/search/match-highlighter";
 
-import CodeMirror from 'codemirror'
+import CodeMirror from "codemirror";
+import { v4 as uuidv4 } from 'uuid';
 
 // import 'codemirror/keymap/emacs';
 // import 'codemirror/keymap/vim';
 // import 'codemirror/keymap/sublime';
 // import 'codemirror/theme/monokai.css';
 
-function MyBasicEditor() {
-  return <Editor height="90vh" language="javascript" />;
-}
-
-function MyEditor3(props = {}, ref) {
-  const {value=''} = props;
+function MyEditor(props = {}, ref) {
+  const { value = "" } = props;
   // "function myScript(){return 100;}\n"
   const textareaRef = useRef();
   const [editor, setEditor] = useState();
 
   useEffect(() => {
     var editor = CodeMirror(
-    // var editor = CodeMirror.fromTextArea(
+      // var editor = CodeMirror.fromTextArea(
       // document.getElementById("editor"),
       textareaRef.current,
       {
         lineNumbers: true,
-      // viewportMargin: Infinity,
-      // mode: "python",
-      value: value,
-      mode:  "python",
-      highlightSelectionMatches: {showToken: /\w/, annotateScrollbar: true}
-    });
+        // viewportMargin: Infinity,
+        // mode: "python",
+        value: value,
+        mode: "python",
+        highlightSelectionMatches: { showToken: /\w/, annotateScrollbar: true },
+      }
+    );
     return () => {
       editor.toTextArea();
       setEditor(undefined);
-    }
-  }, [editor])
-  
-  return <div ref={textareaRef} className="box-border border-4 container mx-auto text-left m-2 w-10/12">
-  {/* <textarea 
+    };
+  }, [editor]);
+
+  return (
+    <div
+      ref={textareaRef}
+      className="myeditor"
+      // className="box-border border-4 container mx-auto text-left m-2 w-10/12"
+    >
+      {/* <textarea 
     ref={textareaRef}
     // id="editor"
     // className="h-auto"
     ></textarea> */}
     </div>
+  );
 }
 
-function MyEditor2() {
-  const [theme, setTheme] = useState("light");
-  const [language, setLanguage] = useState("javascript");
-  const [isEditorReady, setIsEditorReady] = useState(false);
-
-  function handleEditorDidMount() {
-    setIsEditorReady(true);
-  }
-
-  function toggleTheme() {
-    setTheme(theme === "light" ? "dark" : "light");
-  }
-
-  function toggleLanguage() {
-    setLanguage(language === "javascript" ? "python" : "javascript");
-  }
-
-
-  const code = 'import os';
-
+// some random staff? generator?
+function gen_random_code() {
   const code1 = `def foo():
     return 2`;
 
-    const code2 = `def bar():
+  const code2 = `def bar():
     return 3`;
 
-    const code3 = `def foobar():
-    return foo() + bar()`
+  const code3 = `def foobar():
+    return foo() + bar()`;
 
-    const code4 = `import os
+  const code4 = `import os
 var = foobar()
-var`
+var`;
+  const codes = [code1, code2, code3, code4];
+  const i = Math.floor(Math.random() * 4);
+  return codes[i];
+}
 
+function SequentialPods() {
   return (
     <>
-    <h1 className='h1'>PDP!</h1>
-    <div>
-      {/* <Pebble>
+      <h1 className="h1">Sequentail Pods</h1>
+      <div>
+        {/* <Pebble>
 
       </Pebble> */}
-      <MyEditor3 value={code1}/>
-      <MyEditor3 value={code2}/>
-      <MyEditor3 value={code3}/>
-      <MyEditor3 value={code4}/>
-
-    </div>
+        <Pod />
+        <Pod />
+        <Pod />
+        <Pod />
+      </div>
     </>
   );
 }
 
-function Pebble() {
+// TODO each pod/dock should have an ID
+
+function Pod(props = {}) {
+  const { value = gen_random_code() } = props;
   return (
-    <div>
-      <MyEditor2 />
+    // currently the Pod is just an Editor
+    <>
+      {/* TODO each pod has some property marks,
+    - purely functional or not
+    - status: dirty?
+    */}
+      {/* TODO each pod has "run/apply" button */}
+      {/* TODO fold the pod, and show:
+      - the name only
+      - the minimap
+       */}
+      {/* I should be able to move a pod */}
+      <MyEditor value={value} />
+    </>
+  );
+}
+
+
+function Dock(props = {}) {
+  const { value = "" } = props;
+  const myref = useRef(null);
+  const [showMenu, setShowMenu] = useState(false);
+  const [morePods, setMorePods] = useState([])
+  useEffect(() => {
+    // handleClickOutside from
+    // https://stackoverflow.com/questions/32553158/detect-click-outside-react-component
+    function handleClickOutside(e) {
+      if (myref.current && !myref.current.contains(e.target)) {
+        setShowMenu(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  })
+  return (
+    <div className="dock">
+      {/* There's a + for each Dock
+      - at the dock
+      - TODO at every pod
+      - right click menu (I want to avoid this)
+      */}
+      <button className="insert-btn" onClick={()=>setShowMenu(true)}>+</button>
+      {showMenu && 
+      <div ref={myref} className="insert-menu">
+        <ul>
+          <li>
+            {/* I should not be using <a href="#"...> because it will jump to top after every click */}
+            <button onClick={()=>{
+            // FIXME this UUID might not make sense. I need to associate the ID
+            // with the  pod, and TODO save this to some database or file.
+            setMorePods(morePods.concat([<Pod key={uuidv4()}></Pod>]));
+            // setMorePods([<Pod></Pod>])
+            // setMorePods([1,2,3].map((n) => <li key={n}>{n}</li>))
+            setShowMenu(false)
+        }}>Insert Pod</button></li>
+          <li><button onClick={()=>{
+            setMorePods(morePods.concat([<Dock key={uuidv4()}></Dock>]));
+            setShowMenu(false)
+          }}>Insert Dock</button></li>
+        </ul>
+      </div>}
+      {/* TODO fold the dock and show:
+      - public APIs
+      - status
+      - "minimap" */}
+      {props.children}
+      {morePods}
     </div>
+  );
+}
+
+function TreePods() {
+  return (
+    <>
+      <h1>TreePods Example</h1>
+      <Dock>
+        <Pod />
+        <Pod />
+        <Dock/>
+        <Dock>
+          <Pod />
+          <Pod />
+          <Dock>
+            <Pod />
+            <Pod />
+          </Dock>
+          <Dock>
+            <Pod />
+            <Pod />
+            <Dock>
+              <Pod />
+              <Pod />
+              <Dock><Pod/></Dock>
+              <Pod />
+              <Pod />
+              <Dock>
+                <Pod />
+                <Pod />
+              </Dock>
+            </Dock>
+          </Dock>
+        </Dock>
+        <Pod />
+      </Dock>
+    </>
   );
 }
 
 export default function App() {
   return (
     <div className="App">
-      <h1>PDP: the Pebble Development Platform</h1>
+      <h1>
+        PDP: the <span className="text-red-300">Pod</span> Development Platform
+      </h1>
       <h2>Start editing to see some magic happen!</h2>
       {/* <MyBasicEditor /> */}
       <p className="text-blue-300">some random staff</p>
-      <Pebble />
+      <SequentialPods />
+      {/* TODO add an example of hierarchical pods */}
+      <button className="insert-btn">+</button>
+      <div className="insert">+</div>
+      <TreePods />
+      {/* TODO add a + button */}
+      {/* TODO put pods inside horizontal or vertical stacks */}
+      {/* TODO change the layout of pods */}
+      Tempor et mollit et nisi ex minim tempor deserunt ullamco amet voluptate
+      exercitation adipisicing. Elit pariatur irure sint tempor irure est
+      adipisicing ut dolore dolore adipisicing veniam id exercitation. Elit amet
+      quis voluptate cupidatat aute cupidatat exercitation exercitation irure
+      incididunt irure do qui. Nostrud in proident eiusmod ipsum quis nulla ea
+      aliqua.
     </div>
   );
 }

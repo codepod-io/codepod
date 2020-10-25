@@ -141,4 +141,60 @@ export default App;
 // import examples from "./examples";
 // import CodeMirror from "./MyCodeMirror";
 // import CodeMirror from '@uiw/react-codemirror';
-// import {Controlled as CodeMirror} from 'react-codemirror2'
+// import {Controlled as CodeMirror} from 'react-codemirror2'\
+
+
+function MyBasicEditor() {
+  return <Editor height="90vh" language="javascript" />;
+}
+
+
+function SequentialPods() {
+  const [theme, setTheme] = useState("light");
+  const [language, setLanguage] = useState("javascript");
+  const [isEditorReady, setIsEditorReady] = useState(false);
+
+  function handleEditorDidMount() {
+    setIsEditorReady(true);
+  }
+
+  function toggleTheme() {
+    setTheme(theme === "light" ? "dark" : "light");
+  }
+
+  function toggleLanguage() {
+    setLanguage(language === "javascript" ? "python" : "javascript");
+  }
+
+
+  const code = 'import os';
+
+  const code1 = `def foo():
+    return 2`;
+
+    const code2 = `def bar():
+    return 3`;
+
+    const code3 = `def foobar():
+    return foo() + bar()`
+
+    const code4 = `import os
+var = foobar()
+var`
+
+  return (
+    <>
+    <h1 className='h1'>PDP!</h1>
+    <div>
+      {/* <Pebble>
+
+      </Pebble> */}
+      <Pod value={code1}/>
+      <Pod value={code2}/>
+      <Pod value={code3}/>
+      <Pod value={code4}/>
+
+    </div>
+    </>
+  );
+}

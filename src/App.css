@@ -49,3 +49,72 @@
 }
 .cm-matchhighlight {background-color: lightgreen}
 .CodeMirror-selection-highlight-scrollbar {background-color: green}
+
+
+/* or maybe use table layout */
+.dock {
+  display: flex;
+  max-width: 500px;
+  margin: 2px auto 2px auto ;
+  flex-wrap: wrap;
+  border: 2px blue;
+  border-style: solid;
+  padding: 5px;
+  /* margin: 3px; */
+  /* overflow: auto; */
+}
+
+.myeditor {
+  text-align: left;
+  margin: auto;
+  /* margin-bottom: 10px; */
+  border-style: solid;
+  border: 2px red;
+  max-width: 300px;
+  padding: 5px;
+}
+
+.dock .dock {
+  /* background-color: gray;
+  opacity: 0.6; */
+  background-color: rgba(0,0,0,0.05)
+}
+
+.dock .dock .dock {
+  background-color: rgba(0,0,0,0.1)
+}
+
+.dock .dock .dock {
+  background-color: rgba(0,0,0,0.15)
+}
+
+.insert-btn {
+  /* border-style: solid; */
+  border: 1px solid black;
+  border-radius: 30%;
+  padding: 5px;
+  height: 1em;
+  padding: 0;
+  line-height: 0;
+}
+
+.insert-menu {
+  position: absolute;
+  display: block;
+  background: white;
+  white-space: nowrap;
+  z-index: 5;
+  text-align: left;
+  border: 2px solid black;
+  padding: 2px;
+}
+
+.insert-menu li {
+  border-bottom: 1px solid gray;
+}
+
+.insert-menu li:hover {background-color: #ddd;}
+
+[hidden] {
+  display: none;
+}

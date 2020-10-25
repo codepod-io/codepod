@@ -18,7 +18,8 @@
     "react-dom": "^16.13.1",
     "react-scripts": "3.4.3",
     "react-spinners-kit": "^1.9.1",
-    "tailwindcss": "^1.8.10"
+    "tailwindcss": "^1.8.10",
+    "uuid": "^8.3.1"
   },
   "scripts": {
     "build:css": "npx tailwindcss build src/tailwind.css -o src/tailwind.output.css",
