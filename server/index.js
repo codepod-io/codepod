@@ -13,8 +13,21 @@ import { buildSchema } from "graphql";
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import dotenv from "dotenv";
+import jwt from "jsonwebtoken";
 
 dotenv.config();
+
+const hashed = await bcrypt.hash("hebi123", 10);
+const match = await bcrypt.compare("hebi123", hashed);
+console.log(hashed);
+console.log(match);
+
+bcrypt.hash("hebi123", 10).then((hashed) => {
+  bcrypt.compare("hebi123", hashed, (err, result) => {
+    console.log(err);
+    console.log(result);
+  });
+});
 
 const app = express();
 
@@ -31,10 +44,16 @@ db.once("open", function () {
 const User = mongoose.model(
   "User",
   mongoose.Schema({
-    username: String,
+    username: {
+      type: String,
+      required: true,
+    },
     email: String,
     firstname: String,
-    password: String,
+    password: {
+      type: String,
+      required: true,
+    },
   })
 );
 
@@ -64,11 +83,19 @@ var schema = buildSchema(`
     repos: [Repo]
     repo(name: String): Repo
     pods(repo: String): [Pod]
+    login(email: String, password: String): AuthData
   }
+
+  type AuthData {
+    userID: String,
+    token: String
+  }
+
   type User {
     id: ID!
     username: String!
-    email: String
+    email: String!
+    password: String!
     firstname: String
   }
 
@@ -88,6 +115,9 @@ var schema = buildSchema(`
     createUser(username: String, email: String, password: String, firstname: String): User
     createRepo(name: String): Repo,
     createPod(reponame: String, name: String, content: String): Pod
+    clearUser: Boolean,
+    clearRepo: Boolean,
+    clearPod: Boolean
   }
 `);
 
@@ -116,34 +146,58 @@ var root = {
     // 2. return all the pods
     throw Error(`Not Implemented`);
   },
-  createUser: ({ username, email, password, firstname }) => {
+  clearUser: () => {
+    User.deleteMany({}, (err) => {
+      console.log(err);
+    });
+    return true;
+  },
+  login: async ({ email, password }) => {
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      throw Error(`Email and password do not match.`);
+    } else {
+      const match = await bcrypt.compare(password, user.password);
+      if (!match) {
+        throw Error(`Email and password do not match.`);
+      } else {
+        // create a JWT token
+        const token = jwt.sign(
+          {
+            // 1h: 60 * 60
+            // 1day: *24
+            exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24,
+            data: user._id,
+          },
+          "mysuperlongsecretkey"
+        );
+        return { userID: user._id, token: token };
+      }
+    }
+  },
+  createUser: async ({ username, email, password, firstname }) => {
     // console.log(User.find({ username: username }));
-    return User.findOne({ username: username })
-      .then((user) => {
-        if (user) {
-          console.log(user);
-          throw Error(`User ${username} already exists.`);
-        } else {
-          return bcrypt.genSalt(10, (salt) => {
-            return bcrypt.hash(password, 18, (err, hashedPassword) => {
-              return User({ username, email, hashedPassword, firstname })
-                .save()
-                .then(() => console.log("saved"))
-                .catch((err) => {
-                  throw err;
-                });
-            });
-          });
-        }
-      })
-      .catch((err) => {
-        throw err;
+    // FIXME this should wait and return the user
+    const user = await User.findOne({ username: username });
+    if (user) {
+      throw new Error(`User ${username} already exists.`);
+    } else {
+      console.log("Creating user ..");
+      const salt = await bcrypt.genSalt(10);
+      const hashed = await bcrypt.hash(password, salt);
+      const user = new User({
+        username,
+        email,
+        password: hashed,
+        firstname,
       });
+      return await user.save();
+    }
   },
   createRepo: ({ name }) => {
     return Repo.findOne({ name: name }).then((repo) => {
       if (repo) {
-        throw `Repo ${name} already exists.`;
+        return Error(`Repo ${name} already exists.`);
       } else {
         const tmp = new Repo({ name: name, pods: [] });
         tmp.save().then(() => console.log("saved"));
