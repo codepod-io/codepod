@@ -1,235 +1,325 @@
 import React, { useEffect, useRef, useState } from "react";
-import "./tailwind.output.css";
-import "codemirror/lib/codemirror.css";
+import { TreePods, SequentialPods } from "./Pod.js";
+import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
+// import "./tailwind.output.css";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+
 import "./App.css";
-import Editor from "@monaco-editor/react";
 
-import "codemirror/mode/python/python";
-import "codemirror/addon/search/match-highlighter";
-
-import CodeMirror from "codemirror";
-import { v4 as uuidv4 } from 'uuid';
-
-// import 'codemirror/keymap/emacs';
-// import 'codemirror/keymap/vim';
-// import 'codemirror/keymap/sublime';
-// import 'codemirror/theme/monokai.css';
-
-function MyEditor(props = {}, ref) {
-  const { value = "" } = props;
-  // "function myScript(){return 100;}\n"
-  const textareaRef = useRef();
-  const [editor, setEditor] = useState();
-
-  useEffect(() => {
-    var editor = CodeMirror(
-      // var editor = CodeMirror.fromTextArea(
-      // document.getElementById("editor"),
-      textareaRef.current,
-      {
-        lineNumbers: true,
-        // viewportMargin: Infinity,
-        // mode: "python",
-        value: value,
-        mode: "python",
-        highlightSelectionMatches: { showToken: /\w/, annotateScrollbar: true },
-      }
-    );
-    return () => {
-      editor.toTextArea();
-      setEditor(undefined);
-    };
-  }, [editor]);
-
+function Home() {
   return (
-    <div
-      ref={textareaRef}
-      className="myeditor"
-      // className="box-border border-4 container mx-auto text-left m-2 w-10/12"
-    >
-      {/* <textarea 
-    ref={textareaRef}
-    // id="editor"
-    // className="h-auto"
-    ></textarea> */}
+    <div>
+      <h1>Home</h1>
     </div>
   );
 }
 
-// some random staff? generator?
-function gen_random_code() {
-  const code1 = `def foo():
-    return 2`;
-
-  const code2 = `def bar():
-    return 3`;
-
-  const code3 = `def foobar():
-    return foo() + bar()`;
-
-  const code4 = `import os
-var = foobar()
-var`;
-  const codes = [code1, code2, code3, code4];
-  const i = Math.floor(Math.random() * 4);
-  return codes[i];
+function About() {
+  return (
+    <div>
+      <h1>About</h1>
+    </div>
+  );
 }
 
-function SequentialPods() {
+function Login() {
+  function dologin(e) {
+    // e.preventDefault();
+  }
   return (
-    <>
-      <h1 className="h1">Sequentail Pods</h1>
-      <div>
-        {/* <Pebble>
+    <div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div>
+            <img
+              className="mx-auto h-12 w-auto"
+              src="https://tailwindui.com/img/logos/workflow-mark-indigo-600.svg"
+              alt="Workflow"
+            />
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+              Sign in to your account
+            </h2>
+          </div>
 
-      </Pebble> */}
-        <Pod />
-        <Pod />
-        <Pod />
-        <Pod />
+          <Formik
+            initialValues={{ email: "", password: "" }}
+            validate={(values) => {
+              const errors = {};
+              if (!values.email) {
+                errors.email = "Required";
+              } else if (
+                !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)
+              ) {
+                errors.email = "Invalid email address";
+              }
+              return errors;
+            }}
+            onSubmit={(values, { setSubmitting }) => {
+              setTimeout(() => {
+                alert(JSON.stringify(values, null, 2));
+                setSubmitting(false);
+              }, 400);
+            }}
+          >
+            {({ isSubmitting }) => (
+              <Form className="mt-8 space-y-6">
+                <div className="rounded-md shadow-sm -space-y-px">
+                  <label>
+                    Email address &nbsp;
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <Field
+                    type="email"
+                    name="email"
+                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  ></Field>
+                  <ErrorMessage
+                    name="email"
+                    component="div"
+                    className="text-red-500"
+                  />
+                  <label>
+                    Password &nbsp;
+                    <span className="text-red-500">*</span>
+                  </label>
+                  <Field
+                    type="password"
+                    name="password"
+                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  />
+                  <ErrorMessage
+                    name="password"
+                    className="text-red-500"
+                    component="div"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Field
+                      type="checkbox"
+                      name="remember_me"
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    ></Field>
+                    <label
+                      htmlFor="remember_me"
+                      className="ml-2 block text-sm text-gray-900"
+                    >
+                      Remember me
+                    </label>
+                  </div>
+                  <div className="text-sm">
+                    <a
+                      href="#"
+                      className="font-medium text-indigo-600 hover:text-indigo-500"
+                    >
+                      Forgot your password?
+                    </a>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  <span className="absolute left-0 inset-y-0 flex items-center pl-3">
+                    <Icon />
+                  </span>
+                  Sign in
+                </button>
+              </Form>
+            )}
+          </Formik>
+
+          <p className="mt-2 text-center text-sm text-gray-600">
+            New to CodePod? &nbsp;
+            <Link
+              to="/signup"
+              className="font-medium text-indigo-600 hover:text-indigo-500"
+            >
+              Sign Up
+            </Link>
+          </p>
+        </div>
       </div>
-    </>
-  );
-}
-
-// TODO each pod/dock should have an ID
-
-function Pod(props = {}) {
-  const { value = gen_random_code() } = props;
-  return (
-    // currently the Pod is just an Editor
-    <>
-      {/* TODO each pod has some property marks,
-    - purely functional or not
-    - status: dirty?
-    */}
-      {/* TODO each pod has "run/apply" button */}
-      {/* TODO fold the pod, and show:
-      - the name only
-      - the minimap
-       */}
-      {/* I should be able to move a pod */}
-      <MyEditor value={value} />
-    </>
-  );
-}
-
-
-function Dock(props = {}) {
-  const { value = "" } = props;
-  const myref = useRef(null);
-  const [showMenu, setShowMenu] = useState(false);
-  const [morePods, setMorePods] = useState([])
-  useEffect(() => {
-    // handleClickOutside from
-    // https://stackoverflow.com/questions/32553158/detect-click-outside-react-component
-    function handleClickOutside(e) {
-      if (myref.current && !myref.current.contains(e.target)) {
-        setShowMenu(false)
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside)
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  })
-  return (
-    <div className="dock">
-      {/* There's a + for each Dock
-      - at the dock
-      - TODO at every pod
-      - right click menu (I want to avoid this)
-      */}
-      <button className="insert-btn" onClick={()=>setShowMenu(true)}>+</button>
-      {showMenu && 
-      <div ref={myref} className="insert-menu">
-        <ul>
-          <li>
-            {/* I should not be using <a href="#"...> because it will jump to top after every click */}
-            <button onClick={()=>{
-            // FIXME this UUID might not make sense. I need to associate the ID
-            // with the  pod, and TODO save this to some database or file.
-            setMorePods(morePods.concat([<Pod key={uuidv4()}></Pod>]));
-            // setMorePods([<Pod></Pod>])
-            // setMorePods([1,2,3].map((n) => <li key={n}>{n}</li>))
-            setShowMenu(false)
-        }}>Insert Pod</button></li>
-          <li><button onClick={()=>{
-            setMorePods(morePods.concat([<Dock key={uuidv4()}></Dock>]));
-            setShowMenu(false)
-          }}>Insert Dock</button></li>
-        </ul>
-      </div>}
-      {/* TODO fold the dock and show:
-      - public APIs
-      - status
-      - "minimap" */}
-      {props.children}
-      {morePods}
     </div>
   );
 }
 
-function TreePods() {
+function SignUp() {
+  function dosignup() {}
   return (
-    <>
-      <h1>TreePods Example</h1>
-      <Dock>
-        <Pod />
-        <Pod />
-        <Dock/>
-        <Dock>
-          <Pod />
-          <Pod />
-          <Dock>
-            <Pod />
-            <Pod />
-          </Dock>
-          <Dock>
-            <Pod />
-            <Pod />
-            <Dock>
-              <Pod />
-              <Pod />
-              <Dock><Pod/></Dock>
-              <Pod />
-              <Pod />
-              <Dock>
-                <Pod />
-                <Pod />
-              </Dock>
-            </Dock>
-          </Dock>
-        </Dock>
-        <Pod />
-      </Dock>
-    </>
+    <div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div>
+            <img
+              className="mx-auto h-12 w-auto"
+              src="https://tailwindui.com/img/logos/workflow-mark-indigo-600.svg"
+              alt="Workflow"
+            />
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+              Sign up your account
+            </h2>
+            <p className="mt-2 text-center text-sm text-gray-600">
+              Or&nbsp;
+              <Link
+                to="/login"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                Sign in with existing account
+              </Link>
+            </p>
+          </div>
+          <form className="mt-8 space-y-6" action="/graphql" method="POST">
+            <input type="hidden" name="remember" value="true" />
+            <div className="rounded-md shadow-sm -space-y-px">
+              <div>
+                <label htmlFor="username" className="">
+                  Username <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="username"
+                  name="username"
+                  // type="email"
+                  // autocomplete="email"
+                  required
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  // placeholder="username"
+                />
+              </div>
+              <div>
+                <label htmlFor="email" className="">
+                  Email address <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  // placeholder="Email address"
+                />
+              </div>
+              <div>
+                <label htmlFor="password" className="">
+                  Password <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  // placeholder="Password"
+                />
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                onClick={dosignup}
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                <span className="absolute left-0 inset-y-0 flex items-center pl-3">
+                  <Icon />
+                </span>
+                Sign up
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Icon() {
+  return (
+    <svg
+      className="h-5 w-5 text-indigo-500 group-hover:text-indigo-400"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden="true"
+    >
+      <path
+        fillRule="evenodd"
+        d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+        clipRule="evenodd"
+      />
+    </svg>
+  );
+}
+
+function NavBar() {
+  return (
+    <nav className="bg-gray-800 flex text-white px-10 py-5">
+      <Link to="/" className="flex-1">
+        CodePod
+      </Link>
+      <ul className="flex space-x-4">
+        <li>
+          <Link to="/about" className="hover:bg-gray-700 px-2 py-2">
+            About
+          </Link>
+        </li>
+        <li>
+          <Link to="/login" className="hover:bg-gray-700 px-2 py-2">
+            Sign in
+          </Link>
+        </li>
+      </ul>
+    </nav>
   );
 }
 
 export default function App() {
   return (
-    <div className="App">
-      <h1>
-        PDP: the <span className="text-red-300">Pod</span> Development Platform
-      </h1>
-      <h2>Start editing to see some magic happen!</h2>
-      {/* <MyBasicEditor /> */}
-      <p className="text-blue-300">some random staff</p>
-      <SequentialPods />
-      {/* TODO add an example of hierarchical pods */}
-      <button className="insert-btn">+</button>
-      <div className="insert">+</div>
-      <TreePods />
-      {/* TODO add a + button */}
-      {/* TODO put pods inside horizontal or vertical stacks */}
-      {/* TODO change the layout of pods */}
-      Tempor et mollit et nisi ex minim tempor deserunt ullamco amet voluptate
-      exercitation adipisicing. Elit pariatur irure sint tempor irure est
-      adipisicing ut dolore dolore adipisicing veniam id exercitation. Elit amet
-      quis voluptate cupidatat aute cupidatat exercitation exercitation irure
-      incididunt irure do qui. Nostrud in proident eiusmod ipsum quis nulla ea
-      aliqua.
-    </div>
+    <Router>
+      <div>
+        <NavBar></NavBar>
+
+        {/* A <Switch> looks through its children <Route>s and
+            renders the first one that matches the current URL. */}
+        <Switch>
+          <Route path="/about">
+            <About />
+          </Route>
+          <Route path="/login">
+            <Login />
+          </Route>
+          <Route path="/signup">
+            <SignUp />
+          </Route>
+          <Route path="/">
+            <Home />
+          </Route>
+        </Switch>
+      </div>
+    </Router>
   );
 }
+
+// <div className="App">
+//       <h1>
+//         CodePod: the <span className="text-red-300">Pod</span> Development
+//         Platform
+//       </h1>
+//       <h2>Start editing to see some magic happen!</h2>
+//       <p className="text-blue-300">some random staff</p>
+//       <SequentialPods />
+//       <button className="insert-btn">+</button>
+//       <div className="insert">+</div>
+//       <TreePods />
+//       Tempor et mollit et nisi ex minim tempor deserunt ullamco amet voluptate
+//       exercitation adipisicing. Elit pariatur irure sint tempor irure est
+//       adipisicing ut dolore dolore adipisicing veniam id exercitation. Elit amet
+//       quis voluptate cupidatat aute cupidatat exercitation exercitation irure
+//       incididunt irure do qui. Nostrud in proident eiusmod ipsum quis nulla ea
+//       aliqua.
+//     </div>
