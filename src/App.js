@@ -64,34 +64,39 @@ function Login() {
             {({ isSubmitting }) => (
               <Form className="mt-8 space-y-6">
                 <div className="rounded-md shadow-sm -space-y-px">
-                  <label>
-                    Email address &nbsp;
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <Field
-                    type="email"
-                    name="email"
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  ></Field>
-                  <ErrorMessage
-                    name="email"
-                    component="div"
-                    className="text-red-500"
-                  />
-                  <label>
-                    Password &nbsp;
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <Field
-                    type="password"
-                    name="password"
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  />
-                  <ErrorMessage
-                    name="password"
-                    className="text-red-500"
-                    component="div"
-                  />
+                  <div>
+                    <label>
+                      Email address &nbsp;
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <Field
+                      type="email"
+                      name="email"
+                      className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    ></Field>
+                    <ErrorMessage
+                      name="email"
+                      component="div"
+                      className="text-red-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label>
+                      Password &nbsp;
+                      <span className="text-red-500">*</span>
+                    </label>
+                    <Field
+                      type="password"
+                      name="password"
+                      className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    />
+                    <ErrorMessage
+                      name="password"
+                      className="text-red-500"
+                      component="div"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -148,7 +153,7 @@ function Login() {
 }
 
 function SignUp() {
-  function dosignup() {}
+  const [error, setError] = useState(null);
   return (
     <div>
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -172,66 +177,140 @@ function SignUp() {
               </Link>
             </p>
           </div>
-          <form className="mt-8 space-y-6" action="/graphql" method="POST">
-            <input type="hidden" name="remember" value="true" />
-            <div className="rounded-md shadow-sm -space-y-px">
-              <div>
-                <label htmlFor="username" className="">
-                  Username <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="username"
-                  name="username"
-                  // type="email"
-                  // autocomplete="email"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  // placeholder="username"
-                />
-              </div>
-              <div>
-                <label htmlFor="email" className="">
-                  Email address <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  // placeholder="Email address"
-                />
-              </div>
-              <div>
-                <label htmlFor="password" className="">
-                  Password <span className="text-red-500">*</span>
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  // placeholder="Password"
-                />
-              </div>
-            </div>
 
-            <div>
-              <button
-                type="submit"
-                onClick={dosignup}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              >
-                <span className="absolute left-0 inset-y-0 flex items-center pl-3">
-                  <Icon />
-                </span>
-                Sign up
-              </button>
-            </div>
-          </form>
+          <Formik
+            initialValues={{ email: "", password: "", username: "" }}
+            validate={(values) => {
+              const errors = {};
+              if (!values.email) {
+                errors.email = "Email is Required";
+              } else if (
+                !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)
+              ) {
+                errors.email = "Invalid email address";
+              }
+              return errors;
+            }}
+            onSubmit={(values, { setSubmitting }) => {
+              setError(null);
+              // console.log("submitting, wait for 2s ..");
+              // setTimeout(() => {
+              //   setSubmitting(false);
+              //   console.log("done");
+              // }, 2000);
+
+              // setTimeout(() => {
+              //   alert(JSON.stringify(values, null, 2));
+              //   setSubmitting(false);
+              // }, 400);
+              // send to backend
+              // FIXME https
+              const query = {
+                query: `
+                  mutation {
+                    createUser(username: "${values.username}",
+                      email: "${values.email}",
+                      password: "${values.passwod}",
+                      firstname:"") {
+                      id, username, email, firstname
+                    }
+                  }
+                `,
+              };
+              console.log(query);
+              return fetch("http://localhost:5000/graphql", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(query),
+              })
+                .then((res) => {
+                  if (res.status !== 200 && res.status !== 201) {
+                    throw Error("Failed");
+                  }
+                  return res.json();
+                })
+                .then((res) => {
+                  if (res.errors) {
+                    setError(res.errors[0].message);
+                  }
+                  // console.log(res);
+                  // console.log(res.data);
+                  // console.log(res.data.users[0]);
+                })
+                .catch((err) => {
+                  console.log(err);
+                });
+            }}
+          >
+            {({ isSubmitting }) => (
+              <Form className="mt-8 space-y-6" action="/graphql" method="POST">
+                {/* <input type="hidden" name="remember" value="true" /> */}
+                <div className="rounded-md shadow-sm -space-y-px">
+                  <div>
+                    <label htmlFor="username" className="">
+                      Username <span className="text-red-500">*</span>
+                    </label>
+                    <Field
+                      // FIXME type username
+                      // type="username"
+                      name="username"
+                      required
+                      className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="email" className="">
+                      Email address <span className="text-red-500">*</span>
+                    </label>
+                    <Field
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    />
+                    <ErrorMessage
+                      name="email"
+                      component="div"
+                      className="text-red-500"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="password" className="">
+                      Password <span className="text-red-500">*</span>
+                    </label>
+                    <Field
+                      name="password"
+                      type="password"
+                      autoComplete="current-password"
+                      required
+                      className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="disabled:opacity-50 group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                  >
+                    <span className="absolute left-0 inset-y-0 flex items-center pl-3">
+                      <Icon />
+                    </span>
+                    {isSubmitting ? "Submitting" : "Sign up"}
+                  </button>
+                </div>
+                {error && (
+                  <div>
+                    <span className="text-red-500">Error: {error}</span>
+                  </div>
+                )}
+              </Form>
+            )}
+          </Formik>
         </div>
       </div>
     </div>
