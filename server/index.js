@@ -178,21 +178,28 @@ var root = {
   createUser: async ({ username, email, password, firstname }) => {
     // console.log(User.find({ username: username }));
     // FIXME this should wait and return the user
-    const user = await User.findOne({ username: username });
-    if (user) {
-      throw new Error(`User ${username} already exists.`);
-    } else {
-      console.log("Creating user ..");
-      const salt = await bcrypt.genSalt(10);
-      const hashed = await bcrypt.hash(password, salt);
-      const user = new User({
-        username,
-        email,
-        password: hashed,
-        firstname,
-      });
-      return await user.save();
-    }
+    await Promise.all([
+      User.findOne({ username: username }).then((user) => {
+        if (user) {
+          throw new Error(`Username already registered.`);
+        }
+      }),
+      User.findOne({ email: email }).then((user) => {
+        if (user) {
+          throw new Error(`Email address already registered.`);
+        }
+      }),
+    ]);
+    console.log("Creating user ..");
+    const salt = await bcrypt.genSalt(10);
+    const hashed = await bcrypt.hash(password, salt);
+    const user = new User({
+      username,
+      email,
+      password: hashed,
+      firstname,
+    });
+    return await user.save();
   },
   createRepo: ({ name }) => {
     return Repo.findOne({ name: name }).then((repo) => {
@@ -231,6 +238,8 @@ var root = {
   },
 };
 
+app.use(cors());
+
 app.use(
   "/graphql",
   graphqlHTTP({
@@ -240,7 +249,6 @@ app.use(
   })
 );
 
-app.use(cors());
 // app.use(express.json());
 
 app.listen(5000, () => {
