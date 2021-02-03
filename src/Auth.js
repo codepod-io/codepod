@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
-import { Link } from "react-router-dom";
+import { Link, Redirect } from "react-router-dom";
+import { AuthContext } from "./AuthContext";
 
 function Icon() {
   return (
@@ -21,10 +22,12 @@ function Icon() {
 }
 
 export function Login() {
-  function dologin(e) {
-    // e.preventDefault();
-  }
-  return (
+  const [error, setError] = useState(null);
+  const { login, isLoggedIn } = useContext(AuthContext);
+
+  return isLoggedIn ? (
+    <Redirect to="/"></Redirect>
+  ) : (
     <div>
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
@@ -53,10 +56,10 @@ export function Login() {
               return errors;
             }}
             onSubmit={(values, { setSubmitting }) => {
-              setTimeout(() => {
-                alert(JSON.stringify(values, null, 2));
-                setSubmitting(false);
-              }, 400);
+              setError(null);
+              return login(values.email, values.password).catch((err) => {
+                setError(err.message);
+              });
             }}
           >
             {({ isSubmitting }) => (
@@ -131,6 +134,11 @@ export function Login() {
                   </span>
                   Sign in
                 </button>
+                {error && (
+                  <div>
+                    <span className="text-red-500">Error: {error}</span>
+                  </div>
+                )}
               </Form>
             )}
           </Formik>
@@ -191,16 +199,6 @@ export function SignUp() {
             }}
             onSubmit={(values, { setSubmitting }) => {
               setError(null);
-              // console.log("submitting, wait for 2s ..");
-              // setTimeout(() => {
-              //   setSubmitting(false);
-              //   console.log("done");
-              // }, 2000);
-
-              // setTimeout(() => {
-              //   alert(JSON.stringify(values, null, 2));
-              //   setSubmitting(false);
-              // }, 400);
               // send to backend
               // FIXME https
               const query = {
@@ -236,6 +234,10 @@ export function SignUp() {
                   // console.log(res);
                   // console.log(res.data);
                   // console.log(res.data.users[0]);
+                  // No errors, redirect to login page
+                  // Save token, and redirect to dashboard or home
+                  console.log(res.data.token);
+                  console.log(res.data.userID);
                 })
                 .catch((err) => {
                   console.log(err);

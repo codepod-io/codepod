@@ -22,9 +22,12 @@
     "react-codemirror": "^1.0.0",
     "react-codemirror2": "^7.2.1",
     "react-dom": "^16.13.1",
+    "react-redux": "^7.2.2",
     "react-router-dom": "^5.2.0",
     "react-scripts": "^4.0.0",
     "react-spinners-kit": "^1.9.1",
+    "redux": "^4.0.5",
+    "redux-thunk": "^2.3.0",
     "tailwindcss": "npm:@tailwindcss/postcss7-compat",
     "uuid": "^8.3.1"
   },

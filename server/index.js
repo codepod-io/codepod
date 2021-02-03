@@ -112,7 +112,7 @@ var schema = buildSchema(`
   }
 
   type Mutation {
-    createUser(username: String, email: String, password: String, firstname: String): User
+    createUser(username: String, email: String, password: String, firstname: String): AuthData
     createRepo(name: String): Repo,
     createPod(reponame: String, name: String, content: String): Pod
     clearUser: Boolean,
@@ -120,6 +120,19 @@ var schema = buildSchema(`
     clearPod: Boolean
   }
 `);
+
+function genToken(userID) {
+  const token = jwt.sign(
+    {
+      // 1h: 60 * 60
+      // 1day: *24
+      exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24,
+      data: userID,
+    },
+    "mysuperlongsecretkey"
+  );
+  return token;
+}
 
 // The root provides a resolver function for each API endpoint
 var root = {
@@ -161,17 +174,7 @@ var root = {
       if (!match) {
         throw Error(`Email and password do not match.`);
       } else {
-        // create a JWT token
-        const token = jwt.sign(
-          {
-            // 1h: 60 * 60
-            // 1day: *24
-            exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24,
-            data: user._id,
-          },
-          "mysuperlongsecretkey"
-        );
-        return { userID: user._id, token: token };
+        return { userID: user._id, token: genToken(user._id) };
       }
     }
   },
@@ -199,7 +202,9 @@ var root = {
       password: hashed,
       firstname,
     });
-    return await user.save();
+    await user.save();
+    // login with token
+    return { userID: user._id, token: genToken(user._id) };
   },
   createRepo: ({ name }) => {
     return Repo.findOne({ name: name }).then((repo) => {

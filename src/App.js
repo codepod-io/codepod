@@ -1,9 +1,18 @@
-import React from "react";
+import React, { useContext } from "react";
 import { TreePods, SequentialPods } from "./Pod.js";
-import { BrowserRouter as Router, Switch, Route, Link } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Switch,
+  Route,
+  Link,
+  Redirect,
+  useHistory,
+} from "react-router-dom";
 // import "./tailwind.output.css";
+import { AuthContext } from "./AuthContext";
+import { NavBar } from "./Nav";
 
-import { Login, SignUp } from "./auth.js";
+import { Login, SignUp } from "./Auth.js";
 
 import "./App.css";
 
@@ -23,29 +32,9 @@ function About() {
   );
 }
 
-function NavBar() {
-  return (
-    <nav className="bg-gray-800 flex text-white px-10 py-5">
-      <Link to="/" className="flex-1">
-        CodePod
-      </Link>
-      <ul className="flex space-x-4">
-        <li>
-          <Link to="/about" className="hover:bg-gray-700 px-2 py-2">
-            About
-          </Link>
-        </li>
-        <li>
-          <Link to="/login" className="hover:bg-gray-700 px-2 py-2">
-            Sign in
-          </Link>
-        </li>
-      </ul>
-    </nav>
-  );
-}
-
 export default function App() {
+  const { isLoggedIn } = useContext(AuthContext);
+  console.log(`isLoggedIn: ${isLoggedIn}`);
   return (
     <Router>
       <div>
