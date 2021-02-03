@@ -1,6 +1,6 @@
 import React, { useContext, useState } from "react";
 import { Formik, Form, Field, ErrorMessage } from "formik";
-import { Link, Redirect } from "react-router-dom";
+import { Link, Redirect, useHistory } from "react-router-dom";
 import { AuthContext } from "./AuthContext";
 
 function Icon() {
@@ -160,6 +160,8 @@ export function Login() {
 
 export function SignUp() {
   const [error, setError] = useState(null);
+  const { login, signup, isLoggedIn } = useContext(AuthContext);
+  const history = useHistory();
   return (
     <div>
       <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -201,46 +203,12 @@ export function SignUp() {
               setError(null);
               // send to backend
               // FIXME https
-              const query = {
-                query: `
-                    mutation {
-                      createUser(username: "${values.username}",
-                        email: "${values.email}",
-                        password: "${values.passwod}",
-                        firstname:"") {
-                        id, username, email, firstname
-                      }
-                    }
-                  `,
-              };
-              console.log(query);
-              return fetch("http://localhost:5000/graphql", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(query),
-              })
-                .then((res) => {
-                  if (res.status !== 200 && res.status !== 201) {
-                    throw Error("Failed");
-                  }
-                  return res.json();
-                })
-                .then((res) => {
-                  if (res.errors) {
-                    setError(res.errors[0].message);
-                  }
-                  // console.log(res);
-                  // console.log(res.data);
-                  // console.log(res.data.users[0]);
-                  // No errors, redirect to login page
-                  // Save token, and redirect to dashboard or home
-                  console.log(res.data.token);
-                  console.log(res.data.userID);
+              return signup(values.username, values.email, values.password)
+                .then(() => {
+                  history.push("/");
                 })
                 .catch((err) => {
-                  console.log(err);
+                  setError(err.message);
                 });
             }}
           >

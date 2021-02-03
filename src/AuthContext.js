@@ -73,8 +73,57 @@ export function AuthProvider(props) {
     localStorage.setItem("userId", null);
     localStorage.setItem("token", null);
   }
+  function signup(username, email, password) {
+    const query = {
+      query: `
+            mutation {
+              createUser(username: "${username}",
+                email: "${email}",
+                password: "${password}",
+                firstname:"") {
+                userID
+                token
+              }
+            }
+          `,
+    };
+    console.log(query);
+    return fetch("http://localhost:5000/graphql", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(query),
+    })
+      .then((res) => {
+        if (res.status !== 200 && res.status !== 201) {
+          throw Error("Failed");
+        }
+        return res.json();
+      })
+      .then((res) => {
+        if (res.errors) {
+          throw new Error(res.errors[0].message);
+        }
+        // No errors, redirect to login page
+        // Save token, and redirect to dashboard or home
+        const userId = res.data.userID;
+        const token = res.data.token;
+        console.log(`Got usrId: ${userId}`);
+        console.log(`Got token: ${token}`);
+        setUserId(userId);
+        setToken(token);
+        setIsLoggedIn(true);
+        // save to local storage
+        console.log("Saving to localStorage ..");
+        localStorage.setItem("userId", userId);
+        localStorage.setItem("token", token);
+      });
+  }
   return (
-    <AuthContext.Provider value={{ isLoggedIn, userId, token, login, logout }}>
+    <AuthContext.Provider
+      value={{ isLoggedIn, userId, token, login, logout, signup }}
+    >
       {props.children}
     </AuthContext.Provider>
   );
