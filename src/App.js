@@ -1,5 +1,5 @@
-import React, { useContext } from "react";
-import { TreePods, SequentialPods } from "./Pod.js";
+import React, { useContext, useEffect, useState } from "react";
+import { TreePods, SequentialPods, Pod, NewPod } from "./Pod.js";
 import {
   BrowserRouter as Router,
   Switch,
@@ -7,10 +7,12 @@ import {
   Link,
   Redirect,
   useHistory,
+  useParams,
 } from "react-router-dom";
 // import "./tailwind.output.css";
 import { AuthContext } from "./AuthContext";
 import { NavBar } from "./Nav";
+import { PodContext, retrievePods, retrieveRepos } from "./PodContext";
 
 import { Login, SignUp } from "./Auth.js";
 
@@ -32,32 +34,111 @@ function About() {
   );
 }
 
+function Repos() {
+  const [repos, setRepos] = useState(null);
+  // const { repos, retrieveRepos } = useContext(PodContext);
+  // FIXME initiate the repos?
+  useEffect(() => {
+    retrieveRepos().then((repos) => {
+      console.log(`Got ${repos}`);
+      setRepos(repos);
+    });
+  }, []);
+
+  // render the repos into the HTML
+  // console.log(repos);
+  return (
+    <div>
+      <h1>Repos</h1>
+      {/* Query the backend */}
+      {repos
+        ? repos.map((repo) => {
+            return (
+              <div>
+                <div>
+                  Repo:{" "}
+                  <Link to={`/repo/${repo.name}`} className="text-blue-700">
+                    {repo.name} ({repo.pods.length})
+                  </Link>
+                </div>
+                {/* {repo.pods
+                  ? repo.pods.map((pod) => {
+                      return <div>Pod: {pod.name}</div>;
+                    })
+                  : "No pods"} */}
+              </div>
+            );
+          })
+        : "No repos found."}
+      {/* some examples */}
+      <SequentialPods />
+      <TreePods />
+    </div>
+  );
+}
+
+function Repo(props) {
+  console.log(props);
+  const [pods, setPods] = useState(null);
+  const { reponame } = useParams();
+  useEffect(() => {
+    retrievePods(reponame).then((pods) => {
+      console.log(pods);
+      setPods(pods);
+    });
+  }, []);
+  return (
+    <div>
+      <div>Repo {reponame}</div>
+      <div>
+        {pods
+          ? pods.map((pod) => {
+              return (
+                <div>
+                  Pod: {pod.name} {pod.id} {pod.content}
+                  <NewPod pod={pod} />
+                </div>
+              );
+            })
+          : "No pods found"}
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const { isLoggedIn } = useContext(AuthContext);
   console.log(`isLoggedIn: ${isLoggedIn}`);
   return (
-    <Router>
-      <div>
-        <NavBar></NavBar>
-
-        {/* A <Switch> looks through its children <Route>s and
-            renders the first one that matches the current URL. */}
-        <Switch>
-          <Route path="/about">
-            <About />
-          </Route>
-          <Route path="/login">
-            <Login />
-          </Route>
-          <Route path="/signup">
-            <SignUp />
-          </Route>
-          <Route path="/">
-            <Home />
-          </Route>
-        </Switch>
-      </div>
-    </Router>
+    <div>
+      <Router>
+        <div>
+          <NavBar></NavBar>
+          <div className="max-w-7xl mx-auto px-5 mt-5">
+            <Switch>
+              <Route path="/about">
+                <About />
+              </Route>
+              <Route path="/login">
+                <Login />
+              </Route>
+              <Route path="/signup">
+                <SignUp />
+              </Route>
+              <Route path="/repos">
+                <Repos />
+              </Route>
+              <Route path="/repo/:reponame">
+                <Repo value="" />
+              </Route>
+              <Route path="/">
+                <Home />
+              </Route>
+            </Switch>
+          </div>
+        </div>
+      </Router>
+    </div>
   );
 }
 

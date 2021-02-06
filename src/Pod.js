@@ -21,21 +21,14 @@ function MyEditor(props = {}, ref) {
   const [editor, setEditor] = useState();
 
   useEffect(() => {
-    var editor = CodeMirror(
-      // var editor = CodeMirror.fromTextArea(
-      // document.getElementById("editor"),
-      textareaRef.current,
-      {
-        lineNumbers: true,
-        // viewportMargin: Infinity,
-        // mode: "python",
-        value: value,
-        mode: "python",
-        highlightSelectionMatches: { showToken: /\w/, annotateScrollbar: true },
-      }
-    );
+    const editor = CodeMirror(textareaRef.current, {
+      lineNumbers: true,
+      value: value,
+      mode: "python",
+      highlightSelectionMatches: { showToken: /\w/, annotateScrollbar: true },
+    });
     return () => {
-      editor.toTextArea();
+      // editor.toTextArea();
       setEditor(undefined);
     };
   }, [editor]);
@@ -43,15 +36,9 @@ function MyEditor(props = {}, ref) {
   return (
     <div
       ref={textareaRef}
-      className="myeditor"
-      // className="box-border border-4 container mx-auto text-left m-2 w-10/12"
-    >
-      {/* <textarea 
-    ref={textareaRef}
-    // id="editor"
-    // className="h-auto"
-    ></textarea> */}
-    </div>
+      // className="myeditor"
+      className="max-w-xl mx-auto flex-wrap text-left p-2"
+    ></div>
   );
 }
 
@@ -109,6 +96,29 @@ export function Pod(props = {}) {
        */}
       {/* I should be able to move a pod */}
       <MyEditor value={value} />
+    </>
+  );
+}
+
+export function NewPod(props) {
+  const { pod } = props;
+  return (
+    // currently the Pod is just an Editor
+    <>
+      {/* TODO each pod has some property marks,
+    - purely functional or not
+    - status: dirty?
+    */}
+      {/* TODO each pod has "run/apply" button */}
+      {/* TODO fold the pod, and show:
+      - the name only
+      - the minimap
+       */}
+      {/* I should be able to move a pod */}
+      <div>
+        Name: {pod.name} ID: {pod.id}
+      </div>
+      <MyEditor value={pod.content} />
     </>
   );
 }

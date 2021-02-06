@@ -152,7 +152,7 @@ var root = {
   },
   // CAUTION this is args
   repo: ({ name }) => {
-    return Repo.findOne({ name: name });
+    return Repo.findOne({ name: name }).populate("pods");
   },
   pods: (reponame) => {
     // 1. find the repo

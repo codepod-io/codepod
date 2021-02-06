@@ -7,11 +7,14 @@ import App from "./App";
 import "./index.css";
 
 import { AuthProvider } from "./AuthContext";
+import { PodProvider } from "./PodContext";
 
 ReactDOM.render(
   <React.StrictMode>
     <AuthProvider>
-      <App />
+      <PodProvider>
+        <App />
+      </PodProvider>
     </AuthProvider>
   </React.StrictMode>,
   document.getElementById("root")
