@@ -2,7 +2,7 @@
   "name": "pit",
   "version": "0.0.1",
   "description": "Pod-Git",
-  "main": "index.js",
+  "main": "server.js",
   "author": "Hebi Li",
   "license": "MIT",
   "type": "module",
@@ -18,6 +18,6 @@
     "nodemon": "^2.0.7"
   },
   "scripts": {
-    "start": "node_modules/nodemon/bin/nodemon.js index.js"
+    "start": "node_modules/nodemon/bin/nodemon.js server.js"
   }
 }
