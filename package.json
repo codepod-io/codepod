@@ -5,6 +5,7 @@
   "dependencies": {
     "@craco/craco": "^6.1.0",
     "@monaco-editor/react": "^3.6.3",
+    "@reduxjs/toolkit": "^1.5.0",
     "@tailwindcss/postcss7-compat": "^2.0.2",
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.3.2",
