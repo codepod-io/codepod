@@ -1,8 +1,9 @@
-import { configureStore } from "@reduxjs/toolkit";
+import { configureStore, createAsyncThunk } from "@reduxjs/toolkit";
 
 import { createSlice } from "@reduxjs/toolkit";
 
 import { v4 as uuidv4 } from "uuid";
+import { retrievePods } from "./PodContext";
 
 export function selectSiblings(state, podId) {
   const res = [];
@@ -27,6 +28,19 @@ export function selectChildren(state, podId) {
 function selectPodById(state, id) {
   return state.pods.id2pod[id];
 }
+
+export const switchRepo = createAsyncThunk("switchRepo", async (reponame) => {
+  console.log(`switchRepo: ${reponame}`);
+  // TODO FIXME before switching the repo, I need to make sure all current repo data is saved and synced.
+  //
+  // state.reponame = reponame;
+  // retrieve
+  const pods = await retrievePods(reponame);
+  console.log("Got pods:");
+  console.log(pods);
+  return pods;
+});
+
 
 export const repoSlice = createSlice({
   name: "repo",
@@ -69,13 +83,6 @@ export const repoSlice = createSlice({
         state.headId = pod.id;
         state.tailId = pod.id;
       } else {
-        // FIXME so many undfined errors. I'm switching to typescript
-        //
-        // UPDATE TypeScript only adds types, it does not seem to solve
-        // undefined probelm. For that I probably have to use ReScript. However,
-        // ReScript is not mature. So I'm using pure javascript for now.
-        console.log(anchorId);
-        console.log(state.tailId);
         const anchor = anchorId
           ? state.id2pod[anchorId]
           : state.id2pod[state.tailId];
@@ -103,6 +110,31 @@ export const repoSlice = createSlice({
 
       // TODO save to db
       // TODO retrieve and set ID
+    },
+  },
+  extraReducers: {
+    [switchRepo.pending]: (state, action) => {
+      console.log("switch repo pending ..");
+    },
+    [switchRepo.fulfilled]: (state, action) => {
+      console.log("switch repo fullfilled");
+      // TODO how to set the pods
+      state.reponame = "FUllfilled";
+      const pods = action.payload
+      pods.forEach(pod => {
+        state.id2pod[pod.id] = pod
+      })
+      id2pod: {},
+    id2dock: {},
+    // hierarchy
+    id2child: {},
+    id2next: {},
+    // head and tail
+    headId: null,
+    tailId: null,
+    },
+    [switchRepo.rejected]: (state, action) => {
+      console.log("switch repo rejected");
     },
   },
 });

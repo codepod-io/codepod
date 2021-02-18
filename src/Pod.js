@@ -15,6 +15,7 @@ import {
   selectChildren,
   selectTopLevel,
   selectSiblings,
+  switchRepo,
 } from "./store.js";
 
 import { PodContext, retrievePods, retrieveRepos } from "./PodContext";
@@ -266,6 +267,12 @@ export function Repo() {
   const toplevel = useSelector(selectTopLevel);
   console.log(toplevel);
   const dispatch = useDispatch();
+  // set the repo name and retrieve pods
+  console.log(reponame);
+  useEffect(() => {
+    console.log("dispatching switchRepo action ..");
+    dispatch(switchRepo(reponame));
+  }, []);
   return (
     <div>
       <div className="flex">
