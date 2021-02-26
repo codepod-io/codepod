@@ -7,26 +7,26 @@ import { retrievePods } from "./PodContext";
 
 export function selectSiblings(state, podId) {
   const res = [];
-  for (var id = podId; id; id = state.pods.id2next[id]) {
+  for (var id = podId; id; id = state.repo.id2next[id]) {
     res.push(id);
   }
   return res;
 }
 
 export function selectTopLevel(state) {
-  console.log(`headID: ${state.pods.headId}`);
-  const ids = selectSiblings(state, state.pods.headId);
+  console.log(`headID: ${state.repo.headId}`);
+  const ids = selectSiblings(state, state.repo.headId);
   console.log(`IDs: ${ids}`);
   return ids;
 }
 
 export function selectChildren(state, podId) {
-  const first = state.pods.id2child[podId];
+  const first = state.repo.id2child[podId];
   return selectSiblings(state, first);
 }
 
 function selectPodById(state, id) {
-  return state.pods.id2pod[id];
+  return state.repo.id2pod[id];
 }
 
 export const switchRepo = createAsyncThunk("switchRepo", async (reponame) => {
@@ -41,7 +41,6 @@ export const switchRepo = createAsyncThunk("switchRepo", async (reponame) => {
   return pods;
 });
 
-
 export const repoSlice = createSlice({
   name: "repo",
   // TODO load from server
@@ -50,14 +49,15 @@ export const repoSlice = createSlice({
     // pod and dock
     id2pod: {},
     id2dock: {},
-    // hierarchy
-    id2child: {},
-    id2next: {},
-    // head and tail
-    headId: null,
-    tailId: null,
+    id2children: {
+      ROOT: [],
+    },
+    id2parent: {},
   },
   reducers: {
+    setRepoName: (state, action) => {
+      state.reponame = action.payload;
+    },
     addDock: (state, action) => {
       const { name, anchorId, direction } = action.payload;
       const id = uuidv4();
@@ -68,7 +68,7 @@ export const repoSlice = createSlice({
       state.id2dock[id] = dock;
     },
     addPod: (state, action) => {
-      const { name, content, anchorId, direction } = action.payload;
+      const { name, content, parent, index } = action.payload;
       const id = uuidv4();
       const pod = {
         id: id,
@@ -77,36 +77,12 @@ export const repoSlice = createSlice({
       };
       // FIXME this seems to remove the previous pods dictionary
       state.id2pod[id] = pod;
-      // find the anchor
-      if (!state.headId) {
-        // FIXME this seems to create two instances, not to the same object reference
-        state.headId = pod.id;
-        state.tailId = pod.id;
+      if (index === -1) {
+        state.id2children[parent].push(id);
       } else {
-        const anchor = anchorId
-          ? state.id2pod[anchorId]
-          : state.id2pod[state.tailId];
-        if (anchor === undefined) {
-          throw new Error("Undefined anchor");
-        }
-        switch (direction) {
-          case "NEXT": {
-            state.id2next[pod.id] = state.id2next[anchor.id];
-            state.id2next[anchor.id] = pod.id;
-            break;
-          }
-          case "DOWN": {
-            state.id2child[pod.id] = state.id2child[anchor.id];
-            state.id2child[anchor.id] = pod.id;
-            break;
-          }
-          default: {
-            throw new Error(`Direction error ${direction}`);
-          }
-        }
+        state.id2children[parent].splice(index, 0, id);
       }
-      // if anchor is a pod, insert next to it
-      // if anchor is a dock, insert into the head of it
+      state.id2parent[id] = parent;
 
       // TODO save to db
       // TODO retrieve and set ID
@@ -118,20 +94,10 @@ export const repoSlice = createSlice({
     },
     [switchRepo.fulfilled]: (state, action) => {
       console.log("switch repo fullfilled");
-      // TODO how to set the pods
-      state.reponame = "FUllfilled";
-      const pods = action.payload
-      pods.forEach(pod => {
-        state.id2pod[pod.id] = pod
-      })
-      id2pod: {},
-    id2dock: {},
-    // hierarchy
-    id2child: {},
-    id2next: {},
-    // head and tail
-    headId: null,
-    tailId: null,
+      const pods = action.payload;
+      pods.forEach((pod) => {
+        state.id2pod[pod.id] = pod;
+      });
     },
     [switchRepo.rejected]: (state, action) => {
       console.log("switch repo rejected");
@@ -151,7 +117,7 @@ export const userSlice = createSlice({
 
 export default configureStore({
   reducer: {
-    pods: repoSlice.reducer,
+    repo: repoSlice.reducer,
     users: userSlice.reducer,
   },
 });

@@ -70,11 +70,22 @@ const repoSchema = mongoose.Schema({
       ref: "Pod",
     },
   ],
+  tree: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Tree",
+  },
+});
+
+const treeSchema = mongoose.Schema();
+treeSchema.add({
+  children: [treeSchema],
 });
 
 const Repo = mongoose.model("Repo", repoSchema);
 
 const Pod = mongoose.model("Pod", podSchema);
+
+const Tree = mongoose.model("Tree", treeSchema);
 
 var schema = buildSchema(`
   type Query {
@@ -99,10 +110,16 @@ var schema = buildSchema(`
     firstname: String
   }
 
+  type Tree {
+    children: [Tree]
+  }
+
   type Repo {
     id: ID!
     name: String!
     pods: [Pod]
+    docks: [Dock]
+    tree: [Tree]
   }
 
   type Pod {
@@ -111,10 +128,15 @@ var schema = buildSchema(`
     content: String!
   }
 
+  type Dock {
+    id: ID!
+    name: String!
+  }
+
   type Mutation {
     createUser(username: String, email: String, password: String, firstname: String): AuthData
     createRepo(name: String): Repo,
-    createPod(reponame: String, name: String, content: String): Pod
+    createPod(reponame: String, name: String, content: String, parent: String, index: Int): Pod
     clearUser: Boolean,
     clearRepo: Boolean,
     clearPod: Boolean
@@ -217,7 +239,7 @@ var root = {
       }
     });
   },
-  createPod: ({ reponame, name, content }) => {
+  createPod: ({ reponame, name, content, parent, index }) => {
     // TODO check if the repo name exist
     // 1. TODO the repo+pod should be the identifier
     // 2. check the identifier exist or not
@@ -231,6 +253,9 @@ var root = {
           if (!repo) {
             throw new Error(`Repo ${reponame} not found.`);
           } else {
+            // 1. create pod
+            // 2. update connections:
+            //    - up:
             const tmp = new Pod({ name: name, content: content });
             repo.pods.push(tmp);
             repo.save();

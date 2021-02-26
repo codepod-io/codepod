@@ -264,15 +264,19 @@ export function Repos() {
 
 export function Repo() {
   const { reponame } = useParams();
-  const toplevel = useSelector(selectTopLevel);
+  const toplevel = useSelector((state) => state.repo.id2children["ROOT"]);
+  const state_reponame = useSelector((state) => state.repo.reponame);
   console.log(toplevel);
   const dispatch = useDispatch();
   // set the repo name and retrieve pods
-  console.log(reponame);
+  useEffect(() => {
+    dispatch(repoSlice.actions.setRepoName(reponame));
+  }, []);
+
   useEffect(() => {
     console.log("dispatching switchRepo action ..");
     dispatch(switchRepo(reponame));
-  }, []);
+  }, [state_reponame]);
   return (
     <div>
       <div className="flex">
@@ -293,8 +297,8 @@ export function Repo() {
                 repoSlice.actions.addPod({
                   name: "<name>",
                   content: "",
-                  anchorId: null,
-                  direction: "NEXT",
+                  parent: "ROOT",
+                  index: -1,
                 })
               );
               // push to the server, and retrieve the real DB ID
@@ -326,8 +330,8 @@ export function Repo() {
 }
 
 function PodOrDock({ id }) {
-  const isPod = useSelector((state) => id in state.pods.id2pod);
-  const isDock = useSelector((state) => id in state.pods.id2dock);
+  const isPod = useSelector((state) => id in state.repo.id2pod);
+  const isDock = useSelector((state) => id in state.repo.id2dock);
   if (isPod) {
     return <Pod2 id={id}></Pod2>;
   } else if (isDock) {
@@ -350,7 +354,12 @@ export function Dock2({ id }) {
 }
 
 export function Pod2({ id }) {
-  const pod = useSelector((state) => state.pods.id2pod[id]);
+  const pod = useSelector((state) => state.repo.id2pod[id]);
+  const parent = useSelector((state) => state.repo.id2parent[id]);
+  const index = useSelector((state) =>
+    state.repo.id2children[parent].indexOf(id)
+  );
+  const dispatch = useDispatch();
   const btnstyle =
     "border-2 border-gray-400 shadow px-2 mr-2 border-solid rounded hover:bg-gray-100 bg-gray-50";
   return (
@@ -378,44 +387,34 @@ export function Pod2({ id }) {
           </button>
           <button className={btnstyle}>Random Content</button>
           <button className={btnstyle}>Delete</button>
+          <button
+            className={btnstyle}
+            onClick={() => {
+              // get the parent
+
+              dispatch(
+                repoSlice.actions.addPod({
+                  name: "<name>",
+                  content: "",
+                  parent: parent,
+                  index: index,
+                })
+              );
+            }}
+          >
+            +Pod
+          </button>
+          <button
+            className={btnstyle}
+            onClick={() => {
+              // TODO add dock
+            }}
+          >
+            +Dock
+          </button>
         </div>
         <MyEditor value={pod.content} />
       </div>
     </>
   );
 }
-
-// function Pods(props) {
-//   const { ids } = props;
-//   return (
-//     <div>
-//       {pods.map((pod) => {
-//         switch (pod.type) {
-//           case "DOCK": {
-//             return (
-//               <Dock>
-//                 {pods.child && <Pods pods={toList(pod.child)}></Pods>}
-//               </Dock>
-//             );
-//           }
-//           case "POD": {
-//             return (
-//               <div>
-//                 {pods.map((pod) => {
-//                   return (
-//                     <div>
-//                       <Pod2 pod={pod} />
-//                     </div>
-//                   );
-//                 })}
-//               </div>
-//             );
-//           }
-//           default: {
-//             throw new Error(`Pod type error: ${pod.type}`);
-//           }
-//         }
-//       })}
-//     </div>
-//   );
-// }
