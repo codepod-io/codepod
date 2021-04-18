@@ -19,12 +19,12 @@ export function AuthProvider(props) {
     }
   }, []);
 
-  function login(email, password) {
+  function login(username, password) {
     const query = {
       query: `
-        query {
+        mutation {
             login (
-                email: "${email}",
+                username: "${username}",
                 password: "${password}"
             ) {
                 userID

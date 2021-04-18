@@ -4,8 +4,6 @@ import ReactDOM from "react-dom";
 // import 'codemirror.css'
 import App from "./App";
 
-import "./index.css";
-
 import { AuthProvider } from "./AuthContext";
 import { PodProvider } from "./PodContext";
 
