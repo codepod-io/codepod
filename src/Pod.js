@@ -224,10 +224,15 @@ export function Repos() {
   // const { repos, retrieveRepos } = useContext(PodContext);
   // FIXME initiate the repos?
   useEffect(() => {
-    retrieveRepos().then((repos) => {
-      console.log(`Got ${repos}`);
-      setRepos(repos);
-    });
+    retrieveRepos()
+      .then((repos) => {
+        console.log(`Got ${repos}`);
+        setRepos(repos);
+      })
+      .catch((err) => {
+        console.log(`Error`);
+        console.log(err);
+      });
   }, []);
 
   // render the repos into the HTML

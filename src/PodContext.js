@@ -14,7 +14,7 @@ export async function retrievePods(reponame) {
               `,
   };
   console.log(query);
-  return fetch("http://localhost:5000/graphql", {
+  return fetch("http://localhost:4000/graphql", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -52,7 +52,7 @@ export async function retrieveRepos() {
             `,
   };
   console.log(query);
-  return fetch("http://localhost:5000/graphql", {
+  return fetch("http://localhost:4000/graphql", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

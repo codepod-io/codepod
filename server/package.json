@@ -7,17 +7,18 @@
   "license": "MIT",
   "type": "module",
   "dependencies": {
+    "apollo-server": "^2.22.2",
     "apollo-server-express": "^2.19.2",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-graphql": "^0.12.0",
-    "graphql": "^15.4.0",
+    "graphql": "^15.5.0",
     "jsonwebtoken": "^8.5.1",
     "mongoose": "^5.11.13",
     "nodemon": "^2.0.7"
   },
   "scripts": {
-    "start": "node_modules/nodemon/bin/nodemon.js server.js"
+    "start": "nodemon server.js"
   }
 }
