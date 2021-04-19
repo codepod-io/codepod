@@ -1,28 +1,6 @@
 import Head from "next/head";
 import styles from "../styles/Home.module.css";
 
-import { Flex, Spacer, Box, Heading, Button } from "@chakra-ui/react";
-import Link from "next/link";
-
-function Nav() {
-  return (
-    <Flex w="lg" mt={10}>
-      <Box p="2">
-        <Heading size="md">CodePod</Heading>
-      </Box>
-      <Spacer />
-      <Box>
-        <Button colorScheme="teal" mr="4">
-          Sign Up
-        </Button>
-        <Button colorScheme="teal">
-          <Link href="/login">Log in</Link>
-        </Button>
-      </Box>
-    </Flex>
-  );
-}
-
 export default function Home() {
   return (
     <div className={styles.container}>
@@ -30,8 +8,6 @@ export default function Home() {
         <title>Create Next App</title>
         <link rel="icon" href="/favicon.ico" />
       </Head>
-
-      <Nav />
 
       <main className={styles.main}>
         <h1 className={styles.title}>
