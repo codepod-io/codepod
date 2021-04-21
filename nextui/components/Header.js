@@ -42,25 +42,6 @@ const MyMenuItem = ({ children, isLast, to = "/" }) => {
   );
 };
 
-function Nav() {
-  return (
-    <Flex w="lg" mt={10}>
-      <Box p="2">
-        <Heading size="md">CodePod</Heading>
-      </Box>
-      <Spacer />
-      <Box>
-        <Button colorScheme="teal" mr="4">
-          Sign Up
-        </Button>
-        <Button colorScheme="teal">
-          <Link href="/login">Log in</Link>
-        </Button>
-      </Box>
-    </Flex>
-  );
-}
-
 export default function Header() {
   const [show, setShow] = useState(false);
   const toggleMenu = () => setShow(!show);
@@ -77,13 +58,9 @@ export default function Header() {
       wrap="wrap"
       w="100%"
     >
-      <Flex>
-        <Box>
-          <Text fontSize="lg" fontWeight="bold">
-            CodePod
-          </Text>
-        </Box>
-      </Flex>
+      <Text fontSize="lg" fontWeight="bold">
+        <Link href="/">CodePod</Link>
+      </Text>
 
       <Box display={{ base: "block", md: "none" }} onClick={toggleMenu}>
         {show ? <CloseIcon /> : <HamburgerIcon />}
