@@ -53,7 +53,7 @@ function useProvideAuth() {
     setAuthToken(null);
   };
 
-  const signIn = async (username, password) => {
+  const signIn = async ({ username, password }) => {
     const client = createApolloClient();
     const LoginMutation = gql`
       mutation LoginMutation($username: String!, $password: String!) {
@@ -75,6 +75,32 @@ function useProvideAuth() {
     }
   };
 
+  const signUp = async ({ username, email, password }) => {
+    const client = createApolloClient();
+    const LoginMutation = gql`
+      mutation SignupMutation(
+        $username: String!
+        $email: String!
+        $password: String!
+      ) {
+        signup(username: $username, email: $email, password: $password) {
+          token
+        }
+      }
+    `;
+    const result = await client.mutate({
+      mutation: LoginMutation,
+      variables: { username, password, email },
+    });
+
+    console.log(result);
+
+    if (result?.data?.signup?.token) {
+      console.log("sucess: ", result.data.signup.token);
+      setAuthToken(result.data.signup.token);
+    }
+  };
+
   const isSignedIn = () => {
     if (authToken) {
       return true;
@@ -87,6 +113,7 @@ function useProvideAuth() {
     createApolloClient,
     signIn,
     signOut,
+    signUp,
     isSignedIn,
   };
 }

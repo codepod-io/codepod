@@ -21,6 +21,7 @@ import {
   IconButton,
   Alert,
   AlertIcon,
+  Link as ChakraLink,
 } from "@chakra-ui/react";
 import { chakra } from "@chakra-ui/system";
 
@@ -29,6 +30,7 @@ import { FaFacebook, FaGithub, FaGoogle } from "react-icons/fa";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 import { Formik } from "formik";
 import { useRouter } from "next/router";
+import Link from "next/link";
 
 import { useAuth } from "../lib/auth";
 
@@ -77,22 +79,25 @@ export const DividerWithText = (props) => {
 };
 
 ///////// Link
-
-export const Link = (props) => (
-  <chakra.a
-    marginStart="1"
-    href="#"
-    color={useColorModeValue("blue.500", "blue.200")}
-    _hover={{
-      color: useColorModeValue("blue.600", "blue.300"),
-    }}
-    display={{
-      base: "block",
-      sm: "inline",
-    }}
-    {...props}
-  />
-);
+function StyledLink({ href, children }) {
+  return (
+    <Link href={href}>
+      <ChakraLink
+        marginStart="1"
+        color={useColorModeValue("blue.500", "blue.200")}
+        _hover={{
+          color: useColorModeValue("blue.600", "blue.300"),
+        }}
+        display={{
+          base: "block",
+          sm: "inline",
+        }}
+      >
+        {children}
+      </ChakraLink>
+    </Link>
+  );
+}
 
 ///////// LoginForm
 
@@ -101,33 +106,19 @@ function LoginForm(props) {
   const [error, setError] = useState(null);
   return (
     <Formik
-      initialValues={{ email: "", password: "" }}
-      validate={(values) => {
-        const errors = {};
-        if (!values.email) {
-          errors.email = "Required";
-        } else if (
-          !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)
-        ) {
-          errors.email = "Invalid email address";
-        }
-        return errors;
-      }}
+      initialValues={{ username: "", password: "" }}
       onSubmit={(values, { setSubmitting }) => {
         console.log("Logging in");
         console.log(values);
-        console.log([values.email, values.password]);
+        console.log([values.username, values.password]);
         setError(null);
-        return signIn(values.email, values.password).catch((err) => {
+        return signIn({
+          username: values.username,
+          password: values.password,
+        }).catch((err) => {
           // TODO use more user friendly error message
-          console.log(err.message);
-          if (err.message == "Cannot read property 'get' of undefined") {
-            setError("Username and password do not match");
-          } else {
-            setError(err.message);
-          }
+          setError(err.message);
         });
-        // signIn();
       }}
     >
       {({
@@ -149,12 +140,12 @@ function LoginForm(props) {
             {...props}
           >
             <Stack spacing="6">
-              <FormControl id="email">
+              <FormControl id="username">
                 <FormLabel>Username or Email</FormLabel>
                 <Input
-                  name="email"
-                  type="email"
-                  autoComplete="email"
+                  name="username"
+                  type="username"
+                  autoComplete="username"
                   onChange={handleChange}
                   onBlur={handleBlur}
                   required
@@ -241,7 +232,7 @@ export const PasswordField = React.forwardRef((props, ref) => {
           onChange={props.handleChange}
           onBlur={props.handleBlur}
           required
-          {...props}
+          // {...props}
         />
       </InputGroup>
     </FormControl>
@@ -271,7 +262,7 @@ export default function Login() {
         </Heading>
         <Text mt="4" mb="8" align="center" maxW="md" fontWeight="medium">
           <Text as="span">Don&apos;t have an account?</Text>
-          <Link href="#">Start free trial</Link>
+          <StyledLink href="/signup">Sign up for free</StyledLink>
         </Text>
         <Card>
           <LoginForm />
