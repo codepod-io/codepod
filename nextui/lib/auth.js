@@ -1,4 +1,4 @@
-import React, { useState, useContext, createContext } from "react";
+import React, { useState, useContext, useEffect, createContext } from "react";
 import {
   ApolloProvider,
   ApolloClient,
@@ -28,6 +28,13 @@ export const useAuth = () => {
 function useProvideAuth() {
   const [authToken, setAuthToken] = useState(null);
 
+  useEffect(() => {
+    // load initial state from local storage
+    const token = localStorage.getItem("token") || null;
+    setAuthToken(token);
+    console.log(`Loaded token: ${token}`);
+  }, []);
+
   const getAuthHeaders = () => {
     if (!authToken) return null;
 
@@ -51,6 +58,7 @@ function useProvideAuth() {
   const signOut = () => {
     console.log("sign out");
     setAuthToken(null);
+    localStorage.setItem("token", null);
   };
 
   const signIn = async ({ username, password }) => {
@@ -70,8 +78,8 @@ function useProvideAuth() {
     console.log(result);
 
     if (result?.data?.login?.token) {
-      console.log("sucess: ", result.data.login.token);
       setAuthToken(result.data.login.token);
+      localStorage.setItem("token", result.data.login.token);
     }
   };
 
@@ -96,8 +104,8 @@ function useProvideAuth() {
     console.log(result);
 
     if (result?.data?.signup?.token) {
-      console.log("sucess: ", result.data.signup.token);
       setAuthToken(result.data.signup.token);
+      localStorage.setItem("token", result.data.signup.token);
     }
   };
 
