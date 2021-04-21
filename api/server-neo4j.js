@@ -11,17 +11,6 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const typeDefs = `
-type Movie {
-    title: String
-    year: Int
-    imdbRating: Float
-    genres: [Genre] @relation(name: "IN_GENRE", direction: OUT)
-}
-type Genre {
-    name: String
-    movies: [Movie] @relation(name: "IN_GENRE", direction: IN)
-}
-
 type Mutation {
   signup(username: String!, password: String!, email: String!): AuthToken
   login(username: String!, password: String!): AuthToken
