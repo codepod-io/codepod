@@ -30,6 +30,8 @@ import {
 import { Formik } from "formik";
 import { chakra } from "@chakra-ui/system";
 
+import { useAuth } from "../lib/auth.js";
+
 const CURRENT_USER = gql`
   query GetCurrentUser {
     currentUser {
@@ -39,29 +41,31 @@ const CURRENT_USER = gql`
 `;
 
 function CurrentUser() {
+  const { isSignedIn } = useAuth();
+  if (!isSignedIn()) return <p>You are not signed in.</p>;
   const { loading, error, data } = useQuery(CURRENT_USER);
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error :(</p>;
-  console.log(data);
   return <Text>Hello {data.currentUser.username}!</Text>;
 }
 
 function Repos() {
-  const { loading, error, data } = useQuery(gql`
-    query Repos {
-      Repo {
-        name
+  const { loading, error, data } = useQuery(
+    gql`
+      query Repos {
+        myRepos {
+          name
+        }
       }
-    }
-  `);
+    `
+  );
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error :(</p>;
-  console.log(data);
   return (
     <Box>
       <CreateRepoForm />
-      <Heading>Your repos {data.Repo.length}:</Heading>
-      {data.Repo.map((repo) => (
+      <Heading>Your repos {data.myRepos.length}:</Heading>
+      {data.myRepos.map((repo) => (
         <Text>{repo.name}</Text>
       ))}
     </Box>
@@ -78,7 +82,15 @@ const CREATE_REPO = gql`
 
 function CreateRepoForm(props) {
   const [error, setError] = useState(null);
-  const [createRepo, { data }] = useMutation(CREATE_REPO);
+  // const [createRepo, { data }] = useMutation(CREATE_REPO);
+  const [createRepo, { data }] = useMutation(gql`
+    mutation CreateRepo($name: String!) {
+      createRepo(name: $name) {
+        id
+        name
+      }
+    }
+  `);
   return (
     <Formik
       initialValues={{ reponame: "" }}

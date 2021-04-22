@@ -1,4 +1,4 @@
-import { makeAugmentedSchema } from "neo4j-graphql-js";
+import { makeAugmentedSchema, assertSchema } from "neo4j-graphql-js";
 import neo4j from "neo4j-driver";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -14,6 +14,14 @@ const typeDefs = `
 type Mutation {
   signup(username: String!, password: String!, email: String!): AuthToken
   login(username: String!, password: String!): AuthToken
+  createRepo(name: String!): Repo @cypher(
+    statement: """
+    MATCH (u:User {id: $cypherParams.userId})
+    CREATE (r:Repo)<-[:OWN]-(u)
+    SET r.name  = $name, r.id = randomUUID()
+    RETURN r
+    """
+  )
 }
 type AuthToken {
   token: String!
@@ -26,16 +34,26 @@ type Query {
     return u
     """
   )
+  myRepos: [Repo] @cypher (
+    statement: """
+    MATCH (u:User {id: $cypherParams.userId})
+    MATCH (r:Repo)<-[:OWN]-(u)
+    RETURN r
+    """
+  )
 }
 
 type User {
   id: ID!
-  username: String!
+  username: String! @unique
+  email: String! @unique
+  repos: [Repo] @relation(name: "Own", direction: OUT)
 }
 
 type Repo {
   id: ID!
   name: String!
+  owner: User! @relation(name: "Own", direction: IN)
   pods: [Pod]
   docks: [Dock]
 }
@@ -124,6 +142,8 @@ const driver = neo4j.driver(
     process.env.NEO4J_PASSWORD || "neo4j"
   )
 );
+
+assertSchema({ schema, driver, debug: true });
 
 const server = new ApolloServer({
   // context: { driver, neo4jDatabase: process.env.NEO4J_DATABASE },

@@ -58,7 +58,9 @@ function useProvideAuth() {
   const signOut = () => {
     console.log("sign out");
     setAuthToken(null);
-    localStorage.setItem("token", null);
+    // HEBI CAUTION this must be removed. Otherwise, when getItem back, it is not null, but "null"
+    // localStorage.setItem("token", null);
+    localStorage.removeItem("token");
   };
 
   const signIn = async ({ username, password }) => {
