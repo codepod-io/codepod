@@ -33,7 +33,7 @@ import { useRouter } from "next/router";
 
 import { useAuth } from "../lib/auth";
 
-import Link from "next/link";
+import StyledLink from "../components/utils";
 
 //////////
 // Card
@@ -78,27 +78,6 @@ export const DividerWithText = (props) => {
     </Flex>
   );
 };
-
-///////// Link
-function StyledLink({ href, children }) {
-  return (
-    <Link href={href}>
-      <ChakraLink
-        marginStart="1"
-        color={useColorModeValue("blue.500", "blue.200")}
-        _hover={{
-          color: useColorModeValue("blue.600", "blue.300"),
-        }}
-        display={{
-          base: "block",
-          sm: "inline",
-        }}
-      >
-        {children}
-      </ChakraLink>
-    </Link>
-  );
-}
 
 ///////// LoginForm
 

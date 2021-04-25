@@ -12,8 +12,8 @@ dotenv.config();
 
 const typeDefs = `
 type Mutation {
-  signup(username: String!, password: String!, email: String!): AuthToken
-  login(username: String!, password: String!): AuthToken
+  signup(username: String!, password: String!, email: String!): AuthData
+  login(username: String!, password: String!): AuthData
   createRepo(name: String!): Repo @cypher(
     statement: """
     MATCH (u:User {id: $cypherParams.userId})
@@ -23,8 +23,11 @@ type Mutation {
     """
   )
 }
-type AuthToken {
+
+type AuthData {
   token: String!
+  username: String!
+  id: ID!
 }
 
 type Query {
@@ -47,26 +50,29 @@ type User {
   id: ID!
   username: String! @unique
   email: String! @unique
-  repos: [Repo] @relation(name: "Own", direction: OUT)
+  repos: [Repo] @relation(name: "OWN", direction: OUT)
 }
 
 type Repo {
   id: ID!
   name: String!
-  owner: User! @relation(name: "Own", direction: IN)
-  pods: [Pod]
-  docks: [Dock]
+  owner: User! @relation(name: "OWN", direction: IN)
+  root: Deck
 }
 
 type Pod {
   id: ID!
   name: String!
   content: String!
+  repo: Repo! @relation(name: "HAS_POD", direction: IN)
+  parent: Deck! @relation(name: "HOLD", direction: IN)
 }
 
-type Dock {
+type Deck {
   id: ID!
   name: String!
+  pods: [Pod] @relation(name: "HOLD", direction: OUT)
+  parent: Deck @relation(name: "HOLD", direction: IN)
 }
 `;
 
@@ -93,6 +99,8 @@ const resolvers = {
             token: jwt.sign({ id, username }, process.env.JWT_SECRET, {
               expiresIn: "30d",
             }),
+            id,
+            username,
           };
         });
     },
@@ -116,6 +124,8 @@ const resolvers = {
             token: jwt.sign({ id, username }, process.env.JWT_SECRET, {
               expiresIn: "30d",
             }),
+            id,
+            username,
           };
         });
     },

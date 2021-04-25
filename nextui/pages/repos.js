@@ -1,6 +1,7 @@
 import Head from "next/head";
 import { useQuery, useMutation, gql } from "@apollo/client";
 import React, { useState } from "react";
+import Link from "next/link";
 
 import {
   Box,
@@ -55,18 +56,26 @@ function Repos() {
       query Repos {
         myRepos {
           name
+          id
         }
       }
     `
   );
+  const { username } = useAuth();
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error :(</p>;
+  console.log(data);
   return (
     <Box>
       <CreateRepoForm />
       <Heading>Your repos {data.myRepos.length}:</Heading>
       {data.myRepos.map((repo) => (
-        <Text>{repo.name}</Text>
+        <Text key={repo.id}>
+          The link:{" "}
+          <Link
+            href={`/${username}/${repo.name}`}
+          >{`/${username}/${repo.name}`}</Link>
+        </Text>
       ))}
     </Box>
   );
@@ -175,7 +184,7 @@ export default function Page() {
   return (
     <Box maxW="lg" align="center" m="auto">
       {/* TODO some meta information about the user */}
-      <CurrentUser />
+      {/* <CurrentUser /> */}
       {/* TODO the repos of this user */}
       <Repos />
     </Box>
