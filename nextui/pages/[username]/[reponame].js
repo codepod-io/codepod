@@ -36,9 +36,17 @@ export default function Repo() {
         </Text>
       </Box>
 
-      <Box overflowX="scroll" border="solid 3px" p={5} m={5}>
-        <Box>
-          <PodOrDeck id={rootId} />
+      <Box m="auto">
+        <Box
+          overflowX="scroll"
+          border="solid 3px"
+          p={5}
+          m={5}
+          maxW={["sm", "lg", "3xl", "4xl", "6xl"]}
+        >
+          <Box>
+            <PodOrDeck id={rootId} />
+          </Box>
         </Box>
       </Box>
     </Flex>
