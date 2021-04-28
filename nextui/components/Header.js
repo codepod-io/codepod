@@ -42,7 +42,7 @@ const MyMenuItem = ({ children, isLast, to = "/" }) => {
   );
 };
 
-export default function Header() {
+export function Header() {
   const [show, setShow] = useState(false);
   const toggleMenu = () => setShow(!show);
 
@@ -100,6 +100,28 @@ export default function Header() {
           )}
         </Flex>
       </Box>
+    </Flex>
+  );
+}
+
+export function Footer() {
+  return (
+    <Flex
+      mb={8}
+      p={8}
+      as="nav"
+      align="center"
+      justify="space-between"
+      wrap="wrap"
+      w="100%"
+    >
+      <Text fontSize="lg" fontWeight="bold">
+        <Link href="/">CodePod</Link>
+      </Text>
+
+      <Text fontSize="lg" fontWeight="bold">
+        <Link href="/">Copyright © CodePod Inc</Link>
+      </Text>
     </Flex>
   );
 }

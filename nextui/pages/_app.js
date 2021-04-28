@@ -1,17 +1,24 @@
 import { ChakraProvider } from "@chakra-ui/react";
 import { AuthProvider } from "../lib/auth.js";
-import Header from "../components/Header";
+import { Header, Footer } from "../components/Header";
+
+import { Provider } from "react-redux";
+
+import store from "../lib/store";
 
 import "../styles/globals.css";
 
 function MyApp({ Component, pageProps }) {
   return (
-    <ChakraProvider>
-      <AuthProvider>
-        <Header />
-        <Component {...pageProps} />
-      </AuthProvider>
-    </ChakraProvider>
+    <Provider store={store}>
+      <ChakraProvider>
+        <AuthProvider>
+          <Header />
+          <Component {...pageProps} />
+          <Footer />
+        </AuthProvider>
+      </ChakraProvider>
+    </Provider>
   );
 }
 
