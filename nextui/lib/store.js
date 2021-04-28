@@ -38,29 +38,52 @@ export const repoSlice = createSlice({
     },
   },
   reducers: {
-    addDeck: (state, action) => {
-      const { parent } = action.payload;
-      const id = uuidv4();
-      const deck = {
-        id: id,
-        type: "deck",
-        parent: parent,
-        children: [],
-      };
-      state.pods[id] = deck;
-      state.pods[parent].children.push(id);
-    },
     addPod: (state, action) => {
-      const { parent, content } = action.payload;
+      const { anchor, type, direction, content = "" } = action.payload;
+      // construct
       const id = uuidv4();
-      const pod = {
-        id: id,
-        content: content,
-        type: "pod",
-        parent: parent,
-      };
+      parent = {
+        up: state.pods[anchor].parent,
+        down: state.pods[anchor].parent,
+        right: anchor,
+      }[direction];
+      const pod =
+        type === "pod"
+          ? {
+              id: id,
+              content: content,
+              type: "pod",
+              parent: parent,
+            }
+          : {
+              id: id,
+              type: "deck",
+              parent: parent,
+              children: [],
+            };
       state.pods[id] = pod;
-      state.pods[parent].children.push(id);
+      // add
+      switch (direction) {
+        case "up":
+          state.pods[parent].children.splice(
+            state.pods[parent].children.indexOf(anchor),
+            0,
+            id
+          );
+          break;
+        case "down":
+          state.pods[parent].children.splice(
+            state.pods[parent].children.indexOf(anchor) + 1,
+            0,
+            id
+          );
+          break;
+        case "right":
+          state.pods[parent].children.push(id);
+          break;
+        default:
+          throw Error("Invalid direction");
+      }
 
       // TODO save to db
       // TODO retrieve and set ID
