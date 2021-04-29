@@ -1,19 +1,26 @@
-mongo:
-  image: mongo
-  restart: always
-  ports:
-    - "27017:27017"
-  environment:
-    MONGO_INITDB_ROOT_USERNAME: root
-    MONGO_INITDB_ROOT_PASSWORD: example
+# Use postgres/example user/password credentials
+version: "3.1"
 
-mongoexpress:
-  image: mongo-express
-  restart: always
-  ports:
-    - "8081:8081"
-  links:
-    - mongo
-  environment:
-    ME_CONFIG_MONGODB_ADMINUSERNAME: root
-    ME_CONFIG_MONGODB_ADMINPASSWORD: example
+services:
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  # pgadmin:
+  #   image: dpage/pgadmin4
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+volumes:
+  db-data:

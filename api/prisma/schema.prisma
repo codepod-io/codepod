@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  title     String   @db.VarChar(255)
+  content   String?
+  published Boolean  @default(false)
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+}
+
+model Profile {
+  id     String  @id @default(uuid())
+  bio    String?
+  user   User    @relation(fields: [userId], references: [id])
+  userId String  @unique
+}
+
+model User {
+  id       String   @id @default(uuid())
+  email    String   @unique
+  username String   @unique
+  name     String?
+  posts    Post[]
+  profile  Profile?
+  Repo     Repo[]
+}
+
+model Repo {
+  id       String @id @default(uuid())
+  name     String
+  fullname String @unique
+  owner    User   @relation(fields: [userId], references: [id])
+  userId   String
+  root     Deck   @relation(fields: [deckId], references: [id])
+  deckId   String
+}
+
+model Deck {
+  id       String @id @default(uuid())
+  children Pod[]
+  Repo     Repo[]
+}
+
+model Pod {
+  id      String @id @default(uuid())
+  parent  Deck   @relation(fields: [deckId], references: [id])
+  deckId  String
+  content String
+}
