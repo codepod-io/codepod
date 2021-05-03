@@ -40,13 +40,15 @@ model User {
 }
 
 model Repo {
-  id       String @id @default(uuid())
-  name     String
-  fullname String @unique
-  owner    User   @relation(fields: [userId], references: [id])
-  userId   String
-  root     Pod    @relation(fields: [podId], references: [id])
-  podId    String
+  id     String  @id @default(uuid())
+  name   String
+  // fullname String  @unique
+  owner  User    @relation(fields: [userId], references: [id])
+  userId String
+  root   Pod?    @relation(fields: [rootId], references: [id])
+  rootId String?
+
+  @@unique([name, userId])
 }
 
 enum PodType {
@@ -56,8 +58,8 @@ enum PodType {
 
 model Pod {
   id          String   @id @default(uuid())
-  parent      Pod      @relation("PARENT", fields: [parentId], references: [id])
-  parentId    String
+  parent      Pod?     @relation("PARENT", fields: [parentId], references: [id])
+  parentId    String?
   // TODO how to specify the order of children
   //
   // Option 1:
@@ -71,9 +73,10 @@ model Pod {
   // pods after it.
   children    Pod[]    @relation("PARENT")
   childrenIds String[]
-  content     String
+  content     String?
   type        PodType
-  Repo        Repo[]
+  repo        Repo?
+
 }
 
 // model Deck {

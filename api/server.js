@@ -1,10 +1,12 @@
 import { ApolloServer, gql } from "apollo-server";
 import { resolvers } from "./resolvers-pg.js";
+import jwt from "jsonwebtoken";
 
 const typeDefs = gql`
   type Query {
     hello: String
     users: [User]
+    me: User
     repos: [Repo]
     repo(name: String): Repo
     pods(repo: String): [Pod]
@@ -26,7 +28,6 @@ const typeDefs = gql`
     id: ID!
     name: String!
     owner: User!
-    root: Deck
   }
 
   type Pod {
@@ -66,6 +67,18 @@ const typeDefs = gql`
 const server = new ApolloServer({
   typeDefs,
   resolvers,
+  context: ({ req }) => {
+    const token = req?.headers?.authorization?.slice(7);
+    let userId;
+
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.id;
+    }
+    return {
+      userId,
+    };
+  },
 });
 
 server.listen().then(() => {

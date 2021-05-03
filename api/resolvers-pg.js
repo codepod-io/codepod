@@ -30,11 +30,27 @@ export const resolvers = {
       console.log("Finding users ..");
       const allUsers = await prisma.user.findMany();
       return allUsers;
-      //   return User.find((err, users) => {
-      //     if (err) return console.log(err);
-      //   });
     },
-    repos: () => {},
+    me: async (_, __, { userId }) => {
+      if (!userId) throw Error("Unauthenticated");
+      console.log("userid from ctx", userId);
+      const user = await prisma.user.findFirst({
+        where: {
+          id: userId,
+        },
+      });
+      if (!user) throw Error("Authorization token is not valid");
+      console.log(user);
+      return user;
+    },
+    repos: async () => {
+      const repos = await prisma.repo.findMany({
+        include: {
+          owner: true,
+        },
+      });
+      return repos;
+    },
     repo: (_, { name }) => {},
     pods: (_, reponame) => {},
   },
@@ -51,13 +67,9 @@ export const resolvers = {
         },
       });
       return {
-        token: jwt.sign(
-          { id: user.id, username: user.username },
-          process.env.JWT_SECRET,
-          {
-            expiresIn: "7d",
-          }
-        ),
+        token: jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+          expiresIn: "7d",
+        }),
       };
     },
     login: async (_, { username, password }) => {
@@ -75,13 +87,44 @@ export const resolvers = {
         return {
           id: user.id,
           username: user.usernaame,
-          token: jwt.sign({ id: user.id, username }, process.env.JWT_SECRET, {
+          token: jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
             expiresIn: "30d",
           }),
         };
       }
     },
-    createRepo: (_, { name }) => {},
+    createRepo: async (_, { name }, { userId }) => {
+      console.log("From ctx", userId);
+      if (!userId) throw Error("Unauthenticated");
+      const user = await prisma.user.findFirst({
+        where: {
+          id: userId,
+        },
+      });
+      console.log(user);
+      // create repo $name under userId
+      const repo = await prisma.repo.create({
+        data: {
+          name: name,
+          // root: {
+          //   create: {
+          //     parent: null,
+          //     parentId: "",
+          //   },
+          // },
+          owner: {
+            connect: {
+              id: userId,
+            },
+          },
+        },
+        include: {
+          owner: true,
+        },
+      });
+      console.log(repo);
+      return repo;
+    },
     clearUser: () => {},
     createPod: (_, { reponame, name, content, parent, index }) => {},
   },
