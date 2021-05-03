@@ -30,6 +30,7 @@ import { useState } from "react";
 import { CloseIcon, HamburgerIcon, ChevronDownIcon } from "@chakra-ui/icons";
 
 import { useAuth } from "../lib/auth";
+import { useRouter } from "next/router";
 
 const MyMenuItem = ({ children, isLast, to = "/" }) => {
   return (
@@ -46,6 +47,7 @@ const MyMenuItem = ({ children, isLast, to = "/" }) => {
 export function Header() {
   const [show, setShow] = useState(false);
   const toggleMenu = () => setShow(!show);
+  const router = useRouter();
 
   const { isSignedIn, signOut } = useAuth();
 
@@ -97,7 +99,14 @@ export function Header() {
                 </NextLink>
                 <MenuItem>Mark as Draft</MenuItem>
                 <MenuItem>Delete</MenuItem>
-                <MenuItem onClick={() => signOut()}>Logout</MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    signOut();
+                    router.push("/login");
+                  }}
+                >
+                  Logout
+                </MenuItem>
               </MenuList>
             </Menu>
           ) : (
