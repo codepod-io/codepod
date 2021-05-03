@@ -1,5 +1,5 @@
 import { ApolloServer, gql } from "apollo-server";
-import { resolvers } from "./resolvers.js";
+import { resolvers } from "./resolvers-pg.js";
 
 const typeDefs = gql`
   type Query {
@@ -8,11 +8,9 @@ const typeDefs = gql`
     repos: [Repo]
     repo(name: String): Repo
     pods(repo: String): [Pod]
-    login(email: String, password: String): AuthData
   }
 
   type AuthData {
-    userID: String
     token: String
   }
 
@@ -21,38 +19,35 @@ const typeDefs = gql`
     username: String!
     email: String!
     password: String!
-    firstname: String
-  }
-
-  type Tree {
-    children: [Tree]
+    name: String
   }
 
   type Repo {
     id: ID!
     name: String!
-    pods: [Pod]
-    docks: [Dock]
-    tree: [Tree]
+    owner: User!
+    root: Deck
   }
 
   type Pod {
     id: ID!
-    name: String!
     content: String!
+    parent: Deck
   }
 
-  type Dock {
+  type Deck {
     id: ID!
-    name: String!
+    parent: Deck
+    children: [Pod]
   }
 
   type Mutation {
-    createUser(
+    login(username: String, password: String): AuthData
+    signup(
       username: String
       email: String
       password: String
-      firstname: String
+      name: String
     ): AuthData
     createRepo(name: String): Repo
     createPod(
@@ -78,5 +73,6 @@ server.listen().then(() => {
       Server is running!
       Listening on port 4000
       Explore at https://studio.apollographql.com/dev
+      Explore at http://localhost:4000/graphql
     `);
 });

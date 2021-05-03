@@ -29,13 +29,14 @@ model Profile {
 }
 
 model User {
-  id       String   @id @default(uuid())
-  email    String   @unique
-  username String   @unique
-  name     String?
-  posts    Post[]
-  profile  Profile?
-  Repo     Repo[]
+  id             String   @id @default(uuid())
+  email          String   @unique
+  username       String   @unique
+  name           String?
+  hashedPassword String
+  posts          Post[]
+  profile        Profile?
+  Repo           Repo[]
 }
 
 model Repo {
@@ -44,19 +45,47 @@ model Repo {
   fullname String @unique
   owner    User   @relation(fields: [userId], references: [id])
   userId   String
-  root     Deck   @relation(fields: [deckId], references: [id])
-  deckId   String
+  root     Pod    @relation(fields: [podId], references: [id])
+  podId    String
 }
 
-model Deck {
-  id       String @id @default(uuid())
-  children Pod[]
-  Repo     Repo[]
+enum PodType {
+  CODE
+  DECK
 }
 
 model Pod {
-  id      String @id @default(uuid())
-  parent  Deck   @relation(fields: [deckId], references: [id])
-  deckId  String
-  content String
+  id          String   @id @default(uuid())
+  parent      Pod      @relation("PARENT", fields: [parentId], references: [id])
+  parentId    String
+  // TODO how to specify the order of children
+  //
+  // Option 1:
+  // https://stackoverflow.com/questions/11094338/storing-item-positions-for-ordering-in-a-database-efficiently
+  // I can store a (position, timestamp). To udpate, just move the position, and
+  // use a new timestamp. The newer timestamp will ensure the correct order.
+  //
+  // Option 2:
+  // https://softwareengineering.stackexchange.com/questions/304593/how-to-store-ordered-information-in-a-relational-database
+  // Another option is to maintain the order of the pod, then, update all other
+  // pods after it.
+  children    Pod[]    @relation("PARENT")
+  childrenIds String[]
+  content     String
+  type        PodType
+  Repo        Repo[]
 }
+
+// model Deck {
+//   id         String       @id @default(uuid())
+//   children   Pod[]
+//   Repo       Repo[]
+//   DeckOrDock DeckOrDock[]
+// }
+
+// model Pod {
+//   id      String @id @default(uuid())
+//   parent  Deck   @relation(fields: [deckId], references: [id])
+//   deckId  String
+//   content String
+// }
