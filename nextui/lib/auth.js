@@ -27,12 +27,10 @@ export const useAuth = () => {
 
 function useProvideAuth() {
   const [authToken, setAuthToken] = useState(null);
-  const [username, setUsername] = useState(null);
 
   useEffect(() => {
     // load initial state from local storage
     setAuthToken(localStorage.getItem("token") || null);
-    setUsername(localStorage.getItem("username") || null);
   }, []);
 
   const getAuthHeaders = () => {
@@ -58,11 +56,9 @@ function useProvideAuth() {
   const signOut = () => {
     console.log("sign out");
     setAuthToken(null);
-    setUsername(null);
     // HEBI CAUTION this must be removed. Otherwise, when getItem back, it is not null, but "null"
     // localStorage.setItem("token", null);
     localStorage.removeItem("token");
-    localStorage.removeItem("username");
   };
 
   const signIn = async ({ username, password }) => {
@@ -71,7 +67,6 @@ function useProvideAuth() {
       mutation LoginMutation($username: String!, $password: String!) {
         login(username: $username, password: $password) {
           token
-          username
         }
       }
     `;
@@ -84,11 +79,8 @@ function useProvideAuth() {
 
     if (result?.data?.login?.token) {
       const token = result.data.login.token;
-      const username = result.data.login.username;
       setAuthToken(token);
-      setUsername(username);
       localStorage.setItem("token", token);
-      localStorage.setItem("username", username);
     }
   };
 
@@ -102,7 +94,6 @@ function useProvideAuth() {
       ) {
         signup(username: $username, email: $email, password: $password) {
           token
-          username
         }
       }
     `;
@@ -115,11 +106,8 @@ function useProvideAuth() {
 
     if (result?.data?.signup?.token) {
       const token = result.data.signup.token;
-      const username = result.data.signup.username;
       setAuthToken(token);
-      setUsername(username);
       localStorage.setItem("token", token);
-      localStorage.setItem("username", username);
     }
   };
 
@@ -132,7 +120,6 @@ function useProvideAuth() {
   };
 
   return {
-    username,
     createApolloClient,
     signIn,
     signOut,

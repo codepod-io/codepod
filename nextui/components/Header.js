@@ -20,9 +20,10 @@ import {
   MenuIcon,
   MenuCommand,
   MenuDivider,
+  Link,
 } from "@chakra-ui/react";
 import { chakra } from "@chakra-ui/system";
-import Link from "next/link";
+import NextLink from "next/link";
 
 import { useState } from "react";
 
@@ -37,7 +38,7 @@ const MyMenuItem = ({ children, isLast, to = "/" }) => {
       mr={{ base: 0, sm: isLast ? 0 : 8 }}
       display="block"
     >
-      <Link href={to}>{children}</Link>
+      <NextLink href={to}>{children}</NextLink>
     </Text>
   );
 };
@@ -59,7 +60,7 @@ export function Header() {
       w="100%"
     >
       <Text fontSize="lg" fontWeight="bold">
-        <Link href="/">CodePod</Link>
+        <NextLink href="/">CodePod</NextLink>
       </Text>
 
       <Box display={{ base: "block", md: "none" }} onClick={toggleMenu}>
@@ -88,8 +89,12 @@ export function Header() {
                 <Avatar name="Dan Abrahmov" src="https://bit.ly/dan-abramov" />
               </MenuButton>
               <MenuList>
-                <MenuItem>Profile</MenuItem>
-                <MenuItem>Create a Copy</MenuItem>
+                <NextLink href="/profile">
+                  <MenuItem>Profile</MenuItem>
+                </NextLink>
+                <NextLink href="/profile">
+                  <MenuItem>Create a Copy</MenuItem>
+                </NextLink>
                 <MenuItem>Mark as Draft</MenuItem>
                 <MenuItem>Delete</MenuItem>
                 <MenuItem onClick={() => signOut()}>Logout</MenuItem>
@@ -116,11 +121,11 @@ export function Footer() {
       w="100%"
     >
       <Text fontSize="lg" fontWeight="bold">
-        <Link href="/">CodePod</Link>
+        <NextLink href="/">CodePod</NextLink>
       </Text>
 
       <Text fontSize="lg" fontWeight="bold">
-        <Link href="/">Copyright © CodePod Inc</Link>
+        <NextLink href="/">Copyright © CodePod Inc</NextLink>
       </Text>
     </Flex>
   );
