@@ -24,6 +24,7 @@
     "prisma": "2.21.2"
   },
   "scripts": {
-    "start": "nodemon server.js"
+    "start": "nodemon server.js",
+    "migrate": "npx prisma migrate dev --name init"
   }
 }

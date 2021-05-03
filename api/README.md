@@ -46,3 +46,9 @@ The studio can be viewed at
 ```
 npx prisma studio
 ```
+
+When I mess up with the database and want to start from scratch:
+
+```
+npx prisma db push --preview-feature
+```
