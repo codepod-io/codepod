@@ -18,6 +18,18 @@ export const repoSlice = createSlice({
       state.pods = pods;
       state.root = root;
     },
+    addRoot: (state, action) => {
+      const id = uuidv4();
+      const pod = {
+        id: id,
+        type: "deck",
+        parent: null,
+        children: [],
+      };
+
+      state.pods[id] = pod;
+      state.root = id;
+    },
     addPod: (state, action) => {
       const { anchor, type, direction, content = "" } = action.payload;
       // construct
