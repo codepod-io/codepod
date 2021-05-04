@@ -2,6 +2,7 @@ import Head from "next/head";
 import { useQuery, useMutation, gql } from "@apollo/client";
 import React, { useState } from "react";
 import Link from "next/link";
+import useMe from "../lib/me";
 
 import {
   Box,
@@ -33,23 +34,6 @@ import { chakra } from "@chakra-ui/system";
 
 import { useAuth } from "../lib/auth.js";
 
-const CURRENT_USER = gql`
-  query GetCurrentUser {
-    currentUser {
-      username
-    }
-  }
-`;
-
-function CurrentUser() {
-  const { isSignedIn } = useAuth();
-  if (!isSignedIn()) return <p>You are not signed in.</p>;
-  const { loading, error, data } = useQuery(CURRENT_USER);
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error :(</p>;
-  return <Text>Hello {data.currentUser.username}!</Text>;
-}
-
 function Repos() {
   const { loading, error, data } = useQuery(
     gql`
@@ -61,10 +45,9 @@ function Repos() {
       }
     `
   );
-  const { username } = useAuth();
+  const { me } = useMe();
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error :(</p>;
-  console.log(data);
   return (
     <Box>
       <CreateRepoForm />
@@ -73,8 +56,8 @@ function Repos() {
         <Text key={repo.id}>
           The link:{" "}
           <Link
-            href={`/${username}/${repo.name}`}
-          >{`/${username}/${repo.name}`}</Link>
+            href={`/${me?.username}/${repo.name}`}
+          >{`/${me?.username}/${repo.name}`}</Link>
         </Text>
       ))}
     </Box>

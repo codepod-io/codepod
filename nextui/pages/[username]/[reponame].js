@@ -15,20 +15,58 @@ import Link from "next/link";
 import { StyledLink } from "../../components/utils";
 import React, { useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { gql, useMutation, useQuery } from "@apollo/client";
 
 import { repoSlice } from "../../lib/store";
+import useMe from "../../lib/me";
 
-export default function Repo() {
-  const router = useRouter();
-  const { username, reponame } = router.query;
-  console.log(router.query);
-  console.log(username);
+export async function getServerSideProps({ params }) {
+  // console.log(params);
+  // const router = useRouter();
+  // const { username, reponame } = router.query;
+  // FIXME this will cause warning on React. The query is {} at first rendering.
+  // And this seems to mess up the order of hooks
+  // if (!username || !reponame) return null;
+
+  // Fetch data from external API
+  // const res = await fetch(`https://.../data`)
+  // const data = await res.json()
+
+  // Pass data to the page via props
+  return { props: { params } };
+}
+
+export default function Repo({ params }) {
+  const { username, reponame } = params;
 
   const rootId = useSelector((state) => state.repo.root);
-  console.log(rootId);
+  console.log("RootID:", rootId);
   const dispatch = useDispatch();
+
+  const { loading, error, data } = useQuery(
+    gql`
+      query Repo($reponame: String!, $username: String!) {
+        repo(name: $reponame, username: $username) {
+          name
+        }
+      }
+    `,
+    {
+      variables: {
+        reponame,
+        username,
+      },
+    }
+  );
+  if (!username || !reponame) {
+    return <Text>No usrname or reponame</Text>;
+  }
   return (
     <Flex direction="column" m="auto">
+      <Center>
+        <pre>{JSON.stringify(data)}</pre>
+      </Center>
+
       <Box pb={10} m="auto">
         <Text>
           Repo: <StyledLink href={`/${username}`}>{username}</StyledLink> /{" "}
@@ -125,7 +163,38 @@ function Deck({ id }) {
 
 function PodOrDeck({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
+  const pods = useSelector((state) => state.repo.pods);
   const dispatch = useDispatch();
+  const [addpod, { data, loading, error }] = useMutation(gql`
+    mutation AddPod(
+      $newId: ID!
+      $parentId: ID!
+      $index: Number!
+      $type: String!
+    ) {
+      addPod(id: $newId, parent: $parentId, index: $index, type: $type) {
+        id
+      }
+    }
+  `);
+  function addpodProxy({ anchor, direction, type }) {
+    return addpod({
+      variables: {
+        newId: uuidv4(),
+        parentId: {
+          up: pods[anchor].parent,
+          down: pods[anchor].parent,
+          right: anchor,
+        }[direction],
+        index: {
+          up: pods[pods[anchor].parent].children.indexOf(anchor),
+          down: pods[pods[anchor].parent].children.indexOf(anchor) + 1,
+          right: -1,
+        }[direction],
+        type: type,
+      },
+    });
+  }
 
   if (pod.type !== "deck" && pod.type !== "pod") {
     return (

@@ -8,8 +8,9 @@ const typeDefs = gql`
     users: [User]
     me: User
     repos: [Repo]
-    repo(name: String): Repo
+    repo(name: String!, username: String!): Repo
     pods(repo: String): [Pod]
+    myRepos: [Repo]
   }
 
   type AuthData {

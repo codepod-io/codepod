@@ -51,7 +51,30 @@ export const resolvers = {
       });
       return repos;
     },
-    repo: (_, { name }) => {},
+    myRepos: async (_, __, { userId }) => {
+      if (!userId) throw Error("Unauthenticated");
+      console.log("userid from ctx", userId);
+      const repos = await prisma.repo.findMany({
+        where: {
+          owner: {
+            id: userId,
+          },
+        },
+      });
+      console.log(repos);
+      return repos;
+    },
+    repo: async (_, { name, username }) => {
+      const repo = await prisma.repo.findFirst({
+        where: {
+          name: name,
+          owner: {
+            username: username,
+          },
+        },
+      });
+      return repo;
+    },
     pods: (_, reponame) => {},
   },
   Mutation: {

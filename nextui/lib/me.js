@@ -15,5 +15,5 @@ export default function useMe() {
   const { client, loading, data } = useQuery(PROFILE_QUERY, {
     fetchPolicy: "network-only",
   });
-  return { me: data?.me };
+  return { loading, me: data?.me };
 }
