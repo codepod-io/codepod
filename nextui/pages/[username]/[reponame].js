@@ -36,18 +36,88 @@ export async function getServerSideProps({ params }) {
   return { props: { params } };
 }
 
+function RepoCanvas({ data }) {
+  const dispatch = useDispatch();
+  useEffect(() => {
+    dispatch(
+      repoSlice.actions.setInit({
+        pods: {
+          1: {
+            id: 1,
+            type: "deck",
+            parent: null,
+            children: [2, 3],
+          },
+          2: {
+            id: 2,
+            type: "pod",
+            parent: 1,
+            content: "pod 2",
+          },
+          3: {
+            id: 3,
+            type: "deck",
+            parent: 1,
+            children: [4],
+          },
+          4: {
+            id: 4,
+            type: "pod",
+            parent: 3,
+            content: "pod 3",
+          },
+        },
+        root: 1,
+      })
+    );
+  }, []);
+  const rootId = useSelector((state) => state.repo.root);
+  const pods = useSelector((state) => state.repo.pods);
+  console.log(pods);
+  console.log("RootID:", rootId);
+
+  return (
+    <Flex direction="column" m="auto">
+      <Center>
+        <pre>{JSON.stringify(data)}</pre>
+      </Center>
+
+      {/* <Box pb={10} m="auto">
+        <Text>
+          Repo: <StyledLink href={`/${username}`}>{username}</StyledLink> /{" "}
+          <StyledLink href={`/${username}/${reponame}`}>{reponame}</StyledLink>
+        </Text>
+      </Box> */}
+
+      <Box m="auto">
+        <Box
+          overflowX="scroll"
+          border="solid 3px"
+          p={5}
+          m={5}
+          maxW={["sm", "lg", "3xl", "4xl", "6xl"]}
+        >
+          <Box>{rootId && <PodOrDeck id={rootId} />}</Box>
+        </Box>
+      </Box>
+    </Flex>
+  );
+}
+
 export default function Repo({ params }) {
   const { username, reponame } = params;
 
-  const rootId = useSelector((state) => state.repo.root);
-  console.log("RootID:", rootId);
-  const dispatch = useDispatch();
+  // retrieve pods
 
+  // this should happen only once
   const { loading, error, data } = useQuery(
     gql`
       query Repo($reponame: String!, $username: String!) {
         repo(name: $reponame, username: $username) {
           name
+          owner {
+            name
+          }
         }
       }
     `,
@@ -58,37 +128,13 @@ export default function Repo({ params }) {
       },
     }
   );
+
+  if (loading) return <Text>Loading repo ...</Text>;
+  if (error) return <Text>Error loading repo</Text>;
   if (!username || !reponame) {
     return <Text>No usrname or reponame</Text>;
   }
-  return (
-    <Flex direction="column" m="auto">
-      <Center>
-        <pre>{JSON.stringify(data)}</pre>
-      </Center>
-
-      <Box pb={10} m="auto">
-        <Text>
-          Repo: <StyledLink href={`/${username}`}>{username}</StyledLink> /{" "}
-          <StyledLink href={`/${username}/${reponame}`}>{reponame}</StyledLink>
-        </Text>
-      </Box>
-
-      <Box m="auto">
-        <Box
-          overflowX="scroll"
-          border="solid 3px"
-          p={5}
-          m={5}
-          maxW={["sm", "lg", "3xl", "4xl", "6xl"]}
-        >
-          <Box>
-            <PodOrDeck id={rootId} />
-          </Box>
-        </Box>
-      </Box>
-    </Flex>
-  );
+  return <RepoCanvas data={data}></RepoCanvas>;
 }
 
 function Deck({ id }) {

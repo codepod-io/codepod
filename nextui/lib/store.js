@@ -9,35 +9,15 @@ export const repoSlice = createSlice({
   // TODO load from server
   initialState: {
     reponame: null,
-    root: 1,
-    pods: {
-      1: {
-        id: 1,
-        type: "deck",
-        parent: null,
-        children: [2, 3],
-      },
-      2: {
-        id: 2,
-        type: "pod",
-        parent: 1,
-        content: "pod 2",
-      },
-      3: {
-        id: 3,
-        type: "deck",
-        parent: 1,
-        children: [4],
-      },
-      4: {
-        id: 4,
-        type: "pod",
-        parent: 3,
-        content: "pod 3",
-      },
-    },
+    root: null,
+    pods: [],
   },
   reducers: {
+    setInit: (state, action) => {
+      const { pods, root } = action.payload;
+      state.pods = pods;
+      state.root = root;
+    },
     addPod: (state, action) => {
       const { anchor, type, direction, content = "" } = action.payload;
       // construct

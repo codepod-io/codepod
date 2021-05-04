@@ -72,6 +72,11 @@ export const resolvers = {
             username: username,
           },
         },
+        include: {
+          owner: true,
+          root: true,
+          pods: true,
+        },
       });
       return repo;
     },

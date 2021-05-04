@@ -29,17 +29,15 @@ const typeDefs = gql`
     id: ID!
     name: String!
     owner: User!
+    root: [Pod]
+    pods: [Pod]
   }
 
   type Pod {
     id: ID!
+    type: String
     content: String!
-    parent: Deck
-  }
-
-  type Deck {
-    id: ID!
-    parent: Deck
+    parent: Pod
     children: [Pod]
   }
 
