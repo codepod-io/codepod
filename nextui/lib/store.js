@@ -11,6 +11,8 @@ export const repoSlice = createSlice({
     reponame: null,
     root: null,
     pods: [],
+    queue: [],
+    queueProcessing: false,
   },
   reducers: {
     setInit: (state, action) => {
@@ -80,6 +82,26 @@ export const repoSlice = createSlice({
       // TODO save to db
       // TODO retrieve and set ID
     },
+    addPodQueue: (state, action) => {
+      console.log("add into queue");
+      state.queue.push(action);
+      console.log(state.queue);
+    },
+  },
+  extraReducers: {
+    [loopPodQueue.pending]: (state, action) => {
+      console.log("switch repo pending ..");
+      state.queueProcessing = true;
+    },
+    [loopPodQueue.fulfilled]: (state, action) => {
+      console.log("switch repo fullfilled");
+      state.queue.shift();
+      state.queueProcessing = false;
+    },
+    [loopPodQueue.rejected]: (state, action) => {
+      console.log("switch repo rejected");
+      state.queueProcessing = false;
+    },
   },
 });
 
@@ -93,9 +115,40 @@ export const userSlice = createSlice({
   reducers: {},
 });
 
+export const loopPodQueue = createAsyncThunk("loopPodQueue", async (action) => {
+  console.log(`loopPodQueue`);
+  // TODO process action, push to remote server
+  return true;
+});
+
+function isPodQueueAction(action) {
+  const types = [repoSlice.actions.addPod.type, repoSlice.actions.addRoot.type];
+  return types.includes(action.type);
+}
+
+const podQueueMiddleware = (storeAPI) => (next) => (action) => {
+  console.log("podQueue: dispatching", action);
+  // hijact the pod related request
+  if (isPodQueueAction(action)) {
+    // when to invoke the queue?
+    storeAPI.dispatch(repoSlice.actions.addPodQueue(action));
+    // storeAPI.dispatch(loopPodQueue())
+  }
+
+  let result = next(action);
+  console.log("podQueue: next state", storeAPI.getState());
+  const q = storeAPI.getState().repo.queue;
+  if (q.length > 0 && !storeAPI.getState().repo.queueProcessing) {
+    storeAPI.dispatch(loopPodQueue(q[0]));
+  }
+  return result;
+};
+
 export default configureStore({
   reducer: {
     repo: repoSlice.reducer,
     users: userSlice.reducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(podQueueMiddleware),
 });
