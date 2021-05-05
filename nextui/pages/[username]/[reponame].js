@@ -7,9 +7,16 @@ import {
   Button,
   Tooltip,
   Image,
+  IconButton,
   Spacer,
 } from "@chakra-ui/react";
-import { ArrowUpIcon, ArrowForwardIcon, ArrowDownIcon } from "@chakra-ui/icons";
+import {
+  ArrowUpIcon,
+  ArrowForwardIcon,
+  ArrowDownIcon,
+  CheckIcon,
+  RepeatIcon,
+} from "@chakra-ui/icons";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { StyledLink } from "../../components/utils";
@@ -206,26 +213,51 @@ function Deck({ id }) {
   );
 }
 
+function Pod({ id }) {
+  const pod = useSelector((state) => state.repo.pods[id]);
+  const dispatch = useDispatch();
+  return (
+    <Textarea
+      w="xs"
+      onChange={(e) => {
+        dispatch(
+          repoSlice.actions.setPodContent({ id, content: e.target.value })
+        );
+      }}
+      value={pod.content}
+      placeholder="code here"
+    ></Textarea>
+  );
+}
+
 function PodOrDeck({ id, isRoot }) {
   const pod = useSelector((state) => state.repo.pods[id]);
   const pods = useSelector((state) => state.repo.pods);
   const dispatch = useDispatch();
-  const [addpod, { data, loading, error }] = useMutation(gql`
-    mutation AddPod(
-      $newId: ID!
+  // this update the pod, insert if not exist
+  const [updatePod, { data, loading, error }] = useMutation(gql`
+    mutation updatePod(
+      $id: ID!
       $parentId: ID!
       $index: Number!
       $type: String!
+      $content: String
     ) {
-      addPod(id: $newId, parent: $parentId, index: $index, type: $type) {
+      updatePod(
+        id: $id
+        parent: $parentId
+        index: $index
+        type: $type
+        content: $content
+      ) {
         id
       }
     }
   `);
-  function addpodProxy({ anchor, direction, type }) {
-    return addpod({
+  function doAddPod({ anchor, direction, type }) {
+    return addPod({
       variables: {
-        newId: uuidv4(),
+        id: uuidv4(),
         parentId: {
           up: pods[anchor].parent,
           down: pods[anchor].parent,
@@ -237,6 +269,15 @@ function PodOrDeck({ id, isRoot }) {
           right: -1,
         }[direction],
         type: type,
+      },
+    });
+  }
+
+  function editPod({ id, content }) {
+    return updatePod({
+      variables: {
+        id: id,
+        content: content,
       },
     });
   }
@@ -254,53 +295,70 @@ function PodOrDeck({ id, isRoot }) {
 
   return (
     <Flex direction="column" m={2}>
-      {!isRoot && (
-        <Flex align="center" border="solid 1px" fontSize="xs">
-          <Button color="red" size="xs" ml={1}>
-            <u>D</u>elete
-          </Button>{" "}
-          <Button
-            ml={1}
-            size="xs"
-            onClick={() => {
-              dispatch(
-                repoSlice.actions.addPod({
-                  anchor: pod.id,
-                  direction: "up",
-                  type: "pod",
-                })
-              );
-            }}
-          >
-            Add&nbsp;<u>P</u>od <ArrowUpIcon />
-          </Button>{" "}
-          <Button
-            ml={1}
-            size="xs"
-            onClick={() => {
-              dispatch(
-                repoSlice.actions.addPod({
-                  anchor: pod.id,
-                  direction: "up",
-                  type: "deck",
-                })
-              );
-            }}
-          >
-            Add&nbsp;<u>D</u>eck <ArrowUpIcon />
-          </Button>
-        </Flex>
-      )}
-      {isDeck ? (
-        <Deck id={id} />
-      ) : (
-        <Textarea
-          w="xs"
-          onChange={() => {}}
-          value={pod.content}
-          placeholder="code here"
-        ></Textarea>
-      )}
+      <Flex align="center" border="solid 1px" fontSize="xs">
+        <Button color="red" size="xs" ml={1}>
+          <u>D</u>elete
+        </Button>{" "}
+        {pod.dirty ? (
+          <Box>
+            <IconButton
+              icon={<RepeatIcon />}
+              colorScheme="yellow"
+              onClick={() => {
+                updatePod({
+                  variables: {
+                    id: pod.id,
+                    parentId: pod.parent,
+                    type: pod.type,
+                    content: pod.content,
+                    index: pod.index,
+                  },
+                });
+              }}
+            ></IconButton>
+          </Box>
+        ) : (
+          <Box>
+            <CheckIcon colorScheme="green" />
+          </Box>
+        )}
+        {!isRoot && (
+          <Flex align="center" border="solid 1px" fontSize="xs">
+            <Button
+              ml={1}
+              size="xs"
+              onClick={() => {
+                dispatch(
+                  repoSlice.actions.addPod({
+                    anchor: pod.id,
+                    direction: "up",
+                    type: "pod",
+                  })
+                );
+              }}
+            >
+              Add&nbsp;<u>P</u>od <ArrowUpIcon />
+            </Button>{" "}
+            <Button
+              ml={1}
+              size="xs"
+              onClick={() => {
+                dispatch(
+                  repoSlice.actions.addPod({
+                    anchor: pod.id,
+                    direction: "up",
+                    type: "deck",
+                  })
+                );
+              }}
+            >
+              Add&nbsp;<u>D</u>eck <ArrowUpIcon />
+            </Button>
+          </Flex>
+        )}
+      </Flex>
+
+      {isDeck ? <Deck id={id} /> : <Pod id={id} />}
 
       {!isRoot && (
         <Flex align="center" border="solid 1px" fontSize="xs">

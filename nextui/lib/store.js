@@ -26,7 +26,9 @@ export const repoSlice = createSlice({
         id: id,
         type: "deck",
         parent: null,
+        dirty: true,
         children: [],
+        lastPosUpdate: Date.now(),
       };
 
       state.pods[id] = pod;
@@ -47,11 +49,15 @@ export const repoSlice = createSlice({
               id: id,
               content: content,
               type: "pod",
+              dirty: true,
+              lastPosUpdate: Date.now(),
               parent: parent,
             }
           : {
               id: id,
               type: "deck",
+              dirty: true,
+              lastPosUpdate: Date.now(),
               parent: parent,
               children: [],
             };
@@ -81,6 +87,11 @@ export const repoSlice = createSlice({
 
       // TODO save to db
       // TODO retrieve and set ID
+    },
+    setPodContent: (state, action) => {
+      const { id, content } = action.payload;
+      state.pods[id].content = content;
+      state.pods[id].dirty = true;
     },
     addPodQueue: (state, action) => {
       console.log("add into queue");
