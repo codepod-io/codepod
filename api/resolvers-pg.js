@@ -80,7 +80,28 @@ export const resolvers = {
       });
       return repo;
     },
-    pods: (_, reponame) => {},
+    pods: async (_, { username, reponame }) => {
+      // 1. find the repo
+      const repo = await prisma.repo.findFirst({
+        where: {
+          name: reponame,
+          owner: {
+            username: username,
+          },
+        },
+      });
+      const pods = await prisma.pod.findMany({
+        where: {
+          repo: {
+            id: repo.id,
+          },
+        },
+        include: {
+          parent: true,
+        },
+      });
+      return pods;
+    },
   },
   Mutation: {
     signup: async (_, { username, email, password, name }) => {
@@ -154,6 +175,36 @@ export const resolvers = {
       return repo;
     },
     clearUser: () => {},
-    createPod: (_, { reponame, name, content, parent, index }) => {},
+    addPod: async (_, { reponame, username, parent, type, id }) => {
+      // 1. find the repo
+      const repo = await prisma.repo.findFirst({
+        where: {
+          name: reponame,
+          owner: {
+            username: username,
+          },
+        },
+      });
+      const pod = await prisma.pod.create({
+        data: {
+          // TODO id,
+          // TODO index
+          type: "DECK",
+          repo: {
+            connect: {
+              id: repo.id,
+            },
+          },
+          parent: parent
+            ? {
+                connect: {
+                  id: parent,
+                },
+              }
+            : undefined,
+        },
+      });
+      return pod;
+    },
   },
 };

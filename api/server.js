@@ -9,7 +9,7 @@ const typeDefs = gql`
     me: User
     repos: [Repo]
     repo(name: String!, username: String!): Repo
-    pods(repo: String): [Pod]
+    pods(username: String, reponame: String): [Pod]
     myRepos: [Repo]
   }
 
@@ -50,12 +50,13 @@ const typeDefs = gql`
       name: String
     ): AuthData
     createRepo(name: String): Repo
-    createPod(
+    addPod(
       reponame: String
-      name: String
-      content: String
+      username: String
       parent: String
       index: Int
+      id: String
+      type: String
     ): Pod
     clearUser: Boolean
     clearRepo: Boolean
