@@ -91,7 +91,12 @@ function RepoCanvas({ pods, root }) {
             <Box>
               <Button
                 onClick={() => {
-                  dispatch(repoSlice.actions.addRoot());
+                  dispatch(
+                    repoSlice.actions.addPod({
+                      anchor: null,
+                      type: "deck",
+                    })
+                  );
                 }}
               >
                 +
