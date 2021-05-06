@@ -20,7 +20,7 @@ import {
 import { useRouter } from "next/router";
 import Link from "next/link";
 import { StyledLink } from "../../components/utils";
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { gql, useMutation, useQuery } from "@apollo/client";
 
@@ -259,6 +259,17 @@ function Deck({ id }) {
   const dispatch = useDispatch();
   const left = useRef();
   const right = useRef();
+  // FIXME this is weird:
+  // - WRONG If I just use right.current.offsetHeight, the brace does not show
+  //   up in the first frame after refresh
+  // - WRONG If I use braceHeight, the brace height does not update.
+  // - OK I have to use both:
+  //   - use right.current.offsetHeight
+  //   - but  I have to put this useEffect here, even if I'm not usinig it
+  const [braceHeight, setBraceHeight] = useState(0);
+  useEffect(() => {
+    setBraceHeight(right.current.offsetHeight);
+  }, [left, right]);
   return (
     <Box border="solid 1px" p={3}>
       <Flex align="center">
