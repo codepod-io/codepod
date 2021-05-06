@@ -340,7 +340,8 @@ const podQueueMiddleware = (storeAPI) => (next) => (action) => {
       const { id } = draft.payload;
       const pods = storeAPI.getState().repo.pods;
       // get all ids to delete. Gathering them here is easier than on the server
-      const dfs = (id) => [id].concat(pods[id].children.map((_id) => dfs(_id)));
+      const dfs = (id) =>
+        [id].concat(...pods[id].children.map((_id) => dfs(_id)));
       draft.payload.toDelete = dfs(id);
     });
   }
