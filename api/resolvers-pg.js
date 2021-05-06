@@ -213,5 +213,47 @@ export const resolvers = {
 
       return pod;
     },
+    deletePod: async (_, { id, toDelete }) => {
+      // find all children of this ID
+      // FIXME how to ensure atomic
+      // 1. find the parent of this node
+      const pod = await prisma.pod.findFirst({
+        where: {
+          id: id,
+        },
+        include: {
+          parent: true,
+        },
+      });
+
+      // 4. update all siblings index
+      await prisma.pod.updateMany({
+        where: {
+          // CAUTION where to put null is tricky
+          parent: pod.parent
+            ? {
+                id: pod.parent.id,
+              }
+            : null,
+          index: {
+            gt: pod.index,
+          },
+        },
+        data: {
+          index: {
+            decrement: 1,
+          },
+        },
+      });
+      // 5. delete it and all its children
+      await prisma.pod.deleteMany({
+        where: {
+          id: {
+            in: toDelete,
+          },
+        },
+      });
+      return true;
+    },
   },
 };

@@ -79,62 +79,107 @@ function normalize(pods) {
   return res;
 }
 
+async function remoteAddPod({ type, id, parent, index, reponame, username }) {
+  const query = `
+  mutation addPod(
+    $reponame: String
+    $username: String
+    $type: String
+    $id: String
+    $parent: String
+    $index: Int
+  ) {
+    addPod(
+      reponame: $reponame
+      username: $username
+      type: $type
+      id: $id
+      parent: $parent
+      index: $index
+    ) {
+      id
+    }
+  }
+`;
+  // console.log("query", query);
+  const res = await fetch("http://localhost:4000/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      query: query,
+      variables: {
+        reponame,
+        username,
+        type,
+        id,
+        index,
+        parent,
+      },
+    }),
+  });
+  return res.json();
+}
+
+async function remoteDeletePod({ id, toDelete }) {
+  const query = `
+  mutation deletePod(
+    $id: String,
+    $toDelete: [String]
+  ) {
+    deletePod(id: $id, toDelete: $toDelete)
+  }`;
+  const res = await fetch("http://localhost:4000/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      query: query,
+      variables: {
+        id,
+        toDelete,
+      },
+    }),
+  });
+  return res.json();
+}
+
 export const loopPodQueue = createAsyncThunk(
   "loopPodQueue",
   async (action, { getState }) => {
-    console.log(`loopPodQueue`);
+    // console.log(`loopPodQueue`);
     // process action, push to remote server
-    console.log(action);
+    // console.log(action);
     const reponame = getState().repo.reponame;
     const username = getState().repo.username;
     switch (action.type) {
-      case repoSlice.actions.addPod.type:
+      case repoSlice.actions.addPod.type: {
         // push to remote
-        console.log("fetching ..");
+        // console.log("fetching ..");
         const { type, id, parent, index } = action.payload;
-        const query = `
-          mutation addpod(
-            $reponame: String
-            $username: String
-            $type: String
-            $id: String
-            $parent: String
-            $index: Int
-          ) {
-            addPod(
-              reponame: $reponame
-              username: $username
-              type: $type
-              id: $id
-              parent: $parent
-              index: $index
-            ) {
-              id
-            }
-          }
-        `;
-        // console.log("query", query);
-        const res = await fetch("http://localhost:4000/graphql", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify({
-            query: query,
-            variables: {
-              reponame,
-              username,
-              type,
-              id,
-              index,
-              parent,
-            },
-          }),
+        return await remoteAddPod({
+          type,
+          id,
+          parent,
+          index,
+          reponame,
+          username,
         });
-        return res.json();
+      }
+
+      case repoSlice.actions.deletePod.type: {
+        console.log("===", action.payload);
+        const { id, toDelete } = action.payload;
+        // delete pod id
+        return remoteDeletePod({ id, toDelete });
+      }
+
       default:
-        throw new Error("Invaid action in podQueue", action);
+        throw new Error("Invaid action in podQueue:" + action.type);
     }
   }
 );
@@ -174,6 +219,17 @@ export const repoSlice = createSlice({
         state.pods[parent].children.splice(index, 0, id);
       }
     },
+    deletePod: (state, action) => {
+      const { id, toDelete } = action.payload;
+      // delete the link to parent
+      const parent = state.pods[state.pods[id].parent];
+      const index = parent.children.indexOf(id);
+      parent.children.splice(index, 1);
+      // remove all
+      toDelete.forEach((id) => {
+        state.pods[id] = undefined;
+      });
+    },
     setPodContent: (state, action) => {
       const { id, content } = action.payload;
       state.pods[id].content = content;
@@ -199,9 +255,8 @@ export const repoSlice = createSlice({
       state.queueProcessing = false;
     },
     [loopPodQueue.rejected]: (state, action) => {
-      console.log("--- ERROR: loop pod queue rejected:", action.error.message);
       state.queueProcessing = false;
-      throw Error("ERROR: loop pod queue rejected");
+      throw Error("Loop pod queue rejected. Message:" + action.error.message);
     },
     [loadPodQueue.pending]: (state, action) => {
       state.repoLoading = true;
@@ -232,7 +287,10 @@ function list2dict(pods) {
 }
 
 function isPodQueueAction(action) {
-  const types = [repoSlice.actions.addPod.type];
+  const types = [
+    repoSlice.actions.addPod.type,
+    repoSlice.actions.deletePod.type,
+  ];
   return types.includes(action.type);
 }
 
@@ -243,7 +301,7 @@ function computeParentIndex({ pods, anchor, direction }) {
 
   if (anchor == null) {
     parent = null;
-    index = -1;
+    index = 0;
   } else if (direction === "up") {
     parent = pods[anchor].parent;
     index = pods[parent].children.indexOf(anchor);
@@ -277,17 +335,23 @@ const podQueueMiddleware = (storeAPI) => (next) => (action) => {
       draft.payload.parent = parent;
       draft.payload.index = index;
     });
+  } else if (action.type === repoSlice.actions.deletePod.type) {
+    action = produce(action, (draft) => {
+      const { id } = draft.payload;
+      const pods = storeAPI.getState().repo.pods;
+      // get all ids to delete. Gathering them here is easier than on the server
+      const dfs = (id) => [id].concat(pods[id].children.map((_id) => dfs(_id)));
+      draft.payload.toDelete = dfs(id);
+    });
   }
 
   let result = next(action);
-  console.log("podQueue: next state", storeAPI.getState());
 
   if (isPodQueueAction(action)) {
     storeAPI.dispatch(repoSlice.actions.addPodQueue(action));
     // schedule the queue
     const q = storeAPI.getState().repo.queue;
     if (q.length > 0 && !storeAPI.getState().repo.queueProcessing) {
-      console.log("===", q[0]);
       storeAPI.dispatch(loopPodQueue(q[0]));
     }
   }

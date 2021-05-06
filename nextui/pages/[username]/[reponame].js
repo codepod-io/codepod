@@ -121,7 +121,6 @@ function PodOrDeck({ id, isRoot }) {
     });
   }
 
-  console.log("POD", id, pod);
   if (!pod) {
     return (
       <Box>
@@ -145,7 +144,14 @@ function PodOrDeck({ id, isRoot }) {
   return (
     <Flex direction="column" m={2}>
       <Flex align="center" border="solid 1px" fontSize="xs">
-        <Button color="red" size="xs" ml={1}>
+        <Button
+          color="red"
+          size="xs"
+          ml={1}
+          onClick={() => {
+            dispatch(repoSlice.actions.deletePod({ id }));
+          }}
+        >
           <u>D</u>elete
         </Button>{" "}
         {pod.dirty ? (
@@ -250,7 +256,6 @@ function PodOrDeck({ id, isRoot }) {
 
 function Deck({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
-  console.log("DECK:", id, pod);
   const dispatch = useDispatch();
   const left = useRef();
   const right = useRef();
@@ -311,7 +316,6 @@ function Deck({ id }) {
 
         <Flex direction="column" ref={right}>
           {pod.children.map((id) => {
-            console.log("theID", id);
             return <PodOrDeck id={id} key={id}></PodOrDeck>;
           })}
         </Flex>
