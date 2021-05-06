@@ -75,7 +75,11 @@ export const resolvers = {
         include: {
           owner: true,
           root: true,
-          pods: true,
+          pods: {
+            include: {
+              children: true,
+            },
+          },
         },
       });
       return repo;
@@ -98,6 +102,7 @@ export const resolvers = {
         },
         include: {
           parent: true,
+          children: true,
         },
       });
       return pods;
@@ -202,6 +207,14 @@ export const resolvers = {
                 },
               }
             : undefined,
+          // TODO I can just
+          rootRepo: parent
+            ? undefined
+            : {
+                connect: {
+                  id: repo.id,
+                },
+              },
         },
       });
       return pod;

@@ -52,6 +52,7 @@ function list2dict(pods) {
 }
 
 function RepoCanvas({ pods, root }) {
+  console.log("From server", pods, root);
   const dispatch = useDispatch();
   useEffect(() => {
     dispatch(
@@ -98,7 +99,7 @@ function RepoCanvas({ pods, root }) {
                   dispatch(
                     repoSlice.actions.addPod({
                       anchor: null,
-                      type: "deck",
+                      type: "DECK",
                     })
                   );
                 }}
@@ -134,6 +135,11 @@ export default function Repo({ params }) {
           }
           pods {
             id
+            type
+            content
+            children {
+              id
+            }
           }
         }
       }
@@ -151,11 +157,14 @@ export default function Repo({ params }) {
   if (!username || !reponame) {
     return <Text>No usrname or reponame</Text>;
   }
-  return <RepoCanvas pods={data.repo.pods} root={data.repo.root}></RepoCanvas>;
+  return (
+    <RepoCanvas pods={data.repo.pods} root={data.repo.root.id}></RepoCanvas>
+  );
 }
 
 function Deck({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
+  console.log("DECK:", pod);
   const dispatch = useDispatch();
   const left = useRef();
   const right = useRef();
@@ -176,7 +185,7 @@ function Deck({ id }) {
                     repoSlice.actions.addPod({
                       anchor: pod.id,
                       direction: "right",
-                      type: "pod",
+                      type: "CODE",
                     })
                   );
                 }}
@@ -191,7 +200,7 @@ function Deck({ id }) {
                     repoSlice.actions.addPod({
                       anchor: pod.id,
                       direction: "right",
-                      type: "deck",
+                      type: "DECK",
                     })
                   );
                 }}
@@ -215,7 +224,7 @@ function Deck({ id }) {
         )}
 
         <Flex direction="column" ref={right}>
-          {pod.children.map((id) => {
+          {pod.children.map(({ id }) => {
             return <PodOrDeck id={id} key={id}></PodOrDeck>;
           })}
         </Flex>
@@ -243,6 +252,7 @@ function Pod({ id }) {
 
 function PodOrDeck({ id, isRoot }) {
   const pod = useSelector((state) => state.repo.pods[id]);
+  console.log("CODE", id, pod);
   const pods = useSelector((state) => state.repo.pods);
   const dispatch = useDispatch();
   // this update the pod, insert if not exist
@@ -275,7 +285,7 @@ function PodOrDeck({ id, isRoot }) {
     });
   }
 
-  if (pod.type !== "deck" && pod.type !== "pod") {
+  if (pod.type !== "DECK" && pod.type !== "CODE") {
     return (
       <Box>
         <Box>Error: pod.type: {pod.type}</Box>
@@ -284,7 +294,7 @@ function PodOrDeck({ id, isRoot }) {
     );
   }
 
-  const isDeck = pod.type === "deck";
+  const isDeck = pod.type === "DECK";
 
   return (
     <Flex direction="column" m={2}>
@@ -312,7 +322,8 @@ function PodOrDeck({ id, isRoot }) {
           </Box>
         ) : (
           <Box>
-            <CheckIcon colorScheme="green" />
+            {/* <IconButton icon={} /> */}
+            <CheckIcon color="green" />
           </Box>
         )}
         {!isRoot && (
@@ -325,7 +336,7 @@ function PodOrDeck({ id, isRoot }) {
                   repoSlice.actions.addPod({
                     anchor: pod.id,
                     direction: "up",
-                    type: "pod",
+                    type: "CODE",
                   })
                 );
               }}
@@ -340,7 +351,7 @@ function PodOrDeck({ id, isRoot }) {
                   repoSlice.actions.addPod({
                     anchor: pod.id,
                     direction: "up",
-                    type: "deck",
+                    type: "DECK",
                   })
                 );
               }}
@@ -363,7 +374,7 @@ function PodOrDeck({ id, isRoot }) {
                 repoSlice.actions.addPod({
                   anchor: pod.id,
                   direction: "down",
-                  type: "pod",
+                  type: "CODE",
                 })
               );
             }}
@@ -378,7 +389,7 @@ function PodOrDeck({ id, isRoot }) {
                 repoSlice.actions.addPod({
                   anchor: pod.id,
                   direction: "down",
-                  type: "deck",
+                  type: "DECK",
                 })
               );
             }}

@@ -59,9 +59,9 @@ enum PodType {
 }
 
 model Pod {
-  id          String   @id @default(uuid())
-  parent      Pod?     @relation("PARENT", fields: [parentId], references: [id])
-  parentId    String?
+  id       String  @id @default(uuid())
+  parent   Pod?    @relation("PARENT", fields: [parentId], references: [id])
+  parentId String?
   // TODO how to specify the order of children
   //
   // Option 1:
@@ -69,16 +69,21 @@ model Pod {
   // I can store a (position, timestamp). To udpate, just move the position, and
   // use a new timestamp. The newer timestamp will ensure the correct order.
   //
+  // What about
+  // - addition: OK
+  // - deletion: OK
+  // - deletion + insertion: seems OK
+  //
+  //
   // Option 2:
   // https://softwareengineering.stackexchange.com/questions/304593/how-to-store-ordered-information-in-a-relational-database
   // Another option is to maintain the order of the pod, then, update all other
   // pods after it.
-  children    Pod[]    @relation("PARENT")
-  childrenIds String[]
-  content     String?
-  type        PodType
+  children Pod[]   @relation("PARENT")
+  content  String?
+  type     PodType
   // repo        Repo?    @relation("ROOT")
-  repo        Repo     @relation("BELONG", fields: [repoId], references: [id])
+  repo     Repo    @relation("BELONG", fields: [repoId], references: [id])
 
   repoId   String
   // this is just a place holder. Not useful
