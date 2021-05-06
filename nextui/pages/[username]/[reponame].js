@@ -24,7 +24,7 @@ import React, { useRef, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { gql, useMutation, useQuery } from "@apollo/client";
 
-import { repoSlice } from "../../lib/store";
+import { repoSlice, loadPodQueue } from "../../lib/store";
 import useMe from "../../lib/me";
 
 export async function getServerSideProps({ params }) {
@@ -43,26 +43,7 @@ export async function getServerSideProps({ params }) {
   return { props: { params } };
 }
 
-function list2dict(pods) {
-  const res = {};
-  pods.forEach((pod) => {
-    res[pod.id] = pod;
-  });
-  return res;
-}
-
-function RepoCanvas({ pods, root }) {
-  console.log("From server", pods, root);
-  const dispatch = useDispatch();
-  useEffect(() => {
-    dispatch(
-      repoSlice.actions.setInit({
-        // change list of pods to a dictionary
-        pods: list2dict(pods),
-        root: root,
-      })
-    );
-  }, []);
+function RepoCanvas() {
   const rootId = useSelector((state) => state.repo.root);
   console.log("RootID:", rootId);
   const username = useSelector((state) => state.repo.username);
@@ -118,48 +99,11 @@ export default function Repo({ params }) {
   const { username, reponame } = params;
   const dispatch = useDispatch();
   dispatch(repoSlice.actions.setRepo({ username, reponame }));
-
-  // retrieve pods
-
-  // this should happen only once
-  const { loading, error, data } = useQuery(
-    gql`
-      query Repo($reponame: String!, $username: String!) {
-        repo(name: $reponame, username: $username) {
-          name
-          owner {
-            name
-          }
-          root {
-            id
-          }
-          pods {
-            id
-            type
-            content
-            children {
-              id
-            }
-          }
-        }
-      }
-    `,
-    {
-      variables: {
-        reponame,
-        username,
-      },
-    }
-  );
-
-  if (loading) return <Text>Loading repo ...</Text>;
-  if (error) return <Text>Error loading repo</Text>;
-  if (!username || !reponame) {
-    return <Text>No usrname or reponame</Text>;
-  }
-  return (
-    <RepoCanvas pods={data.repo.pods} root={data.repo.root.id}></RepoCanvas>
-  );
+  useEffect(() => {
+    // load the repo
+    dispatch(loadPodQueue({ username, reponame }));
+  }, []);
+  return <RepoCanvas></RepoCanvas>;
 }
 
 function Deck({ id }) {
@@ -252,7 +196,7 @@ function Pod({ id }) {
 
 function PodOrDeck({ id, isRoot }) {
   const pod = useSelector((state) => state.repo.pods[id]);
-  console.log("CODE", id, pod);
+  console.log("POD", id, pod);
   const pods = useSelector((state) => state.repo.pods);
   const dispatch = useDispatch();
   // this update the pod, insert if not exist

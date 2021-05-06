@@ -7,6 +7,52 @@ import produce from "immer";
 import { defaultTypeResolver } from "graphql";
 import { gql } from "@apollo/client";
 
+export const loadPodQueue = createAsyncThunk(
+  "loadPodQueue",
+  async ({ username, reponame }, { dispatch, getState }) => {
+    // load from remote
+    // const reponame = getState().repo.reponame;
+    // const username = getState().repo.username;
+    const query = `
+    query Repo($reponame: String!, $username: String!) {
+      repo(name: $reponame, username: $username) {
+        name
+        owner {
+          name
+        }
+        root {
+          id
+        }
+        pods {
+          id
+          type
+          content
+          children {
+            id
+          }
+        }
+      }
+    }
+  `;
+    // return res
+    const res = await fetch("http://localhost:4000/graphql", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        query: query,
+        variables: {
+          reponame,
+          username,
+        },
+      }),
+    });
+    return res.json();
+  }
+);
+
 export const loopPodQueue = createAsyncThunk(
   "loopPodQueue",
   async (action, { getState }) => {
@@ -81,11 +127,6 @@ export const repoSlice = createSlice({
       state.reponame = reponame;
       state.username = username;
     },
-    setInit: (state, action) => {
-      const { pods, root } = action.payload;
-      state.pods = pods;
-      state.root = root;
-    },
     addPod: (state, action) => {
       const { parent, index, type, id } = action.payload;
       const pod = {
@@ -129,6 +170,27 @@ export const repoSlice = createSlice({
       throw Error("ERROR: switch repo rejected");
       state.queueProcessing = false;
     },
+    [loadPodQueue.pending]: (state, action) => {
+      state.repoLoading = true;
+    },
+    [loadPodQueue.fulfilled]: (state, action) => {
+      console.log("load pod fullfilled", action.payload.data);
+      // TODO I need to normalize it, e.g. set parent
+      // TODO the children ordered by index
+      function list2dict(pods) {
+        const res = {};
+        pods.forEach((pod) => {
+          res[pod.id] = pod;
+        });
+        return res;
+      }
+      state.pods = list2dict(action.payload.data.repo.pods);
+      state.root = action.payload.data.repo.root.id;
+      state.repoLoading = false;
+    },
+    [loadPodQueue.rejected]: (state, action) => {
+      throw Error("ERROR: repo loading rejected", action.error.message);
+    },
   },
 });
 
@@ -140,6 +202,7 @@ function isPodQueueAction(action) {
 function computeParentIndex({ pods, anchor, direction }) {
   let parent;
   let index;
+  console.log("computeParentIndex", anchor, direction);
 
   if (anchor == null) {
     parent = null;
