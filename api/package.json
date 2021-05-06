@@ -25,6 +25,7 @@
   },
   "scripts": {
     "start": "nodemon server.js",
-    "migrate": "npx prisma migrate dev --name init"
+    "migrate": "npx prisma migrate dev --name init",
+    "resetdb": "npx prisma db push --preview-feature"
   }
 }
