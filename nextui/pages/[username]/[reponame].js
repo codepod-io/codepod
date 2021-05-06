@@ -64,15 +64,19 @@ function RepoCanvas({ pods, root }) {
   }, []);
   const rootId = useSelector((state) => state.repo.root);
   console.log("RootID:", rootId);
+  const username = useSelector((state) => state.repo.username);
+  const reponame = useSelector((state) => state.repo.reponame);
+  const queueL = useSelector((state) => state.repo.queue.length);
 
   return (
     <Flex direction="column" m="auto">
-      {/* <Box pb={10} m="auto">
+      <Box pb={10} m="auto">
         <Text>
           Repo: <StyledLink href={`/${username}`}>{username}</StyledLink> /{" "}
           <StyledLink href={`/${username}/${reponame}`}>{reponame}</StyledLink>
         </Text>
-      </Box> */}
+        <Text>SyncQueue: {queueL}</Text>
+      </Box>
 
       <Box m="auto">
         <Box
@@ -111,6 +115,8 @@ function RepoCanvas({ pods, root }) {
 
 export default function Repo({ params }) {
   const { username, reponame } = params;
+  const dispatch = useDispatch();
+  dispatch(repoSlice.actions.setRepo({ username, reponame }));
 
   // retrieve pods
 
@@ -259,24 +265,6 @@ function PodOrDeck({ id, isRoot }) {
       }
     }
   `);
-  function doAddPod({ anchor, direction, type }) {
-    return addPod({
-      variables: {
-        id: uuidv4(),
-        parentId: {
-          up: pods[anchor].parent,
-          down: pods[anchor].parent,
-          right: anchor,
-        }[direction],
-        index: {
-          up: pods[pods[anchor].parent].children.indexOf(anchor),
-          down: pods[pods[anchor].parent].children.indexOf(anchor) + 1,
-          right: -1,
-        }[direction],
-        type: type,
-      },
-    });
-  }
 
   function editPod({ id, content }) {
     return updatePod({

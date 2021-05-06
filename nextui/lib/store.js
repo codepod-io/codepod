@@ -5,42 +5,82 @@ import { createSlice } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
 import produce from "immer";
 import { defaultTypeResolver } from "graphql";
+import { gql } from "@apollo/client";
 
-export const loopPodQueue = createAsyncThunk("loopPodQueue", async (action) => {
-  console.log(`loopPodQueue`);
-  // process action, push to remote server
-  console.log(action);
-  switch (action.type) {
-    case repoSlice.actions.addPod.type:
-      // push to remote
-      console.log("fetching ..");
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          query: `query { hello}`,
-        }),
-      });
-      return res.json();
-    default:
-      throw new Error("Invaid action in podQueue", action);
+export const loopPodQueue = createAsyncThunk(
+  "loopPodQueue",
+  async (action, { getState }) => {
+    console.log(`loopPodQueue`);
+    // process action, push to remote server
+    console.log(action);
+    const reponame = getState().repo.reponame;
+    const username = getState().repo.username;
+    switch (action.type) {
+      case repoSlice.actions.addPod.type:
+        // push to remote
+        console.log("fetching ..");
+        const { type, id, parent, index } = action.payload;
+        const query = `
+          mutation addpod(
+            $reponame: String
+            $username: String
+            $type: String
+            $id: String
+            $parent: String
+          ) {
+            addPod(
+              reponame: $reponame
+              username: $username
+              type: $type
+              id: $id
+              parent: $parent
+            ) {
+              id
+            }
+          }
+        `;
+        // console.log("query", query);
+        const res = await fetch("http://localhost:4000/graphql", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            query: query,
+            variables: {
+              reponame,
+              username,
+              type,
+              id,
+              parent,
+            },
+          }),
+        });
+        return res.json();
+      default:
+        throw new Error("Invaid action in podQueue", action);
+    }
   }
-});
+);
 
 export const repoSlice = createSlice({
   name: "repo",
   // TODO load from server
   initialState: {
     reponame: null,
+    username: null,
     root: null,
     pods: [],
     queue: [],
     queueProcessing: false,
   },
   reducers: {
+    setRepo: (state, action) => {
+      const { reponame, username } = action.payload;
+      state.reponame = reponame;
+      state.username = username;
+    },
     setInit: (state, action) => {
       const { pods, root } = action.payload;
       state.pods = pods;

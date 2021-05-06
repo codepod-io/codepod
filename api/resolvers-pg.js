@@ -187,7 +187,7 @@ export const resolvers = {
       });
       const pod = await prisma.pod.create({
         data: {
-          // TODO id,
+          id,
           // TODO index
           type: "DECK",
           repo: {
