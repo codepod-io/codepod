@@ -51,14 +51,9 @@ export default function Repo({ params }) {
     // load the repo
     dispatch(loadPodQueue({ username, reponame }));
   }, []);
-  return <RepoCanvas></RepoCanvas>;
-}
 
-function RepoCanvas() {
-  const dispatch = useDispatch();
-  const username = useSelector((state) => state.repo.username);
-  const reponame = useSelector((state) => state.repo.reponame);
   const queueL = useSelector((state) => state.repo.queue.length);
+  const repoLoaded = useSelector((state) => state.repo.repoLoaded);
 
   return (
     <Flex direction="column" m="auto">
@@ -68,8 +63,9 @@ function RepoCanvas() {
           <StyledLink href={`/${username}/${reponame}`}>{reponame}</StyledLink>
         </Text>
         <Text>SyncQueue: {queueL}</Text>
+        {!repoLoaded && <Text>Repo Loading ...</Text>}
       </Box>
-
+      {repoLoaded && (
       <Box m="auto">
         <Box
           overflowX="scroll"
@@ -79,17 +75,17 @@ function RepoCanvas() {
           maxW={["sm", "lg", "3xl", "4xl", "6xl"]}
         >
           <Box>
-            <PodOrDeck id="ROOT" isRoot={true} />
+              <Deck id="ROOT" />
           </Box>
         </Box>
       </Box>
+      )}
     </Flex>
   );
 }
 
-function PodOrDeck({ id, isRoot }) {
+function PodOrDeck({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
-  const pods = useSelector((state) => state.repo.pods);
   const dispatch = useDispatch();
   // this update the pod, insert if not exist
   const [updatePod, { data, loading, error }] = useMutation(gql`
@@ -178,8 +174,6 @@ function PodOrDeck({ id, isRoot }) {
             <CheckIcon color="green" />
           </Box>
         )}
-        {!isRoot && (
-          <Flex align="center" border="solid 1px" fontSize="xs">
             <Button
               ml={1}
               size="xs"
@@ -211,12 +205,9 @@ function PodOrDeck({ id, isRoot }) {
               Add&nbsp;<u>D</u>eck <ArrowUpIcon />
             </Button>
           </Flex>
-        )}
-      </Flex>
 
       {isDeck ? <Deck id={id} /> : <Pod id={id} />}
 
-      {!isRoot && (
         <Flex align="center" border="solid 1px" fontSize="xs">
           <Button
             ml={1}
@@ -249,7 +240,6 @@ function PodOrDeck({ id, isRoot }) {
             Add&nbsp;<u>D</u>eck <ArrowDownIcon />
           </Button>
         </Flex>
-      )}
     </Flex>
   );
 }
@@ -268,7 +258,9 @@ function Deck({ id }) {
   //   - but  I have to put this useEffect here, even if I'm not usinig it
   const [braceHeight, setBraceHeight] = useState(0);
   useEffect(() => {
+    if (right.current) {
     setBraceHeight(right.current.offsetHeight);
+    }
   }, [left, right]);
   return (
     <Box border="solid 1px" p={3}>

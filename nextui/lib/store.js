@@ -57,6 +57,7 @@ function normalize(pods) {
   const res = {
     ROOT: {
       type: "DECK",
+      id: "ROOT",
       children: [],
     },
   };
@@ -190,6 +191,7 @@ export const repoSlice = createSlice({
   initialState: {
     reponame: null,
     username: null,
+    repoLoaded: false,
     pods: {},
     queue: [],
     queueProcessing: false,
@@ -258,9 +260,7 @@ export const repoSlice = createSlice({
       state.queueProcessing = false;
       throw Error("Loop pod queue rejected. Message:" + action.error.message);
     },
-    [loadPodQueue.pending]: (state, action) => {
-      state.repoLoading = true;
-    },
+    [loadPodQueue.pending]: (state, action) => {},
     [loadPodQueue.fulfilled]: (state, action) => {
       console.log("-- load pod fullfilled", action.payload.data);
       if (action.payload.errors) {
@@ -270,7 +270,7 @@ export const repoSlice = createSlice({
       }
       // TODO the children ordered by index
       state.pods = normalize(action.payload.data.repo.pods);
-      state.repoLoading = false;
+      state.repoLoaded = true;
     },
     [loadPodQueue.rejected]: (state, action) => {
       throw Error("ERROR: repo loading rejected", action.error.message);
@@ -299,10 +299,7 @@ function computeParentIndex({ pods, anchor, direction }) {
   let index;
   console.log("computeParentIndex", anchor, direction);
 
-  if (anchor == null) {
-    parent = null;
-    index = 0;
-  } else if (direction === "up") {
+  if (direction === "up") {
     parent = pods[anchor].parent;
     index = pods[parent].children.indexOf(anchor);
   } else if (direction === "down") {
