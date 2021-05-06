@@ -33,7 +33,7 @@ import { useRouter } from "next/router";
 
 import { useAuth } from "../lib/auth";
 
-import StyledLink from "../components/utils";
+import { StyledLink } from "../components/utils";
 
 //////////
 // Card
