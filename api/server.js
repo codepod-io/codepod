@@ -58,6 +58,7 @@ const typeDefs = gql`
       type: String
     ): Pod
     deletePod(id: String, toDelete: [String]): Boolean
+    updatePod(id: String, content: String): Pod
     clearUser: Boolean
     clearRepo: Boolean
     clearPod: Boolean

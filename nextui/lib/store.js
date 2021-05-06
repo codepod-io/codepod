@@ -72,6 +72,7 @@ function normalize(pods) {
     }
     // change children.id format
     pod.children = pod.children.map(({ id: id }) => id);
+    pod.status = "synced";
   });
   // add id map
   pods.forEach((pod) => {
@@ -80,7 +81,7 @@ function normalize(pods) {
   return res;
 }
 
-async function remoteAddPod({ type, id, parent, index, reponame, username }) {
+async function doRemoteAddPod({ type, id, parent, index, reponame, username }) {
   const query = `
   mutation addPod(
     $reponame: String
@@ -124,7 +125,7 @@ async function remoteAddPod({ type, id, parent, index, reponame, username }) {
   return res.json();
 }
 
-async function remoteDeletePod({ id, toDelete }) {
+async function doRemoteDeletePod({ id, toDelete }) {
   const query = `
   mutation deletePod(
     $id: String,
@@ -149,6 +150,32 @@ async function remoteDeletePod({ id, toDelete }) {
   return res.json();
 }
 
+export const remoteUpdatePod = createAsyncThunk(
+  "remoteUpdatePod",
+  async ({ id, content }) => {
+    const res = await fetch("http://localhost:4000/graphql", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        query: `
+        mutation updatePod($id: String, $content: String) {
+          updatePod(id: $id, content: $content) {
+            id
+          }
+        }`,
+        variables: {
+          id,
+          content,
+        },
+      }),
+    });
+    return res.json();
+  }
+);
+
 export const loopPodQueue = createAsyncThunk(
   "loopPodQueue",
   async (action, { getState }) => {
@@ -162,7 +189,7 @@ export const loopPodQueue = createAsyncThunk(
         // push to remote
         // console.log("fetching ..");
         const { type, id, parent, index } = action.payload;
-        return await remoteAddPod({
+        return await doRemoteAddPod({
           type,
           id,
           parent,
@@ -176,7 +203,7 @@ export const loopPodQueue = createAsyncThunk(
         console.log("===", action.payload);
         const { id, toDelete } = action.payload;
         // delete pod id
-        return remoteDeletePod({ id, toDelete });
+        return doRemoteDeletePod({ id, toDelete });
       }
 
       default:
@@ -208,7 +235,7 @@ export const repoSlice = createSlice({
         id: id,
         content: "",
         type: type,
-        dirty: true,
+        status: "synced",
         lastPosUpdate: Date.now(),
         parent: parent,
         children: [],
@@ -235,7 +262,8 @@ export const repoSlice = createSlice({
     setPodContent: (state, action) => {
       const { id, content } = action.payload;
       state.pods[id].content = content;
-      state.pods[id].dirty = true;
+      // check with commited version
+      state.pods[id].status = "dirty";
     },
     addPodQueue: (state, action) => {
       state.queue.push(action.payload);
@@ -274,6 +302,22 @@ export const repoSlice = createSlice({
     },
     [loadPodQueue.rejected]: (state, action) => {
       throw Error("ERROR: repo loading rejected", action.error.message);
+    },
+    [remoteUpdatePod.pending]: (state, action) => {
+      // CAUTION the payload is in action.meta.arg !! this is so weird
+      //
+      // CAUTION If something happens here, it will immediately cause the thunk to be
+      // terminated and rejected to be dipatched
+      state.pods[action.meta.arg.id].status = "syncing";
+    },
+    [remoteUpdatePod.fulfilled]: (state, action) => {
+      state.pods[action.meta.arg.id].status = "synced";
+    },
+    [remoteUpdatePod.rejected]: (state, action) => {
+      // TODO display some error message
+      // TODO use enum instead of string?
+      // state.pods[action.payload.id].status = "dirty";
+      throw new Error("updatePod rejected" + action.payload.errors[0].message);
     },
   },
 });

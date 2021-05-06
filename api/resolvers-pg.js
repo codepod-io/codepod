@@ -213,6 +213,17 @@ export const resolvers = {
 
       return pod;
     },
+    updatePod: async (_, { id, content }) => {
+      const pod = await prisma.pod.update({
+        where: {
+          id,
+        },
+        data: {
+          content,
+        },
+      });
+      return pod;
+    },
     deletePod: async (_, { id, toDelete }) => {
       // find all children of this ID
       // FIXME how to ensure atomic

@@ -9,6 +9,7 @@ import {
   Image,
   IconButton,
   Spacer,
+  Spinner,
 } from "@chakra-ui/react";
 import {
   ArrowUpIcon,
@@ -24,7 +25,7 @@ import React, { useRef, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { gql, useMutation, useQuery } from "@apollo/client";
 
-import { repoSlice, loadPodQueue } from "../../lib/store";
+import { repoSlice, loadPodQueue, remoteUpdatePod } from "../../lib/store";
 import useMe from "../../lib/me";
 
 export async function getServerSideProps({ params }) {
@@ -66,19 +67,19 @@ export default function Repo({ params }) {
         {!repoLoaded && <Text>Repo Loading ...</Text>}
       </Box>
       {repoLoaded && (
-      <Box m="auto">
-        <Box
-          overflowX="scroll"
-          border="solid 3px"
-          p={5}
-          m={5}
-          maxW={["sm", "lg", "3xl", "4xl", "6xl"]}
-        >
-          <Box>
+        <Box m="auto">
+          <Box
+            overflowX="scroll"
+            border="solid 3px"
+            p={5}
+            m={5}
+            maxW={["sm", "lg", "3xl", "4xl", "6xl"]}
+          >
+            <Box>
               <Deck id="ROOT" />
+            </Box>
           </Box>
         </Box>
-      </Box>
       )}
     </Flex>
   );
@@ -88,35 +89,6 @@ function PodOrDeck({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
   const dispatch = useDispatch();
   // this update the pod, insert if not exist
-  const [updatePod, { data, loading, error }] = useMutation(gql`
-    mutation updatePod(
-      $id: ID!
-      $parentId: ID!
-      $index: Number!
-      $type: String!
-      $content: String
-    ) {
-      updatePod(
-        id: $id
-        parent: $parentId
-        index: $index
-        type: $type
-        content: $content
-      ) {
-        id
-      }
-    }
-  `);
-
-  function editPod({ id, content }) {
-    return updatePod({
-      variables: {
-        id: id,
-        content: content,
-      },
-    });
-  }
-
   if (!pod) {
     return (
       <Box>
@@ -150,96 +122,102 @@ function PodOrDeck({ id }) {
         >
           <u>D</u>elete
         </Button>{" "}
-        {pod.dirty ? (
+        {pod.status !== "dirty" &&
+          pod.status !== "synced" &&
+          pod.status !== "syncing" && <Box>Error {pod.status}</Box>}
+        {pod.status === "dirty" && (
           <Box>
             <IconButton
               icon={<RepeatIcon />}
-              colorScheme="yellow"
+              colorScheme={"yellow"}
               onClick={() => {
-                updatePod({
-                  variables: {
-                    id: pod.id,
-                    parentId: pod.parent,
-                    type: pod.type,
-                    content: pod.content,
-                    index: pod.index,
-                  },
-                });
+                dispatch(remoteUpdatePod({ id, content: pod.content }));
               }}
             ></IconButton>
           </Box>
-        ) : (
+        )}
+        {pod.status === "synced" && (
           <Box>
-            {/* <IconButton icon={} /> */}
             <CheckIcon color="green" />
           </Box>
         )}
-            <Button
-              ml={1}
-              size="xs"
-              onClick={() => {
-                dispatch(
-                  repoSlice.actions.addPod({
-                    anchor: pod.id,
-                    direction: "up",
-                    type: "CODE",
-                  })
-                );
-              }}
-            >
-              Add&nbsp;<u>P</u>od <ArrowUpIcon />
-            </Button>{" "}
-            <Button
-              ml={1}
-              size="xs"
-              onClick={() => {
-                dispatch(
-                  repoSlice.actions.addPod({
-                    anchor: pod.id,
-                    direction: "up",
-                    type: "DECK",
-                  })
-                );
-              }}
-            >
-              Add&nbsp;<u>D</u>eck <ArrowUpIcon />
-            </Button>
-          </Flex>
+        {pod.status === "syncing" && (
+          <Box>
+            <Spinner
+              thickness="4px"
+              speed="0.65s"
+              emptyColor="gray.200"
+              color="blue.500"
+              size="xl"
+            />
+          </Box>
+        )}
+        <Button
+          ml={1}
+          size="xs"
+          onClick={() => {
+            dispatch(
+              repoSlice.actions.addPod({
+                anchor: pod.id,
+                direction: "up",
+                type: "CODE",
+              })
+            );
+          }}
+        >
+          Add&nbsp;<u>P</u>od <ArrowUpIcon />
+        </Button>{" "}
+        <Button
+          ml={1}
+          size="xs"
+          onClick={() => {
+            dispatch(
+              repoSlice.actions.addPod({
+                anchor: pod.id,
+                direction: "up",
+                type: "DECK",
+              })
+            );
+          }}
+        >
+          Add&nbsp;<u>D</u>eck <ArrowUpIcon />
+        </Button>
+      </Flex>
 
       {isDeck ? <Deck id={id} /> : <Pod id={id} />}
 
-        <Flex align="center" border="solid 1px" fontSize="xs">
-          <Button
-            ml={1}
-            size="xs"
-            onClick={() => {
-              dispatch(
-                repoSlice.actions.addPod({
-                  anchor: pod.id,
-                  direction: "down",
-                  type: "CODE",
-                })
-              );
-            }}
-          >
-            Add&nbsp;<u>P</u>od <ArrowDownIcon />
-          </Button>{" "}
-          <Button
-            ml={1}
-            size="xs"
-            onClick={() => {
-              dispatch(
-                repoSlice.actions.addPod({
-                  anchor: pod.id,
-                  direction: "down",
-                  type: "DECK",
-                })
-              );
-            }}
-          >
-            Add&nbsp;<u>D</u>eck <ArrowDownIcon />
-          </Button>
-        </Flex>
+      <Flex align="center" border="solid 1px" fontSize="xs">
+        <Button
+          ml={1}
+          size="xs"
+          onClick={() => {
+            dispatch(
+              repoSlice.actions.addPod({
+                anchor: pod.id,
+                direction: "down",
+                type: "CODE",
+              })
+            );
+          }}
+        >
+          Add&nbsp;<u>P</u>od <ArrowDownIcon />
+        </Button>{" "}
+        <Button
+          ml={1}
+          size="xs"
+          onClick={() => {
+            dispatch(
+              repoSlice.actions.addPod({
+                anchor: pod.id,
+                direction: "down",
+                type: "DECK",
+              })
+            );
+          }}
+        >
+          Add&nbsp;<u>D</u>eck <ArrowDownIcon />
+        </Button>
+      </Flex>
     </Flex>
   );
 }
@@ -259,7 +237,7 @@ function Deck({ id }) {
   const [braceHeight, setBraceHeight] = useState(0);
   useEffect(() => {
     if (right.current) {
-    setBraceHeight(right.current.offsetHeight);
+      setBraceHeight(right.current.offsetHeight);
     }
   }, [left, right]);
   return (
