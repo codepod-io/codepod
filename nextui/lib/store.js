@@ -211,7 +211,7 @@ export const repoSlice = createSlice({
       if (action.payload.errors) {
         console.log("ERROR", action.payload.errors);
         console.log(action.payload.errors[0].message);
-        throw Error("Error:", action.payload.errors);
+        throw Error(action.payload.errors[0].message);
       }
       // TODO the children ordered by index
       state.pods = normalize(action.payload.data.repo.pods);

@@ -79,6 +79,9 @@ export const resolvers = {
               children: true,
               parent: true,
             },
+            orderBy: {
+              index: "asc",
+            },
           },
         },
       });
