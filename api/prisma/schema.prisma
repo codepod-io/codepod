@@ -45,8 +45,6 @@ model Repo {
   // fullname String  @unique
   owner  User     @relation(fields: [userId], references: [id])
   userId String
-  root   Pod?     @relation("ROOT", fields: [rootId], references: [id])
-  rootId String?
   pods   Pod[]    @relation("BELONG")
   podsId String[]
 
@@ -62,6 +60,7 @@ model Pod {
   id       String  @id @default(uuid())
   parent   Pod?    @relation("PARENT", fields: [parentId], references: [id])
   parentId String?
+  index    Int
   // TODO how to specify the order of children
   //
   // Option 1:
@@ -85,9 +84,8 @@ model Pod {
   // repo        Repo?    @relation("ROOT")
   repo     Repo    @relation("BELONG", fields: [repoId], references: [id])
 
-  repoId   String
+  repoId String
   // this is just a place holder. Not useful
-  rootRepo Repo[] @relation("ROOT")
 }
 
 // model Deck {

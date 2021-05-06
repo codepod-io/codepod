@@ -29,7 +29,6 @@ const typeDefs = gql`
     id: ID!
     name: String!
     owner: User!
-    root: Pod
     pods: [Pod]
   }
 

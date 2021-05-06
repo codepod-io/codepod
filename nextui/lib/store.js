@@ -20,13 +20,13 @@ export const loadPodQueue = createAsyncThunk(
         owner {
           name
         }
-        root {
-          id
-        }
         pods {
           id
           type
           content
+          parent {
+            id
+          }
           children {
             id
           }
@@ -53,6 +53,32 @@ export const loadPodQueue = createAsyncThunk(
   }
 );
 
+function normalize(pods) {
+  const res = {
+    ROOT: {
+      type: "DECK",
+      children: [],
+    },
+  };
+  pods.forEach((pod) => {
+    if (!pod.parent) {
+      // add root
+      res["ROOT"].children.push(pod.id);
+      pod.parent = "ROOT";
+    } else {
+      // change parent.id format
+      pod.parent = pod.parent.id;
+    }
+    // change children.id format
+    pod.children = pod.children.map(({ id: id }) => id);
+  });
+  // add id map
+  pods.forEach((pod) => {
+    res[pod.id] = pod;
+  });
+  return res;
+}
+
 export const loopPodQueue = createAsyncThunk(
   "loopPodQueue",
   async (action, { getState }) => {
@@ -73,6 +99,7 @@ export const loopPodQueue = createAsyncThunk(
             $type: String
             $id: String
             $parent: String
+            $index: Int
           ) {
             addPod(
               reponame: $reponame
@@ -80,6 +107,7 @@ export const loopPodQueue = createAsyncThunk(
               type: $type
               id: $id
               parent: $parent
+              index: $index
             ) {
               id
             }
@@ -99,6 +127,7 @@ export const loopPodQueue = createAsyncThunk(
               username,
               type,
               id,
+              index,
               parent,
             },
           }),
@@ -116,8 +145,7 @@ export const repoSlice = createSlice({
   initialState: {
     reponame: null,
     username: null,
-    root: null,
-    pods: [],
+    pods: {},
     queue: [],
     queueProcessing: false,
   },
@@ -141,7 +169,7 @@ export const repoSlice = createSlice({
       state.pods[id] = pod;
       if (!parent) {
         // this is root node
-        state.root = id;
+        state.pods["ROOT"].children.splice(index, 0, id);
       } else {
         state.pods[parent].children.splice(index, 0, id);
       }
@@ -157,35 +185,36 @@ export const repoSlice = createSlice({
   },
   extraReducers: {
     [loopPodQueue.pending]: (state, action) => {
-      console.log("--- switch repo pending ..", action);
+      console.log("--- loop pod queue pending ..", action);
       state.queueProcessing = true;
     },
     [loopPodQueue.fulfilled]: (state, action) => {
-      console.log("--- switch repo fullfilled", action.payload.data);
+      console.log("--- loop pod queue fullfilled", action.payload.data);
+      console.log(action.payload);
+      if (action.payload.errors) {
+        console.log("=== error", action.payload.errors);
+        throw Error("Error:" + action.payload.errors[0].message);
+      }
       state.queue.shift();
       state.queueProcessing = false;
     },
     [loopPodQueue.rejected]: (state, action) => {
-      console.log("--- ERROR: switch repo rejected:", action.error.message);
-      throw Error("ERROR: switch repo rejected");
+      console.log("--- ERROR: loop pod queue rejected:", action.error.message);
       state.queueProcessing = false;
+      throw Error("ERROR: loop pod queue rejected");
     },
     [loadPodQueue.pending]: (state, action) => {
       state.repoLoading = true;
     },
     [loadPodQueue.fulfilled]: (state, action) => {
-      console.log("load pod fullfilled", action.payload.data);
-      // TODO I need to normalize it, e.g. set parent
-      // TODO the children ordered by index
-      function list2dict(pods) {
-        const res = {};
-        pods.forEach((pod) => {
-          res[pod.id] = pod;
-        });
-        return res;
+      console.log("-- load pod fullfilled", action.payload.data);
+      if (action.payload.errors) {
+        console.log("ERROR", action.payload.errors);
+        console.log(action.payload.errors[0].message);
+        throw Error("Error:", action.payload.errors);
       }
-      state.pods = list2dict(action.payload.data.repo.pods);
-      state.root = action.payload.data.repo.root.id;
+      // TODO the children ordered by index
+      state.pods = normalize(action.payload.data.repo.pods);
       state.repoLoading = false;
     },
     [loadPodQueue.rejected]: (state, action) => {
@@ -193,6 +222,14 @@ export const repoSlice = createSlice({
     },
   },
 });
+
+function list2dict(pods) {
+  const res = {};
+  pods.forEach((pod) => {
+    res[pod.id] = pod;
+  });
+  return res;
+}
 
 function isPodQueueAction(action) {
   const types = [repoSlice.actions.addPod.type];

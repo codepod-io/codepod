@@ -74,38 +74,15 @@ export const resolvers = {
         },
         include: {
           owner: true,
-          root: true,
           pods: {
             include: {
               children: true,
+              parent: true,
             },
           },
         },
       });
       return repo;
-    },
-    pods: async (_, { username, reponame }) => {
-      // 1. find the repo
-      const repo = await prisma.repo.findFirst({
-        where: {
-          name: reponame,
-          owner: {
-            username: username,
-          },
-        },
-      });
-      const pods = await prisma.pod.findMany({
-        where: {
-          repo: {
-            id: repo.id,
-          },
-        },
-        include: {
-          parent: true,
-          children: true,
-        },
-      });
-      return pods;
     },
   },
   Mutation: {
@@ -160,12 +137,6 @@ export const resolvers = {
       const repo = await prisma.repo.create({
         data: {
           name: name,
-          // root: {
-          //   create: {
-          //     parent: null,
-          //     parentId: "",
-          //   },
-          // },
           owner: {
             connect: {
               id: userId,
@@ -180,7 +151,9 @@ export const resolvers = {
       return repo;
     },
     clearUser: () => {},
-    addPod: async (_, { reponame, username, parent, type, id }) => {
+    addPod: async (_, { reponame, username, parent, type, id, index }) => {
+      console.log("addPod", { reponame, username, parent, type, id, index });
+      parent = parent ? parent : "ROOT";
       // 1. find the repo
       const repo = await prisma.repo.findFirst({
         where: {
@@ -190,33 +163,51 @@ export const resolvers = {
           },
         },
       });
+      console.log(repo.id);
+
+      // update all other records
+
+      await prisma.pod.updateMany({
+        where: {
+          repo: {
+            id: repo.id,
+          },
+          index: {
+            gte: index,
+          },
+          parent: {
+            // CAUTION I cannot use null here
+            id: parent,
+          },
+        },
+        data: {
+          index: {
+            increment: 1,
+          },
+        },
+      });
+
       const pod = await prisma.pod.create({
         data: {
           id,
-          // TODO index
-          type: "DECK",
+          index,
+          type: type,
           repo: {
             connect: {
               id: repo.id,
             },
           },
-          parent: parent
-            ? {
-                connect: {
-                  id: parent,
+          parent:
+            parent === "ROOT"
+              ? undefined
+              : {
+                  connect: {
+                    id: parent,
+                  },
                 },
-              }
-            : undefined,
-          // TODO I can just
-          rootRepo: parent
-            ? undefined
-            : {
-                connect: {
-                  id: repo.id,
-                },
-              },
         },
       });
+
       return pod;
     },
   },

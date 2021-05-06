@@ -55,8 +55,7 @@ export default function Repo({ params }) {
 }
 
 function RepoCanvas() {
-  const rootId = useSelector((state) => state.repo.root);
-  console.log("RootID:", rootId);
+  const dispatch = useDispatch();
   const username = useSelector((state) => state.repo.username);
   const reponame = useSelector((state) => state.repo.reponame);
   const queueL = useSelector((state) => state.repo.queue.length);
@@ -79,27 +78,9 @@ function RepoCanvas() {
           m={5}
           maxW={["sm", "lg", "3xl", "4xl", "6xl"]}
         >
-          {rootId && (
-            <Box>
-              <PodOrDeck id={rootId} isRoot={true} />
-            </Box>
-          )}
-          {!rootId && (
-            <Box>
-              <Button
-                onClick={() => {
-                  dispatch(
-                    repoSlice.actions.addPod({
-                      anchor: null,
-                      type: "DECK",
-                    })
-                  );
-                }}
-              >
-                +
-              </Button>
-            </Box>
-          )}
+          <Box>
+            <PodOrDeck id="ROOT" isRoot={true} />
+          </Box>
         </Box>
       </Box>
     </Flex>
@@ -108,7 +89,6 @@ function RepoCanvas() {
 
 function PodOrDeck({ id, isRoot }) {
   const pod = useSelector((state) => state.repo.pods[id]);
-  console.log("POD", id, pod);
   const pods = useSelector((state) => state.repo.pods);
   const dispatch = useDispatch();
   // this update the pod, insert if not exist
@@ -139,6 +119,16 @@ function PodOrDeck({ id, isRoot }) {
         content: content,
       },
     });
+  }
+
+  console.log("POD", id, pod);
+  if (!pod) {
+    return (
+      <Box>
+        Error: pod is undefined: {id}
+        {/* <pre>{JSON.stringify(pod, null, 2)}</pre> */}
+      </Box>
+    );
   }
 
   if (pod.type !== "DECK" && pod.type !== "CODE") {
@@ -260,7 +250,7 @@ function PodOrDeck({ id, isRoot }) {
 
 function Deck({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
-  console.log("DECK:", pod);
+  console.log("DECK:", id, pod);
   const dispatch = useDispatch();
   const left = useRef();
   const right = useRef();
@@ -320,7 +310,8 @@ function Deck({ id }) {
         )}
 
         <Flex direction="column" ref={right}>
-          {pod.children.map(({ id }) => {
+          {pod.children.map((id) => {
+            console.log("theID", id);
             return <PodOrDeck id={id} key={id}></PodOrDeck>;
           })}
         </Flex>
@@ -340,7 +331,7 @@ function Pod({ id }) {
           repoSlice.actions.setPodContent({ id, content: e.target.value })
         );
       }}
-      value={pod.content}
+      value={pod.content || ""}
       placeholder="code here"
     ></Textarea>
   );
