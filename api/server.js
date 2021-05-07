@@ -37,6 +37,7 @@ const typeDefs = gql`
     type: String
     content: String
     parent: Pod
+    index: Int
     children: [Pod]
   }
 

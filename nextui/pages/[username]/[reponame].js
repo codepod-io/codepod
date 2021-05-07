@@ -111,6 +111,7 @@ function PodOrDeck({ id }) {
 
   return (
     <Flex direction="column" m={2}>
+      {/* The top toolbar */}
       <Flex align="center" border="solid 1px" fontSize="xs">
         <Button
           color="red"
@@ -158,8 +159,8 @@ function PodOrDeck({ id }) {
           onClick={() => {
             dispatch(
               repoSlice.actions.addPod({
-                anchor: pod.id,
-                direction: "up",
+                parent: pod.parent,
+                index: pod.index,
                 type: "CODE",
               })
             );
@@ -173,8 +174,8 @@ function PodOrDeck({ id }) {
           onClick={() => {
             dispatch(
               repoSlice.actions.addPod({
-                anchor: pod.id,
-                direction: "up",
+                parent: pod.parent,
+                index: pod.index,
                 type: "DECK",
               })
             );
@@ -184,8 +185,17 @@ function PodOrDeck({ id }) {
         </Button>
       </Flex>
 
+      {/* The info bar */}
+      <Flex align="center" border="solid 1px" fontSize="xs">
+        <Text mr={5}>ID: {pod.id.substring(0, 8)} ..</Text>
+        <Text mr={5}>Index: {pod.index}</Text>
+        <Text>Parent: {pod.parent}</Text>
+      </Flex>
+
+      {/* the pod iteself */}
       {isDeck ? <Deck id={id} /> : <Pod id={id} />}
 
+      {/* The bottom toolbar */}
       <Flex align="center" border="solid 1px" fontSize="xs">
         <Button
           ml={1}
@@ -193,8 +203,8 @@ function PodOrDeck({ id }) {
           onClick={() => {
             dispatch(
               repoSlice.actions.addPod({
-                anchor: pod.id,
-                direction: "down",
+                parent: pod.parent,
+                index: pod.index + 1,
                 type: "CODE",
               })
             );
@@ -208,8 +218,8 @@ function PodOrDeck({ id }) {
           onClick={() => {
             dispatch(
               repoSlice.actions.addPod({
-                anchor: pod.id,
-                direction: "down",
+                parent: pod.parent,
+                index: pod.index + 1,
                 type: "DECK",
               })
             );
@@ -255,9 +265,9 @@ function Deck({ id }) {
                 onClick={() => {
                   dispatch(
                     repoSlice.actions.addPod({
-                      anchor: pod.id,
-                      direction: "right",
+                      parent: pod.id,
                       type: "CODE",
+                      index: 0,
                     })
                   );
                 }}
@@ -270,8 +280,8 @@ function Deck({ id }) {
                 onClick={() => {
                   dispatch(
                     repoSlice.actions.addPod({
-                      anchor: pod.id,
-                      direction: "right",
+                      parent: pod.id,
+                      index: 0,
                       type: "DECK",
                     })
                   );

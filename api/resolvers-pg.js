@@ -27,20 +27,17 @@ export const resolvers = {
       return "Hello world!";
     },
     users: async () => {
-      console.log("Finding users ..");
       const allUsers = await prisma.user.findMany();
       return allUsers;
     },
     me: async (_, __, { userId }) => {
       if (!userId) throw Error("Unauthenticated");
-      console.log("userid from ctx", userId);
       const user = await prisma.user.findFirst({
         where: {
           id: userId,
         },
       });
       if (!user) throw Error("Authorization token is not valid");
-      console.log(user);
       return user;
     },
     repos: async () => {
@@ -53,7 +50,6 @@ export const resolvers = {
     },
     myRepos: async (_, __, { userId }) => {
       if (!userId) throw Error("Unauthenticated");
-      console.log("userid from ctx", userId);
       const repos = await prisma.repo.findMany({
         where: {
           owner: {
@@ -61,7 +57,6 @@ export const resolvers = {
           },
         },
       });
-      console.log(repos);
       return repos;
     },
     repo: async (_, { name, username }) => {
@@ -128,14 +123,12 @@ export const resolvers = {
       }
     },
     createRepo: async (_, { name }, { userId }) => {
-      console.log("From ctx", userId);
       if (!userId) throw Error("Unauthenticated");
       const user = await prisma.user.findFirst({
         where: {
           id: userId,
         },
       });
-      console.log(user);
       // create repo $name under userId
       const repo = await prisma.repo.create({
         data: {
@@ -150,12 +143,10 @@ export const resolvers = {
           owner: true,
         },
       });
-      console.log(repo);
       return repo;
     },
     clearUser: () => {},
     addPod: async (_, { reponame, username, parent, type, id, index }) => {
-      console.log("addPod", { reponame, username, parent, type, id, index });
       parent = parent ? parent : "ROOT";
       // 1. find the repo
       const repo = await prisma.repo.findFirst({
@@ -166,10 +157,7 @@ export const resolvers = {
           },
         },
       });
-      console.log(repo.id);
-
       // update all other records
-
       await prisma.pod.updateMany({
         where: {
           repo: {

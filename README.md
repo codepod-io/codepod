@@ -3,18 +3,23 @@
 The app contains the front-end (ui) and the back-end (api). To run, start both:
 
 ```
-cd api && yarn start
+cd api && docker-compose up -d
+cd api && yarn dev
 cd nextui && yarn dev
+cd api && npx prisma studio
 ```
 
-The API listen on http://localhost:4000/graphql, you will open the graphql playground there. Also available in https://studio.apollographql.com/dev. The current database is neo4j sandbox, I might need to use a local docker image to host the database.
+The portals:
 
-- a docker compose file to specify the
+- http://localhost:4000/graphq
+- http://localhost:3000 is the web UI
+- https://studio.apollographql.com/dev
+- The db admin page is http://localhost:8080
+
+- A docker compose file to specify the
   - db server
   - volume
   - backup server & volume
-
-The front-end will listen to http://localhost:3000
 
 # Wiki
 

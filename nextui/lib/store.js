@@ -4,8 +4,6 @@ import { createSlice } from "@reduxjs/toolkit";
 
 import { v4 as uuidv4 } from "uuid";
 import produce from "immer";
-import { defaultTypeResolver } from "graphql";
-import { gql } from "@apollo/client";
 
 export const loadPodQueue = createAsyncThunk(
   "loadPodQueue",
@@ -24,6 +22,7 @@ export const loadPodQueue = createAsyncThunk(
           id
           type
           content
+          index
           parent {
             id
           }
@@ -61,6 +60,11 @@ function normalize(pods) {
       children: [],
     },
   };
+
+  // add id map
+  pods.forEach((pod) => {
+    res[pod.id] = pod;
+  });
   pods.forEach((pod) => {
     if (!pod.parent) {
       // add root
@@ -72,11 +76,9 @@ function normalize(pods) {
     }
     // change children.id format
     pod.children = pod.children.map(({ id: id }) => id);
+    // sort according to index
+    pod.children.sort((a, b) => res[a].index - res[b].index);
     pod.status = "synced";
-  });
-  // add id map
-  pods.forEach((pod) => {
-    res[pod.id] = pod;
   });
   return res;
 }
@@ -231,30 +233,52 @@ export const repoSlice = createSlice({
     },
     addPod: (state, action) => {
       const { parent, index, type, id } = action.payload;
+      if (!parent) {
+        parent = "ROOT";
+      }
+      // update all other siblings' index
+      // FIXME this might cause other pods to be re-rendered
+      state.pods[parent].children.forEach((id) => {
+        if (state.pods[id].index >= index) {
+          state.pods[id].index += 1;
+        }
+      });
       const pod = {
-        id: id,
+        id,
+        type,
+        index,
+        parent,
         content: "",
-        type: type,
         status: "synced",
         lastPosUpdate: Date.now(),
-        parent: parent,
         children: [],
       };
       state.pods[id] = pod;
-      if (!parent) {
-        // this is root node
-        state.pods["ROOT"].children.splice(index, 0, id);
-      } else {
-        state.pods[parent].children.splice(index, 0, id);
-      }
+      // push this node
+      // TODO the children no longer need to be ordered
+      // TODO the frontend should handle differently for the children
+      // state.pods[parent].children.splice(index, 0, id);
+      state.pods[parent].children.push(id);
+      // DEBUG sort-in-place
+      // TODO I can probably insert
+      state.pods[parent].children.sort(
+        (a, b) => state.pods[a].index - state.pods[b].index
+      );
     },
     deletePod: (state, action) => {
       const { id, toDelete } = action.payload;
       // delete the link to parent
       const parent = state.pods[state.pods[id].parent];
       const index = parent.children.indexOf(id);
-      parent.children.splice(index, 1);
+
+      // update all other siblings' index
+      parent.children.forEach((id) => {
+        if (state.pods[id].index >= index) {
+          state.pods[id].index -= 1;
+        }
+      });
       // remove all
+      parent.children.splice(index, 1);
       toDelete.forEach((id) => {
         state.pods[id] = undefined;
       });
@@ -322,40 +346,12 @@ export const repoSlice = createSlice({
   },
 });
 
-function list2dict(pods) {
-  const res = {};
-  pods.forEach((pod) => {
-    res[pod.id] = pod;
-  });
-  return res;
-}
-
 function isPodQueueAction(action) {
   const types = [
     repoSlice.actions.addPod.type,
     repoSlice.actions.deletePod.type,
   ];
   return types.includes(action.type);
-}
-
-function computeParentIndex({ pods, anchor, direction }) {
-  let parent;
-  let index;
-  console.log("computeParentIndex", anchor, direction);
-
-  if (direction === "up") {
-    parent = pods[anchor].parent;
-    index = pods[parent].children.indexOf(anchor);
-  } else if (direction === "down") {
-    parent = pods[anchor].parent;
-    index = pods[parent].children.indexOf(anchor) + 1;
-  } else if (direction === "right") {
-    parent = anchor;
-    index = pods[parent].children.length;
-  } else {
-    throw new Error("Invalid:", anchor, direction);
-  }
-  return { parent, index };
 }
 
 const podQueueMiddleware = (storeAPI) => (next) => (action) => {
@@ -365,16 +361,7 @@ const podQueueMiddleware = (storeAPI) => (next) => (action) => {
     // construct the ID here so that the client and the server got the same ID
     action = produce(action, (draft) => {
       const id = uuidv4();
-      // modify other payloads
-      const { anchor, direction } = action.payload;
-      const { parent, index } = computeParentIndex({
-        pods: storeAPI.getState().repo.pods,
-        anchor,
-        direction,
-      });
       draft.payload.id = id;
-      draft.payload.parent = parent;
-      draft.payload.index = index;
     });
   } else if (action.type === repoSlice.actions.deletePod.type) {
     action = produce(action, (draft) => {
