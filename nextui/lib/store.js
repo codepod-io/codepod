@@ -261,6 +261,7 @@ export const repoSlice = createSlice({
       state.pods[parent].children.push(id);
       // DEBUG sort-in-place
       // TODO I can probably insert
+      // CAUTION the sort expects -1,0,1, not true/false
       state.pods[parent].children.sort(
         (a, b) => state.pods[a].index - state.pods[b].index
       );
