@@ -81,6 +81,7 @@ export function Header() {
         >
           <MyMenuItem to="/">Home</MyMenuItem>
           <MyMenuItem to="/repos">Repos</MyMenuItem>
+          <MyMenuItem to="/commitnote">CommitNote</MyMenuItem>
           <MyMenuItem to="/about">About</MyMenuItem>
           {isSignedIn() ? (
             <Menu>
