@@ -13,11 +13,38 @@ import {
   Code,
 } from "@chakra-ui/react";
 import {
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem,
+  MenuItemOption,
+  MenuGroup,
+  MenuOptionGroup,
+  MenuIcon,
+  MenuCommand,
+  MenuDivider,
+} from "@chakra-ui/react";
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverHeader,
+  PopoverBody,
+  PopoverFooter,
+  PopoverArrow,
+  PopoverCloseButton,
+} from "@chakra-ui/react";
+import { Stack, HStack, VStack } from "@chakra-ui/react";
+
+import {
   ArrowUpIcon,
   ArrowForwardIcon,
   ArrowDownIcon,
   CheckIcon,
   RepeatIcon,
+  HamburgerIcon,
+  InfoIcon,
+  ChevronDownIcon,
 } from "@chakra-ui/icons";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -88,33 +115,146 @@ export default function Repo({ params }) {
   );
 }
 
+function SyncStatus({ pod }) {
+  const dispatch = useDispatch();
+  return (
+    <Box>
+      {pod.status !== "dirty" &&
+        pod.status !== "synced" &&
+        pod.status !== "syncing" && <Box>Error {pod.status}</Box>}
+      {pod.status === "dirty" && (
+        <Box>
+          <IconButton
+            icon={<RepeatIcon />}
+            colorScheme={"yellow"}
+            onClick={() => {
+              dispatch(remoteUpdatePod({ id: pod.id, content: pod.content }));
+            }}
+          ></IconButton>
+        </Box>
+      )}
+      {pod.status === "synced" && (
+        <Box>
+          <CheckIcon color="green" />
+        </Box>
+      )}
+      {pod.status === "syncing" && (
+        <Box>
+          <Spinner
+            thickness="4px"
+            speed="0.65s"
+            emptyColor="gray.200"
+            color="blue.500"
+            size="xl"
+          />
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+function InfoBar({ pod }) {
+  const [show, setShow] = useState(false);
+  return (
+    <Popover>
+      <PopoverTrigger>
+        <IconButton icon={<InfoIcon />}></IconButton>
+        {/* <InfoIcon /> */}
+      </PopoverTrigger>
+      <PopoverContent>
+        <PopoverArrow />
+        <PopoverCloseButton />
+        <PopoverHeader>Info</PopoverHeader>
+        <PopoverBody>
+          <Text mr={5}>
+            ID: <Code colorScheme="blackAlpha">{pod.id.substring(0, 8)}</Code>
+          </Text>
+          <Text mr={5}>Index: {pod.index}</Text>
+          <Text>
+            Parent:{" "}
+            <Code colorScheme="blackAlpha">{pod.parent.substring(0, 8)}</Code>
+          </Text>
+        </PopoverBody>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function ToolBar({ pod }) {
+  const dispatch = useDispatch();
+  const [show, setShow] = useState(false);
+  return (
+    <Menu>
+      <MenuButton as={IconButton} icon={<HamburgerIcon />}></MenuButton>
+      <MenuList>
+        <MenuItem>Type: Code</MenuItem>
+        <MenuItem
+          onClick={() => {
+            dispatch(
+              repoSlice.actions.addPod({
+                parent: pod.parent,
+                index: pod.index,
+                type: "CODE",
+              })
+            );
+          }}
+        >
+          Add Pod Up <ArrowUpIcon />
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            dispatch(
+              repoSlice.actions.addPod({
+                parent: pod.parent,
+                index: pod.index,
+                type: "DECK",
+              })
+            );
+          }}
+        >
+          Add Deck Up <ArrowUpIcon />
+        </MenuItem>
+        <MenuItem
+          color="red"
+          onClick={() => {
+            dispatch(repoSlice.actions.deletePod({ id: pod.id }));
+          }}
+        >
+          <u>D</u>elete
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            dispatch(
+              repoSlice.actions.addPod({
+                parent: pod.parent,
+                index: pod.index + 1,
+                type: "CODE",
+              })
+            );
+          }}
+        >
+          Add Pod Down <ArrowDownIcon />
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            dispatch(
+              repoSlice.actions.addPod({
+                parent: pod.parent,
+                index: pod.index + 1,
+                type: "DECK",
+              })
+            );
+          }}
+        >
+          Add Deck Down <ArrowDownIcon />
+        </MenuItem>
+      </MenuList>
+    </Menu>
+  );
+}
+
 function PodOrDeck({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
-  const dispatch = useDispatch();
-  const [show, setShow] = useState(true);
-  const styles = useSpring({
-    from: {
-      opacity: 0,
-      transform: "scale(0)",
-    },
-    to: {
-      opacity: show ? 1 : 0,
-      transform: show ? "scale(1)" : "scale(0)",
-    },
-    config: show
-      ? config.stiff
-      : {
-          // this removes the long wait at the end
-          precision: 0.2,
-          ...config.stiff,
-        },
-    onRest: () => {
-      if (!show) {
-        // dispatch the delete action after animation finishes
-        dispatch(repoSlice.actions.deletePod({ id }));
-      }
-    },
-  });
   // this update the pod, insert if not exist
   if (!pod) {
     return <Box>Error: pod is undefined: {id}</Box>;
@@ -132,133 +272,16 @@ function PodOrDeck({ id }) {
   const isDeck = pod.type === "DECK";
 
   return (
-    <animated.div style={styles}>
-      <Flex direction="column" p={2}>
-        {/* The top toolbar */}
-        <Flex align="center" border="solid 1px" fontSize="xs">
-          <Button
-            color="red"
-            size="xs"
-            ml={1}
-            onClick={() => {
-              // dispatch(repoSlice.actions.deletePod({ id }));
-              setShow(false);
-            }}
-          >
-            <u>D</u>elete
-          </Button>{" "}
-          {pod.status !== "dirty" &&
-            pod.status !== "synced" &&
-            pod.status !== "syncing" && <Box>Error {pod.status}</Box>}
-          {pod.status === "dirty" && (
-            <Box>
-              <IconButton
-                icon={<RepeatIcon />}
-                colorScheme={"yellow"}
-                onClick={() => {
-                  dispatch(remoteUpdatePod({ id, content: pod.content }));
-                }}
-              ></IconButton>
-            </Box>
-          )}
-          {pod.status === "synced" && (
-            <Box>
-              <CheckIcon color="green" />
-            </Box>
-          )}
-          {pod.status === "syncing" && (
-            <Box>
-              <Spinner
-                thickness="4px"
-                speed="0.65s"
-                emptyColor="gray.200"
-                color="blue.500"
-                size="xl"
-              />
-            </Box>
-          )}
-          <Button
-            ml={1}
-            size="xs"
-            onClick={() => {
-              dispatch(
-                repoSlice.actions.addPod({
-                  parent: pod.parent,
-                  index: pod.index,
-                  type: "CODE",
-                })
-              );
-            }}
-          >
-            Add&nbsp;<u>P</u>od <ArrowUpIcon />
-          </Button>{" "}
-          <Button
-            ml={1}
-            size="xs"
-            onClick={() => {
-              dispatch(
-                repoSlice.actions.addPod({
-                  parent: pod.parent,
-                  index: pod.index,
-                  type: "DECK",
-                })
-              );
-            }}
-          >
-            Add&nbsp;<u>D</u>eck <ArrowUpIcon />
-          </Button>
-        </Flex>
+    <VStack align="start" p={2}>
+      <HStack>
+        <InfoBar pod={pod} />
+        <ToolBar pod={pod} />
+        <SyncStatus pod={pod} />
+      </HStack>
 
-        {/* The info bar */}
-        <Flex align="center" border="solid 1px" fontSize="xs">
-          <Text mr={5}>
-            ID: <Code colorScheme="blackAlpha">{pod.id.substring(0, 8)}</Code>
-          </Text>
-          <Text mr={5}>Index: {pod.index}</Text>
-          <Text>
-            Parent:{" "}
-            <Code colorScheme="blackAlpha">{pod.parent.substring(0, 8)}</Code>
-          </Text>
-        </Flex>
-
-        {/* the pod iteself */}
-        {isDeck ? <Deck id={id} /> : <Pod id={id} />}
-
-        {/* The bottom toolbar */}
-        <Flex align="center" border="solid 1px" fontSize="xs">
-          <Button
-            ml={1}
-            size="xs"
-            onClick={() => {
-              dispatch(
-                repoSlice.actions.addPod({
-                  parent: pod.parent,
-                  index: pod.index + 1,
-                  type: "CODE",
-                })
-              );
-            }}
-          >
-            Add&nbsp;<u>P</u>od <ArrowDownIcon />
-          </Button>{" "}
-          <Button
-            ml={1}
-            size="xs"
-            onClick={() => {
-              dispatch(
-                repoSlice.actions.addPod({
-                  parent: pod.parent,
-                  index: pod.index + 1,
-                  type: "DECK",
-                })
-              );
-            }}
-          >
-            Add&nbsp;<u>D</u>eck <ArrowDownIcon />
-          </Button>
-        </Flex>
-      </Flex>
-    </animated.div>
+      {/* the pod iteself */}
+      {isDeck ? <Deck id={id} /> : <Pod id={id} />}
+    </VStack>
   );
 }
 
