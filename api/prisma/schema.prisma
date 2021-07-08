@@ -54,6 +54,8 @@ model Repo {
 enum PodType {
   CODE
   DECK
+  WYSIWYG
+  MD
 }
 
 model Pod {

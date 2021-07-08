@@ -35,6 +35,7 @@ import {
   PopoverCloseButton,
 } from "@chakra-ui/react";
 import { Stack, HStack, VStack } from "@chakra-ui/react";
+import { useClipboard } from "@chakra-ui/react";
 
 import {
   ArrowUpIcon,
@@ -57,6 +58,7 @@ import useResizeObserver from "use-resize-observer";
 
 import { repoSlice, loadPodQueue, remoteUpdatePod } from "../../lib/store";
 import useMe from "../../lib/me";
+import { MySlate } from "../../components/MySlate";
 
 export async function getServerSideProps({ params }) {
   // console.log(params);
@@ -128,7 +130,13 @@ function SyncStatus({ pod }) {
             icon={<RepeatIcon />}
             colorScheme={"yellow"}
             onClick={() => {
-              dispatch(remoteUpdatePod({ id: pod.id, content: pod.content }));
+              dispatch(
+                remoteUpdatePod({
+                  id: pod.id,
+                  content: pod.content,
+                  type: pod.type,
+                })
+              );
             }}
           ></IconButton>
         </Box>
@@ -155,19 +163,28 @@ function SyncStatus({ pod }) {
 
 function InfoBar({ pod }) {
   const [show, setShow] = useState(false);
+  const [value, setValue] = useState(pod.id);
+  const { hasCopied, onCopy } = useClipboard(value);
   return (
     <Popover>
       <PopoverTrigger>
         <IconButton icon={<InfoIcon />}></IconButton>
         {/* <InfoIcon /> */}
       </PopoverTrigger>
-      <PopoverContent>
+      <PopoverContent w="lg">
         <PopoverArrow />
         <PopoverCloseButton />
         <PopoverHeader>Info</PopoverHeader>
         <PopoverBody>
-          <Text mr={5}>
-            ID: <Code colorScheme="blackAlpha">{pod.id.substring(0, 8)}</Code>
+          <Text>
+            ID:{" "}
+            <Code colorScheme="blackAlpha">
+              {
+                // pod.id.substring(0, 8)
+                pod.id
+              }
+            </Code>
+            <Button onClick={onCopy}>{hasCopied ? "Copied" : "Copy"}</Button>
           </Text>
           <Text mr={5}>Index: {pod.index}</Text>
           <Text>
@@ -255,20 +272,11 @@ function ToolBar({ pod }) {
 
 function PodOrDeck({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
+  const dispatch = useDispatch();
   // this update the pod, insert if not exist
   if (!pod) {
     return <Box>Error: pod is undefined: {id}</Box>;
   }
-
-  if (pod.type !== "DECK" && pod.type !== "CODE") {
-    return (
-      <Box>
-        <Box>Error: pod.type: {pod.type}</Box>
-        <pre>{JSON.stringify(pod)}</pre>
-      </Box>
-    );
-  }
-
   const isDeck = pod.type === "DECK";
 
   return (
@@ -277,6 +285,53 @@ function PodOrDeck({ id }) {
         <InfoBar pod={pod} />
         <ToolBar pod={pod} />
         <SyncStatus pod={pod} />
+        {pod.type !== "DECK" && (
+          <Box>
+            <Menu>
+              <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+                {pod.type}
+              </MenuButton>
+              <MenuList>
+                <MenuItem
+                  onClick={() => {
+                    dispatch(
+                      repoSlice.actions.setPodType({
+                        id: pod.id,
+                        type: "CODE",
+                      })
+                    );
+                  }}
+                >
+                  Code
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    dispatch(
+                      repoSlice.actions.setPodType({
+                        id: pod.id,
+                        type: "WYSIWYG",
+                      })
+                    );
+                  }}
+                >
+                  WYSIWYG
+                </MenuItem>
+                <MenuItem
+                  onClick={() => {
+                    dispatch(
+                      repoSlice.actions.setPodType({
+                        id: pod.id,
+                        type: "MD",
+                      })
+                    );
+                  }}
+                >
+                  Markdown
+                </MenuItem>
+              </MenuList>
+            </Menu>
+          </Box>
+        )}
       </HStack>
 
       {/* the pod iteself */}
@@ -359,16 +414,59 @@ function Deck({ id }) {
 function Pod({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
   const dispatch = useDispatch();
-  return (
-    <Textarea
-      w="xs"
-      onChange={(e) => {
-        dispatch(
-          repoSlice.actions.setPodContent({ id, content: e.target.value })
-        );
-      }}
-      value={pod.content || ""}
-      placeholder="code here"
-    ></Textarea>
-  );
+  if (pod.type === "WYSIWYG") {
+    return (
+      <Box border="1px" w="sm">
+        <MySlate
+          value={
+            pod.content || [
+              {
+                type: "paragraph",
+                children: [
+                  {
+                    text: "Hello ",
+                  },
+                  {
+                    text: "world",
+                    bold: true,
+                  },
+                ],
+              },
+            ]
+          }
+          onChange={(value) => {
+            dispatch(repoSlice.actions.setPodContent({ id, content: value }));
+          }}
+        />
+      </Box>
+    );
+  } else if (pod.type === "MD") {
+    return (
+      <Textarea
+        w="xs"
+        onChange={(e) => {
+          dispatch(
+            repoSlice.actions.setPodContent({ id, content: e.target.value })
+          );
+        }}
+        value={pod.content || ""}
+        placeholder="Markdown here"
+      ></Textarea>
+    );
+  } else if (pod.type === "CODE") {
+    return (
+      <Textarea
+        w="xs"
+        onChange={(e) => {
+          dispatch(
+            repoSlice.actions.setPodContent({ id, content: e.target.value })
+          );
+        }}
+        value={pod.content || ""}
+        placeholder="Code here"
+      ></Textarea>
+    );
+  } else {
+    throw new Error(`Invalid pod type ${type}`);
+  }
 }

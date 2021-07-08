@@ -2,7 +2,7 @@ import { useQuery, useMutation, gql } from "@apollo/client";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Formik } from "formik";
 import { chakra } from "@chakra-ui/system";
-import { MySlate } from "../components/MySlate";
+import { MySlateExample } from "../components/MySlate";
 
 import {
   Box,
@@ -189,7 +189,7 @@ function MyNotePod({ content, archived = false }) {
   return (
     <Box display="flex">
       <Checkbox defaultIsChecked={archived} mr={2} />
-      <MySlate
+      <MySlateExample
         content={[
           {
             type: "paragraph",
@@ -208,7 +208,7 @@ export default function CommitNote() {
       {/* <hr /> */}
       <Heading>IdeaQ</Heading>
       <Box border="1px">
-        <MySlate />
+        <MySlateExample />
       </Box>
       <CurrentIdeaQ />
       <AddIdeaQForm />

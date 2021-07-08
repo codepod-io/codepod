@@ -39,12 +39,16 @@ const initialValue = [
   },
 ];
 
-export function MySlate({ content = initialValue }) {
+export function MySlateExample({ content = initialValue }) {
   const [value, setValue] = useState(content);
+  return <MySlate value={value} onChange={(value) => setValue(value)} />;
+}
+
+export function MySlate({ value, onChange }) {
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
 
   return (
-    <Slate editor={editor} value={value} onChange={(value) => setValue(value)}>
+    <Slate editor={editor} value={value} onChange={onChange}>
       <HoveringToolbar />
       <Editable
         renderLeaf={(props) => <Leaf {...props} />}

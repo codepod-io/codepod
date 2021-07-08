@@ -201,13 +201,14 @@ export const resolvers = {
 
       return pod;
     },
-    updatePod: async (_, { id, content }) => {
+    updatePod: async (_, { id, content, type }) => {
       const pod = await prisma.pod.update({
         where: {
           id,
         },
         data: {
           content,
+          type,
         },
       });
       return pod;

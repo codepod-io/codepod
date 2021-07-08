@@ -78,6 +78,9 @@ function normalize(pods) {
     pod.children = pod.children.map(({ id: id }) => id);
     // sort according to index
     pod.children.sort((a, b) => res[a].index - res[b].index);
+    if (pod.type === "WYSIWYG") {
+      pod.content = JSON.parse(pod.content);
+    }
     pod.status = "synced";
   });
   return res;
@@ -154,7 +157,10 @@ async function doRemoteDeletePod({ id, toDelete }) {
 
 export const remoteUpdatePod = createAsyncThunk(
   "remoteUpdatePod",
-  async ({ id, content }) => {
+  async ({ id, type, content }) => {
+    // the content might be a list object in case of WYSIWYG, so first serialize
+    // it
+    content = JSON.stringify(content);
     const res = await fetch("http://localhost:4000/graphql", {
       method: "POST",
       headers: {
@@ -163,14 +169,15 @@ export const remoteUpdatePod = createAsyncThunk(
       },
       body: JSON.stringify({
         query: `
-        mutation updatePod($id: String, $content: String) {
-          updatePod(id: $id, content: $content) {
+        mutation updatePod($id: String, $content: String, $type: String) {
+          updatePod(id: $id, content: $content, type: $type) {
             id
           }
         }`,
         variables: {
           id,
           content,
+          type,
         },
       }),
     });
@@ -288,6 +295,14 @@ export const repoSlice = createSlice({
       const { id, content } = action.payload;
       state.pods[id].content = content;
       // check with commited version
+      state.pods[id].status = "dirty";
+    },
+    setPodType: (state, action) => {
+      const { id, type } = action.payload;
+      if (type !== "CODE" && type !== "WYSIWYG" && type !== "MD") {
+        throw new Error(`Type ${type} is not valid`);
+      }
+      state.pods[id].type = type;
       state.pods[id].status = "dirty";
     },
     addPodQueue: (state, action) => {
