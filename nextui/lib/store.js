@@ -5,6 +5,8 @@ import { createSlice } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
 import produce from "immer";
 
+import sha256 from "crypto-js/sha256";
+
 export const loadPodQueue = createAsyncThunk(
   "loadPodQueue",
   async ({ username, reponame }, { dispatch, getState }) => {
@@ -53,6 +55,25 @@ export const loadPodQueue = createAsyncThunk(
   }
 );
 
+function hashPod(pod) {
+  return sha256(
+    JSON.stringify({
+      id: pod.id,
+      content: pod.content,
+      type: pod.type,
+      lang: pod.lang,
+    })
+  ).toString();
+}
+
+function computePodStatus(pod) {
+  if (pod.remoteHash !== hashPod(pod)) {
+    pod.status = "dirty";
+  } else {
+    pod.status = "synced";
+  }
+}
+
 function normalize(pods) {
   const res = {
     ROOT: {
@@ -83,6 +104,7 @@ function normalize(pods) {
       pod.content = JSON.parse(pod.content);
     }
     pod.status = "synced";
+    pod.remoteHash = hashPod(pod);
   });
   return res;
 }
@@ -297,7 +319,7 @@ export const repoSlice = createSlice({
       const { id, content } = action.payload;
       state.pods[id].content = content;
       // check with commited version
-      state.pods[id].status = "dirty";
+      computePodStatus(state.pods[id]);
     },
     setPodType: (state, action) => {
       const { id, type } = action.payload;
@@ -305,12 +327,12 @@ export const repoSlice = createSlice({
         throw new Error(`Type ${type} is not valid`);
       }
       state.pods[id].type = type;
-      state.pods[id].status = "dirty";
+      computePodStatus(state.pods[id]);
     },
     setPodLang: (state, action) => {
       const { id, lang } = action.payload;
       state.pods[id].lang = lang;
-      state.pods[id].status = "dirty";
+      computePodStatus(state.pods[id]);
     },
     addPodQueue: (state, action) => {
       state.queue.push(action.payload);

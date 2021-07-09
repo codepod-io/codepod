@@ -15,6 +15,7 @@
     "@emotion/react": "^11.4.0",
     "@emotion/styled": "^11",
     "@reduxjs/toolkit": "^1.5.1",
+    "crypto-js": "^4.0.0",
     "formik": "^2.2.6",
     "framer-motion": "^4",
     "graphql": "^15.5.0",
