@@ -82,6 +82,7 @@ model Pod {
   // pods after it.
   children Pod[]   @relation("PARENT")
   content  String?
+  lang     String?
   type     PodType
   // repo        Repo?    @relation("ROOT")
   repo     Repo    @relation("BELONG", fields: [repoId], references: [id])

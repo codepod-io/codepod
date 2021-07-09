@@ -34,7 +34,7 @@ import {
   PopoverArrow,
   PopoverCloseButton,
 } from "@chakra-ui/react";
-import { Stack, HStack, VStack } from "@chakra-ui/react";
+import { Stack, HStack, VStack, Select } from "@chakra-ui/react";
 import { useClipboard } from "@chakra-ui/react";
 
 import {
@@ -59,6 +59,7 @@ import useResizeObserver from "use-resize-observer";
 import { repoSlice, loadPodQueue, remoteUpdatePod } from "../../lib/store";
 import useMe from "../../lib/me";
 import { MySlate } from "../../components/MySlate";
+import { CodeSlack } from "../../components/CodeSlate";
 
 export async function getServerSideProps({ params }) {
   // console.log(params);
@@ -135,6 +136,7 @@ function SyncStatus({ pod }) {
                   id: pod.id,
                   content: pod.content,
                   type: pod.type,
+                  lang: pod.lang,
                 })
               );
             }}
@@ -270,6 +272,85 @@ function ToolBar({ pod }) {
   );
 }
 
+function LanguageMenu({ pod }) {
+  const dispatch = useDispatch();
+  return (
+    <Box>
+      <Select
+        placeholder="Select option"
+        value={pod.lang || ""}
+        onChange={(e) =>
+          dispatch(
+            repoSlice.actions.setPodLang({
+              id: pod.id,
+              lang: e.target.value,
+            })
+          )
+        }
+      >
+        <option value="js">JavaScript</option>
+        <option value="css">CSS</option>
+        <option value="html">HTML</option>
+        <option value="python">Python</option>
+        <option value="sql">SQL</option>
+        <option value="java">Java</option>
+        <option value="php">PHP</option>
+      </Select>
+    </Box>
+  );
+}
+
+function TypeMenu({ pod }) {
+  const dispatch = useDispatch();
+  return (
+    <Box>
+      <Menu>
+        <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+          {pod.type}
+        </MenuButton>
+        <MenuList>
+          <MenuItem
+            onClick={() => {
+              dispatch(
+                repoSlice.actions.setPodType({
+                  id: pod.id,
+                  type: "CODE",
+                })
+              );
+            }}
+          >
+            Code
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              dispatch(
+                repoSlice.actions.setPodType({
+                  id: pod.id,
+                  type: "WYSIWYG",
+                })
+              );
+            }}
+          >
+            WYSIWYG
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              dispatch(
+                repoSlice.actions.setPodType({
+                  id: pod.id,
+                  type: "MD",
+                })
+              );
+            }}
+          >
+            Markdown
+          </MenuItem>
+        </MenuList>
+      </Menu>
+    </Box>
+  );
+}
+
 function PodOrDeck({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
   const dispatch = useDispatch();
@@ -285,53 +366,8 @@ function PodOrDeck({ id }) {
         <InfoBar pod={pod} />
         <ToolBar pod={pod} />
         <SyncStatus pod={pod} />
-        {pod.type !== "DECK" && (
-          <Box>
-            <Menu>
-              <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
-                {pod.type}
-              </MenuButton>
-              <MenuList>
-                <MenuItem
-                  onClick={() => {
-                    dispatch(
-                      repoSlice.actions.setPodType({
-                        id: pod.id,
-                        type: "CODE",
-                      })
-                    );
-                  }}
-                >
-                  Code
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    dispatch(
-                      repoSlice.actions.setPodType({
-                        id: pod.id,
-                        type: "WYSIWYG",
-                      })
-                    );
-                  }}
-                >
-                  WYSIWYG
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    dispatch(
-                      repoSlice.actions.setPodType({
-                        id: pod.id,
-                        type: "MD",
-                      })
-                    );
-                  }}
-                >
-                  Markdown
-                </MenuItem>
-              </MenuList>
-            </Menu>
-          </Box>
-        )}
+        {pod.type === "CODE" && <TypeMenu pod={pod} />}
+        {pod.type !== "DECK" && <LanguageMenu pod={pod} />}
       </HStack>
 
       {/* the pod iteself */}
@@ -455,16 +491,22 @@ function Pod({ id }) {
     );
   } else if (pod.type === "CODE") {
     return (
-      <Textarea
-        w="xs"
-        onChange={(e) => {
-          dispatch(
-            repoSlice.actions.setPodContent({ id, content: e.target.value })
-          );
-        }}
-        value={pod.content || ""}
-        placeholder="Code here"
-      ></Textarea>
+      <Box border="1px" w="sm">
+        <CodeSlack
+          value={
+            pod.content || [
+              {
+                type: "paragraph",
+                children: [{ text: "" }],
+              },
+            ]
+          }
+          onChange={(value) => {
+            dispatch(repoSlice.actions.setPodContent({ id, content: value }));
+          }}
+          language={pod.lang || "javascript"}
+        />
+      </Box>
     );
   } else {
     throw new Error(`Invalid pod type ${type}`);

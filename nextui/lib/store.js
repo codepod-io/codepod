@@ -21,6 +21,7 @@ export const loadPodQueue = createAsyncThunk(
         pods {
           id
           type
+          lang
           content
           index
           parent {
@@ -78,7 +79,7 @@ function normalize(pods) {
     pod.children = pod.children.map(({ id: id }) => id);
     // sort according to index
     pod.children.sort((a, b) => res[a].index - res[b].index);
-    if (pod.type === "WYSIWYG") {
+    if (pod.type === "WYSIWYG" || pod.type === "CODE") {
       pod.content = JSON.parse(pod.content);
     }
     pod.status = "synced";
@@ -157,7 +158,7 @@ async function doRemoteDeletePod({ id, toDelete }) {
 
 export const remoteUpdatePod = createAsyncThunk(
   "remoteUpdatePod",
-  async ({ id, type, content }) => {
+  async ({ id, type, content, lang }) => {
     // the content might be a list object in case of WYSIWYG, so first serialize
     // it
     content = JSON.stringify(content);
@@ -169,8 +170,8 @@ export const remoteUpdatePod = createAsyncThunk(
       },
       body: JSON.stringify({
         query: `
-        mutation updatePod($id: String, $content: String, $type: String) {
-          updatePod(id: $id, content: $content, type: $type) {
+        mutation updatePod($id: String, $content: String, $type: String, $lang: String) {
+          updatePod(id: $id, content: $content, type: $type, lang: $lang) {
             id
           }
         }`,
@@ -178,6 +179,7 @@ export const remoteUpdatePod = createAsyncThunk(
           id,
           content,
           type,
+          lang,
         },
       }),
     });
@@ -303,6 +305,11 @@ export const repoSlice = createSlice({
         throw new Error(`Type ${type} is not valid`);
       }
       state.pods[id].type = type;
+      state.pods[id].status = "dirty";
+    },
+    setPodLang: (state, action) => {
+      const { id, lang } = action.payload;
+      state.pods[id].lang = lang;
       state.pods[id].status = "dirty";
     },
     addPodQueue: (state, action) => {

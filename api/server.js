@@ -36,6 +36,7 @@ const typeDefs = gql`
     id: ID!
     type: String
     content: String
+    lang: String
     parent: Pod
     index: Int
     children: [Pod]
@@ -59,7 +60,7 @@ const typeDefs = gql`
       type: String
     ): Pod
     deletePod(id: String, toDelete: [String]): Boolean
-    updatePod(id: String, content: String, type: String): Pod
+    updatePod(id: String, content: String, type: String, lang: String): Pod
     clearUser: Boolean
     clearRepo: Boolean
     clearPod: Boolean
