@@ -374,8 +374,8 @@ function PodOrDeck({ id }) {
         <InfoBar pod={pod} />
         <ToolBar pod={pod} />
         <SyncStatus pod={pod} />
-        {pod.type === "CODE" && <TypeMenu pod={pod} />}
-        {pod.type !== "DECK" && <LanguageMenu pod={pod} />}
+        {pod.type !== "DECK" && <TypeMenu pod={pod} />}
+        {pod.type === "CODE" && <LanguageMenu pod={pod} />}
       </HStack>
 
       {/* the pod iteself */}
