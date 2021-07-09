@@ -167,108 +167,116 @@ function InfoBar({ pod }) {
   const [show, setShow] = useState(false);
   const [value, setValue] = useState(pod.id);
   const { hasCopied, onCopy } = useClipboard(value);
+  // return <Box></Box>;
   return (
-    <Popover>
-      <PopoverTrigger>
-        <IconButton icon={<InfoIcon />}></IconButton>
-        {/* <InfoIcon /> */}
-      </PopoverTrigger>
-      <PopoverContent w="lg">
-        <PopoverArrow />
-        <PopoverCloseButton />
-        <PopoverHeader>Info</PopoverHeader>
-        <PopoverBody>
-          <Text>
-            ID:{" "}
-            <Code colorScheme="blackAlpha">
-              {
-                // pod.id.substring(0, 8)
-                pod.id
-              }
-            </Code>
-            <Button onClick={onCopy}>{hasCopied ? "Copied" : "Copy"}</Button>
-          </Text>
-          <Text mr={5}>Index: {pod.index}</Text>
-          <Text>
-            Parent:{" "}
-            <Code colorScheme="blackAlpha">{pod.parent.substring(0, 8)}</Code>
-          </Text>
-        </PopoverBody>
-      </PopoverContent>
-    </Popover>
+    <Box>
+      <Popover>
+        <PopoverTrigger>
+          <IconButton icon={<InfoIcon />}></IconButton>
+          {/* <InfoIcon /> */}
+        </PopoverTrigger>
+        <PopoverContent w="lg">
+          <PopoverArrow />
+          <PopoverCloseButton />
+          <PopoverHeader>Info</PopoverHeader>
+          <PopoverBody>
+            <Text>
+              ID:{" "}
+              <Code colorScheme="blackAlpha">
+                {
+                  // pod.id.substring(0, 8)
+                  pod.id
+                }
+              </Code>
+              <Button onClick={onCopy}>{hasCopied ? "Copied" : "Copy"}</Button>
+            </Text>
+            <Text mr={5}>Index: {pod.index}</Text>
+            <Text>
+              Parent:{" "}
+              <Code colorScheme="blackAlpha">{pod.parent.substring(0, 8)}</Code>
+            </Text>
+          </PopoverBody>
+        </PopoverContent>
+      </Popover>
+    </Box>
   );
 }
 
 function ToolBar({ pod }) {
   const dispatch = useDispatch();
   const [show, setShow] = useState(false);
+  // return <Box></Box>;
   return (
-    <Menu>
-      <MenuButton as={IconButton} icon={<HamburgerIcon />}></MenuButton>
-      <MenuList>
-        <MenuItem>Type: Code</MenuItem>
-        <MenuItem
-          onClick={() => {
-            dispatch(
-              repoSlice.actions.addPod({
-                parent: pod.parent,
-                index: pod.index,
-                type: "CODE",
-              })
-            );
-          }}
-        >
-          Add Pod Up <ArrowUpIcon />
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            dispatch(
-              repoSlice.actions.addPod({
-                parent: pod.parent,
-                index: pod.index,
-                type: "DECK",
-              })
-            );
-          }}
-        >
-          Add Deck Up <ArrowUpIcon />
-        </MenuItem>
-        <MenuItem
-          color="red"
-          onClick={() => {
-            dispatch(repoSlice.actions.deletePod({ id: pod.id }));
-          }}
-        >
-          <u>D</u>elete
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            dispatch(
-              repoSlice.actions.addPod({
-                parent: pod.parent,
-                index: pod.index + 1,
-                type: "CODE",
-              })
-            );
-          }}
-        >
-          Add Pod Down <ArrowDownIcon />
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            dispatch(
-              repoSlice.actions.addPod({
-                parent: pod.parent,
-                index: pod.index + 1,
-                type: "DECK",
-              })
-            );
-          }}
-        >
-          Add Deck Down <ArrowDownIcon />
-        </MenuItem>
-      </MenuList>
-    </Menu>
+    // Putting Menu under Stack caused warnings. Wrapping it with Box removes
+    // that wraning. See https://github.com/chakra-ui/chakra-ui/issues/3440
+    <Box>
+      <Menu>
+        <MenuButton as={IconButton} icon={<HamburgerIcon />}></MenuButton>
+        <MenuList>
+          <MenuItem>Type: Code</MenuItem>
+          <MenuItem
+            onClick={() => {
+              dispatch(
+                repoSlice.actions.addPod({
+                  parent: pod.parent,
+                  index: pod.index,
+                  type: "CODE",
+                })
+              );
+            }}
+          >
+            Add Pod Up <ArrowUpIcon />
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              dispatch(
+                repoSlice.actions.addPod({
+                  parent: pod.parent,
+                  index: pod.index,
+                  type: "DECK",
+                })
+              );
+            }}
+          >
+            Add Deck Up <ArrowUpIcon />
+          </MenuItem>
+          <MenuItem
+            color="red"
+            onClick={() => {
+              dispatch(repoSlice.actions.deletePod({ id: pod.id }));
+            }}
+          >
+            <u>D</u>elete
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              dispatch(
+                repoSlice.actions.addPod({
+                  parent: pod.parent,
+                  index: pod.index + 1,
+                  type: "CODE",
+                })
+              );
+            }}
+          >
+            Add Pod Down <ArrowDownIcon />
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              dispatch(
+                repoSlice.actions.addPod({
+                  parent: pod.parent,
+                  index: pod.index + 1,
+                  type: "DECK",
+                })
+              );
+            }}
+          >
+            Add Deck Down <ArrowDownIcon />
+          </MenuItem>
+        </MenuList>
+      </Menu>
+    </Box>
   );
 }
 
