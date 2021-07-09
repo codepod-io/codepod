@@ -10,6 +10,7 @@ const typeDefs = gql`
     repos: [Repo]
     repo(name: String!, username: String!): Repo
     pods(username: String, reponame: String): [Pod]
+    pod(id: ID!): Pod
     myRepos: [Repo]
   }
 

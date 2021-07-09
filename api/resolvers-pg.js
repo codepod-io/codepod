@@ -82,6 +82,13 @@ export const resolvers = {
       });
       return repo;
     },
+    pod: async (_, { id }) => {
+      return await prisma.pod.findFirst({
+        where: {
+          id: id,
+        },
+      });
+    },
   },
   Mutation: {
     signup: async (_, { username, email, password, name }) => {
