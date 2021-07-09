@@ -468,11 +468,7 @@ function Pod({ id }) {
                 type: "paragraph",
                 children: [
                   {
-                    text: "Hello ",
-                  },
-                  {
-                    text: "world",
-                    bold: true,
+                    text: "",
                   },
                 ],
               },
@@ -481,6 +477,7 @@ function Pod({ id }) {
           onChange={(value) => {
             dispatch(repoSlice.actions.setPodContent({ id, content: value }));
           }}
+          placeholder="Write some rich text"
         />
       </Box>
     );
