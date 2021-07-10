@@ -342,6 +342,7 @@ function TypeMenu({ pod }) {
             WYSIWYG
           </MenuItem>
           <MenuItem
+            isDisabled
             onClick={() => {
               dispatch(
                 repoSlice.actions.setPodType({
