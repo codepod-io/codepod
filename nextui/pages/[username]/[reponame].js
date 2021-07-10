@@ -61,6 +61,22 @@ import useMe from "../../lib/me";
 import { MySlate } from "../../components/MySlate";
 import { CodeSlack } from "../../components/CodeSlate";
 
+// import { MyXTerm } from "../../components/MyXTerm";
+// import XTerm, { Terminal } from "react-xterm";
+// import { Terminal } from "xterm";
+// require("xterm");
+
+// https://stackoverflow.com/questions/66096260/webpack-why-am-i-getting-referenceerror-self-is-not-defined-in-next-js-when-i
+//
+// server side rendering is giving me so much trouble. Why did I use it in the
+// first place?
+// - built-in path-based routing
+// - future proof?
+import dynamic from "next/dynamic";
+const MyXTerm = dynamic(() => import("../../components/MyXTerm"), {
+  ssr: false,
+});
+
 export async function getServerSideProps({ params }) {
   // console.log(params);
   // const router = useRouter();
@@ -91,6 +107,9 @@ export default function Repo({ params }) {
 
   return (
     <Flex direction="column" m="auto">
+      {/* <Box m="auto" w="lg">
+        <MyXTerm />
+      </Box> */}
       <Box pb={10} m="auto">
         <Text>
           Repo: <StyledLink href={`/${username}`}>{username}</StyledLink> /{" "}
@@ -342,6 +361,18 @@ function TypeMenu({ pod }) {
             WYSIWYG
           </MenuItem>
           <MenuItem
+            onClick={() => {
+              dispatch(
+                repoSlice.actions.setPodType({
+                  id: pod.id,
+                  type: "REPL",
+                })
+              );
+            }}
+          >
+            REPL
+          </MenuItem>
+          <MenuItem
             isDisabled
             onClick={() => {
               dispatch(
@@ -512,6 +543,12 @@ function Pod({ id }) {
           }}
           language={pod.lang || "javascript"}
         />
+      </Box>
+    );
+  } else if (pod.type === "REPL") {
+    return (
+      <Box border="1px" w="sm" h="8rem">
+        <MyXTerm />
       </Box>
     );
   } else {

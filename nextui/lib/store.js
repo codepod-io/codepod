@@ -323,9 +323,6 @@ export const repoSlice = createSlice({
     },
     setPodType: (state, action) => {
       const { id, type } = action.payload;
-      if (type !== "CODE" && type !== "WYSIWYG" && type !== "MD") {
-        throw new Error(`Type ${type} is not valid`);
-      }
       state.pods[id].type = type;
       computePodStatus(state.pods[id]);
     },
