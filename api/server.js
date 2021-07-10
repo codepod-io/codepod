@@ -1,6 +1,9 @@
-import { ApolloServer, gql } from "apollo-server";
+// import { ApolloServer, gql } from "apollo-server";
+import { ApolloServer, gql } from "apollo-server-express";
+
 import { resolvers } from "./resolvers-pg.js";
 import jwt from "jsonwebtoken";
+import express from "express";
 
 const typeDefs = gql`
   type Query {
@@ -68,28 +71,48 @@ const typeDefs = gql`
   }
 `;
 
-const server = new ApolloServer({
-  typeDefs,
-  resolvers,
-  context: ({ req }) => {
-    const token = req?.headers?.authorization?.slice(7);
-    let userId;
+// This is for the stand-alone apollo server, created using apollo-server
+// package instead of apollo-server-express
+//
+// server.listen().then(() => {
+//   console.log(`
+//       Server is running!
+//       Listening on port 4000
+//       Explore at https://studio.apollographql.com/dev
+//       Explore at http://localhost:4000/graphql
+//     `);
+// });
 
-    if (token) {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      userId = decoded.id;
-    }
-    return {
-      userId,
-    };
-  },
-});
+async function startApolloServer() {
+  const server = new ApolloServer({
+    typeDefs,
+    resolvers,
+    context: ({ req }) => {
+      const token = req?.headers?.authorization?.slice(7);
+      let userId;
 
-server.listen().then(() => {
-  console.log(`
-      Server is running!
-      Listening on port 4000
-      Explore at https://studio.apollographql.com/dev
-      Explore at http://localhost:4000/graphql
-    `);
-});
+      if (token) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.id;
+      }
+      return {
+        userId,
+      };
+    },
+  });
+
+  const app = express();
+  server.applyMiddleware({ app });
+
+  app.use((req, res) => {
+    res.status(200);
+    res.send("Hello!");
+    res.end();
+  });
+
+  await new Promise((resolve) => app.listen({ port: 4000 }, resolve));
+  console.log(`🚀 Server ready at http://localhost:4000${server.graphqlPath}`);
+  return { server, app };
+}
+
+startApolloServer();
