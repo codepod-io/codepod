@@ -400,20 +400,11 @@ function PodOrDeck({ id }) {
   }
   const isDeck = pod.type === "DECK";
 
-  return (
-    <VStack align="start" p={2}>
-      <HStack>
-        <InfoBar pod={pod} />
-        <ToolBar pod={pod} />
-        <SyncStatus pod={pod} />
-        {pod.type !== "DECK" && <TypeMenu pod={pod} />}
-        {pod.type === "CODE" && <LanguageMenu pod={pod} />}
-      </HStack>
-
-      {/* the pod iteself */}
-      {isDeck ? <Deck id={id} /> : <Pod id={id} />}
-    </VStack>
-  );
+  if (isDeck) {
+    return <Deck id={id} />;
+  } else {
+    return <Pod id={id} />;
+  }
 }
 
 function Deck({ id }) {
@@ -422,76 +413,137 @@ function Deck({ id }) {
   const { ref: right, width = 0, height = 0 } = useResizeObserver();
 
   return (
-    <Box border="solid 1px" p={3}>
-      <Flex align="center">
-        {/* LEFT */}
-        <Flex>
-          <Text>
-            <Tooltip label={pod.id}>Deck</Tooltip>
-          </Text>
-          {pod.children.length === 0 && (
-            <Box>
-              <Button
-                ml={1}
-                size="xs"
-                onClick={() => {
-                  dispatch(
-                    repoSlice.actions.addPod({
-                      parent: pod.id,
-                      type: "CODE",
-                      index: 0,
-                    })
-                  );
-                }}
-              >
-                Add Pod <ArrowForwardIcon />
-              </Button>
-              <Button
-                ml={1}
-                size="xs"
-                onClick={() => {
-                  dispatch(
-                    repoSlice.actions.addPod({
-                      parent: pod.id,
-                      index: 0,
-                      type: "DECK",
-                    })
-                  );
-                }}
-              >
-                Add Deck <ArrowForwardIcon />
-              </Button>
-            </Box>
-          )}
-        </Flex>
+    <VStack align="start" p={2}>
+      {id !== "ROOT" && (
+        <HStack>
+          <InfoBar pod={pod} />
+          <ToolBar pod={pod} />
+          <SyncStatus pod={pod} />
+        </HStack>
+      )}
+      <Box border="solid 1px" p={3}>
+        <Flex align="center">
+          {/* LEFT */}
+          <Flex>
+            <Text>
+              <Tooltip label={pod.id}>Deck</Tooltip>
+            </Text>
+            {pod.children.length === 0 && (
+              <Box>
+                <Button
+                  ml={1}
+                  size="xs"
+                  onClick={() => {
+                    dispatch(
+                      repoSlice.actions.addPod({
+                        parent: pod.id,
+                        type: "CODE",
+                        index: 0,
+                      })
+                    );
+                  }}
+                >
+                  Add Pod <ArrowForwardIcon />
+                </Button>
+                <Button
+                  ml={1}
+                  size="xs"
+                  onClick={() => {
+                    dispatch(
+                      repoSlice.actions.addPod({
+                        parent: pod.id,
+                        index: 0,
+                        type: "DECK",
+                      })
+                    );
+                  }}
+                >
+                  Add Deck <ArrowForwardIcon />
+                </Button>
+              </Box>
+            )}
+          </Flex>
 
-        {/* The brace */}
-        <div>
-          <Image
-            src="/GullBraceLeft.svg"
-            alt="brace"
-            h={height}
-            maxW="none"
-            w="20px"
-          />
-        </div>
+          {/* The brace */}
+          <div>
+            <Image
+              src="/GullBraceLeft.svg"
+              alt="brace"
+              h={height}
+              maxW="none"
+              w="20px"
+            />
+          </div>
 
-        {/* RIGHT */}
-        <Flex direction="column" ref={right}>
-          {pod.children.map((id) => {
-            return <PodOrDeck id={id} key={id}></PodOrDeck>;
-          })}
+          {/* RIGHT */}
+          <Flex direction="column" ref={right}>
+            {pod.children.map((id) => {
+              return <PodOrDeck id={id} key={id}></PodOrDeck>;
+            })}
+          </Flex>
         </Flex>
-      </Flex>
-    </Box>
+      </Box>
+    </VStack>
   );
 }
 
-function Pod({ id }) {
-  const pod = useSelector((state) => state.repo.pods[id]);
-  const dispatch = useDispatch();
-  if (pod.type === "WYSIWYG") {
-    return (
+function CodePod({ pod }) {
+  return (
+    <VStack align="start" p={2}>
+      <HStack>
+        <InfoBar pod={pod} />
+        <ToolBar pod={pod} />
+        <SyncStatus pod={pod} />
+        <TypeMenu pod={pod} />
+        <LanguageMenu pod={pod} />
+      </HStack>
+      <Box border="1px" w="sm">
+        <CodeSlack
+          value={
+            pod.content || [
+              {
+                type: "paragraph",
+                children: [{ text: "" }],
+              },
+            ]
+          }
+          onChange={(value) => {
+            dispatch(repoSlice.actions.setPodContent({ id, content: value }));
+          }}
+          language={pod.lang || "javascript"}
+        />
+      </Box>
+    </VStack>
+  );
+}
+
+function ReplPod({ pod }) {
+  return (
+    <VStack align="start" p={2}>
+      <HStack>
+        <InfoBar pod={pod} />
+        <ToolBar pod={pod} />
+        <SyncStatus pod={pod} />
+        <TypeMenu pod={pod} />
+        <LanguageMenu pod={pod} />
+        <Button onClick={() => {}}>Connect</Button>
+      </HStack>
+      <Box border="1px" w="sm" h="8rem">
+        <MyXTerm />
+      </Box>
+    </VStack>
+  );
+}
+
+function WysiwygPod({ pod }) {
+  return (
+    <VStack align="start" p={2}>
+      <HStack>
+        <InfoBar pod={pod} />
+        <ToolBar pod={pod} />
+        <SyncStatus pod={pod} />
+        <TypeMenu pod={pod} />
+      </HStack>
       <Box border="1px" w="sm">
         <MySlate
           value={
@@ -512,7 +564,15 @@ function Pod({ id }) {
           placeholder="Write some rich text"
         />
       </Box>
-    );
+    </VStack>
+  );
+}
+
+function Pod({ id }) {
+  const pod = useSelector((state) => state.repo.pods[id]);
+  const dispatch = useDispatch();
+  if (pod.type === "WYSIWYG") {
+    return <WysiwygPod pod={pod} />;
   } else if (pod.type === "MD") {
     return (
       <Textarea
@@ -527,30 +587,9 @@ function Pod({ id }) {
       ></Textarea>
     );
   } else if (pod.type === "CODE") {
-    return (
-      <Box border="1px" w="sm">
-        <CodeSlack
-          value={
-            pod.content || [
-              {
-                type: "paragraph",
-                children: [{ text: "" }],
-              },
-            ]
-          }
-          onChange={(value) => {
-            dispatch(repoSlice.actions.setPodContent({ id, content: value }));
-          }}
-          language={pod.lang || "javascript"}
-        />
-      </Box>
-    );
+    return <CodePod pod={pod} />;
   } else if (pod.type === "REPL") {
-    return (
-      <Box border="1px" w="sm" h="8rem">
-        <MyXTerm />
-      </Box>
-    );
+    return <ReplPod pod={pod} />;
   } else {
     throw new Error(`Invalid pod type ${type}`);
   }
