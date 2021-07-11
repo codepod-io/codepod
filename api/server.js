@@ -4,6 +4,8 @@ import { ApolloServer, gql } from "apollo-server-express";
 import { resolvers } from "./resolvers-pg.js";
 import jwt from "jsonwebtoken";
 import express from "express";
+import http from "http";
+import { Server } from "socket.io";
 
 const typeDefs = gql`
   type Query {
@@ -84,7 +86,7 @@ const typeDefs = gql`
 // });
 
 async function startApolloServer() {
-  const server = new ApolloServer({
+  const apollo = new ApolloServer({
     typeDefs,
     resolvers,
     context: ({ req }) => {
@@ -102,7 +104,14 @@ async function startApolloServer() {
   });
 
   const app = express();
-  server.applyMiddleware({ app });
+  const http_server = http.createServer(app);
+  const io = new Server(http_server, {
+    cors: {
+      origin: "*",
+    },
+  });
+
+  apollo.applyMiddleware({ app });
 
   app.use((req, res) => {
     res.status(200);
@@ -110,9 +119,23 @@ async function startApolloServer() {
     res.end();
   });
 
-  await new Promise((resolve) => app.listen({ port: 4000 }, resolve));
-  console.log(`🚀 Server ready at http://localhost:4000${server.graphqlPath}`);
-  return { server, app };
+  io.on("connection", (socket) => {
+    console.log("a user connected");
+    socket.on("disconnect", () => {
+      console.log("user disconnected");
+    });
+    // should listen to message on this socket instead of io
+    socket.on("message", (msg) => {
+      console.log("message: " + msg);
+    });
+  });
+
+  // should call http_server.listen instead of express app.listen, otherwise
+  // CORS won't work
+  await new Promise((resolve) => http_server.listen({ port: 4000 }, resolve));
+  console.log(`🚀 Server ready at http://localhost:4000${apollo.graphqlPath}`);
+  // return { apollo, app };
+  return;
 }
 
 startApolloServer();
