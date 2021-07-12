@@ -48,17 +48,8 @@ function Repos() {
   );
 }
 
-const CREATE_REPO = gql`
-  mutation CreateRepo($name: String!) {
-    CreateRepo(name: $name) {
-      name
-    }
-  }
-`;
-
 function CreateRepoForm(props) {
   const [error, setError] = useState(null);
-  // const [createRepo, { data }] = useMutation(CREATE_REPO);
   const [createRepo, { data }] = useMutation(gql`
     mutation CreateRepo($name: String!) {
       createRepo(name: $name) {

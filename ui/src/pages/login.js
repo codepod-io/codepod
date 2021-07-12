@@ -7,7 +7,6 @@ import {
   Text,
   useColorModeValue,
   VisuallyHidden,
-  useToken,
   Stack,
   FormControl,
   FormLabel,
@@ -80,6 +79,7 @@ export const DividerWithText = (props) => {
 ///////// LoginForm
 
 function LoginForm(props) {
+  /* eslint-disable no-unused-vars */
   const { signIn, isSignedIn } = useAuth();
   const [error, setError] = useState(null);
   return (

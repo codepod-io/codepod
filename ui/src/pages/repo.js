@@ -144,7 +144,8 @@ function SyncStatus({ pod }) {
 }
 
 function InfoBar({ pod }) {
-  const [value, _] = useState(pod.id);
+  /* eslint-disable no-unused-vars */
+  const [value, setValue] = useState(pod.id);
   const { hasCopied, onCopy } = useClipboard(value);
   // return <Box></Box>;
   return (
