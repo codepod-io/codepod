@@ -1,36 +1,22 @@
 import {
   Flex,
-  Spacer,
   Text,
   Box,
-  Heading,
-  Button,
-  useToken,
-  useColorModeValue,
   Avatar,
-  AvatarBadge,
-  AvatarGroup,
   Menu,
   MenuButton,
   MenuList,
   MenuItem,
-  MenuItemOption,
-  MenuGroup,
-  MenuOptionGroup,
-  MenuIcon,
-  MenuCommand,
-  MenuDivider,
-  Link,
 } from "@chakra-ui/react";
-import { chakra } from "@chakra-ui/system";
-import NextLink from "next/link";
+// TODO react link might work natively with chakra
+import { Link as ReactLink } from "react-router-dom";
 
 import { useState } from "react";
 
-import { CloseIcon, HamburgerIcon, ChevronDownIcon } from "@chakra-ui/icons";
+import { CloseIcon, HamburgerIcon } from "@chakra-ui/icons";
 
 import { useAuth } from "../lib/auth";
-import { useRouter } from "next/router";
+import { useHistory } from "react-router-dom";
 
 const MyMenuItem = ({ children, isLast, to = "/" }) => {
   return (
@@ -39,7 +25,7 @@ const MyMenuItem = ({ children, isLast, to = "/" }) => {
       mr={{ base: 0, sm: isLast ? 0 : 8 }}
       display="block"
     >
-      <NextLink href={to}>{children}</NextLink>
+      <ReactLink to={to}>{children}</ReactLink>
     </Text>
   );
 };
@@ -47,7 +33,7 @@ const MyMenuItem = ({ children, isLast, to = "/" }) => {
 export function Header() {
   const [show, setShow] = useState(false);
   const toggleMenu = () => setShow(!show);
-  const router = useRouter();
+  let history = useHistory();
 
   const { isSignedIn, signOut } = useAuth();
 
@@ -62,7 +48,7 @@ export function Header() {
       w="100%"
     >
       <Text fontSize="lg" fontWeight="bold">
-        <NextLink href="/">CodePod</NextLink>
+        <ReactLink to="/">CodePod</ReactLink>
       </Text>
 
       <Box display={{ base: "block", md: "none" }} onClick={toggleMenu}>
@@ -93,18 +79,18 @@ export function Header() {
                 <Avatar name="Dan Abrahmov" src="https://bit.ly/dan-abramov" />
               </MenuButton>
               <MenuList>
-                <NextLink href="/profile">
+                <ReactLink to="/profile">
                   <MenuItem>Profile</MenuItem>
-                </NextLink>
-                <NextLink href="/profile">
+                </ReactLink>
+                <ReactLink to="/profile">
                   <MenuItem>Create a Copy</MenuItem>
-                </NextLink>
+                </ReactLink>
                 <MenuItem>Mark as Draft</MenuItem>
                 <MenuItem>Delete</MenuItem>
                 <MenuItem
                   onClick={() => {
                     signOut();
-                    router.push("/login");
+                    history.push("/login");
                   }}
                 >
                   Logout
@@ -132,11 +118,11 @@ export function Footer() {
       w="100%"
     >
       <Text fontSize="lg" fontWeight="bold">
-        <NextLink href="/">CodePod</NextLink>
+        <ReactLink to="/">CodePod</ReactLink>
       </Text>
 
       <Text fontSize="lg" fontWeight="bold">
-        <NextLink href="/">Copyright © CodePod Inc</NextLink>
+        <ReactLink to="/">Copyright © CodePod Inc</ReactLink>
       </Text>
     </Flex>
   );

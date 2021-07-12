@@ -5,7 +5,7 @@ The app contains the front-end (ui) and the back-end (api). To run, start both:
 ```
 cd api && docker-compose up -d
 cd api && yarn dev
-cd nextui && yarn dev
+cd ui2 && yarn start
 cd api && npx prisma studio
 ```
 

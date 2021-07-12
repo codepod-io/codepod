@@ -1,10 +1,7 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef, useEffect } from "react";
 import { FitAddon } from "xterm-addon-fit";
 import { Terminal } from "xterm";
 import "xterm/css/xterm.css";
-const className = require("classnames");
-// import { className } from "classnames";
-import { Resizable } from "re-resizable";
 
 export default function MyXTerm({ onData = (data) => {} }) {
   const theterm = useRef(null);
@@ -53,35 +50,4 @@ export default function MyXTerm({ onData = (data) => {} }) {
   // Add logic around `term`
   // FIXME still a small margin on bottom, not sure where it came from
   return <div style={{ height: "100%" }} ref={theterm} />;
-  return (
-    // <Resizable
-    //   defaultSize={{
-    //     width: 320,
-    //     height: 200,
-    //   }}
-    // >
-    //   {/* Sample with default size */}
-    //   <div ref={theterm} />
-    // </Resizable>
-    <Resizable
-      width={350}
-      height={350}
-      style={{
-        background: "firebrick",
-        padding: "0.4em",
-        margin: "1em",
-      }}
-    >
-      <div id="xterm" ref={theterm} style={{ height: "100%", width: "100%" }} />
-      {/* <ResizeObserver
-        onResize={(rect) => {
-          fitAddon.fit();
-          console.log("Resized. New bounds:", rect.width, "x", rect.height);
-        }}
-        onPosition={(rect) => {
-          console.log("Moved. New position:", rect.left, "x", rect.top);
-        }}
-      /> */}
-    </Resizable>
-  );
 }

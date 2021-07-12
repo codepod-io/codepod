@@ -21,19 +21,17 @@ import {
   IconButton,
   Alert,
   AlertIcon,
-  Link as ChakraLink,
 } from "@chakra-ui/react";
 import { chakra } from "@chakra-ui/system";
+import { StyledLink as Link } from "../components/utils";
 
 import React, { useState } from "react";
 import { FaFacebook, FaGithub, FaGoogle } from "react-icons/fa";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 import { Formik } from "formik";
-import { useRouter } from "next/router";
-import Link from "next/link";
 
 import { useAuth } from "../lib/auth";
-import { StyledLink } from "../components/utils";
+import { useHistory } from "react-router-dom";
 
 //////////
 // Card
@@ -81,18 +79,27 @@ export const DividerWithText = (props) => {
 
 ///////// LoginForm
 
-function LoginForm(props) {
-  const { signIn, isSignedIn } = useAuth();
+function SignupForm(props) {
+  const { signUp, isSignedIn } = useAuth();
   const [error, setError] = useState(null);
   return (
     <Formik
-      initialValues={{ username: "", password: "" }}
+      initialValues={{ email: "", password: "" }}
+      validate={(values) => {
+        const errors = {};
+        if (!values.email) {
+          errors.email = "Required";
+        } else if (
+          !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)
+        ) {
+          errors.email = "Invalid email address";
+        }
+        return errors;
+      }}
       onSubmit={(values, { setSubmitting }) => {
-        console.log("Logging in");
-        console.log(values);
-        console.log([values.username, values.password]);
         setError(null);
-        return signIn({
+        return signUp({
+          email: values.email,
           username: values.username,
           password: values.password,
         }).catch((err) => {
@@ -111,21 +118,25 @@ function LoginForm(props) {
         isSubmitting,
       }) => (
         <div>
-          <chakra.form
-            //   onSubmit={(e) => {
-            //     e.preventDefault(); // your login logic here
-            //     // signIn();
-            //   }}
-            onSubmit={handleSubmit}
-            {...props}
-          >
+          <chakra.form onSubmit={handleSubmit} {...props}>
             <Stack spacing="6">
               <FormControl id="username">
-                <FormLabel>Username or Email</FormLabel>
+                <FormLabel>Username</FormLabel>
                 <Input
                   name="username"
                   type="username"
                   autoComplete="username"
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  required
+                />
+              </FormControl>
+              <FormControl id="email">
+                <FormLabel>Email</FormLabel>
+                <Input
+                  name="email"
+                  type="email"
+                  autoComplete="email"
                   onChange={handleChange}
                   onBlur={handleBlur}
                   required
@@ -143,7 +154,7 @@ function LoginForm(props) {
                 fontSize="md"
                 disabled={isSubmitting}
               >
-                Sign in
+                Sign up
               </Button>
               {error && (
                 <Alert status="error">
@@ -212,7 +223,7 @@ export const PasswordField = React.forwardRef((props, ref) => {
           onChange={props.handleChange}
           onBlur={props.handleBlur}
           required
-          // {...props}
+          //   {...props}
         />
       </InputGroup>
     </FormControl>
@@ -220,11 +231,11 @@ export const PasswordField = React.forwardRef((props, ref) => {
 });
 PasswordField.displayName = "PasswordField";
 
-export default function Login() {
+export default function Signup() {
   const { isSignedIn } = useAuth();
-  const router = useRouter();
+  let history = useHistory();
   if (isSignedIn()) {
-    router.push("/");
+    history.push("/");
   }
   return (
     <Box
@@ -238,14 +249,14 @@ export default function Login() {
     >
       <Box maxW="md" mx="auto">
         <Heading textAlign="center" size="xl" fontWeight="extrabold">
-          Sign in to your account
+          Sign up an account
         </Heading>
         <Text mt="4" mb="8" align="center" maxW="md" fontWeight="medium">
-          <Text as="span">Don&apos;t have an account?</Text>
-          <StyledLink href="/signup">Sign up for free</StyledLink>
+          <Text as="span">Already have an account?</Text>
+          <Link to="/login">Login</Link>
         </Text>
         <Card>
-          <LoginForm />
+          <SignupForm />
           <DividerWithText mt="6">or continue with</DividerWithText>
           <SimpleGrid mt="6" columns={3} spacing="3">
             <Button

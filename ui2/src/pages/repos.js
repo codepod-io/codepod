@@ -1,38 +1,22 @@
-import Head from "next/head";
 import { useQuery, useMutation, gql } from "@apollo/client";
 import React, { useState } from "react";
-import Link from "next/link";
 import useMe from "../lib/me";
+import { StyledLink as Link } from "../components/utils";
 
 import {
   Box,
-  Flex,
   Button,
   Heading,
-  SimpleGrid,
   Text,
-  useColorModeValue,
-  VisuallyHidden,
-  useToken,
   Stack,
   FormControl,
   FormLabel,
   Input,
-  Divider,
-  useDisclosure,
-  useMergeRefs,
-  useColorModeValue as mode,
-  InputGroup,
-  InputRightElement,
-  IconButton,
   Alert,
   AlertIcon,
-  Link as ChakraLink,
 } from "@chakra-ui/react";
 import { Formik } from "formik";
 import { chakra } from "@chakra-ui/system";
-
-import { useAuth } from "../lib/auth.js";
 
 function Repos() {
   const { loading, error, data } = useQuery(
@@ -56,7 +40,7 @@ function Repos() {
         <Text key={repo.id}>
           The link:{" "}
           <Link
-            href={`/${me?.username}/${repo.name}`}
+            to={`/${me?.username}/${repo.name}`}
           >{`/${me?.username}/${repo.name}`}</Link>
         </Text>
       ))}
@@ -115,15 +99,7 @@ function CreateRepoForm(props) {
         // return;
       }}
     >
-      {({
-        values,
-        errors,
-        touched,
-        handleChange,
-        handleBlur,
-        handleSubmit,
-        isSubmitting,
-      }) => (
+      {({ values, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
         <div>
           <chakra.form onSubmit={handleSubmit} {...props}>
             <Stack spacing="6">

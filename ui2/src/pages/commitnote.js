@@ -1,5 +1,5 @@
-import { useQuery, useMutation, gql } from "@apollo/client";
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useMutation, gql } from "@apollo/client";
+import React, { useState } from "react";
 import { Formik } from "formik";
 import { chakra } from "@chakra-ui/system";
 import { MySlateExample } from "../components/MySlate";
@@ -12,34 +12,20 @@ import {
   //   Editable,
   //   EditableInput,
   //   EditablePreview,
-  Center,
   Grid,
-  Flex,
   Button,
   Heading,
-  SimpleGrid,
-  Text,
-  useColorModeValue,
-  VisuallyHidden,
-  useToken,
   Stack,
   FormControl,
   FormLabel,
   Input,
-  Divider,
-  useDisclosure,
-  useMergeRefs,
-  useColorModeValue as mode,
-  InputGroup,
-  InputRightElement,
-  IconButton,
   Alert,
   AlertIcon,
-  Link as ChakraLink,
 } from "@chakra-ui/react";
 
 function AddIdeaQForm(props) {
   const [error, setError] = useState(null);
+  /* eslint-disable no-unused-vars */
   const [createRepo, { data }] = useMutation(gql`
     mutation AddIdeaQ($content: String!) {
       addIdeaQ(content: $content) {

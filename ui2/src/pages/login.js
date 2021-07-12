@@ -21,19 +21,17 @@ import {
   IconButton,
   Alert,
   AlertIcon,
-  Link as ChakraLink,
 } from "@chakra-ui/react";
 import { chakra } from "@chakra-ui/system";
+import { useHistory } from "react-router-dom";
+import { StyledLink as Link } from "../components/utils";
 
 import React, { useState } from "react";
 import { FaFacebook, FaGithub, FaGoogle } from "react-icons/fa";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 import { Formik } from "formik";
-import { useRouter } from "next/router";
 
 import { useAuth } from "../lib/auth";
-
-import { StyledLink } from "../components/utils";
 
 //////////
 // Card
@@ -81,28 +79,18 @@ export const DividerWithText = (props) => {
 
 ///////// LoginForm
 
-function SignupForm(props) {
-  const { signUp, isSignedIn } = useAuth();
+function LoginForm(props) {
+  const { signIn, isSignedIn } = useAuth();
   const [error, setError] = useState(null);
-  const router = useRouter();
   return (
     <Formik
-      initialValues={{ email: "", password: "" }}
-      validate={(values) => {
-        const errors = {};
-        if (!values.email) {
-          errors.email = "Required";
-        } else if (
-          !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(values.email)
-        ) {
-          errors.email = "Invalid email address";
-        }
-        return errors;
-      }}
+      initialValues={{ username: "", password: "" }}
       onSubmit={(values, { setSubmitting }) => {
+        console.log("Logging in");
+        console.log(values);
+        console.log([values.username, values.password]);
         setError(null);
-        return signUp({
-          email: values.email,
+        return signIn({
           username: values.username,
           password: values.password,
         }).catch((err) => {
@@ -121,25 +109,21 @@ function SignupForm(props) {
         isSubmitting,
       }) => (
         <div>
-          <chakra.form onSubmit={handleSubmit} {...props}>
+          <chakra.form
+            //   onSubmit={(e) => {
+            //     e.preventDefault(); // your login logic here
+            //     // signIn();
+            //   }}
+            onSubmit={handleSubmit}
+            {...props}
+          >
             <Stack spacing="6">
               <FormControl id="username">
-                <FormLabel>Username</FormLabel>
+                <FormLabel>Username or Email</FormLabel>
                 <Input
                   name="username"
                   type="username"
                   autoComplete="username"
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  required
-                />
-              </FormControl>
-              <FormControl id="email">
-                <FormLabel>Email</FormLabel>
-                <Input
-                  name="email"
-                  type="email"
-                  autoComplete="email"
                   onChange={handleChange}
                   onBlur={handleBlur}
                   required
@@ -157,7 +141,7 @@ function SignupForm(props) {
                 fontSize="md"
                 disabled={isSubmitting}
               >
-                Sign up
+                Sign in
               </Button>
               {error && (
                 <Alert status="error">
@@ -226,7 +210,7 @@ export const PasswordField = React.forwardRef((props, ref) => {
           onChange={props.handleChange}
           onBlur={props.handleBlur}
           required
-          //   {...props}
+          // {...props}
         />
       </InputGroup>
     </FormControl>
@@ -234,11 +218,11 @@ export const PasswordField = React.forwardRef((props, ref) => {
 });
 PasswordField.displayName = "PasswordField";
 
-export default function Signup() {
+export default function Login() {
   const { isSignedIn } = useAuth();
-  const router = useRouter();
+  const history = useHistory();
   if (isSignedIn()) {
-    router.push("/");
+    history.push("/");
   }
   return (
     <Box
@@ -252,14 +236,14 @@ export default function Signup() {
     >
       <Box maxW="md" mx="auto">
         <Heading textAlign="center" size="xl" fontWeight="extrabold">
-          Sign up an account
+          Sign in to your account
         </Heading>
         <Text mt="4" mb="8" align="center" maxW="md" fontWeight="medium">
-          <Text as="span">Already have an account?</Text>
-          <StyledLink href="/login">Login</StyledLink>
+          <Text as="span">Don&apos;t have an account?</Text>
+          <Link to="/signup">Sign up for free</Link>
         </Text>
         <Card>
-          <SignupForm />
+          <LoginForm />
           <DividerWithText mt="6">or continue with</DividerWithText>
           <SimpleGrid mt="6" columns={3} spacing="3">
             <Button

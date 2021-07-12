@@ -97,7 +97,7 @@ function normalize(pods) {
       pod.parent = pod.parent.id;
     }
     // change children.id format
-    pod.children = pod.children.map(({ id: id }) => id);
+    pod.children = pod.children.map(({ id }) => id);
     // sort according to index
     pod.children.sort((a, b) => res[a].index - res[b].index);
     if (pod.type === "WYSIWYG" || pod.type === "CODE") {
@@ -263,7 +263,7 @@ export const repoSlice = createSlice({
       state.username = username;
     },
     addPod: (state, action) => {
-      const { parent, index, type, id } = action.payload;
+      let { parent, index, type, id } = action.payload;
       if (!parent) {
         parent = "ROOT";
       }

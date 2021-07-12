@@ -1,40 +1,29 @@
+import { useParams, Link as ReactLink } from "react-router-dom";
+
 import {
   Box,
   Text,
   Flex,
-  Center,
   Textarea,
   Button,
   Tooltip,
   Image,
   IconButton,
-  Spacer,
   Spinner,
+  Link,
   Code,
 } from "@chakra-ui/react";
-import {
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-  MenuItemOption,
-  MenuGroup,
-  MenuOptionGroup,
-  MenuIcon,
-  MenuCommand,
-  MenuDivider,
-} from "@chakra-ui/react";
+import { Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
 import {
   Popover,
   PopoverTrigger,
   PopoverContent,
   PopoverHeader,
   PopoverBody,
-  PopoverFooter,
   PopoverArrow,
   PopoverCloseButton,
 } from "@chakra-ui/react";
-import { Stack, HStack, VStack, Select } from "@chakra-ui/react";
+import { HStack, VStack, Select } from "@chakra-ui/react";
 import { useClipboard } from "@chakra-ui/react";
 
 import {
@@ -47,54 +36,20 @@ import {
   InfoIcon,
   ChevronDownIcon,
 } from "@chakra-ui/icons";
-import { useRouter } from "next/router";
-import Link from "next/link";
-import { StyledLink } from "../../components/utils";
-import React, { useRef, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { gql, useMutation, useQuery } from "@apollo/client";
-import { useSpring, animated, config } from "react-spring";
 import useResizeObserver from "use-resize-observer";
 
-import { repoSlice, loadPodQueue, remoteUpdatePod } from "../../lib/store";
-import useMe from "../../lib/me";
-import { MySlate } from "../../components/MySlate";
-import { CodeSlack } from "../../components/CodeSlate";
+import { repoSlice, loadPodQueue, remoteUpdatePod } from "../lib/store";
+import { MySlate } from "../components/MySlate";
+import { CodeSlack } from "../components/CodeSlate";
 
-// import { MyXTerm } from "../../components/MyXTerm";
-// import XTerm, { Terminal } from "react-xterm";
-// import { Terminal } from "xterm";
-// require("xterm");
+import MyXTerm from "../components/MyXTerm";
 
-// https://stackoverflow.com/questions/66096260/webpack-why-am-i-getting-referenceerror-self-is-not-defined-in-next-js-when-i
-//
-// server side rendering is giving me so much trouble. Why did I use it in the
-// first place?
-// - built-in path-based routing
-// - future proof?
-import dynamic from "next/dynamic";
-const MyXTerm = dynamic(() => import("../../components/MyXTerm"), {
-  ssr: false,
-});
+import brace from "../GullBraceLeft.svg";
 
-export async function getServerSideProps({ params }) {
-  // console.log(params);
-  // const router = useRouter();
-  // const { username, reponame } = router.query;
-  // FIXME this will cause warning on React. The query is {} at first rendering.
-  // And this seems to mess up the order of hooks
-  // if (!username || !reponame) return null;
-
-  // Fetch data from external API
-  // const res = await fetch(`https://.../data`)
-  // const data = await res.json()
-
-  // Pass data to the page via props
-  return { props: { params } };
-}
-
-export default function Repo({ params }) {
-  const { username, reponame } = params;
+export default function Repo() {
+  let { username, reponame } = useParams();
   const dispatch = useDispatch();
   dispatch(repoSlice.actions.setRepo({ username, reponame }));
   useEffect(() => {
@@ -112,8 +67,14 @@ export default function Repo({ params }) {
       </Box> */}
       <Box pb={10} m="auto">
         <Text>
-          Repo: <StyledLink href={`/${username}`}>{username}</StyledLink> /{" "}
-          <StyledLink href={`/${username}/${reponame}`}>{reponame}</StyledLink>
+          Repo:{" "}
+          <Link to={`/${username}`} as={ReactLink}>
+            {username}
+          </Link>{" "}
+          /{" "}
+          <Link to={`/${username}/${reponame}`} as={ReactLink}>
+            {reponame}
+          </Link>
         </Text>
         <Text>SyncQueue: {queueL}</Text>
         {!repoLoaded && <Text>Repo Loading ...</Text>}
@@ -183,8 +144,7 @@ function SyncStatus({ pod }) {
 }
 
 function InfoBar({ pod }) {
-  const [show, setShow] = useState(false);
-  const [value, setValue] = useState(pod.id);
+  const [value, _] = useState(pod.id);
   const { hasCopied, onCopy } = useClipboard(value);
   // return <Box></Box>;
   return (
@@ -467,7 +427,9 @@ function Deck({ id }) {
           {/* The brace */}
           <div>
             <Image
-              src="/GullBraceLeft.svg"
+              // src={require("../GullBraceLeft.svg")}
+              src={brace}
+              // src="../GullBraceLeft.svg"
               alt="brace"
               h={height}
               maxW="none"
@@ -488,6 +450,7 @@ function Deck({ id }) {
 }
 
 function CodePod({ pod }) {
+  let dispatch = useDispatch();
   return (
     <VStack align="start" p={2}>
       <HStack>
@@ -508,7 +471,9 @@ function CodePod({ pod }) {
             ]
           }
           onChange={(value) => {
-            dispatch(repoSlice.actions.setPodContent({ id, content: value }));
+            dispatch(
+              repoSlice.actions.setPodContent({ id: pod.id, content: value })
+            );
           }}
           language={pod.lang || "javascript"}
         />
@@ -536,6 +501,7 @@ function ReplPod({ pod }) {
 }
 
 function WysiwygPod({ pod }) {
+  let dispatch = useDispatch();
   return (
     <VStack align="start" p={2}>
       <HStack>
@@ -559,7 +525,9 @@ function WysiwygPod({ pod }) {
             ]
           }
           onChange={(value) => {
-            dispatch(repoSlice.actions.setPodContent({ id, content: value }));
+            dispatch(
+              repoSlice.actions.setPodContent({ id: pod.id, content: value })
+            );
           }}
           placeholder="Write some rich text"
         />
@@ -591,6 +559,6 @@ function Pod({ id }) {
   } else if (pod.type === "REPL") {
     return <ReplPod pod={pod} />;
   } else {
-    throw new Error(`Invalid pod type ${type}`);
+    throw new Error(`Invalid pod type ${pod.type}`);
   }
 }

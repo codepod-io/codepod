@@ -1,18 +1,11 @@
-import {
-  Editor,
-  Transforms,
-  Text,
-  createEditor,
-  Element,
-  Descendant,
-} from "slate";
+import { Editor, Transforms, Text, createEditor } from "slate";
 import { Range } from "slate";
 
 import { Slate, Editable, ReactEditor, withReact, useSlate } from "slate-react";
 import { withHistory } from "slate-history";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Button, Menu, Portal } from "./slate_helper";
-import { cx, css } from "@emotion/css";
+import { css } from "@emotion/css";
 // import {Icon}  from "@chakra-ui/react";
 import { FaBold, FaItalic, FaUnderline, FaStrikethrough } from "react-icons/fa";
 
@@ -62,6 +55,8 @@ export function MySlate({ value, onChange }) {
               return toggleFormat(editor, "italic");
             case "formatUnderline":
               return toggleFormat(editor, "underlined");
+            default:
+              throw new Error("Invalid inputType", event.inputType);
           }
         }}
       />
@@ -69,6 +64,7 @@ export function MySlate({ value, onChange }) {
   );
 }
 
+/* eslint-disable no-unused-vars */
 function MySlateSimple() {
   const editor = useMemo(() => withReact(createEditor()), []);
   // Add the initial value when setting up our state.

@@ -1,10 +1,7 @@
-import { gql, useQuery } from "@apollo/client";
 import { Center, Text, Flex } from "@chakra-ui/react";
-import { useRouter } from "next/router";
 import useMe from "../lib/me";
 
 export default function Profile() {
-  const router = useRouter();
   const { me } = useMe();
 
   if (!me) {

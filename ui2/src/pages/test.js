@@ -1,49 +1,11 @@
-import { useQuery, useMutation, gql } from "@apollo/client";
-import React, { useState, useMemo, useEffect, useRef } from "react";
-import { Formik } from "formik";
-import { chakra } from "@chakra-ui/system";
+import React, { useState } from "react";
 import { MySlateExample } from "../components/MySlate";
 
-import {
-  Box,
-  Textarea,
-  Checkbox,
-  Switch,
-  //   Editable,
-  //   EditableInput,
-  //   EditablePreview,
-  Center,
-  Grid,
-  Flex,
-  Button,
-  Heading,
-  SimpleGrid,
-  Text,
-  useColorModeValue,
-  VisuallyHidden,
-  useToken,
-  Stack,
-  FormControl,
-  FormLabel,
-  Input,
-  Divider,
-  useDisclosure,
-  useMergeRefs,
-  useColorModeValue as mode,
-  InputGroup,
-  InputRightElement,
-  IconButton,
-  Alert,
-  AlertIcon,
-  Link as ChakraLink,
-} from "@chakra-ui/react";
+import { Box, Button, Heading } from "@chakra-ui/react";
 
 import io from "socket.io-client";
 
-import dynamic from "next/dynamic";
-const MyXTerm = dynamic(() => import("../components/MyXTerm"), {
-  ssr: false,
-});
+import MyXTerm from "../components/MyXTerm";
 
 export default function Test() {
   const [socket, setSocket] = useState(io("http://localhost:4000"));
