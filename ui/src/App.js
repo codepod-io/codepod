@@ -20,8 +20,6 @@ import { Provider } from "react-redux";
 
 import store from "./lib/store";
 
-import "./styles/globals.css";
-
 function App() {
   return (
     <Router>
