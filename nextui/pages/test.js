@@ -46,17 +46,36 @@ const MyXTerm = dynamic(() => import("../components/MyXTerm"), {
 });
 
 export default function Test() {
-  const socket = io("http://localhost:4000");
-  socket.emit("message", "hello");
+  const [socket, setSocket] = useState(io("http://localhost:4000"));
+  socket.on("terminalOutput", (data) => {
+    // TODO write to the terminal
+    console.log("output", data);
+  });
+
   return (
     <Box maxW="lg" align="center" m="auto">
       <Heading>Test</Heading>
+      <Button
+        onClick={() => {
+          setSocket(io("http://localhost:4000"));
+        }}
+      >
+        Connect
+      </Button>
       <Box border="1px" w="sm" h="8rem">
-        <MyXTerm />
+        <MyXTerm
+          onData={(data) => {
+            socket.emit("terminalInput", data);
+          }}
+        />
       </Box>
       <Button
         onClick={() => {
-          socket.emit("message", "hello");
+          if (!socket) {
+            console.log("Not connected!");
+          } else {
+            socket.emit("message", "hello");
+          }
         }}
       >
         send

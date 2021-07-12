@@ -128,6 +128,13 @@ async function startApolloServer() {
     socket.on("message", (msg) => {
       console.log("message: " + msg);
     });
+    socket.on("terminalInput", (data) => {
+      console.log("terminalInput data", data);
+      // TODO send to local process
+      // get back result
+      // send result back
+      socket.emit("terminalOutput", "Received");
+    });
   });
 
   // should call http_server.listen instead of express app.listen, otherwise

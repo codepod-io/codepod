@@ -6,7 +6,7 @@ const className = require("classnames");
 // import { className } from "classnames";
 import { Resizable } from "re-resizable";
 
-export default function MyXTerm() {
+export default function MyXTerm({ onData = (data) => {} }) {
   const theterm = useRef(null);
   const term = new Terminal();
   // term.setOption("theme", { background: "#fdf6e3" });
@@ -27,6 +27,8 @@ export default function MyXTerm() {
       // fitAddon.fit();
     }
   });
+
+  term.onData(onData);
 
   // useRef?
   useEffect(() => {
