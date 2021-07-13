@@ -10,7 +10,6 @@ import {
   Image,
   IconButton,
   Spinner,
-  Link,
   Code,
 } from "@chakra-ui/react";
 import { Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
@@ -44,6 +43,7 @@ import io from "socket.io-client";
 import { repoSlice, loadPodQueue, remoteUpdatePod } from "../lib/store";
 import { MySlate } from "../components/MySlate";
 import { CodeSlack } from "../components/CodeSlate";
+import { StyledLink as Link } from "../components/utils";
 
 import { Terminal } from "xterm";
 import { XTerm, DummyTerm } from "../components/MyXTerm";
@@ -61,6 +61,7 @@ export default function Repo() {
 
   const queueL = useSelector((state) => state.repo.queue.length);
   const repoLoaded = useSelector((state) => state.repo.repoLoaded);
+  const sessionId = useSelector((state) => state.repo.sessionId);
 
   return (
     <Flex direction="column" m="auto">
@@ -79,6 +80,14 @@ export default function Repo() {
           </Link>
         </Text>
         <Text>SyncQueue: {queueL}</Text>
+        <Text>Session ID: {sessionId}</Text>
+        <Button
+          onClick={() => {
+            dispatch(repoSlice.actions.resetSessionId());
+          }}
+        >
+          Reset Session
+        </Button>
         {!repoLoaded && <Text>Repo Loading ...</Text>}
       </Box>
       {repoLoaded && (
@@ -486,10 +495,10 @@ function CodePod({ pod }) {
   );
 }
 
-function getNewTerm(lang) {
+function getNewTerm(sessionId, lang) {
   if (!lang) return DummyTerm();
   let socket = io(`http://localhost:4000`);
-  socket.emit("spawn", lang);
+  socket.emit("spawn", sessionId, lang);
   let term = new Terminal();
   term.onData((data) => {
     socket.emit("terminalInput", data);
@@ -501,7 +510,11 @@ function getNewTerm(lang) {
 }
 
 function ReplPod({ pod }) {
-  const [term, setTerm] = useState(getNewTerm(pod.lang));
+  const sessionId = useSelector((state) => state.repo.sessionId);
+  const [term, setTerm] = useState(null);
+  useEffect(() => {
+    setTerm(getNewTerm(sessionId, pod.lang));
+  }, []);
 
   return (
     <VStack align="start" p={2}>
@@ -523,7 +536,7 @@ function ReplPod({ pod }) {
           isDisabled={term}
           // TODO not able to implement "reset"
           onClick={() => {
-            setTerm(getNewTerm(pod.lang));
+            setTerm(getNewTerm(sessionId, pod.lang));
           }}
         >
           Connect

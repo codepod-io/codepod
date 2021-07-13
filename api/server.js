@@ -121,6 +121,8 @@ async function startApolloServer() {
     res.end();
   });
 
+  let procs = {};
+
   io.on("connection", (socket) => {
     console.log("a user connected");
     // CAUTION should listen to message on this socket instead of io
@@ -129,18 +131,35 @@ async function startApolloServer() {
     });
     // FIXME kill previous julia process?
     let proc;
-    socket.on("spawn", (lang) => {
-      switch (lang) {
-        case "julia":
-          proc = pty.spawn("julia");
-          break;
-        case "python":
-          proc = pty.spawn("python3");
-          break;
-        default:
-          console.log("Invalid language");
-          return;
+    socket.on("spawn", (sessionId, lang) => {
+      if (sessionId in procs && lang in procs[sessionId]) {
+        // already exist
+        proc = procs[sessionId][lang];
+      } else {
+        switch (lang) {
+          case "julia":
+            proc = pty.spawn("julia");
+            break;
+          case "python":
+            proc = pty.spawn("python3");
+            break;
+          default:
+            console.log(`Invalid language: ${lang}`);
+            return;
+        }
+        if (!(sessionId in procs)) {
+          procs[sessionId] = {};
+        }
+        procs[sessionId][lang] = proc;
       }
+      // This will broadcast output to all REPL pods
+      //
+      // How did Jupyter handle this? Each cell send code to the server. The
+      // server evaluate it and send back. The front-end then know which cell
+      // sends the code? Or the cell send the result together with the cell ID?
+      //
+      // Actually the terminal monitor each stroke, so probably I cannot do it
+      // better. I would skip terminal for now, as it is not too critical.
       proc.onData((data) => {
         socket.emit("terminalOutput", data);
       });
@@ -148,7 +167,11 @@ async function startApolloServer() {
     });
 
     socket.on("terminalInput", (data) => {
-      proc.write(data);
+      if (proc) {
+        proc.write(data);
+      } else {
+        console.log("warning: received input, but proc not connected");
+      }
     });
   });
 

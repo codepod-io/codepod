@@ -254,9 +254,13 @@ export const repoSlice = createSlice({
     repoLoaded: false,
     pods: {},
     queue: [],
+    sessionId: uuidv4(),
     queueProcessing: false,
   },
   reducers: {
+    resetSessionId: (state, action) => {
+      state.sessionId = uuidv4();
+    },
     setRepo: (state, action) => {
       const { reponame, username } = action.payload;
       state.reponame = reponame;
