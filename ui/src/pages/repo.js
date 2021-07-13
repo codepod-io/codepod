@@ -46,7 +46,7 @@ import { MySlate } from "../components/MySlate";
 import { CodeSlack } from "../components/CodeSlate";
 
 import { Terminal } from "xterm";
-import { XTerm } from "../components/MyXTerm";
+import { XTerm, DummyTerm } from "../components/MyXTerm";
 
 import brace from "../GullBraceLeft.svg";
 
@@ -278,10 +278,11 @@ function LanguageMenu({ pod }) {
           )
         }
       >
+        <option value="python">Python</option>
+        <option value="julia">Julia</option>
         <option value="js">JavaScript</option>
         <option value="css">CSS</option>
         <option value="html">HTML</option>
-        <option value="python">Python</option>
         <option value="sql">SQL</option>
         <option value="java">Java</option>
         <option value="php">PHP</option>
@@ -485,8 +486,10 @@ function CodePod({ pod }) {
   );
 }
 
-function ReplPod({ pod }) {
-  let socket = io("http://localhost:4000");
+function getNewTerm(lang) {
+  if (!lang) return DummyTerm();
+  let socket = io(`http://localhost:4000`);
+  socket.emit("spawn", lang);
   let term = new Terminal();
   term.onData((data) => {
     socket.emit("terminalInput", data);
@@ -494,6 +497,12 @@ function ReplPod({ pod }) {
   socket.on("terminalOutput", (data) => {
     term.write(data);
   });
+  return term;
+}
+
+function ReplPod({ pod }) {
+  const [term, setTerm] = useState(getNewTerm(pod.lang));
+
   return (
     <VStack align="start" p={2}>
       <HStack>
@@ -502,11 +511,27 @@ function ReplPod({ pod }) {
         <SyncStatus pod={pod} />
         <TypeMenu pod={pod} />
         <LanguageMenu pod={pod} />
-        <Button onClick={() => {}}>Connect</Button>
+        <Button
+          isDisabled={!term}
+          onClick={() => {
+            setTerm(null);
+          }}
+        >
+          Close
+        </Button>
+        <Button
+          isDisabled={term}
+          // TODO not able to implement "reset"
+          onClick={() => {
+            setTerm(getNewTerm(pod.lang));
+          }}
+        >
+          Connect
+        </Button>
       </HStack>
       <Box border="1px" w="sm" h="8rem">
         {/* <XTerm /> */}
-        <XTerm term={term} />
+        {term && <XTerm term={term} />}
       </Box>
     </VStack>
   );

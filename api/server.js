@@ -128,11 +128,25 @@ async function startApolloServer() {
       console.log("user disconnected");
     });
     // FIXME kill previous julia process?
-    let proc = pty.spawn("julia");
-    proc.onData((data) => {
-      socket.emit("terminalOutput", data);
+    let proc;
+    socket.on("spawn", (lang) => {
+      switch (lang) {
+        case "julia":
+          proc = pty.spawn("julia");
+          break;
+        case "python":
+          proc = pty.spawn("python3");
+          break;
+        default:
+          console.log("Invalid language");
+          return;
+      }
+      proc.onData((data) => {
+        socket.emit("terminalOutput", data);
+      });
+      proc.onExit(({ exitCode, signal }) => {});
     });
-    proc.onExit(({ exitCode, signal }) => {});
+
     socket.on("terminalInput", (data) => {
       proc.write(data);
     });

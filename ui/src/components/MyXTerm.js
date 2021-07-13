@@ -3,7 +3,7 @@ import { FitAddon } from "xterm-addon-fit";
 import { Terminal } from "xterm";
 import "xterm/css/xterm.css";
 
-function DummyTerm() {
+export function DummyTerm() {
   let term = new Terminal();
   function prompt() {
     var shellprompt = "$ ";
@@ -37,6 +37,9 @@ export function XTerm({ term = DummyTerm() }) {
       term.focus();
       fitAddon.fit();
     }
+    return () => {
+      term.dispose();
+    };
   }, []);
 
   // Add logic around `term`
