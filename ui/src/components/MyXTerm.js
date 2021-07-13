@@ -3,7 +3,49 @@ import { FitAddon } from "xterm-addon-fit";
 import { Terminal } from "xterm";
 import "xterm/css/xterm.css";
 
-export default function MyXTerm({ onData = (data) => {} }) {
+function DummyTerm() {
+  let term = new Terminal();
+  function prompt() {
+    var shellprompt = "$ ";
+    term.write("\r\n" + shellprompt);
+  }
+  term.write("Hello from \x1B[1;3;31mxterm.js\x1B[0m \r\n");
+  term.write("This is a dummy terminal.\r\n$ ");
+  term.onKey((key) => {
+    const char = key.domEvent.key;
+    if (char === "Enter") {
+      prompt();
+    } else if (char === "Backspace") {
+      term.write("\b \b");
+    } else {
+      term.write(char);
+      // fitAddon.fit();
+    }
+  });
+  return term;
+}
+
+export function XTerm({ term = DummyTerm() }) {
+  // initXTerm(term);
+  const theterm = useRef(null);
+  const fitAddon = new FitAddon();
+  term.loadAddon(fitAddon);
+  useEffect(() => {
+    if (theterm.current) {
+      term.open(theterm.current);
+      // term.write("Hello from \x1B[1;3;31mxterm.js\x1B[0m \r\n$ ");
+      term.focus();
+      fitAddon.fit();
+    }
+  }, []);
+
+  // Add logic around `term`
+  // FIXME still a small margin on bottom, not sure where it came from
+  return <div style={{ height: "100%" }} ref={theterm} />;
+}
+
+// DEPRECATED
+function MyXTerm({ onData = (data) => {} }) {
   const theterm = useRef(null);
   const term = new Terminal();
   // term.setOption("theme", { background: "#fdf6e3" });

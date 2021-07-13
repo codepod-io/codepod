@@ -7,6 +7,8 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 
+import * as pty from "node-pty";
+
 const typeDefs = gql`
   type Query {
     hello: String
@@ -121,19 +123,18 @@ async function startApolloServer() {
 
   io.on("connection", (socket) => {
     console.log("a user connected");
+    // CAUTION should listen to message on this socket instead of io
     socket.on("disconnect", () => {
       console.log("user disconnected");
     });
-    // should listen to message on this socket instead of io
-    socket.on("message", (msg) => {
-      console.log("message: " + msg);
+    // FIXME kill previous julia process?
+    let proc = pty.spawn("julia");
+    proc.onData((data) => {
+      socket.emit("terminalOutput", data);
     });
+    proc.onExit(({ exitCode, signal }) => {});
     socket.on("terminalInput", (data) => {
-      console.log("terminalInput data", data);
-      // TODO send to local process
-      // get back result
-      // send result back
-      socket.emit("terminalOutput", "Received");
+      proc.write(data);
     });
   });
 

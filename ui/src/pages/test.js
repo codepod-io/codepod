@@ -5,43 +5,29 @@ import { Box, Button, Heading } from "@chakra-ui/react";
 
 import io from "socket.io-client";
 
-import MyXTerm from "../components/MyXTerm";
+import { XTerm } from "../components/MyXTerm";
+import { Terminal } from "xterm";
 
 export default function Test() {
-  const [socket, setSocket] = useState(io("http://localhost:4000"));
+  let socket = io("http://localhost:4000");
+  let term = new Terminal();
+  term.onData((data) => {
+    socket.emit("terminalInput", data);
+  });
   socket.on("terminalOutput", (data) => {
-    // TODO write to the terminal
-    console.log("output", data);
+    term.write(data);
   });
 
   return (
-    <Box maxW="lg" align="center" m="auto">
+    <Box maxW="5xl" align="center" m="auto">
       <Heading>Test</Heading>
-      <Button
-        onClick={() => {
-          setSocket(io("http://localhost:4000"));
-        }}
-      >
-        Connect
-      </Button>
-      <Box border="1px" w="sm" h="8rem">
-        <MyXTerm
-          onData={(data) => {
-            socket.emit("terminalInput", data);
-          }}
-        />
+      <Box border="1px" w="3xl" h="lg">
+        <XTerm term={term} />
       </Box>
-      <Button
-        onClick={() => {
-          if (!socket) {
-            console.log("Not connected!");
-          } else {
-            socket.emit("message", "hello");
-          }
-        }}
-      >
-        send
-      </Button>
+      <Heading>Term2</Heading>
+      <Box border="1px" w="3xl" h="lg">
+        <XTerm />
+      </Box>
       <Box border="1px">
         <MySlateExample />
       </Box>

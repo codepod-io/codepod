@@ -39,12 +39,14 @@ import {
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import useResizeObserver from "use-resize-observer";
+import io from "socket.io-client";
 
 import { repoSlice, loadPodQueue, remoteUpdatePod } from "../lib/store";
 import { MySlate } from "../components/MySlate";
 import { CodeSlack } from "../components/CodeSlate";
 
-import MyXTerm from "../components/MyXTerm";
+import { Terminal } from "xterm";
+import { XTerm } from "../components/MyXTerm";
 
 import brace from "../GullBraceLeft.svg";
 
@@ -484,6 +486,14 @@ function CodePod({ pod }) {
 }
 
 function ReplPod({ pod }) {
+  let socket = io("http://localhost:4000");
+  let term = new Terminal();
+  term.onData((data) => {
+    socket.emit("terminalInput", data);
+  });
+  socket.on("terminalOutput", (data) => {
+    term.write(data);
+  });
   return (
     <VStack align="start" p={2}>
       <HStack>
@@ -495,7 +505,8 @@ function ReplPod({ pod }) {
         <Button onClick={() => {}}>Connect</Button>
       </HStack>
       <Box border="1px" w="sm" h="8rem">
-        <MyXTerm />
+        {/* <XTerm /> */}
+        <XTerm term={term} />
       </Box>
     </VStack>
   );
