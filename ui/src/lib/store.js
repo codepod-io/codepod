@@ -6,6 +6,8 @@ import { v4 as uuidv4 } from "uuid";
 import produce from "immer";
 
 import sha256 from "crypto-js/sha256";
+import { io } from "socket.io-client";
+import wsMiddleware from "./wsMiddleware";
 
 export const loadPodQueue = createAsyncThunk(
   "loadPodQueue",
@@ -255,11 +257,20 @@ export const repoSlice = createSlice({
     pods: {},
     queue: [],
     sessionId: uuidv4(),
+    sessionRuntime: {},
     queueProcessing: false,
   },
   reducers: {
     resetSessionId: (state, action) => {
       state.sessionId = uuidv4();
+    },
+    ensureSessionRuntime: (state, action) => {
+      const { lang } = action.payload;
+      if (!(lang in state.sessionRuntime)) {
+        let socket = io(`http://localhost:4000`);
+        socket.emit("spawn", state.sessionId, lang);
+        state.sessionRuntime[lang] = socket;
+      }
     },
     setRepo: (state, action) => {
       const { reponame, username } = action.payload;
@@ -450,5 +461,5 @@ export default configureStore({
     users: userSlice.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(podQueueMiddleware),
+    getDefaultMiddleware().concat(podQueueMiddleware, wsMiddleware),
 });

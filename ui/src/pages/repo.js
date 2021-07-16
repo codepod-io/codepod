@@ -39,6 +39,7 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import useResizeObserver from "use-resize-observer";
 import io from "socket.io-client";
+import { Node } from "slate";
 
 import { repoSlice, loadPodQueue, remoteUpdatePod } from "../lib/store";
 import { MySlate } from "../components/MySlate";
@@ -47,6 +48,7 @@ import { StyledLink as Link } from "../components/utils";
 
 import { Terminal } from "xterm";
 import { XTerm, DummyTerm } from "../components/MyXTerm";
+import * as wsActions from "../lib/wsActions";
 
 import brace from "../GullBraceLeft.svg";
 
@@ -62,6 +64,7 @@ export default function Repo() {
   const queueL = useSelector((state) => state.repo.queue.length);
   const repoLoaded = useSelector((state) => state.repo.repoLoaded);
   const sessionId = useSelector((state) => state.repo.sessionId);
+  const sessionRuntime = useSelector((state) => state.repo.sessionRuntime);
 
   return (
     <Flex direction="column" m="auto">
@@ -87,6 +90,17 @@ export default function Repo() {
           }}
         >
           Reset Session
+        </Button>
+        <Text>
+          Session Runtime:
+          <Code>{Object.keys(sessionRuntime)}</Code>
+        </Text>
+        <Button
+          onClick={() => {
+            dispatch(wsActions.wsConnect("host"));
+          }}
+        >
+          Connect
         </Button>
         {!repoLoaded && <Text>Repo Loading ...</Text>}
       </Box>
@@ -462,6 +476,10 @@ function Deck({ id }) {
   );
 }
 
+const slackGetPlainText = (nodes) => {
+  return nodes.map((n) => Node.string(n)).join("\n");
+};
+
 function CodePod({ pod }) {
   let dispatch = useDispatch();
   return (
@@ -472,6 +490,20 @@ function CodePod({ pod }) {
         <SyncStatus pod={pod} />
         <TypeMenu pod={pod} />
         <LanguageMenu pod={pod} />
+        <Button
+          isDisabled={!pod.lang}
+          onClick={() => {
+            // 1. create or load runtime socket
+            // dispatch(
+            //   repoSlice.actions.ensureSessionRuntime({ lang: pod.lang })
+            // );
+            // 2. send
+            dispatch(wsActions.wsRun(slackGetPlainText(pod.content)));
+            // 3. the socket should have onData set to set the output
+          }}
+        >
+          Run
+        </Button>
       </HStack>
       <Box border="1px" w="sm">
         <CodeSlack
