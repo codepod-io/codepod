@@ -513,7 +513,7 @@ function ReplPod({ pod }) {
   const sessionId = useSelector((state) => state.repo.sessionId);
   const [term, setTerm] = useState(null);
   useEffect(() => {
-    setTerm(getNewTerm(sessionId, pod.lang));
+    // setTerm(getNewTerm(sessionId, pod.lang));
   }, []);
 
   return (
