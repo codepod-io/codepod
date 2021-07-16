@@ -9,6 +9,12 @@ import { Server } from "socket.io";
 
 import * as pty from "node-pty";
 
+import {
+  JuliaKernel,
+  constructMessage,
+  constructExecuteRequest,
+} from "./kernel.js";
+
 const typeDefs = gql`
   type Query {
     hello: String
@@ -123,6 +129,10 @@ async function startApolloServer() {
 
   let procs = {};
 
+  console.log("connnecting to kernel ..");
+  let kernel = new JuliaKernel();
+  console.log("kernel connected");
+
   io.on("connection", (socket) => {
     console.log("a user connected");
     // CAUTION should listen to message on this socket instead of io
@@ -172,6 +182,33 @@ async function startApolloServer() {
       } else {
         console.log("warning: received input, but proc not connected");
       }
+    });
+
+    kernel.listenIOPub((topic, msgs) => {
+      switch (topic) {
+        case "status":
+          console.log("emiting status ..");
+          socket.emit("status", msgs.content.execution_state);
+          break;
+        case "execute_result":
+          console.log("emitting execute_result ..");
+          socket.emit("execute_result", {
+            id: msgs.parent_header.msg_id,
+            result: msgs.content.data["text/plain"],
+          });
+          break;
+        default:
+          console.log("Message Not handled", topic);
+          break;
+      }
+    });
+
+    socket.on("runCode", (code) => {
+      kernel.sendShellMessage(constructExecuteRequest(code));
+    });
+
+    socket.on("requestKernelStatus", () => {
+      kernel.sendShellMessage(constructMessage("kernel_info_request"));
     });
   });
 
