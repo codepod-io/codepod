@@ -296,11 +296,23 @@ export const repoSlice = createSlice({
         type,
         index,
         parent,
-        content: "",
+        // content: "",
+        content: [
+          {
+            type: "paragraph",
+            children: [
+              {
+                text: "",
+              },
+            ],
+          },
+        ],
         status: "synced",
         lastPosUpdate: Date.now(),
         children: [],
       };
+      // compute the remotehash
+      pod.remoteHash = hashPod(pod);
       state.pods[id] = pod;
       // push this node
       // TODO the children no longer need to be ordered
@@ -394,6 +406,11 @@ export const repoSlice = createSlice({
       state.pods[action.meta.arg.id].status = "syncing";
     },
     [remoteUpdatePod.fulfilled]: (state, action) => {
+      // set pod hash
+      // console.log("Setting hash ..");
+      state.pods[action.meta.arg.id].remoteHash = hashPod(
+        state.pods[action.meta.arg.id]
+      );
       state.pods[action.meta.arg.id].status = "synced";
     },
     [remoteUpdatePod.rejected]: (state, action) => {
