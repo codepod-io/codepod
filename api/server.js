@@ -54,6 +54,8 @@ const typeDefs = gql`
     parent: Pod
     index: Int
     children: [Pod]
+    result: String
+    stdout: String
   }
 
   type Mutation {
@@ -74,7 +76,14 @@ const typeDefs = gql`
       type: String
     ): Pod
     deletePod(id: String, toDelete: [String]): Boolean
-    updatePod(id: String, content: String, type: String, lang: String): Pod
+    updatePod(
+      id: String
+      content: String
+      type: String
+      lang: String
+      result: String
+      stdout: String
+    ): Pod
     clearUser: Boolean
     clearRepo: Boolean
     clearPod: Boolean

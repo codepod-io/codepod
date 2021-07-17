@@ -27,6 +27,8 @@ export const loadPodQueue = createAsyncThunk(
           type
           lang
           content
+          result,
+          stdout,
           index
           parent {
             id
@@ -64,6 +66,8 @@ function hashPod(pod) {
       content: pod.content,
       type: pod.type,
       lang: pod.lang,
+      result: pod.result,
+      stdout: pod.stdout,
     })
   ).toString();
 }
@@ -182,10 +186,11 @@ async function doRemoteDeletePod({ id, toDelete }) {
 
 export const remoteUpdatePod = createAsyncThunk(
   "remoteUpdatePod",
-  async ({ id, type, content, lang }) => {
+  async ({ id, type, content, lang, result, stdout }) => {
     // the content might be a list object in case of WYSIWYG, so first serialize
     // it
     content = JSON.stringify(content);
+    console.log("do remote update ..");
     const res = await fetch("http://localhost:4000/graphql", {
       method: "POST",
       headers: {
@@ -194,8 +199,8 @@ export const remoteUpdatePod = createAsyncThunk(
       },
       body: JSON.stringify({
         query: `
-        mutation updatePod($id: String, $content: String, $type: String, $lang: String) {
-          updatePod(id: $id, content: $content, type: $type, lang: $lang) {
+        mutation updatePod($id: String, $content: String, $type: String, $lang: String, $result: String, $stdout: String) {
+          updatePod(id: $id, content: $content, type: $type, lang: $lang, result: $result, stdout: $stdout) {
             id
           }
         }`,
@@ -204,6 +209,8 @@ export const remoteUpdatePod = createAsyncThunk(
           content,
           type,
           lang,
+          result,
+          stdout,
         },
       }),
     });
@@ -307,6 +314,8 @@ export const repoSlice = createSlice({
             ],
           },
         ],
+        result: "",
+        stdout: "",
         status: "synced",
         lastPosUpdate: Date.now(),
         children: [],

@@ -166,6 +166,8 @@ function SyncStatus({ pod }) {
                   content: pod.content,
                   type: pod.type,
                   lang: pod.lang,
+                  result: pod.result,
+                  stdout: pod.stdout,
                 })
               );
             }}
