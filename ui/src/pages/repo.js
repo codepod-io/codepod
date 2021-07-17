@@ -59,12 +59,15 @@ export default function Repo() {
   useEffect(() => {
     // load the repo
     dispatch(loadPodQueue({ username, reponame }));
+    // dispatch(wsActions.wsConnect());
   }, []);
 
   const queueL = useSelector((state) => state.repo.queue.length);
   const repoLoaded = useSelector((state) => state.repo.repoLoaded);
   const sessionId = useSelector((state) => state.repo.sessionId);
   const sessionRuntime = useSelector((state) => state.repo.sessionRuntime);
+  const kernelConnected = useSelector((state) => state.repo.kernelConnected);
+  const kernelStatus = useSelector((state) => state.repo.kernelStatus);
 
   return (
     <Flex direction="column" m="auto">
@@ -95,12 +98,29 @@ export default function Repo() {
           Session Runtime:
           <Code>{Object.keys(sessionRuntime)}</Code>
         </Text>
+        <Text>Kernel connected? {kernelConnected ? "Yes" : "No"}</Text>
+
         <Button
           onClick={() => {
             dispatch(wsActions.wsConnect("host"));
           }}
         >
           Connect
+        </Button>
+        <Button
+          onClick={() => {
+            dispatch(wsActions.wsDisconnect());
+          }}
+        >
+          Disconnect
+        </Button>
+        <Text>Kernel status: {kernelStatus}</Text>
+        <Button
+          onClick={() => {
+            dispatch(wsActions.wsRequestStatus());
+          }}
+        >
+          Request Kernel Status
         </Button>
         {!repoLoaded && <Text>Repo Loading ...</Text>}
       </Box>

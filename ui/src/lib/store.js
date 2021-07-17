@@ -258,6 +258,8 @@ export const repoSlice = createSlice({
     queue: [],
     sessionId: uuidv4(),
     sessionRuntime: {},
+    kernelConnected: false,
+    kernelStatus: "disconnected",
     queueProcessing: false,
   },
   reducers: {
@@ -399,6 +401,17 @@ export const repoSlice = createSlice({
       // TODO use enum instead of string?
       // state.pods[action.payload.id].status = "dirty";
       throw new Error("updatePod rejected" + action.payload.errors[0].message);
+    },
+    WS_STATUS: (state, action) => {
+      console.log("status action!", action.payload);
+      state.kernelStatus = action.payload.status;
+    },
+    WS_CONNECTED: (state, action) => {
+      state.kernelConnected = true;
+    },
+    WS_DISCONNECTED: (state, action) => {
+      state.kernelConnected = false;
+      state.kernelStatus = "disconnected";
     },
   },
 });
