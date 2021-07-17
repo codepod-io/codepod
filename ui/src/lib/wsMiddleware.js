@@ -29,6 +29,9 @@ const socketMiddleware = () => {
         socket.on("output", (data) => {
           console.log("output:", data);
         });
+        socket.on("stdout", (data) => {
+          store.dispatch(actions.wsStdout(data));
+        });
         socket.on("execute_result", (data) => {
           console.log("execute result!!!", data);
           store.dispatch(actions.wsResult(data));

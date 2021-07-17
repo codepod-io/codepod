@@ -447,6 +447,8 @@ function CodePod({ pod }) {
             // dispatch(
             //   repoSlice.actions.ensureSessionRuntime({ lang: pod.lang })
             // );
+            // clear previous results
+            dispatch(repoSlice.actions.clearResults(pod.id));
             // 2. send
             dispatch(
               wsActions.wsRun({
@@ -479,7 +481,15 @@ function CodePod({ pod }) {
           language={pod.lang || "javascript"}
         />
       </Box>
-      {pod.result && <Text>{pod.result}</Text>}
+      {pod.stdout && <Text>{pod.stdout}</Text>}
+      {pod.result && (
+        <Flex>
+          <Text color="gray" mr="1rem">
+            [{pod.result.count}]:
+          </Text>
+          <Text>{pod.result.text}</Text>
+        </Flex>
+      )}
     </VStack>
   );
 }

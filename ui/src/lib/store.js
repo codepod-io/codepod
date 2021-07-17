@@ -109,6 +109,9 @@ function normalize(pods) {
     if (pod.type === "WYSIWYG" || pod.type === "CODE") {
       pod.content = JSON.parse(pod.content);
     }
+    if (pod.result) {
+      pod.result = JSON.parse(pod.result);
+    }
     pod.status = "synced";
     pod.remoteHash = hashPod(pod);
   });
@@ -209,7 +212,7 @@ export const remoteUpdatePod = createAsyncThunk(
           content,
           type,
           lang,
-          result,
+          result: JSON.stringify(result),
           stdout,
         },
       }),
@@ -359,6 +362,11 @@ export const repoSlice = createSlice({
       // check with commited version
       computePodStatus(state.pods[id]);
     },
+    clearResults: (state, action) => {
+      const id = action.payload;
+      state.pods[id].result = "";
+      state.pods[id].stdout = "";
+    },
     setPodType: (state, action) => {
       const { id, type } = action.payload;
       state.pods[id].type = type;
@@ -440,8 +448,17 @@ export const repoSlice = createSlice({
       state.kernelStatus = "disconnected";
     },
     WS_RESULT: (state, action) => {
-      let { podId, result } = action.payload;
-      state.pods[podId].result = result;
+      let { podId, result, count } = action.payload;
+      state.pods[podId].result = {
+        text: result,
+        count: count,
+      };
+    },
+    WS_STDOUT: (state, action) => {
+      let { podId, stdout } = action.payload;
+      // FIXME this is stream
+      // FIXME this is base64 encoded
+      state.pods[podId].stdout = stdout;
     },
   },
 });

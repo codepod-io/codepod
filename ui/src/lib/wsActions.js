@@ -16,7 +16,11 @@ export const wsRun = ({ code, podId, sessionId }) => ({
   podId,
   sessionId,
 });
-export const wsResult = ({ podId, result }) => ({
+export const wsResult = ({ podId, result, count }) => ({
   type: "WS_RESULT",
-  payload: { podId, result },
+  payload: { podId, result, count },
+});
+export const wsStdout = ({ podId, stdout }) => ({
+  type: "WS_STDOUT",
+  payload: { podId, stdout },
 });

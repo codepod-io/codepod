@@ -204,7 +204,19 @@ async function startApolloServer() {
           socket.emit("execute_result", {
             podId: msgs.parent_header.msg_id,
             result: msgs.content.data["text/plain"],
+            count: msgs.content.execution_count,
           });
+          break;
+        case "stdout":
+          console.log("emitting stdout ..");
+          if (msgs.content.text.startsWith("base64 binary data")) {
+            console.log("warning: base64 encoded stdout");
+          } else {
+            socket.emit("stdout", {
+              podId: msgs.parent_header.msg_id,
+              stdout: msgs.content.text,
+            });
+          }
           break;
         default:
           console.log("Message Not handled", topic);
