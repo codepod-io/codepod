@@ -34,6 +34,8 @@ import {
   HamburgerIcon,
   InfoIcon,
   ChevronDownIcon,
+  DragHandleIcon,
+  DeleteIcon,
 } from "@chakra-ui/icons";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -153,6 +155,7 @@ function SyncStatus({ pod }) {
       {pod.status === "dirty" && (
         <Box>
           <IconButton
+            size="sm"
             icon={<RepeatIcon />}
             colorScheme={"yellow"}
             onClick={() => {
@@ -195,9 +198,10 @@ function InfoBar({ pod }) {
   // return <Box></Box>;
   return (
     <Box>
+      <DragHandleIcon mr="3px" />
       <Popover>
         <PopoverTrigger>
-          <IconButton icon={<InfoIcon />}></IconButton>
+          <IconButton size="sm" icon={<InfoIcon />}></IconButton>
           {/* <InfoIcon /> */}
         </PopoverTrigger>
         <PopoverContent w="lg">
@@ -230,77 +234,59 @@ function InfoBar({ pod }) {
 function ToolBar({ pod }) {
   const dispatch = useDispatch();
   const [show, setShow] = useState(false);
-  // return <Box></Box>;
   return (
-    // Putting Menu under Stack caused warnings. Wrapping it with Box removes
-    // that wraning. See https://github.com/chakra-ui/chakra-ui/issues/3440
     <Box>
-      <Menu>
-        <MenuButton as={IconButton} icon={<HamburgerIcon />}></MenuButton>
-        <MenuList>
-          <MenuItem>Type: Code</MenuItem>
-          <MenuItem
-            onClick={() => {
-              dispatch(
-                repoSlice.actions.addPod({
-                  parent: pod.parent,
-                  index: pod.index,
-                  type: "CODE",
-                })
-              );
-            }}
-          >
-            Add Pod Up <ArrowUpIcon />
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              dispatch(
-                repoSlice.actions.addPod({
-                  parent: pod.parent,
-                  index: pod.index,
-                  type: "DECK",
-                })
-              );
-            }}
-          >
-            Add Deck Up <ArrowUpIcon />
-          </MenuItem>
-          <MenuItem
-            color="red"
-            onClick={() => {
-              dispatch(repoSlice.actions.deletePod({ id: pod.id }));
-            }}
-          >
-            <u>D</u>elete
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              dispatch(
-                repoSlice.actions.addPod({
-                  parent: pod.parent,
-                  index: pod.index + 1,
-                  type: "CODE",
-                })
-              );
-            }}
-          >
-            Add Pod Down <ArrowDownIcon />
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              dispatch(
-                repoSlice.actions.addPod({
-                  parent: pod.parent,
-                  index: pod.index + 1,
-                  type: "DECK",
-                })
-              );
-            }}
-          >
-            Add Deck Down <ArrowDownIcon />
-          </MenuItem>
-        </MenuList>
-      </Menu>
+      <Button
+        size="sm"
+        onClick={() => {
+          dispatch(
+            repoSlice.actions.addPod({
+              parent: pod.parent,
+              index: pod.index,
+              type: "CODE",
+            })
+          );
+        }}
+      >
+        <ArrowUpIcon />
+      </Button>
+      <Button
+        size="sm"
+        onClick={() => {
+          dispatch(
+            repoSlice.actions.addPod({
+              parent: pod.parent,
+              index: pod.index + 1,
+              type: "CODE",
+            })
+          );
+        }}
+      >
+        <ArrowDownIcon />
+      </Button>
+      <Button
+        size="sm"
+        onClick={() => {
+          dispatch(
+            repoSlice.actions.addPod({
+              parent: pod.id,
+              type: "CODE",
+              index: 0,
+            })
+          );
+        }}
+      >
+        <ArrowForwardIcon />
+      </Button>
+      <Button
+        size="sm"
+        color="red"
+        onClick={() => {
+          dispatch(repoSlice.actions.deletePod({ id: pod.id }));
+        }}
+      >
+        <DeleteIcon />
+      </Button>
     </Box>
   );
 }
@@ -339,7 +325,7 @@ function TypeMenu({ pod }) {
   return (
     <Box>
       <Menu>
-        <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
+        <MenuButton size="sm" as={Button} rightIcon={<ChevronDownIcon />}>
           {pod.type}
         </MenuButton>
         <MenuList>
@@ -398,98 +384,37 @@ function TypeMenu({ pod }) {
   );
 }
 
-function PodOrDeck({ id }) {
-  const pod = useSelector((state) => state.repo.pods[id]);
-  const dispatch = useDispatch();
-  // this update the pod, insert if not exist
-  if (!pod) {
-    return <Box>Error: pod is undefined: {id}</Box>;
-  }
-  const isDeck = pod.type === "DECK";
-
-  if (isDeck) {
-    return <Deck id={id} />;
-  } else {
-    return <Pod id={id} />;
-  }
-}
-
 function Deck({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
-  const dispatch = useDispatch();
   const { ref: right, width = 0, height = 0 } = useResizeObserver();
-
   return (
     <VStack align="start" p={2}>
-      {id !== "ROOT" && (
-        <HStack>
-          <InfoBar pod={pod} />
-          <ToolBar pod={pod} />
-          <SyncStatus pod={pod} />
-        </HStack>
-      )}
       <Box border="solid 1px" p={3}>
+        {/* LEFT */}
         <Flex align="center">
-          {/* LEFT */}
-          <Flex>
-            <Text>
-              <Tooltip label={pod.id}>Deck</Tooltip>
-            </Text>
-            {pod.children.length === 0 && (
-              <Box>
-                <Button
-                  ml={1}
-                  size="xs"
-                  onClick={() => {
-                    dispatch(
-                      repoSlice.actions.addPod({
-                        parent: pod.id,
-                        type: "CODE",
-                        index: 0,
-                      })
-                    );
-                  }}
-                >
-                  Add Pod <ArrowForwardIcon />
-                </Button>
-                <Button
-                  ml={1}
-                  size="xs"
-                  onClick={() => {
-                    dispatch(
-                      repoSlice.actions.addPod({
-                        parent: pod.id,
-                        index: 0,
-                        type: "DECK",
-                      })
-                    );
-                  }}
-                >
-                  Add Deck <ArrowForwardIcon />
-                </Button>
-              </Box>
-            )}
-          </Flex>
-
-          {/* The brace */}
-          <div>
-            <Image
-              // src={require("../GullBraceLeft.svg")}
-              src={brace}
-              // src="../GullBraceLeft.svg"
-              alt="brace"
-              h={height}
-              maxW="none"
-              w="20px"
-            />
-          </div>
-
-          {/* RIGHT */}
-          <Flex direction="column" ref={right}>
-            {pod.children.map((id) => {
-              return <PodOrDeck id={id} key={id}></PodOrDeck>;
-            })}
-          </Flex>
+          <Pod id={pod.id} />
+          {pod.children.length > 0 && (
+            <Flex>
+              {/* The brace */}
+              <div>
+                <Image
+                  // src={require("../GullBraceLeft.svg")}
+                  src={brace}
+                  // src="../GullBraceLeft.svg"
+                  alt="brace"
+                  h={height}
+                  maxW="none"
+                  w="20px"
+                />
+              </div>
+              {/* RIGHT */}
+              <Flex direction="column" ref={right}>
+                {pod.children.map((id) => {
+                  return <Deck id={id} key={id}></Deck>;
+                })}
+              </Flex>
+            </Flex>
+          )}
         </Flex>
       </Box>
     </VStack>
@@ -511,6 +436,7 @@ function CodePod({ pod }) {
         <TypeMenu pod={pod} />
         <LanguageMenu pod={pod} />
         <Button
+          size="sm"
           isDisabled={!pod.lang}
           onClick={() => {
             // 1. create or load runtime socket
@@ -577,6 +503,7 @@ function ReplPod({ pod }) {
         <TypeMenu pod={pod} />
         <LanguageMenu pod={pod} />
         <Button
+          size="sm"
           isDisabled={!term}
           onClick={() => {
             setTerm(null);
@@ -585,6 +512,7 @@ function ReplPod({ pod }) {
           Close
         </Button>
         <Button
+          size="sm"
           isDisabled={term}
           // TODO not able to implement "reset"
           onClick={() => {
@@ -660,6 +588,8 @@ function Pod({ id }) {
     return <CodePod pod={pod} />;
   } else if (pod.type === "REPL") {
     return <ReplPod pod={pod} />;
+  } else if (pod.type === "DECK") {
+    return <Text>Deck</Text>;
   } else {
     throw new Error(`Invalid pod type ${pod.type}`);
   }
