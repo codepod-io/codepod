@@ -47,7 +47,9 @@ export function MySlate({ value, onChange }) {
         renderLeaf={(props) => <Leaf {...props} />}
         placeholder="Enter some text..."
         onDOMBeforeInput={(event) => {
+          // this will prevent default insertText
           // event.preventDefault();
+          // console.log(event.inputType);
           switch (event.inputType) {
             case "formatBold":
               return toggleFormat(editor, "bold");
@@ -56,7 +58,9 @@ export function MySlate({ value, onChange }) {
             case "formatUnderline":
               return toggleFormat(editor, "underlined");
             default:
-              throw new Error("Invalid inputType", event.inputType);
+              // insertText will throw error here
+              // throw new Error("Invalid inputType", event.inputType);
+              break;
           }
         }}
       />
