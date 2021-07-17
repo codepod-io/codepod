@@ -36,6 +36,7 @@ import {
   ChevronDownIcon,
   DragHandleIcon,
   DeleteIcon,
+  AddIcon,
 } from "@chakra-ui/icons";
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -198,7 +199,7 @@ function InfoBar({ pod }) {
   // return <Box></Box>;
   return (
     <Box>
-      <DragHandleIcon mr="3px" />
+      {/* <DragHandleIcon mr="3px" /> */}
       <Popover>
         <PopoverTrigger>
           <IconButton size="sm" icon={<InfoIcon />}></IconButton>
@@ -235,7 +236,7 @@ function ToolBar({ pod }) {
   const dispatch = useDispatch();
   const [show, setShow] = useState(false);
   return (
-    <Box>
+    <Flex>
       <Button
         size="sm"
         onClick={() => {
@@ -287,7 +288,7 @@ function ToolBar({ pod }) {
       >
         <DeleteIcon />
       </Button>
-    </Box>
+    </Flex>
   );
 }
 
@@ -296,6 +297,7 @@ function LanguageMenu({ pod }) {
   return (
     <Box>
       <Select
+        size="xs"
         placeholder="Select option"
         value={pod.lang || ""}
         onChange={(e) =>
@@ -451,7 +453,7 @@ function CodePod({ pod }) {
           Run
         </Button>
       </HStack>
-      <Box border="1px" w="sm">
+      <Box border="1px" w="sm" p="1rem" alignContent="center">
         <CodeSlack
           value={
             pod.content || [
@@ -540,7 +542,7 @@ function WysiwygPod({ pod }) {
         <SyncStatus pod={pod} />
         <TypeMenu pod={pod} />
       </HStack>
-      <Box border="1px" w="sm">
+      <Box border="1px" w="sm" p="1rem">
         <MySlate
           value={
             pod.content || [
@@ -589,7 +591,26 @@ function Pod({ id }) {
   } else if (pod.type === "REPL") {
     return <ReplPod pod={pod} />;
   } else if (pod.type === "DECK") {
-    return <Text>Deck</Text>;
+    return (
+      <Box>
+        {/* <ToolBar pod={pod} /> */}
+        <Button
+          size="sm"
+          onClick={() => {
+            dispatch(
+              repoSlice.actions.addPod({
+                parent: pod.id,
+                type: "CODE",
+                index: 0,
+              })
+            );
+          }}
+        >
+          <AddIcon />
+        </Button>
+        <Text>Deck</Text>
+      </Box>
+    );
   } else {
     throw new Error(`Invalid pod type ${pod.type}`);
   }
