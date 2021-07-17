@@ -160,9 +160,6 @@ function serializeMsg(msg, key) {
 function deserializeMsg(frames, key = null) {
   var i = 0;
   var idents = [];
-  // FIXME I'm receiving all <IDS|MSG>
-  console.log("----", frames.toString());
-
   for (i = 0; i < frames.length; i++) {
     var frame = frames[i];
     // console.log(i);
@@ -239,6 +236,7 @@ export function constructExecuteRequest(code) {
   return constructMessage("execute_request", {
     // Source code to be executed by the kernel, one or more lines.
     code: code,
+    // FIXME if this is true, no result is returned!
     silent: false,
     store_history: false,
     // XXX this does not seem to be used
@@ -256,16 +254,10 @@ export class JuliaKernel {
       "/Users/hebi/Documents/GitHub/codepod/api/codepod-conn.json";
     this.kernelSpec = JSON.parse(readFileSync(connFname));
     console.log(this.kernelSpec);
-    let shell = new zmq.Request();
-    shell.connect(`tcp://localhost:${this.kernelSpec.shell_port}`);
-    let iopub = new zmq.Subscriber();
-    iopub.connect(`tcp://localhost:${this.kernelSpec.iopub_port}`);
-    //   pubsock.subscribe("execute_result");
-    iopub.subscribe("");
-    this.kernelSocks = {
-      shell,
-      iopub,
-    };
+    // Pub/Sub Router/Dealer
+    this.shell = new zmq.Dealer();
+    this.shell.connect(`tcp://localhost:${this.kernelSpec.shell_port}`);
+    console.log("connected to shell port");
 
     this.kernelStatus = "uknown";
     this.results = {};
@@ -280,38 +272,35 @@ export class JuliaKernel {
   // this ID.
   sendShellMessage(msg) {
     // bind zeromq socket to the ports
-    console.log("sending execute request ..");
+    console.log("sending shell mesasge ..");
     console.log(msg);
     // FIXME how to receive the message?
     //   sock.on("message", (msg) => {
     //     console.log("sock on:", msg);
     //   });
     // FIXME I probably need to wait until the server is started
-    //   sock.send(msg);
-    this.kernelSocks.shell.send(serializeMsg(msg, this.kernelSpec.key));
-
-    //   console.log("waiting for response ..");
-    //   let result = await sock.receive();
-    //   console.log("result:", result);
+    // sock.send(msg);
+    this.shell.send(serializeMsg(msg, this.kernelSpec.key));
   }
 
   async listenIOPub(func) {
+    if (this.iopub && !this.iopub.closed) {
+      console.log("disconnecting previous iopub ..");
+      this.iopub.close();
+    }
+    this.iopub = new zmq.Subscriber();
+    console.log("connecting IOPub");
+    this.iopub.connect(`tcp://localhost:${this.kernelSpec.iopub_port}`);
+    this.iopub.subscribe();
     console.log("waiting for iopub");
+
     //   let msgs = await pubsock.receive();
     //   console.log(msgs);
     // FIXME this socket can only be listened here once!
-    for await (const [topic, ...frames] of this.kernelSocks.iopub) {
-      console.log(
-        "received a message related to:",
-        topic.toString(),
-        "containing message:",
-        frames.toString()
-      );
-
+    for await (const [topic, ...frames] of this.iopub) {
       //   func(topic, frames);
 
       let msgs = deserializeMsg(frames, this.kernelSpec.key);
-      console.log("deserialized", msgs);
       func(topic.toString(), msgs);
     }
   }
@@ -328,28 +317,3 @@ async function gen() {
   let spec = await createNewConnSpec();
   writeFileSync(connFname, JSON.stringify(spec));
 }
-
-async function main() {
-  //   let spec = await startJuliaKernel(true);
-  //   connectKernel(kernelSpec);
-  let kernel = new JuliaKernel();
-  //   console.log("wait 8 sec ..");
-  //   await sleep(8000);
-  kernel.listenIOPub((topic, msgs) => {
-    switch (topic) {
-      case "status":
-        kernelStatus = msgs.content.execution_state;
-        break;
-      case "execute_result":
-        results[msgs.parent_header.msg_id] = msg.content.data["text/plain"];
-        break;
-      default:
-        break;
-    }
-  });
-  //   let msg = constructExecuteRequest("5+6");
-  //   sendToKernel(kernelSpec, constructExecuteRequest("5+6"));
-  kernel.sendShellMessage(constructMessage("kernel_info_request"));
-}
-
-// main();
