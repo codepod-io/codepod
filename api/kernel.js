@@ -215,10 +215,14 @@ function deserializeMsg(frames, key = null) {
   return message;
 }
 
-export function constructMessage(msg_type, content = {}) {
+export function constructMessage({
+  msg_type,
+  content = {},
+  msg_id = uuidv4(),
+}) {
   return {
     header: {
-      msg_id: uuidv4(),
+      msg_id: msg_id,
       msg_type: msg_type,
       session: uuidv4(),
       username: "dummy_user",
@@ -232,19 +236,23 @@ export function constructMessage(msg_type, content = {}) {
   };
 }
 
-export function constructExecuteRequest(code) {
-  return constructMessage("execute_request", {
-    // Source code to be executed by the kernel, one or more lines.
-    code: code,
-    // FIXME if this is true, no result is returned!
-    silent: false,
-    store_history: false,
-    // XXX this does not seem to be used
-    user_expressions: {
-      x: "3+4",
+export function constructExecuteRequest({ code, msg_id }) {
+  return constructMessage({
+    msg_type: "execute_request",
+    msg_id,
+    content: {
+      // Source code to be executed by the kernel, one or more lines.
+      code: code,
+      // FIXME if this is true, no result is returned!
+      silent: false,
+      store_history: false,
+      // XXX this does not seem to be used
+      user_expressions: {
+        x: "3+4",
+      },
+      allow_stdin: false,
+      stop_on_error: true,
     },
-    allow_stdin: false,
-    stop_on_error: true,
   });
 }
 
