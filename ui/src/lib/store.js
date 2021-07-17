@@ -430,6 +430,10 @@ export const repoSlice = createSlice({
       state.kernelConnected = false;
       state.kernelStatus = "disconnected";
     },
+    WS_RESULT: (state, action) => {
+      let { podId, result } = action.payload;
+      state.pods[podId].result = result;
+    },
   },
 });
 

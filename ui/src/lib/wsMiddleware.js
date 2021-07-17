@@ -31,6 +31,7 @@ const socketMiddleware = () => {
         });
         socket.on("execute_result", (data) => {
           console.log("execute result!!!", data);
+          store.dispatch(actions.wsResult(data));
         });
         socket.on("status", (status) => {
           console.log("kernel status:", status);
@@ -79,7 +80,7 @@ const socketMiddleware = () => {
       case "WS_RUN":
         console.log("run code");
         if (socket) {
-          socket.emit("runCode", action.code);
+          socket.emit("runCode", action.code, action.podId);
         } else {
           console.log("ERROR: not connected");
         }

@@ -446,7 +446,13 @@ function CodePod({ pod }) {
             //   repoSlice.actions.ensureSessionRuntime({ lang: pod.lang })
             // );
             // 2. send
-            dispatch(wsActions.wsRun(slackGetPlainText(pod.content)));
+            dispatch(
+              wsActions.wsRun({
+                code: slackGetPlainText(pod.content),
+                podId: pod.id,
+                sessionId: "sessionId",
+              })
+            );
             // 3. the socket should have onData set to set the output
           }}
         >
@@ -471,6 +477,7 @@ function CodePod({ pod }) {
           language={pod.lang || "javascript"}
         />
       </Box>
+      {pod.result && <Text>{pod.result}</Text>}
     </VStack>
   );
 }

@@ -10,4 +10,13 @@ export const wsStatus = (status) => ({
   payload: { status },
 });
 export const wsRequestStatus = () => ({ type: "WS_REQUEST_STATUS" });
-export const wsRun = (code) => ({ type: "WS_RUN", code });
+export const wsRun = ({ code, podId, sessionId }) => ({
+  type: "WS_RUN",
+  code,
+  podId,
+  sessionId,
+});
+export const wsResult = ({ podId, result }) => ({
+  type: "WS_RESULT",
+  payload: { podId, result },
+});

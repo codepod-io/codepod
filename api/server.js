@@ -193,7 +193,7 @@ async function startApolloServer() {
         case "execute_result":
           console.log("emitting execute_result ..");
           socket.emit("execute_result", {
-            id: msgs.parent_header.msg_id,
+            podId: msgs.parent_header.msg_id,
             result: msgs.content.data["text/plain"],
           });
           break;
@@ -203,8 +203,8 @@ async function startApolloServer() {
       }
     });
 
-    socket.on("runCode", (code) => {
-      kernel.sendShellMessage(constructExecuteRequest(code));
+    socket.on("runCode", (code, podId) => {
+      kernel.sendShellMessage(constructExecuteRequest({ code, msg_id: podId }));
     });
 
     socket.on("requestKernelStatus", () => {
