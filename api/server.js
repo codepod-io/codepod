@@ -229,9 +229,17 @@ async function startApolloServer() {
     }
 
     socket.on("runCode", (lang, code, podId) => {
-      kernels[lang].sendShellMessage(
-        constructExecuteRequest({ code, msg_id: podId })
-      );
+      if (!(lang in kernels)) {
+        console.log("Invalid language", lang);
+        socket.emit("stdout", {
+          podId: podId,
+          stdout: `Error: Invalid Language ${lang}`,
+        });
+      } else {
+        kernels[lang].sendShellMessage(
+          constructExecuteRequest({ code, msg_id: podId })
+        );
+      }
     });
 
     socket.on("requestKernelStatus", (lang) => {
