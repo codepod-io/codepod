@@ -4,6 +4,8 @@ import "prismjs/components/prism-php";
 import "prismjs/components/prism-sql";
 import "prismjs/components/prism-java";
 import "prismjs/components/prism-julia";
+import "prismjs/components/prism-scheme";
+import "prismjs/components/prism-racket";
 
 import React, { useState, useCallback, useMemo } from "react";
 import { Slate, Editable, withReact } from "slate-react";

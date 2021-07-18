@@ -322,6 +322,8 @@ function LanguageMenu({ pod }) {
       >
         <option value="python">Python</option>
         <option value="julia">Julia</option>
+        <option value="racket">Racket</option>
+        <option value="scheme">Scheme</option>
         <option value="js">JavaScript</option>
         <option value="css">CSS</option>
         <option value="html">HTML</option>
