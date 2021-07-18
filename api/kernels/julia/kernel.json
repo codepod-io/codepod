@@ -1,0 +1,14 @@
+{
+  "display_name": "Julia 1.6.1",
+  "argv": [
+    "/Applications/Julia-1.6.app/Contents/Resources/julia/bin/julia",
+    "-i",
+    "--color=yes",
+    "--project=/Users/hebi/Documents/GitHub/jupyter/IJulia.jl/",
+    "/Users/hebi/Documents/GitHub/jupyter/IJulia.jl/src/kernel.jl",
+    "{connection_file}"
+  ],
+  "language": "julia",
+  "env": {},
+  "interrupt_mode": "signal"
+}

@@ -69,8 +69,8 @@ export default function Repo() {
   const repoLoaded = useSelector((state) => state.repo.repoLoaded);
   const sessionId = useSelector((state) => state.repo.sessionId);
   const sessionRuntime = useSelector((state) => state.repo.sessionRuntime);
-  const kernelConnected = useSelector((state) => state.repo.kernelConnected);
-  const kernelStatus = useSelector((state) => state.repo.kernelStatus);
+  const runtimeConnected = useSelector((state) => state.repo.runtimeConnected);
+  const kernels = useSelector((state) => state.repo.kernels);
 
   return (
     <Flex direction="column" m="auto">
@@ -101,7 +101,7 @@ export default function Repo() {
           Session Runtime:
           <Code>{Object.keys(sessionRuntime)}</Code>
         </Text>
-        <Text>Kernel connected? {kernelConnected ? "Yes" : "No"}</Text>
+        <Text>Runtime connected? {runtimeConnected ? "Yes" : "No"}</Text>
 
         <Button
           onClick={() => {
@@ -117,14 +117,23 @@ export default function Repo() {
         >
           Disconnect
         </Button>
-        <Text>Kernel status: {kernelStatus}</Text>
-        <Button
-          onClick={() => {
-            dispatch(wsActions.wsRequestStatus());
-          }}
-        >
-          Request Kernel Status
-        </Button>
+        {/* CAUTION Object.entries is very tricky. Must use for .. of, and the destructure must be [k,v] LIST */}
+        {Object.entries(kernels).map(([lang, kernel]) => (
+          <Box key={`lang-${lang}`}>
+            <Text>kernel name: {lang}</Text>
+            <Text>
+              Status:{" "}
+              {runtimeConnected ? kernel.status : "runtime disconnected"}
+            </Text>
+            <Button
+              onClick={() => {
+                dispatch(wsActions.wsRequestStatus(lang));
+              }}
+            >
+              Request Kernel Status
+            </Button>
+          </Box>
+        ))}
         {!repoLoaded && <Text>Repo Loading ...</Text>}
       </Box>
       {repoLoaded && (
@@ -452,6 +461,7 @@ function CodePod({ pod }) {
             // 2. send
             dispatch(
               wsActions.wsRun({
+                lang: pod.lang,
                 code: slackGetPlainText(pod.content),
                 podId: pod.id,
                 sessionId: "sessionId",

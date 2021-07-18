@@ -49,7 +49,7 @@ async function test() {
 
 // test();
 
-async function createNewConnSpec() {
+export async function createNewConnSpec() {
   // get a list of free ports
   // well, the ports should be generated from the kernel side
   //
@@ -153,7 +153,8 @@ function serializeMsg(msg, key) {
     part6,
     part7,
     // 8. extra raw buffers]
-    JSON.stringify({}),
+    // I'm not sending this, because iracket crashes on this
+    // JSON.stringify({}),
   ];
 }
 
@@ -220,6 +221,10 @@ export function constructMessage({
   content = {},
   msg_id = uuidv4(),
 }) {
+  // TODO I should probably switch to Typescript just to avoid writing such checks
+  if (!msg_type) {
+    throw new Error("msg_type is undefined");
+  }
   return {
     header: {
       msg_id: msg_id,
@@ -237,6 +242,9 @@ export function constructMessage({
 }
 
 export function constructExecuteRequest({ code, msg_id }) {
+  if (!code || !msg_id) {
+    throw new Error("Must provide code and msg_id");
+  }
   return constructMessage({
     msg_type: "execute_request",
     msg_id,
@@ -256,15 +264,15 @@ export function constructExecuteRequest({ code, msg_id }) {
   });
 }
 
-export class JuliaKernel {
-  constructor() {
-    let connFname =
-      "/Users/hebi/Documents/GitHub/codepod/api/codepod-conn.json";
+export class Kernel {
+  constructor(connFname) {
     this.kernelSpec = JSON.parse(readFileSync(connFname));
     console.log(this.kernelSpec);
     // Pub/Sub Router/Dealer
     this.shell = new zmq.Dealer();
     this.shell.connect(`tcp://localhost:${this.kernelSpec.shell_port}`);
+    // FIXME this is not actually connected. I need to check the real status
+    // There does not seem to have any method to check connection status
     console.log("connected to shell port");
 
     this.kernelStatus = "uknown";
@@ -320,7 +328,7 @@ function sleep(ms) {
   });
 }
 
-async function gen() {
+export async function genConnSpec() {
   let connFname = "/Users/hebi/Documents/GitHub/codepod/api/codepod-conn.json";
   let spec = await createNewConnSpec();
   writeFileSync(connFname, JSON.stringify(spec));

@@ -1,0 +1,5 @@
+{
+  "argv": ["racket", "-l", "iracket/iracket", "--", "{connection_file}"],
+  "display_name": "Racket",
+  "language": "racket"
+}

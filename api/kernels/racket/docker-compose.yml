@@ -1,0 +1,13 @@
+services:
+  racket:
+    build: .
+    ports:
+      - 61397:61397
+      - 61398:61398
+      - 61399:61399
+      - 61400:61400
+      - 61401:61401
+    volumes:
+      # I'm developing iracket
+      - ./iracket:/iracket
+      - ./conn.json:/conn.json

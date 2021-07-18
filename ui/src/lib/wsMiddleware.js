@@ -36,9 +36,9 @@ const socketMiddleware = () => {
           console.log("execute result!!!", data);
           store.dispatch(actions.wsResult(data));
         });
-        socket.on("status", (status) => {
+        socket.on("status", (lang, status) => {
           console.log("kernel status:", status);
-          store.dispatch(actions.wsStatus(status));
+          store.dispatch(actions.wsStatus(lang, status));
         });
         // well, since it is already opened, this won't be called
         //
@@ -47,7 +47,8 @@ const socketMiddleware = () => {
           console.log("connected");
           store.dispatch(actions.wsConnected());
           // request kernel status after connection
-          store.dispatch(actions.wsRequestStatus());
+          store.dispatch(actions.wsRequestStatus("julia"));
+          store.dispatch(actions.wsRequestStatus("racket"));
         });
         // so I'm setting this
         // Well, I should probably not dispatch action inside another action
@@ -83,14 +84,14 @@ const socketMiddleware = () => {
       case "WS_RUN":
         console.log("run code");
         if (socket) {
-          socket.emit("runCode", action.code, action.podId);
+          socket.emit("runCode", action.lang, action.code, action.podId);
         } else {
           console.log("ERROR: not connected");
         }
         break;
       case "WS_REQUEST_STATUS":
         if (socket) {
-          socket.emit("requestKernelStatus");
+          socket.emit("requestKernelStatus", action.lang);
         } else {
           console.log("ERROR: not connected");
         }

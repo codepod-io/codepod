@@ -9,11 +9,7 @@ import { Server } from "socket.io";
 
 import * as pty from "node-pty";
 
-import {
-  JuliaKernel,
-  constructMessage,
-  constructExecuteRequest,
-} from "./kernel.js";
+import { Kernel, constructMessage, constructExecuteRequest } from "./kernel.js";
 
 const typeDefs = gql`
   type Query {
@@ -139,7 +135,10 @@ async function startApolloServer() {
   let procs = {};
 
   console.log("connnecting to kernel ..");
-  let kernel = new JuliaKernel();
+  let kernels = {
+    julia: new Kernel("./kernels/julia/conn.json"),
+    racket: new Kernel("./kernels/racket/conn.json"),
+  };
   console.log("kernel connected");
 
   io.on("connection", (socket) => {
@@ -193,43 +192,56 @@ async function startApolloServer() {
       }
     });
 
-    kernel.listenIOPub((topic, msgs) => {
-      switch (topic) {
-        case "status":
-          console.log("emiting status ..");
-          socket.emit("status", msgs.content.execution_state);
-          break;
-        case "execute_result":
-          console.log("emitting execute_result ..");
-          socket.emit("execute_result", {
-            podId: msgs.parent_header.msg_id,
-            result: msgs.content.data["text/plain"],
-            count: msgs.content.execution_count,
-          });
-          break;
-        case "stdout":
-          console.log("emitting stdout ..");
-          if (msgs.content.text.startsWith("base64 binary data")) {
-            console.log("warning: base64 encoded stdout");
-          } else {
-            socket.emit("stdout", {
+    // listen IOPub
+    for (const [lang, kernel] of Object.entries(kernels)) {
+      kernel.listenIOPub((topic, msgs) => {
+        // console.log("-----", topic, msgs);
+        // iracket's topic seems to be an ID. I should use msg type instead
+        switch (msgs.header.msg_type) {
+          case "status":
+            console.log("emiting status ..");
+            socket.emit("status", lang, msgs.content.execution_state);
+            break;
+          case "execute_result":
+            console.log("emitting execute_result ..");
+            socket.emit("execute_result", {
               podId: msgs.parent_header.msg_id,
-              stdout: msgs.content.text,
+              result: msgs.content.data["text/plain"],
+              count: msgs.content.execution_count,
             });
-          }
-          break;
-        default:
-          console.log("Message Not handled", topic);
-          break;
+            break;
+          case "stdout":
+            console.log("emitting stdout ..");
+            if (msgs.content.text.startsWith("base64 binary data")) {
+              console.log("warning: base64 encoded stdout");
+            } else {
+              socket.emit("stdout", {
+                podId: msgs.parent_header.msg_id,
+                stdout: msgs.content.text,
+              });
+            }
+            break;
+          default:
+            console.log("Message Not handled", topic);
+            break;
+        }
+      });
+    }
+
+    socket.on("runCode", (lang, code, podId) => {
+      kernels[lang].sendShellMessage(
+        constructExecuteRequest({ code, msg_id: podId })
+      );
+    });
+
+    socket.on("requestKernelStatus", (lang) => {
+      if (lang in kernels) {
+        kernels[lang].sendShellMessage(
+          constructMessage({ msg_type: "kernel_info_request" })
+        );
+      } else {
+        console.log("Invalid requestKernelStatus for lang", lang);
       }
-    });
-
-    socket.on("runCode", (code, podId) => {
-      kernel.sendShellMessage(constructExecuteRequest({ code, msg_id: podId }));
-    });
-
-    socket.on("requestKernelStatus", () => {
-      kernel.sendShellMessage(constructMessage("kernel_info_request"));
     });
   });
 

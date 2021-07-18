@@ -1,0 +1,12 @@
+{
+  "shell_port": 61397,
+  "iopub_port": 61398,
+  "stdin_port": 61399,
+  "control_port": 61400,
+  "hb_port": 61401,
+  "ip": "0.0.0.0",
+  "key": "412d24d7-baca5d46b674d910851edd2f",
+  "transport": "tcp",
+  "signature_scheme": "hmac-sha256",
+  "kernel_name": "racket"
+}

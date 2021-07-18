@@ -268,8 +268,15 @@ export const repoSlice = createSlice({
     queue: [],
     sessionId: uuidv4(),
     sessionRuntime: {},
-    kernelConnected: false,
-    kernelStatus: "disconnected",
+    runtimeConnected: false,
+    kernels: {
+      julia: {
+        status: "NA",
+      },
+      racket: {
+        status: "NA",
+      },
+    },
     queueProcessing: false,
   },
   reducers: {
@@ -438,14 +445,14 @@ export const repoSlice = createSlice({
     },
     WS_STATUS: (state, action) => {
       console.log("status action!", action.payload);
-      state.kernelStatus = action.payload.status;
+      const { lang, status } = action.payload;
+      state.kernels[lang].status = status;
     },
     WS_CONNECTED: (state, action) => {
-      state.kernelConnected = true;
+      state.runtimeConnected = true;
     },
     WS_DISCONNECTED: (state, action) => {
-      state.kernelConnected = false;
-      state.kernelStatus = "disconnected";
+      state.runtimeConnected = false;
     },
     WS_RESULT: (state, action) => {
       let { podId, result, count } = action.payload;
