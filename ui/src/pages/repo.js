@@ -516,15 +516,17 @@ function CodePod({ pod }) {
         </Flex>
       )}
       {pod.error && (
-        <Text>
-          Error: {pod.error.evalue}
+        <Box>
+          <Text color="red">{pod.error.evalue}</Text>
           {pod.error.stacktrace && (
             <Text>
               StackTrace:
-              <Code whiteSpace="pre">{pod.error.stacktrace.join("\n")}</Code>
+              <Code maxW="lg" whiteSpace="pre-wrap">
+                {pod.error.stacktrace.join("\n")}
+              </Code>
             </Text>
           )}
-        </Text>
+        </Box>
       )}
     </VStack>
   );
