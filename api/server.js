@@ -221,14 +221,24 @@ async function startApolloServer() {
               });
             }
             break;
+          case "error":
+            console.log("emitting error ..");
+            socket.emit("error", {
+              podId: msgs.parent_header.msg_id,
+              stacktrace: msgs.content.traceback,
+              ename: msgs.content.ename,
+              evalue: msgs.content.evalue,
+            });
+            break;
           default:
-            console.log("Message Not handled", topic);
+            console.log("Message Not handled", msgs.header.msg_type);
+            // console.log("Message body:", msgs);
             break;
         }
       });
     }
 
-    socket.on("runCode", (lang, code, podId) => {
+    socket.on("runCode", ({ lang, code, podId, namespace }) => {
       if (!(lang in kernels)) {
         console.log("Invalid language", lang);
         socket.emit("stdout", {
@@ -237,7 +247,7 @@ async function startApolloServer() {
         });
       } else {
         kernels[lang].sendShellMessage(
-          constructExecuteRequest({ code, msg_id: podId })
+          constructExecuteRequest({ code, msg_id: podId, namespace })
         );
       }
     });

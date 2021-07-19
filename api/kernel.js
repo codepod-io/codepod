@@ -241,7 +241,7 @@ export function constructMessage({
   };
 }
 
-export function constructExecuteRequest({ code, msg_id }) {
+export function constructExecuteRequest({ code, msg_id, namespace }) {
   if (!code || !msg_id) {
     throw new Error("Must provide code and msg_id");
   }
@@ -250,7 +250,8 @@ export function constructExecuteRequest({ code, msg_id }) {
     msg_id,
     content: {
       // Source code to be executed by the kernel, one or more lines.
-      code: code,
+      code,
+      namespace,
       // FIXME if this is true, no result is returned!
       silent: false,
       store_history: false,

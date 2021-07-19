@@ -514,6 +514,17 @@ function CodePod({ pod }) {
           <Text>{pod.result.text}</Text>
         </Flex>
       )}
+      {pod.error && (
+        <Text>
+          Error: {pod.error.evalue}
+          {pod.error.stacktrace && (
+            <Text>
+              StackTrace:
+              <Code whiteSpace="pre">{pod.error.stacktrace.join("\n")}</Code>
+            </Text>
+          )}
+        </Text>
+      )}
     </VStack>
   );
 }

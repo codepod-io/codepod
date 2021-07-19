@@ -36,6 +36,9 @@ const socketMiddleware = () => {
           console.log("execute result!!!", data);
           store.dispatch(actions.wsResult(data));
         });
+        socket.on("error", (data) => {
+          store.dispatch(actions.wsError(data));
+        });
         socket.on("status", (lang, status) => {
           console.log("kernel status:", status);
           store.dispatch(actions.wsStatus(lang, status));
@@ -84,9 +87,15 @@ const socketMiddleware = () => {
       case "WS_RUN":
         console.log("run code");
         if (socket) {
-          socket.emit("runCode", action.lang, action.code, action.podId);
+          socket.emit("runCode", action.payload);
         } else {
           console.log("ERROR: not connected");
+          store.dispatch(
+            actions.wsSimpleError({
+              podId: action.payload.podId,
+              msg: "Runtime not connected",
+            })
+          );
         }
         break;
       case "WS_REQUEST_STATUS":
@@ -97,7 +106,6 @@ const socketMiddleware = () => {
         }
         break;
       default:
-        console.log("the next action:", action);
         return next(action);
     }
   };

@@ -10,12 +10,9 @@ export const wsStatus = (lang, status) => ({
   payload: { lang, status },
 });
 export const wsRequestStatus = (lang) => ({ type: "WS_REQUEST_STATUS", lang });
-export const wsRun = ({ lang, code, podId, sessionId }) => ({
+export const wsRun = (payload) => ({
   type: "WS_RUN",
-  lang,
-  code,
-  podId,
-  sessionId,
+  payload,
 });
 export const wsResult = ({ podId, result, count }) => ({
   type: "WS_RESULT",
@@ -24,4 +21,12 @@ export const wsResult = ({ podId, result, count }) => ({
 export const wsStdout = ({ podId, stdout }) => ({
   type: "WS_STDOUT",
   payload: { podId, stdout },
+});
+export const wsError = (payload) => ({
+  type: "WS_ERROR",
+  payload,
+});
+export const wsSimpleError = (payload) => ({
+  type: "WS_SIMPLE_ERROR",
+  payload,
 });
