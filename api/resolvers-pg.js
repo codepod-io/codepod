@@ -154,7 +154,6 @@ export const resolvers = {
     },
     clearUser: () => {},
     addPod: async (_, { reponame, username, parent, type, id, index }) => {
-      parent = parent ? parent : "ROOT";
       // 1. find the repo
       const repo = await prisma.repo.findFirst({
         where: {
@@ -173,10 +172,12 @@ export const resolvers = {
           index: {
             gte: index,
           },
-          parent: {
-            // CAUTION I cannot use null here
-            id: parent,
-          },
+          parent:
+            parent === "ROOT"
+              ? null
+              : {
+                  id: parent,
+                },
         },
         data: {
           index: {
