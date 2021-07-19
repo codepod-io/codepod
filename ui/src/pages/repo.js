@@ -148,7 +148,7 @@ export default function Repo() {
             border="solid 3px"
             p={5}
             m={5}
-            maxW={["sm", "lg", "3xl", "4xl", "6xl"]}
+            // maxW={["sm", "lg", "3xl", "4xl", "6xl"]}
           >
             <Box>
               <Deck id="ROOT" />
