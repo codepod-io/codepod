@@ -31,6 +31,7 @@ export const loadPodQueue = createAsyncThunk(
           content
           result,
           stdout,
+          error,
           index
           parent {
             id
@@ -70,6 +71,7 @@ function hashPod(pod) {
       lang: pod.lang,
       result: pod.result,
       stdout: pod.stdout,
+      error: pod.error,
     })
   ).toString();
 }
@@ -80,6 +82,15 @@ function computePodStatus(pod) {
   } else {
     pod.status = "synced";
   }
+}
+
+// TODO use a selector to compute and retrieve the status
+// TODO this need to cooperate with syncing indicator
+export function selectPodStatus(id) {
+  return (state) => {
+    let pod = state.repo.pods[id];
+    return computePodStatus(pod);
+  };
 }
 
 function normalize(pods) {
@@ -113,6 +124,9 @@ function normalize(pods) {
     }
     if (pod.result) {
       pod.result = JSON.parse(pod.result);
+    }
+    if (pod.error) {
+      pod.error = JSON.parse(pod.error);
     }
     pod.status = "synced";
     pod.remoteHash = hashPod(pod);
@@ -191,7 +205,7 @@ async function doRemoteDeletePod({ id, toDelete }) {
 
 export const remoteUpdatePod = createAsyncThunk(
   "remoteUpdatePod",
-  async ({ id, type, content, lang, result, stdout }) => {
+  async ({ id, type, content, lang, result, stdout, error }) => {
     // the content might be a list object in case of WYSIWYG, so first serialize
     // it
     content = JSON.stringify(content);
@@ -204,8 +218,8 @@ export const remoteUpdatePod = createAsyncThunk(
       },
       body: JSON.stringify({
         query: `
-        mutation updatePod($id: String, $content: String, $type: String, $lang: String, $result: String, $stdout: String) {
-          updatePod(id: $id, content: $content, type: $type, lang: $lang, result: $result, stdout: $stdout) {
+        mutation updatePod($id: String, $content: String, $type: String, $lang: String, $result: String, $stdout: String, $error: String) {
+          updatePod(id: $id, content: $content, type: $type, lang: $lang, result: $result, stdout: $stdout, error: $error) {
             id
           }
         }`,
@@ -216,6 +230,7 @@ export const remoteUpdatePod = createAsyncThunk(
           lang,
           result: JSON.stringify(result),
           stdout,
+          error: JSON.stringify(error),
         },
       }),
     });
@@ -397,6 +412,7 @@ export const repoSlice = createSlice({
       state.pods[id].result = "";
       state.pods[id].stdout = "";
       state.pods[id].error = null;
+      computePodStatus(state.pods[id]);
     },
     setPodType: (state, action) => {
       const { id, type } = action.payload;
@@ -483,18 +499,21 @@ export const repoSlice = createSlice({
         text: result,
         count: count,
       };
+      computePodStatus(state.pods[podId]);
     },
     WS_STDOUT: (state, action) => {
       let { podId, stdout } = action.payload;
       // FIXME this is stream
       // FIXME this is base64 encoded
       state.pods[podId].stdout = stdout;
+      computePodStatus(state.pods[podId]);
     },
     WS_SIMPLE_ERROR: (state, action) => {
       let { podId, msg } = action.payload;
       state.pods[podId].error = {
         evalue: msg,
       };
+      computePodStatus(state.pods[podId]);
     },
     WS_ERROR: (state, action) => {
       let { podId, ename, evalue, stacktrace } = action.payload;
@@ -503,6 +522,7 @@ export const repoSlice = createSlice({
         evalue,
         stacktrace,
       };
+      computePodStatus(state.pods[podId]);
     },
   },
 });

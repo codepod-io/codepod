@@ -182,6 +182,7 @@ function SyncStatus({ pod }) {
                   lang: pod.lang,
                   result: pod.result,
                   stdout: pod.stdout,
+                  error: pod.error,
                 })
               );
             }}

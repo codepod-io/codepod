@@ -87,6 +87,7 @@ model Pod {
   type     PodType
   result   String?
   stdout   String?
+  error    String?
   // repo        Repo?    @relation("ROOT")
   repo     Repo    @relation("BELONG", fields: [repoId], references: [id])
 
