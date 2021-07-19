@@ -18,6 +18,8 @@
     "formik": "^2.2.9",
     "framer-motion": "^4",
     "graphql": "^15.5.1",
+    "nanoid": "^3.1.23",
+    "nanoid-dictionary": "^4.3.0",
     "prismjs": "^1.24.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",

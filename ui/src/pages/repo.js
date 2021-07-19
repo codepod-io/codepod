@@ -44,7 +44,12 @@ import useResizeObserver from "use-resize-observer";
 import io from "socket.io-client";
 import { Node } from "slate";
 
-import { repoSlice, loadPodQueue, remoteUpdatePod } from "../lib/store";
+import {
+  repoSlice,
+  loadPodQueue,
+  remoteUpdatePod,
+  selectNamespace,
+} from "../lib/store";
 import { MySlate } from "../components/MySlate";
 import { CodeSlack } from "../components/CodeSlate";
 import { StyledLink as Link } from "../components/utils";
@@ -207,7 +212,7 @@ function InfoBar({ pod }) {
   /* eslint-disable no-unused-vars */
   const [value, setValue] = useState(pod.id);
   const { hasCopied, onCopy } = useClipboard(value);
-  // return <Box></Box>;
+  const namespace = useSelector(selectNamespace(pod.id));
   return (
     <Box>
       {/* <DragHandleIcon mr="3px" /> */}
@@ -230,6 +235,10 @@ function InfoBar({ pod }) {
                 }
               </Code>
               <Button onClick={onCopy}>{hasCopied ? "Copied" : "Copy"}</Button>
+            </Text>
+            <Text>
+              Namespace:
+              <Code colorScheme="blackAlpha">{namespace}</Code>
             </Text>
             <Text mr={5}>Index: {pod.index}</Text>
             <Text>
@@ -424,6 +433,7 @@ function Deck({ id }) {
               </div>
               {/* RIGHT */}
               <Flex direction="column" ref={right}>
+                <Code colorScheme="blackAlpha">{pod.id}</Code>
                 {pod.children.map((id) => {
                   return <Deck id={id} key={id}></Deck>;
                 })}
@@ -442,6 +452,7 @@ const slackGetPlainText = (nodes) => {
 
 function CodePod({ pod }) {
   let dispatch = useDispatch();
+  let namespace = useSelector(selectNamespace(pod.id));
   return (
     <VStack align="start" p={2}>
       <HStack>
@@ -465,6 +476,7 @@ function CodePod({ pod }) {
               wsActions.wsRun({
                 lang: pod.lang,
                 code: slackGetPlainText(pod.content),
+                namespace: namespace,
                 podId: pod.id,
                 sessionId: "sessionId",
               })

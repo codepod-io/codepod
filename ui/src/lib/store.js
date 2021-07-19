@@ -8,6 +8,8 @@ import produce from "immer";
 import sha256 from "crypto-js/sha256";
 import { io } from "socket.io-client";
 import wsMiddleware from "./wsMiddleware";
+import { customAlphabet } from "nanoid";
+import { nolookalikes } from "nanoid-dictionary";
 
 export const loadPodQueue = createAsyncThunk(
   "loadPodQueue",
@@ -257,6 +259,26 @@ export const loopPodQueue = createAsyncThunk(
   }
 );
 
+// XXX the selector cannot return a list, because that is a NEW object and
+// cause re-rendering, otherwise will throw error:
+// Cannot update a component while rendering a different component
+// Can use shallowEqual to solve that
+//
+// const _ = useSelector((state) => [], shallowEqual);
+export function selectNamespace(id) {
+  return (state) => {
+    let res = [];
+    while (id !== "ROOT") {
+      res.push(id);
+      // HACK actually as long as I'm assigning the pod object to a temporary
+      // object, and return nothing, even with shallowEqual, the component gets
+      // re-rendered again and again. Using id here does not have that issue.
+      id = state.repo.pods[id].parent;
+    }
+    return res.slice(1).reverse().join("/");
+  };
+}
+
 export const repoSlice = createSlice({
   name: "repo",
   // TODO load from server
@@ -484,7 +506,10 @@ const podQueueMiddleware = (storeAPI) => (next) => (action) => {
   if (action.type === repoSlice.actions.addPod.type) {
     // construct the ID here so that the client and the server got the same ID
     action = produce(action, (draft) => {
-      const id = uuidv4();
+      // const id = uuidv4();
+      // FIXME safety
+      const nanoid = customAlphabet(nolookalikes, 10);
+      const id = "CP" + nanoid();
       draft.payload.id = id;
     });
   } else if (action.type === repoSlice.actions.deletePod.type) {
