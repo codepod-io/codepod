@@ -26,6 +26,10 @@ export const wsError = (payload) => ({
   type: "WS_ERROR",
   payload,
 });
+export const wsStream = (payload) => ({
+  type: "WS_STREAM",
+  payload,
+});
 export const wsSimpleError = (payload) => ({
   type: "WS_SIMPLE_ERROR",
   payload,

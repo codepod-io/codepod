@@ -232,8 +232,29 @@ async function startApolloServer() {
               evalue: msgs.content.evalue,
             });
             break;
+          case "stream":
+            // iracket use this to send stderr
+            // FIXME there are many frames
+            if (msgs.content.name === "stdout") {
+              console.log("ignore stdout stream");
+            } else if (msgs.content.name === "stderr") {
+              console.log("emitting error stream ..");
+              socket.emit("stream", {
+                podId: msgs.parent_header.msg_id,
+                text: msgs.content.text,
+              });
+            } else {
+              console.log(msgs);
+              throw new Error(`Invalid stream type: ${msgs.content.name}`);
+            }
+            break;
           default:
-            console.log("Message Not handled", msgs.header.msg_type);
+            console.log(
+              "Message Not handled",
+              msgs.header.msg_type,
+              "topic:",
+              topic
+            );
             // console.log("Message body:", msgs);
             break;
         }

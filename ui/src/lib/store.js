@@ -524,6 +524,12 @@ export const repoSlice = createSlice({
       };
       computePodStatus(state.pods[podId]);
     },
+    WS_STREAM: (state, action) => {
+      let { podId, text } = action.payload;
+      // append
+      state.pods[podId].stdout += text;
+      computePodStatus(state.pods[podId]);
+    },
   },
 });
 

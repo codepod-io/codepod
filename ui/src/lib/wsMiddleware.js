@@ -39,6 +39,9 @@ const socketMiddleware = () => {
         socket.on("error", (data) => {
           store.dispatch(actions.wsError(data));
         });
+        socket.on("stream", (data) => {
+          store.dispatch(actions.wsStream(data));
+        });
         socket.on("status", (lang, status) => {
           console.log("kernel status:", status);
           store.dispatch(actions.wsStatus(lang, status));
