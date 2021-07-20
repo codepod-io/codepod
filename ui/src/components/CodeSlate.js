@@ -210,23 +210,6 @@ export function RichCodeSlate({
         decorate={decorate}
         renderLeaf={renderLeaf}
         placeholder="Write some code..."
-        onDOMBeforeInput={(event) => {
-          // this will prevent default insertText
-          // event.preventDefault();
-          // console.log(event.inputType);
-          switch (event.inputType) {
-            case "formatBold":
-              return toggleFormat(editor, "bold");
-            case "formatItalic":
-              return toggleFormat(editor, "italic");
-            case "formatUnderline":
-              return toggleFormat(editor, "underlined");
-            default:
-              // insertText will throw error here
-              // throw new Error("Invalid inputType", event.inputType);
-              break;
-          }
-        }}
       />
     </Slate>
   );
