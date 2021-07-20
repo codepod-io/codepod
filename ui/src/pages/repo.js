@@ -12,6 +12,7 @@ import {
   Spinner,
   Switch,
   Code,
+  Spacer,
 } from "@chakra-ui/react";
 import { Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
 import {
@@ -550,25 +551,32 @@ function CodePod({ pod }) {
           }}
         />
       </Box>
-      {pod.exports && Object.keys(pod.exports).length && (
+      <HStack w="100%">
+        {pod.exports && Object.keys(pod.exports).length && (
+          <Box>
+            Exports{" "}
+            {Object.entries(pod.exports).map(([k, v]) => (
+              <Box key={k}>
+                <Switch
+                  mr="1rem"
+                  isChecked={v}
+                  onChange={() => {
+                    dispatch(wsActions.wsToggleExport({ id: pod.id, name: k }));
+                  }}
+                />
+                <Code>{k}</Code>
+              </Box>
+            ))}
+          </Box>
+        )}
+        <Spacer />
+        {/* TODO this should appear not only on CodePod */}
         <Box>
-          Exports{" "}
-          {Object.entries(pod.exports).map(([k, v]) => (
-            <Box key={k}>
-              <Switch
-                mr="1rem"
-                isChecked={v}
-                onChange={() => {
-                  dispatch(wsActions.wsToggleExport({ id: pod.id, name: k }));
-                }}
-              />
-              <Code>{k}</Code>
-            </Box>
-          ))}
+          Imports
+          <ImportList pod={pod} />
         </Box>
-      )}
-      {/* TODO this should appear not only on CodePod */}
-      <ImportList pod={pod} />
+      </HStack>
+
       {pod.stdout && <Text>{pod.stdout}</Text>}
       {pod.result && (
         <Flex>

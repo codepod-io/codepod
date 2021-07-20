@@ -121,12 +121,25 @@ const socketMiddleware = () => {
           store.dispatch(
             repoSlice.actions.addPodImport({ id: parent.id, name })
           );
+          socket.emit("addImport", {
+            lang: pod.lang,
+            from: pod.ns,
+            to: parent.ns,
+            id: parent.id,
+            name,
+          });
         } else {
           // delete for all its parents
           while (parent && parent.imports && name in parent.imports) {
             store.dispatch(
               repoSlice.actions.deletePodImport({ id: parent.id, name })
             );
+            socket.emit("deleteImport", {
+              lang: pod.lang,
+              id: parent.id,
+              ns: parent.ns,
+              name,
+            });
             parent = pods[parent.parent];
           }
         }
@@ -143,12 +156,25 @@ const socketMiddleware = () => {
           store.dispatch(
             repoSlice.actions.addPodImport({ id: parent.id, name })
           );
+          socket.emit("addImport", {
+            lang: pod.lang,
+            from: pod.ns,
+            to: parent.ns,
+            id: parent.id,
+            name,
+          });
         } else {
           // delete for all its parents
           while (parent && parent.imports && name in parent.imports) {
             store.dispatch(
               repoSlice.actions.deletePodImport({ id: parent.id, name })
             );
+            socket.emit("deleteImport", {
+              lang: pod.lang,
+              ns: parent.ns,
+              id: parent.id,
+              name,
+            });
             parent = pods[parent.parent];
           }
         }

@@ -274,7 +274,7 @@ async function startApolloServer() {
         });
       } else {
         kernels[lang].sendShellMessage(
-          constructExecuteRequest({ code, msg_id: podId, namespace })
+          constructExecuteRequest({ code, msg_id: podId, cp: { namespace } })
         );
       }
     });
@@ -287,6 +287,36 @@ async function startApolloServer() {
       } else {
         console.log("Invalid requestKernelStatus for lang", lang);
       }
+    });
+
+    socket.on("addImport", ({ lang, id, from, to, name }) => {
+      console.log("received addImport");
+      kernels[lang].sendShellMessage(
+        constructExecuteRequest({
+          code: "CPAddImport",
+          msg_id: id,
+          cp: {
+            from,
+            to,
+            name,
+            namespace: "",
+          },
+        })
+      );
+    });
+    socket.on("deleteImport", ({ lang, id, name, ns }) => {
+      console.log("received addImport");
+      kernels[lang].sendShellMessage(
+        constructExecuteRequest({
+          code: "CPDeleteImport",
+          msg_id: id,
+          cp: {
+            ns,
+            name,
+            namespace: "",
+          },
+        })
+      );
     });
   });
 
