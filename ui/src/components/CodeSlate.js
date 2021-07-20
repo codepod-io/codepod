@@ -7,13 +7,217 @@ import "prismjs/components/prism-julia";
 import "prismjs/components/prism-scheme";
 import "prismjs/components/prism-racket";
 
-import React, { useState, useCallback, useMemo } from "react";
-import { Slate, Editable, withReact } from "slate-react";
-import { Text, createEditor } from "slate";
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+  useRef,
+} from "react";
+
+import { Slate, Editable, ReactEditor, withReact, useSlate } from "slate-react";
+import { Text, createEditor, Editor, Transforms, Range } from "slate";
 import { withHistory } from "slate-history";
 import { css } from "@emotion/css";
+import {
+  FaBold,
+  FaItalic,
+  FaUnderline,
+  FaStrikethrough,
+  FaExternalLinkSquareAlt,
+  FaExternalLinkAlt,
+} from "react-icons/fa";
+import { FcIdea } from "react-icons/fc";
 
-export function CodeSlack({ value, onChange, language = "javascript" }) {
+import { Box } from "@chakra-ui/react";
+
+import { Button, Menu, Portal } from "./slate_helper";
+
+const toggleFormat = (editor, format) => {
+  const isActive = isFormatActive(editor, format);
+  Transforms.setNodes(
+    editor,
+    { [format]: isActive ? null : true },
+    { match: Text.isText, split: true }
+  );
+};
+
+const isFormatActive = (editor, format) => {
+  const [match] = Editor.nodes(editor, {
+    match: (n) => n[format] === true,
+    mode: "all",
+  });
+  return !!match;
+};
+
+const RichLeaf = ({ attributes, children, leaf }) => {
+  if (leaf.bold) {
+    children = <strong>{children}</strong>;
+  }
+
+  if (leaf.italic) {
+    children = <em>{children}</em>;
+  }
+
+  if (leaf.underlined) {
+    children = <u>{children}</u>;
+  }
+
+  if (leaf.strikethrough) {
+    children = <strike>{children}</strike>;
+  }
+
+  if (leaf.export) {
+    // yellow background
+    children = (
+      <Box as="span" bg="yellow">
+        {children}
+      </Box>
+    );
+  }
+
+  return { attributes, children, leaf };
+};
+
+const HoveringToolbar = () => {
+  const ref = useRef();
+  const editor = useSlate();
+
+  useEffect(() => {
+    const el = ref.current;
+    const { selection } = editor;
+
+    if (!el) {
+      return;
+    }
+
+    if (
+      !selection ||
+      !ReactEditor.isFocused(editor) ||
+      Range.isCollapsed(selection) ||
+      Editor.string(editor, selection) === ""
+    ) {
+      el.removeAttribute("style");
+      return;
+    }
+
+    const domSelection = window.getSelection();
+    const domRange = domSelection.getRangeAt(0);
+    const rect = domRange.getBoundingClientRect();
+    el.style.opacity = "1";
+    el.style.top = `${rect.top + window.pageYOffset - el.offsetHeight}px`;
+    el.style.left = `${
+      rect.left + window.pageXOffset - el.offsetWidth / 2 + rect.width / 2
+    }px`;
+  });
+
+  return (
+    <Portal>
+      <Menu
+        ref={ref}
+        className={css`
+          padding: 8px 7px 6px;
+          position: absolute;
+          z-index: 1;
+          top: -10000px;
+          left: -10000px;
+          margin-top: -6px;
+          opacity: 0;
+          background-color: #222;
+          border-radius: 4px;
+          transition: opacity 0.75s;
+        `}
+      >
+        <FormatButton format="bold" icon={<FaBold />} />
+        <FormatButton format="italic" icon={<FaItalic />} />
+        <FormatButton format="export" icon={<FaExternalLinkSquareAlt />} />
+        <FormatButton format="underlined" icon={<FaUnderline />} />
+        <FormatButton format="strikethrough" icon={<FaStrikethrough />} />
+      </Menu>
+    </Portal>
+  );
+};
+
+const FormatButton = ({ format, icon }) => {
+  const editor = useSlate();
+  return (
+    <Button
+      reversed
+      active={isFormatActive(editor, format)}
+      onMouseDown={(event) => {
+        event.preventDefault();
+        toggleFormat(editor, format);
+      }}
+    >
+      {icon}
+    </Button>
+  );
+};
+
+export function RichCodeSlate({ value, onChange, language = "javascript" }) {
+  const renderLeaf = useCallback((props) => <Leaf {...RichLeaf(props)} />, []);
+  const editor = useMemo(() => withHistory(withReact(createEditor())), []);
+  // decorate function depends on the language selected
+  const decorate = useCallback(
+    ([node, path]) => {
+      const ranges = [];
+      // FIXME the highlighted text is not Text anymore, thus lose syntax highlighting
+      if (!Text.isText(node)) {
+        return ranges;
+      }
+      const tokens = Prism.tokenize(node.text, Prism.languages[language]);
+      let start = 0;
+
+      for (const token of tokens) {
+        const length = getLength(token);
+        const end = start + length;
+
+        if (typeof token !== "string") {
+          ranges.push({
+            [token.type]: true,
+            anchor: { path, offset: start },
+            focus: { path, offset: end },
+          });
+        }
+
+        start = end;
+      }
+
+      return ranges;
+    },
+    [language]
+  );
+
+  return (
+    <Slate editor={editor} value={value} onChange={onChange}>
+      <HoveringToolbar />
+      <Editable
+        decorate={decorate}
+        renderLeaf={renderLeaf}
+        placeholder="Write some code..."
+        onDOMBeforeInput={(event) => {
+          // this will prevent default insertText
+          // event.preventDefault();
+          // console.log(event.inputType);
+          switch (event.inputType) {
+            case "formatBold":
+              return toggleFormat(editor, "bold");
+            case "formatItalic":
+              return toggleFormat(editor, "italic");
+            case "formatUnderline":
+              return toggleFormat(editor, "underlined");
+            default:
+              // insertText will throw error here
+              // throw new Error("Invalid inputType", event.inputType);
+              break;
+          }
+        }}
+      />
+    </Slate>
+  );
+}
+
+export function CodeSlate({ value, onChange, language = "javascript" }) {
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
   // decorate function depends on the language selected
@@ -84,7 +288,7 @@ export const CodeHighlightingExample = () => {
           </select>
         </h3>
       </div>
-      <CodeSlack
+      <CodeSlate
         value={value}
         onChange={(value) => setValue(value)}
         language={language}

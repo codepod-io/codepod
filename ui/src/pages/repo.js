@@ -10,6 +10,7 @@ import {
   Image,
   IconButton,
   Spinner,
+  Switch,
   Code,
 } from "@chakra-ui/react";
 import { Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
@@ -43,6 +44,7 @@ import { useDispatch, useSelector } from "react-redux";
 import useResizeObserver from "use-resize-observer";
 import io from "socket.io-client";
 import { Node } from "slate";
+import { v4 as uuidv4 } from "uuid";
 
 import {
   repoSlice,
@@ -51,7 +53,7 @@ import {
   selectNamespace,
 } from "../lib/store";
 import { MySlate } from "../components/MySlate";
-import { CodeSlack } from "../components/CodeSlate";
+import { RichCodeSlate as CodeSlate } from "../components/CodeSlate";
 import { StyledLink as Link } from "../components/utils";
 
 import { Terminal } from "xterm";
@@ -451,9 +453,26 @@ const slackGetPlainText = (nodes) => {
   return nodes.map((n) => Node.string(n)).join("\n");
 };
 
+function findExports(content) {
+  if (!content) return [];
+  let res = [];
+  for (let node of content) {
+    for (let [n, p] of Node.texts(node)) {
+      if (n.export) {
+        res.push(n.text);
+      }
+    }
+  }
+  return res;
+}
+
 function CodePod({ pod }) {
   let dispatch = useDispatch();
   let namespace = useSelector(selectNamespace(pod.id));
+  // find the exports
+  // FIXME performance. I should probably set the exports when the export button
+  // is clicked
+  let exports = findExports(pod.content);
   return (
     <VStack align="start" p={2}>
       <HStack>
@@ -489,7 +508,7 @@ function CodePod({ pod }) {
         </Button>
       </HStack>
       <Box border="1px" w="sm" p="1rem" alignContent="center">
-        <CodeSlack
+        <CodeSlate
           value={
             pod.content || [
               {
@@ -506,6 +525,17 @@ function CodePod({ pod }) {
           language={pod.lang || "javascript"}
         />
       </Box>
+      {exports && exports.length && (
+        <Box>
+          Exports{" "}
+          {exports.map((e) => (
+            <Box key={uuidv4()}>
+              <Switch mr="1rem" />
+              <Code>{e}</Code>
+            </Box>
+          ))}
+        </Box>
+      )}
       {pod.stdout && <Text>{pod.stdout}</Text>}
       {pod.result && (
         <Flex>
