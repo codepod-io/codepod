@@ -275,7 +275,7 @@ export const loopPodQueue = createAsyncThunk(
         console.log("===", action.payload);
         const { id, toDelete } = action.payload;
         // delete pod id
-        return doRemoteDeletePod({ id, toDelete });
+        return await doRemoteDeletePod({ id, toDelete });
       }
 
       default:
