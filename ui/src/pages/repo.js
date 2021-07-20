@@ -468,24 +468,39 @@ function findExports(content) {
   return res;
 }
 
+function IOStatus({ id, name }) {
+  const status = useSelector((state) => state.repo.pods[id].io[name]);
+  if (!status) {
+    return <Box as="span">Unknown</Box>;
+  } else if ("result" in status) {
+    return <Box as="span">Success</Box>;
+  } else if ("error" in status) {
+    return <Box as="span">Error</Box>;
+  }
+}
+
 function ImportList({ pod }) {
   const dispatch = useDispatch();
   return (
     <Box>
-      {pod.imports &&
-        Object.keys(pod.imports) &&
-        Object.entries(pod.imports).map(([k, v]) => (
-          <Box key={k}>
-            <Switch
-              mr="1rem"
-              isChecked={v}
-              onChange={() => {
-                dispatch(wsActions.wsToggleImport({ id: pod.id, name: k }));
-              }}
-            />
-            <Code>{k}</Code>
-          </Box>
-        ))}
+      {pod.imports && Object.keys(pod.imports).length > 0 && (
+        <Box>
+          <Text>Imports</Text>
+          {Object.entries(pod.imports).map(([k, v]) => (
+            <Box key={k}>
+              <Switch
+                mr="1rem"
+                isChecked={v}
+                onChange={() => {
+                  dispatch(wsActions.wsToggleImport({ id: pod.id, name: k }));
+                }}
+              />
+              <Code>{k}</Code>
+              <IOStatus id={pod.id} name={k} />
+            </Box>
+          ))}
+        </Box>
+      )}
     </Box>
   );
 }
@@ -551,8 +566,8 @@ function CodePod({ pod }) {
           }}
         />
       </Box>
-      <HStack w="100%">
-        {pod.exports && Object.keys(pod.exports).length && (
+      <Flex w="100%">
+        {pod.exports && Object.keys(pod.exports).length > 0 && (
           <Box>
             Exports{" "}
             {Object.entries(pod.exports).map(([k, v]) => (
@@ -565,17 +580,16 @@ function CodePod({ pod }) {
                   }}
                 />
                 <Code>{k}</Code>
+                {/* No need IOStatus for exports */}
+                {/* <IOStatus id={pod.id} name={k} /> */}
               </Box>
             ))}
           </Box>
         )}
         <Spacer />
         {/* TODO this should appear not only on CodePod */}
-        <Box>
-          Imports
-          <ImportList pod={pod} />
-        </Box>
-      </HStack>
+        <ImportList pod={pod} />
+      </Flex>
 
       {pod.stdout && <Text>{pod.stdout}</Text>}
       {pod.result && (

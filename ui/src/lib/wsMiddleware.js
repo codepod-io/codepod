@@ -44,6 +44,12 @@ const socketMiddleware = () => {
         socket.on("stream", (data) => {
           store.dispatch(actions.wsStream(data));
         });
+        socket.on("IO:execute_result", (data) => {
+          store.dispatch(actions.wsIOResult(data));
+        });
+        socket.on("IO:error", (data) => {
+          store.dispatch(actions.wsIOError(data));
+        });
         socket.on("status", (lang, status) => {
           console.log("kernel status:", status);
           store.dispatch(actions.wsStatus(lang, status));
@@ -112,6 +118,15 @@ const socketMiddleware = () => {
         break;
       case "WS_TOGGLE_EXPORT": {
         let { id, name } = action.payload;
+        if (!socket) {
+          store.dispatch(
+            actions.wsSimpleError({
+              podId: id,
+              msg: "Runtime not connected",
+            })
+          );
+          break;
+        }
         store.dispatch(repoSlice.actions.togglePodExport({ id, name }));
         let pods = store.getState().repo.pods;
         let pod = pods[id];
@@ -147,6 +162,15 @@ const socketMiddleware = () => {
       }
       case "WS_TOGGLE_IMPORT": {
         let { id, name } = action.payload;
+        if (!socket) {
+          store.dispatch(
+            actions.wsSimpleError({
+              podId: id,
+              msg: "Runtime not connected",
+            })
+          );
+          break;
+        }
         store.dispatch(repoSlice.actions.togglePodImport({ id, name }));
         let pods = store.getState().repo.pods;
         let pod = pods[id];

@@ -142,6 +142,8 @@ function normalize(pods) {
   });
   pods.forEach((pod) => {
     pod.ns = computeNamespace(res, pod.id);
+    // set IO
+    pod.io = {};
   });
   return res;
 }
@@ -360,6 +362,7 @@ export const repoSlice = createSlice({
         isSyncing: false,
         lastPosUpdate: Date.now(),
         children: [],
+        io: {},
       };
       // compute the remotehash
       pod.remoteHash = hashPod(pod);
@@ -541,6 +544,23 @@ export const repoSlice = createSlice({
       let { podId, text } = action.payload;
       // append
       state.pods[podId].stdout += text;
+    },
+    WS_IO_RESULT: (state, action) => {
+      let { podId, result, name } = action.payload;
+      // if (!("io" in state.pods[podId])) {
+      //   state.pods[podId].io = {};
+      // }
+      state.pods[podId].io[name] = { result };
+    },
+    WS_IO_ERROR: (state, action) => {
+      let { podId, name, ename, evalue, stacktrace } = action.payload;
+      state.pods[podId].io[name] = {
+        error: {
+          ename,
+          evalue,
+          stacktrace,
+        },
+      };
     },
   },
 });

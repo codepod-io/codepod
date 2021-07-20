@@ -204,54 +204,84 @@ async function startApolloServer() {
         // console.log("-----", topic, msgs);
         // iracket's topic seems to be an ID. I should use msg type instead
         switch (msgs.header.msg_type) {
-          case "status":
+          case "status": {
             console.log("emiting status ..");
             socket.emit("status", lang, msgs.content.execution_state);
             break;
-          case "execute_result":
+          }
+          case "execute_result": {
             console.log("emitting execute_result ..");
-            socket.emit("execute_result", {
-              podId: msgs.parent_header.msg_id,
+            let [podId, name] = msgs.parent_header.msg_id.split("#");
+            let payload = {
+              podId,
+              name,
               result: msgs.content.data["text/plain"],
               count: msgs.content.execution_count,
-            });
+            };
+            if (name) {
+              socket.emit("IO:execute_result", payload);
+            } else {
+              socket.emit("execute_result", payload);
+            }
             break;
-          case "stdout":
+          }
+          case "stdout": {
             console.log("emitting stdout ..");
             if (msgs.content.text.startsWith("base64 binary data")) {
               console.log("warning: base64 encoded stdout");
             } else {
-              socket.emit("stdout", {
-                podId: msgs.parent_header.msg_id,
+              let [podId, name] = msgs.parent_header.msg_id.split("#");
+              let payload = {
+                podId,
+                name,
                 stdout: msgs.content.text,
-              });
+              };
+              if (name) {
+                // this is Import/Export cmd
+                socket.emit("IO:stdout", payload);
+              } else {
+                socket.emit("stdout", payload);
+              }
             }
             break;
-          case "error":
+          }
+          case "error": {
             console.log("emitting error ..");
-            socket.emit("error", {
-              podId: msgs.parent_header.msg_id,
+            let [podId, name] = msgs.parent_header.msg_id.split("#");
+            let payload = {
+              podId,
+              name,
               stacktrace: msgs.content.traceback,
               ename: msgs.content.ename,
               evalue: msgs.content.evalue,
-            });
+            };
+            if (name) {
+              socket.emit("IO:error", payload);
+            } else {
+              socket.emit("error", payload);
+            }
             break;
-          case "stream":
+          }
+          case "stream": {
+            let [podId, name] = msgs.parent_header.msg_id.split("#");
             // iracket use this to send stderr
             // FIXME there are many frames
             if (msgs.content.name === "stdout") {
               console.log("ignore stdout stream");
             } else if (msgs.content.name === "stderr") {
               console.log("emitting error stream ..");
-              socket.emit("stream", {
-                podId: msgs.parent_header.msg_id,
-                text: msgs.content.text,
-              });
+              if (!name) {
+                socket.emit("stream", {
+                  podId,
+                  text: msgs.content.text,
+                });
+              }
             } else {
               console.log(msgs);
               throw new Error(`Invalid stream type: ${msgs.content.name}`);
             }
             break;
+          }
           default:
             console.log(
               "Message Not handled",
@@ -294,7 +324,7 @@ async function startApolloServer() {
       kernels[lang].sendShellMessage(
         constructExecuteRequest({
           code: "CPAddImport",
-          msg_id: id,
+          msg_id: id + "#" + name,
           cp: {
             from,
             to,
@@ -309,7 +339,7 @@ async function startApolloServer() {
       kernels[lang].sendShellMessage(
         constructExecuteRequest({
           code: "CPDeleteImport",
-          msg_id: id,
+          msg_id: id + "#" + name,
           cp: {
             ns,
             name,

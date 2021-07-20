@@ -14,13 +14,13 @@ export const wsRun = (payload) => ({
   type: "WS_RUN",
   payload,
 });
-export const wsResult = ({ podId, result, count }) => ({
+export const wsResult = (payload) => ({
   type: "WS_RESULT",
-  payload: { podId, result, count },
+  payload,
 });
-export const wsStdout = ({ podId, stdout }) => ({
+export const wsStdout = (payload) => ({
   type: "WS_STDOUT",
-  payload: { podId, stdout },
+  payload,
 });
 export const wsError = (payload) => ({
   type: "WS_ERROR",
@@ -28,6 +28,14 @@ export const wsError = (payload) => ({
 });
 export const wsStream = (payload) => ({
   type: "WS_STREAM",
+  payload,
+});
+export const wsIOResult = (payload) => ({
+  type: "WS_IO_RESULT",
+  payload,
+});
+export const wsIOError = (payload) => ({
+  type: "WS_IO_ERROR",
   payload,
 });
 export const wsSimpleError = (payload) => ({
