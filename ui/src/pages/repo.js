@@ -402,14 +402,15 @@ function TypeMenu({ pod }) {
   );
 }
 
-const deckMap = {};
+// FIXME this should be cleared if pods get deleted
+const deckCache = {};
 
 function getDeck(id) {
   // avoid re-rendering
-  if (!(id in deckMap)) {
-    deckMap[id] = <Deck id={id} key={id}></Deck>;
+  if (!(id in deckCache)) {
+    deckCache[id] = <Deck id={id} key={id}></Deck>;
   }
-  return deckMap[id];
+  return deckCache[id];
 }
 
 function Deck({ id }) {
