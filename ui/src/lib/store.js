@@ -80,20 +80,16 @@ function hashPod(pod) {
   ).toString();
 }
 
-function computePodStatus(pod) {
-  if (pod.remoteHash !== hashPod(pod)) {
-    pod.status = "dirty";
-  } else {
-    pod.status = "synced";
-  }
-}
-
 // TODO use a selector to compute and retrieve the status
 // TODO this need to cooperate with syncing indicator
-export function selectPodStatus(id) {
+export function selectIsDirty(id) {
   return (state) => {
     let pod = state.repo.pods[id];
-    return computePodStatus(pod);
+    if (pod.remoteHash === hashPod(pod)) {
+      return false;
+    } else {
+      return true;
+    }
   };
 }
 
@@ -138,7 +134,6 @@ function normalize(pods) {
     if (pod.exports) {
       pod.exports = JSON.parse(pod.exports);
     }
-    pod.status = "synced";
     pod.remoteHash = hashPod(pod);
   });
   return res;
@@ -374,7 +369,7 @@ export const repoSlice = createSlice({
         error: null,
         exports: {},
         imports: {},
-        status: "synced",
+        isSyncing: false,
         lastPosUpdate: Date.now(),
         children: [],
       };
@@ -414,20 +409,16 @@ export const repoSlice = createSlice({
     setPodContent: (state, action) => {
       const { id, content } = action.payload;
       state.pods[id].content = content;
-      // check with commited version
-      computePodStatus(state.pods[id]);
     },
     clearResults: (state, action) => {
       const id = action.payload;
       state.pods[id].result = "";
       state.pods[id].stdout = "";
       state.pods[id].error = null;
-      computePodStatus(state.pods[id]);
     },
     setPodType: (state, action) => {
       const { id, type } = action.payload;
       state.pods[id].type = type;
-      computePodStatus(state.pods[id]);
     },
     addPodExport: (state, action) => {
       let { id, name } = action.payload;
@@ -484,7 +475,6 @@ export const repoSlice = createSlice({
     setPodLang: (state, action) => {
       const { id, lang } = action.payload;
       state.pods[id].lang = lang;
-      computePodStatus(state.pods[id]);
     },
     addPodQueue: (state, action) => {
       state.queue.push(action.payload);
@@ -529,7 +519,7 @@ export const repoSlice = createSlice({
       //
       // CAUTION If something happens here, it will immediately cause the thunk to be
       // terminated and rejected to be dipatched
-      state.pods[action.meta.arg.id].status = "syncing";
+      state.pods[action.meta.arg.id].isSyncing = true;
     },
     [remoteUpdatePod.fulfilled]: (state, action) => {
       // set pod hash
@@ -537,7 +527,7 @@ export const repoSlice = createSlice({
       state.pods[action.meta.arg.id].remoteHash = hashPod(
         state.pods[action.meta.arg.id]
       );
-      state.pods[action.meta.arg.id].status = "synced";
+      state.pods[action.meta.arg.id].isSyncing = false;
     },
     [remoteUpdatePod.rejected]: (state, action) => {
       // TODO display some error message
@@ -561,21 +551,18 @@ export const repoSlice = createSlice({
         text: result,
         count: count,
       };
-      computePodStatus(state.pods[podId]);
     },
     WS_STDOUT: (state, action) => {
       let { podId, stdout } = action.payload;
       // FIXME this is stream
       // FIXME this is base64 encoded
       state.pods[podId].stdout = stdout;
-      computePodStatus(state.pods[podId]);
     },
     WS_SIMPLE_ERROR: (state, action) => {
       let { podId, msg } = action.payload;
       state.pods[podId].error = {
         evalue: msg,
       };
-      computePodStatus(state.pods[podId]);
     },
     WS_ERROR: (state, action) => {
       let { podId, ename, evalue, stacktrace } = action.payload;
@@ -584,13 +571,11 @@ export const repoSlice = createSlice({
         evalue,
         stacktrace,
       };
-      computePodStatus(state.pods[podId]);
     },
     WS_STREAM: (state, action) => {
       let { podId, text } = action.payload;
       // append
       state.pods[podId].stdout += text;
-      computePodStatus(state.pods[podId]);
     },
   },
 });

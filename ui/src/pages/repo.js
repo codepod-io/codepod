@@ -51,6 +51,7 @@ import {
   loadPodQueue,
   remoteUpdatePod,
   selectNamespace,
+  selectIsDirty,
 } from "../lib/store";
 import { MySlate } from "../components/MySlate";
 import { RichCodeSlate as CodeSlate } from "../components/CodeSlate";
@@ -164,41 +165,39 @@ export default function Repo() {
 
 function SyncStatus({ pod }) {
   const dispatch = useDispatch();
-  return (
-    <Box>
-      {pod.status !== "dirty" &&
-        pod.status !== "synced" &&
-        pod.status !== "syncing" && <Box>Error {pod.status}</Box>}
-      {pod.status === "dirty" && (
-        <Box>
-          <IconButton
-            size="sm"
-            icon={<RepeatIcon />}
-            colorScheme={"yellow"}
-            onClick={() => {
-              dispatch(remoteUpdatePod(pod));
-            }}
-          ></IconButton>
-        </Box>
-      )}
-      {pod.status === "synced" && (
-        <Box>
-          <CheckIcon color="green" />
-        </Box>
-      )}
-      {pod.status === "syncing" && (
-        <Box>
-          <Spinner
-            thickness="4px"
-            speed="0.65s"
-            emptyColor="gray.200"
-            color="blue.500"
-            size="xl"
-          />
-        </Box>
-      )}
-    </Box>
-  );
+  const isDirty = useSelector(selectIsDirty(pod.id));
+  if (pod.isSyncing) {
+    return (
+      <Box>
+        <Spinner
+          thickness="4px"
+          speed="0.65s"
+          emptyColor="gray.200"
+          color="blue.500"
+          size="xl"
+        />
+      </Box>
+    );
+  } else if (isDirty) {
+    return (
+      <Box>
+        <IconButton
+          size="sm"
+          icon={<RepeatIcon />}
+          colorScheme={"yellow"}
+          onClick={() => {
+            dispatch(remoteUpdatePod(pod));
+          }}
+        ></IconButton>
+      </Box>
+    );
+  } else {
+    return (
+      <Box>
+        <CheckIcon color="green" />
+      </Box>
+    );
+  }
 }
 
 function InfoBar({ pod }) {
