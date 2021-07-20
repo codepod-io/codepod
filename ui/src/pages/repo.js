@@ -72,7 +72,11 @@ export default function Repo() {
     // dispatch(wsActions.wsConnect());
   }, []);
 
-  const queueL = useSelector((state) => state.repo.queue.length);
+  // FIXME Removing queueL. This will cause Repo to be re-rendered a lot of
+  // times, particularly the delete pod action would cause syncstatus and repo
+  // to be re-rendered in conflict, which is weird.
+  //
+  // const queueL = useSelector((state) => state.repo.queue.length);
   const repoLoaded = useSelector((state) => state.repo.repoLoaded);
   const sessionId = useSelector((state) => state.repo.sessionId);
   const sessionRuntime = useSelector((state) => state.repo.sessionRuntime);
@@ -95,7 +99,7 @@ export default function Repo() {
             {reponame}
           </Link>
         </Text>
-        <Text>SyncQueue: {queueL}</Text>
+        {/* <Text>SyncQueue: {queueL}</Text> */}
         <Text>Session ID: {sessionId}</Text>
         <Button
           onClick={() => {
