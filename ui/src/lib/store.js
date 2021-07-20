@@ -168,7 +168,6 @@ async function doRemoteAddPod({ type, id, parent, index, reponame, username }) {
     }
   }
 `;
-  // console.log("query", query);
   const res = await fetch("http://localhost:4000/graphql", {
     method: "POST",
     headers: {
@@ -218,9 +217,6 @@ async function doRemoteDeletePod({ id, toDelete }) {
 export const remoteUpdatePod = createAsyncThunk(
   "remoteUpdatePod",
   async (pod) => {
-    // the content might be a list object in case of WYSIWYG, so first serialize
-    // it
-    console.log("do remote update ..");
     const res = await fetch("http://localhost:4000/graphql", {
       method: "POST",
       headers: {
@@ -251,15 +247,12 @@ export const remoteUpdatePod = createAsyncThunk(
 export const loopPodQueue = createAsyncThunk(
   "loopPodQueue",
   async (action, { getState }) => {
-    // console.log(`loopPodQueue`);
     // process action, push to remote server
-    // console.log(action);
     const reponame = getState().repo.reponame;
     const username = getState().repo.username;
     switch (action.type) {
       case repoSlice.actions.addPod.type: {
         // push to remote
-        // console.log("fetching ..");
         const { type, id, parent, index } = action.payload;
         return await doRemoteAddPod({
           type,
@@ -272,7 +265,6 @@ export const loopPodQueue = createAsyncThunk(
       }
 
       case repoSlice.actions.deletePod.type: {
-        console.log("===", action.payload);
         const { id, toDelete } = action.payload;
         // delete pod id
         return await doRemoteDeletePod({ id, toDelete });
@@ -463,14 +455,10 @@ export const repoSlice = createSlice({
   },
   extraReducers: {
     [loopPodQueue.pending]: (state, action) => {
-      console.log("--- loop pod queue pending ..", action);
       state.queueProcessing = true;
     },
     [loopPodQueue.fulfilled]: (state, action) => {
-      console.log("--- loop pod queue fullfilled", action.payload.data);
-      console.log(action.payload);
       if (action.payload.errors) {
-        console.log("=== error", action.payload.errors);
         throw Error("Error:" + action.payload.errors[0].message);
       }
       state.queue.shift();
@@ -482,10 +470,7 @@ export const repoSlice = createSlice({
     },
     [loadPodQueue.pending]: (state, action) => {},
     [loadPodQueue.fulfilled]: (state, action) => {
-      console.log("-- load pod fullfilled", action.payload.data);
       if (action.payload.errors) {
-        console.log("ERROR", action.payload.errors);
-        console.log(action.payload.errors[0].message);
         throw Error(action.payload.errors[0].message);
       }
       // TODO the children ordered by index
@@ -504,7 +489,6 @@ export const repoSlice = createSlice({
     },
     [remoteUpdatePod.fulfilled]: (state, action) => {
       // set pod hash
-      // console.log("Setting hash ..");
       state.pods[action.meta.arg.id].remoteHash = hashPod(
         state.pods[action.meta.arg.id]
       );
@@ -570,7 +554,6 @@ function isPodQueueAction(action) {
 }
 
 const podQueueMiddleware = (storeAPI) => (next) => (action) => {
-  // console.log("podQueue: dispatching", action);
   // modify addPod action
   if (action.type === repoSlice.actions.addPod.type) {
     // construct the ID here so that the client and the server got the same ID
