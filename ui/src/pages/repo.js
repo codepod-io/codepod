@@ -50,7 +50,6 @@ import {
   repoSlice,
   loadPodQueue,
   remoteUpdatePod,
-  selectNamespace,
   selectIsDirty,
 } from "../lib/store";
 import { MySlate } from "../components/MySlate";
@@ -204,7 +203,6 @@ function InfoBar({ pod }) {
   /* eslint-disable no-unused-vars */
   const [value, setValue] = useState(pod.id);
   const { hasCopied, onCopy } = useClipboard(value);
-  const namespace = useSelector(selectNamespace(pod.id));
   return (
     <Box>
       {/* <DragHandleIcon mr="3px" /> */}
@@ -230,7 +228,7 @@ function InfoBar({ pod }) {
             </Text>
             <Text>
               Namespace:
-              <Code colorScheme="blackAlpha">{namespace}</Code>
+              <Code colorScheme="blackAlpha">{pod.ns}</Code>
             </Text>
             <Text mr={5}>Index: {pod.index}</Text>
             <Text>
@@ -505,7 +503,7 @@ function CodePod({ pod }) {
               wsActions.wsRun({
                 lang: pod.lang,
                 code: slackGetPlainText(pod.content),
-                namespace: namespace,
+                namespace: pod.ns,
                 podId: pod.id,
                 sessionId: "sessionId",
               })

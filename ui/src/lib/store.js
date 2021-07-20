@@ -136,6 +136,9 @@ function normalize(pods) {
     }
     pod.remoteHash = hashPod(pod);
   });
+  pods.forEach((pod) => {
+    pod.ns = computeNamespace(res, pod.id);
+  });
   return res;
 }
 
@@ -277,24 +280,13 @@ export const loopPodQueue = createAsyncThunk(
   }
 );
 
-// XXX the selector cannot return a list, because that is a NEW object and
-// cause re-rendering, otherwise will throw error:
-// Cannot update a component while rendering a different component
-// Can use shallowEqual to solve that
-//
-// const _ = useSelector((state) => [], shallowEqual);
-export function selectNamespace(id) {
-  return (state) => {
-    let res = [];
-    while (id !== "ROOT") {
-      res.push(id);
-      // HACK actually as long as I'm assigning the pod object to a temporary
-      // object, and return nothing, even with shallowEqual, the component gets
-      // re-rendered again and again. Using id here does not have that issue.
-      id = state.repo.pods[id].parent;
-    }
-    return res.slice(1).reverse().join("/");
-  };
+function computeNamespace(pods, id) {
+  let res = [];
+  while (id !== "ROOT") {
+    res.push(id);
+    id = pods[id].parent;
+  }
+  return res.slice(1).reverse().join("/");
 }
 
 export const repoSlice = createSlice({
@@ -387,6 +379,7 @@ export const repoSlice = createSlice({
       state.pods[parent].children.sort(
         (a, b) => state.pods[a].index - state.pods[b].index
       );
+      pod.ns = computeNamespace(state.pods, id);
     },
     deletePod: (state, action) => {
       const { id, toDelete } = action.payload;
