@@ -29,9 +29,11 @@ export const loadPodQueue = createAsyncThunk(
           type
           lang
           content
-          result,
-          stdout,
-          error,
+          result
+          stdout
+          error
+          imports
+          exports
           index
           parent {
             id
@@ -72,6 +74,8 @@ function hashPod(pod) {
       result: pod.result,
       stdout: pod.stdout,
       error: pod.error,
+      imports: pod.imports,
+      exports: pod.exports,
     })
   ).toString();
 }
@@ -127,6 +131,12 @@ function normalize(pods) {
     }
     if (pod.error) {
       pod.error = JSON.parse(pod.error);
+    }
+    if (pod.imports) {
+      pod.imports = JSON.parse(pod.imports);
+    }
+    if (pod.exports) {
+      pod.exports = JSON.parse(pod.exports);
     }
     pod.status = "synced";
     pod.remoteHash = hashPod(pod);
@@ -205,10 +215,9 @@ async function doRemoteDeletePod({ id, toDelete }) {
 
 export const remoteUpdatePod = createAsyncThunk(
   "remoteUpdatePod",
-  async ({ id, type, content, lang, result, stdout, error }) => {
+  async (pod) => {
     // the content might be a list object in case of WYSIWYG, so first serialize
     // it
-    content = JSON.stringify(content);
     console.log("do remote update ..");
     const res = await fetch("http://localhost:4000/graphql", {
       method: "POST",
@@ -218,19 +227,18 @@ export const remoteUpdatePod = createAsyncThunk(
       },
       body: JSON.stringify({
         query: `
-        mutation updatePod($id: String, $content: String, $type: String, $lang: String, $result: String, $stdout: String, $error: String) {
-          updatePod(id: $id, content: $content, type: $type, lang: $lang, result: $result, stdout: $stdout, error: $error) {
+        mutation updatePod($id: String, $content: String, $type: String, $lang: String, $result: String, $stdout: String, $error: String, $imports: String, $exports: String) {
+          updatePod(id: $id, content: $content, type: $type, lang: $lang, result: $result, stdout: $stdout, error: $error, imports: $imports, exports: $exports) {
             id
           }
         }`,
         variables: {
-          id,
-          content,
-          type,
-          lang,
-          result: JSON.stringify(result),
-          stdout,
-          error: JSON.stringify(error),
+          ...pod,
+          content: JSON.stringify(pod.content),
+          result: JSON.stringify(pod.result),
+          error: JSON.stringify(pod.error),
+          imports: JSON.stringify(pod.imports),
+          exports: JSON.stringify(pod.exports),
         },
       }),
     });
@@ -364,6 +372,8 @@ export const repoSlice = createSlice({
         result: "",
         stdout: "",
         error: null,
+        exports: {},
+        imports: {},
         status: "synced",
         lastPosUpdate: Date.now(),
         children: [],
@@ -418,6 +428,58 @@ export const repoSlice = createSlice({
       const { id, type } = action.payload;
       state.pods[id].type = type;
       computePodStatus(state.pods[id]);
+    },
+    addPodExport: (state, action) => {
+      let { id, name } = action.payload;
+      console.log("addPodExport", id, name);
+      // TODO remove this new field compatibility layer
+      if (!state.pods[id].exports) {
+        state.pods[id].exports = {};
+      }
+      state.pods[id].exports[name] = false;
+    },
+    deletePodExport: (state, action) => {
+      let { id, name } = action.payload;
+      delete state.pods[id].exports[name];
+    },
+    togglePodExport: (state, action) => {
+      let { id, name } = action.payload;
+      let pod = state.pods[id];
+      pod.exports[name] = !pod.exports[name];
+      let parent = state.pods[pod.parent];
+      // TODO remove this new field compatibility layer
+      if (!parent.imports) {
+        parent.imports = {};
+      }
+      // toggle for its parent
+      if (pod.exports[name]) {
+        parent.imports[name] = false;
+      } else {
+        // delete for all its parents
+        while (parent && name in parent.imports) {
+          delete parent.imports[name];
+          parent = state.pods[parent.parent];
+        }
+      }
+    },
+    togglePodImport: (state, action) => {
+      let { id, name } = action.payload;
+      let pod = state.pods[id];
+      pod.imports[name] = !pod.imports[name];
+      let parent = state.pods[pod.parent];
+      // TODO remove this new field compatibility layer
+      if (!parent.imports) {
+        parent.imports = {};
+      }
+      // toggle for its parent
+      if (pod.imports[name]) {
+        parent.imports[name] = false;
+      } else {
+        while (parent && parent.imports && name in parent.imports) {
+          delete parent.imports[name];
+          parent = state.pods[parent.parent];
+        }
+      }
     },
     setPodLang: (state, action) => {
       const { id, lang } = action.payload;

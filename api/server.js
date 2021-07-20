@@ -53,6 +53,8 @@ const typeDefs = gql`
     result: String
     stdout: String
     error: String
+    imports: String
+    exports: String
   }
 
   type Mutation {
@@ -81,6 +83,8 @@ const typeDefs = gql`
       result: String
       stdout: String
       error: String
+      imports: String
+      exports: String
     ): Pod
     clearUser: Boolean
     clearRepo: Boolean

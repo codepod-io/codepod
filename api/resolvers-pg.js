@@ -211,7 +211,7 @@ export const resolvers = {
     },
     updatePod: async (
       _,
-      { id, content, type, lang, result, stdout, error }
+      { id, content, type, lang, result, stdout, error, imports, exports }
     ) => {
       const pod = await prisma.pod.update({
         where: {
@@ -224,6 +224,8 @@ export const resolvers = {
           result,
           stdout,
           error,
+          imports,
+          exports,
         },
       });
       return pod;

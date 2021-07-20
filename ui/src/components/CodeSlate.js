@@ -79,7 +79,7 @@ const RichLeaf = ({ attributes, children, leaf }) => {
   return { attributes, children, leaf };
 };
 
-const HoveringToolbar = () => {
+const HoveringToolbar = ({ onExport = () => {} }) => {
   const ref = useRef();
   const editor = useSlate();
 
@@ -130,7 +130,16 @@ const HoveringToolbar = () => {
       >
         <FormatButton format="bold" icon={<FaBold />} />
         <FormatButton format="italic" icon={<FaItalic />} />
-        <FormatButton format="export" icon={<FaExternalLinkSquareAlt />} />
+        <FormatButton
+          format="export"
+          icon={<FaExternalLinkSquareAlt />}
+          onMouseDown={() => {
+            const isActive = isFormatActive(editor, "export");
+            // what if partially active?
+            let name = Editor.string(editor, editor.selection);
+            onExport(name, isActive);
+          }}
+        />
         <FormatButton format="underlined" icon={<FaUnderline />} />
         <FormatButton format="strikethrough" icon={<FaStrikethrough />} />
       </Menu>
@@ -138,7 +147,7 @@ const HoveringToolbar = () => {
   );
 };
 
-const FormatButton = ({ format, icon }) => {
+const FormatButton = ({ format, icon, onMouseDown = () => {} }) => {
   const editor = useSlate();
   return (
     <Button
@@ -146,6 +155,7 @@ const FormatButton = ({ format, icon }) => {
       active={isFormatActive(editor, format)}
       onMouseDown={(event) => {
         event.preventDefault();
+        onMouseDown();
         toggleFormat(editor, format);
       }}
     >
@@ -154,7 +164,12 @@ const FormatButton = ({ format, icon }) => {
   );
 };
 
-export function RichCodeSlate({ value, onChange, language = "javascript" }) {
+export function RichCodeSlate({
+  value,
+  onChange,
+  language = "javascript",
+  onExport = () => {},
+}) {
   const renderLeaf = useCallback((props) => <Leaf {...RichLeaf(props)} />, []);
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
   // decorate function depends on the language selected
@@ -190,7 +205,7 @@ export function RichCodeSlate({ value, onChange, language = "javascript" }) {
 
   return (
     <Slate editor={editor} value={value} onChange={onChange}>
-      <HoveringToolbar />
+      <HoveringToolbar onExport={onExport} />
       <Editable
         decorate={decorate}
         renderLeaf={renderLeaf}

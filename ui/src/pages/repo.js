@@ -176,17 +176,7 @@ function SyncStatus({ pod }) {
             icon={<RepeatIcon />}
             colorScheme={"yellow"}
             onClick={() => {
-              dispatch(
-                remoteUpdatePod({
-                  id: pod.id,
-                  content: pod.content,
-                  type: pod.type,
-                  lang: pod.lang,
-                  result: pod.result,
-                  stdout: pod.stdout,
-                  error: pod.error,
-                })
-              );
+              dispatch(remoteUpdatePod(pod));
             }}
           ></IconButton>
         </Box>
@@ -466,13 +456,33 @@ function findExports(content) {
   return res;
 }
 
+function ImportList({ pod }) {
+  const dispatch = useDispatch();
+  return (
+    <Box>
+      {pod.imports &&
+        Object.keys(pod.imports) &&
+        Object.entries(pod.imports).map(([k, v]) => (
+          <Box key={k}>
+            <Switch
+              mr="1rem"
+              isChecked={v}
+              onChange={() => {
+                dispatch(
+                  repoSlice.actions.togglePodImport({ id: pod.id, name: k })
+                );
+              }}
+            />
+            <Code>{k}</Code>
+          </Box>
+        ))}
+    </Box>
+  );
+}
+
 function CodePod({ pod }) {
   let dispatch = useDispatch();
   let namespace = useSelector(selectNamespace(pod.id));
-  // find the exports
-  // FIXME performance. I should probably set the exports when the export button
-  // is clicked
-  let exports = findExports(pod.content);
   return (
     <VStack align="start" p={2}>
       <HStack>
@@ -523,19 +533,36 @@ function CodePod({ pod }) {
             );
           }}
           language={pod.lang || "javascript"}
+          onExport={(name, isActive) => {
+            if (isActive) {
+              dispatch(repoSlice.actions.deletePodExport({ id: pod.id, name }));
+            } else {
+              dispatch(repoSlice.actions.addPodExport({ id: pod.id, name }));
+            }
+          }}
         />
       </Box>
-      {exports && exports.length && (
+      {pod.exports && Object.keys(pod.exports).length && (
         <Box>
           Exports{" "}
-          {exports.map((e) => (
-            <Box key={uuidv4()}>
-              <Switch mr="1rem" />
-              <Code>{e}</Code>
+          {Object.entries(pod.exports).map(([k, v]) => (
+            <Box key={k}>
+              <Switch
+                mr="1rem"
+                isChecked={v}
+                onChange={() => {
+                  dispatch(
+                    repoSlice.actions.togglePodExport({ id: pod.id, name: k })
+                  );
+                }}
+              />
+              <Code>{k}</Code>
             </Box>
           ))}
         </Box>
       )}
+      {/* TODO this should appear not only on CodePod */}
+      <ImportList pod={pod} />
       {pod.stdout && <Text>{pod.stdout}</Text>}
       {pod.result && (
         <Flex>

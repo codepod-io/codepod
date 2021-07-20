@@ -88,6 +88,8 @@ model Pod {
   result   String?
   stdout   String?
   error    String?
+  imports  String?
+  exports  String?
   // repo        Repo?    @relation("ROOT")
   repo     Repo    @relation("BELONG", fields: [repoId], references: [id])
 
