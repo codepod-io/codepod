@@ -99,6 +99,10 @@ function normalize(pods) {
       type: "DECK",
       id: "ROOT",
       children: [],
+      // Adding this to avoid errors
+      // XXX should I save these to db?
+      exports: {},
+      imports: {},
     },
   };
 
@@ -415,12 +419,13 @@ export const repoSlice = createSlice({
     },
     addPodExport: (state, action) => {
       let { id, name } = action.payload;
-      console.log("addPodExport", id, name);
-      // TODO remove this new field compatibility layer
-      if (!state.pods[id].exports) {
-        state.pods[id].exports = {};
+      // XXX at pod creation, remote pod in db gets null in exports/imports.
+      // Thus this might be null. So create here to avoid errors.
+      let pod = state.pods[id];
+      if (!pod.exports) {
+        pod.exports = {};
       }
-      state.pods[id].exports[name] = false;
+      pod.exports[name] = false;
     },
     deletePodExport: (state, action) => {
       let { id, name } = action.payload;
@@ -430,40 +435,23 @@ export const repoSlice = createSlice({
       let { id, name } = action.payload;
       let pod = state.pods[id];
       pod.exports[name] = !pod.exports[name];
-      let parent = state.pods[pod.parent];
-      // TODO remove this new field compatibility layer
-      if (!parent.imports) {
-        parent.imports = {};
+    },
+    addPodImport: (state, action) => {
+      let { id, name } = action.payload;
+      let pod = state.pods[id];
+      if (!pod.imports) {
+        pod.imports = {};
       }
-      // toggle for its parent
-      if (pod.exports[name]) {
-        parent.imports[name] = false;
-      } else {
-        // delete for all its parents
-        while (parent && name in parent.imports) {
-          delete parent.imports[name];
-          parent = state.pods[parent.parent];
-        }
-      }
+      pod.imports[name] = false;
+    },
+    deletePodImport: (state, action) => {
+      let { id, name } = action.payload;
+      delete state.pods[id].imports[name];
     },
     togglePodImport: (state, action) => {
       let { id, name } = action.payload;
       let pod = state.pods[id];
       pod.imports[name] = !pod.imports[name];
-      let parent = state.pods[pod.parent];
-      // TODO remove this new field compatibility layer
-      if (!parent.imports) {
-        parent.imports = {};
-      }
-      // toggle for its parent
-      if (pod.imports[name]) {
-        parent.imports[name] = false;
-      } else {
-        while (parent && parent.imports && name in parent.imports) {
-          delete parent.imports[name];
-          parent = state.pods[parent.parent];
-        }
-      }
     },
     setPodLang: (state, action) => {
       const { id, lang } = action.payload;

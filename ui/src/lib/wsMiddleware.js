@@ -3,6 +3,8 @@ import { io } from "socket.io-client";
 
 import * as actions from "./wsActions";
 
+import { repoSlice } from "../lib/store";
+
 const socketMiddleware = () => {
   let socket = null;
 
@@ -108,6 +110,50 @@ const socketMiddleware = () => {
           console.log("ERROR: not connected");
         }
         break;
+      case "WS_TOGGLE_EXPORT": {
+        let { id, name } = action.payload;
+        store.dispatch(repoSlice.actions.togglePodExport({ id, name }));
+        let pods = store.getState().repo.pods;
+        let pod = pods[id];
+        let parent = pods[pod.parent];
+        // toggle for its parent
+        if (pod.exports[name]) {
+          store.dispatch(
+            repoSlice.actions.addPodImport({ id: parent.id, name })
+          );
+        } else {
+          // delete for all its parents
+          while (parent && parent.imports && name in parent.imports) {
+            store.dispatch(
+              repoSlice.actions.deletePodImport({ id: parent.id, name })
+            );
+            parent = pods[parent.parent];
+          }
+        }
+        break;
+      }
+      case "WS_TOGGLE_IMPORT": {
+        let { id, name } = action.payload;
+        store.dispatch(repoSlice.actions.togglePodImport({ id, name }));
+        let pods = store.getState().repo.pods;
+        let pod = pods[id];
+        let parent = pods[pod.parent];
+        // toggle for its parent
+        if (pod.imports[name]) {
+          store.dispatch(
+            repoSlice.actions.addPodImport({ id: parent.id, name })
+          );
+        } else {
+          // delete for all its parents
+          while (parent && parent.imports && name in parent.imports) {
+            store.dispatch(
+              repoSlice.actions.deletePodImport({ id: parent.id, name })
+            );
+            parent = pods[parent.parent];
+          }
+        }
+        break;
+      }
       default:
         return next(action);
     }

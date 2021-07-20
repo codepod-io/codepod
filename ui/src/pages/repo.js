@@ -474,9 +474,7 @@ function ImportList({ pod }) {
               mr="1rem"
               isChecked={v}
               onChange={() => {
-                dispatch(
-                  repoSlice.actions.togglePodImport({ id: pod.id, name: k })
-                );
+                dispatch(wsActions.wsToggleImport({ id: pod.id, name: k }));
               }}
             />
             <Code>{k}</Code>
@@ -556,9 +554,7 @@ function CodePod({ pod }) {
                 mr="1rem"
                 isChecked={v}
                 onChange={() => {
-                  dispatch(
-                    repoSlice.actions.togglePodExport({ id: pod.id, name: k })
-                  );
+                  dispatch(wsActions.wsToggleExport({ id: pod.id, name: k }));
                 }}
               />
               <Code>{k}</Code>

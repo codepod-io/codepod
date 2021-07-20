@@ -34,3 +34,13 @@ export const wsSimpleError = (payload) => ({
   type: "WS_SIMPLE_ERROR",
   payload,
 });
+
+export const wsToggleExport = (payload) => ({
+  type: "WS_TOGGLE_EXPORT",
+  payload,
+});
+
+export const wsToggleImport = (payload) => ({
+  type: "WS_TOGGLE_IMPORT",
+  payload,
+});
