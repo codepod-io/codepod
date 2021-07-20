@@ -398,9 +398,18 @@ function TypeMenu({ pod }) {
   );
 }
 
+const deckMap = {};
+
+function getDeck(id) {
+  // avoid re-rendering
+  if (!(id in deckMap)) {
+    deckMap[id] = <Deck id={id} key={id}></Deck>;
+  }
+  return deckMap[id];
+}
+
 function Deck({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
-  const { ref: right, width = 0, height = 0 } = useResizeObserver();
   return (
     <VStack align="start" p={2}>
       <Box border="solid 1px" p={3}>
@@ -416,16 +425,16 @@ function Deck({ id }) {
                   src={brace}
                   // src="../GullBraceLeft.svg"
                   alt="brace"
-                  h={height}
+                  h="100%"
                   maxW="none"
                   w="20px"
                 />
               </div>
               {/* RIGHT */}
-              <Flex direction="column" ref={right}>
+              <Flex direction="column">
                 <Code colorScheme="blackAlpha">{pod.id}</Code>
                 {pod.children.map((id) => {
-                  return <Deck id={id} key={id}></Deck>;
+                  return getDeck(id);
                 })}
               </Flex>
             </Flex>
@@ -479,7 +488,6 @@ function ImportList({ pod }) {
 
 function CodePod({ pod }) {
   let dispatch = useDispatch();
-  let namespace = useSelector(selectNamespace(pod.id));
   return (
     <VStack align="start" p={2}>
       <HStack>
