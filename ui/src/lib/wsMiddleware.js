@@ -111,6 +111,8 @@ const socketMiddleware = () => {
         break;
       case "WS_REQUEST_STATUS":
         if (socket) {
+          // set to unknown
+          store.dispatch(actions.wsStatus(action.lang, "uknown"));
           socket.emit("requestKernelStatus", action.lang);
         } else {
           console.log("ERROR: not connected");
