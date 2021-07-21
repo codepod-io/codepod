@@ -13,6 +13,9 @@ import Signup from "./pages/signup";
 import Profile from "./pages/profile";
 
 import { ChakraProvider } from "@chakra-ui/react";
+
+import { Box } from "@chakra-ui/react";
+
 import { AuthProvider } from "./lib/auth.js";
 import { Header, Footer } from "./components/Header";
 
@@ -20,43 +23,72 @@ import { Provider } from "react-redux";
 
 import store from "./lib/store";
 
+function NormalLayout({ children }) {
+  return (
+    <Box>
+      <Header />
+      <Box pt="50px">{children}</Box>
+      <Footer />
+    </Box>
+  );
+}
+
 function App() {
   return (
     <Router>
       <Provider store={store}>
         <ChakraProvider>
           <AuthProvider>
-            <Header />
             <Switch>
               <Route path="/about">
-                <About />
+                <NormalLayout>
+                  <About />
+                </NormalLayout>
               </Route>
               <Route path="/repos">
-                <Repos />
+                <NormalLayout>
+                  <Repos />
+                </NormalLayout>
               </Route>
               <Route path="/:username/:reponame">
-                <Repo />
+                <Box height="100vh">
+                  <Header />
+                  <Box height="100%" pt="50px">
+                    <Repo />
+                  </Box>
+                </Box>
               </Route>
               <Route path="/commitnote">
-                <CommitNote />
+                <NormalLayout>
+                  <CommitNote />
+                </NormalLayout>
               </Route>
               <Route path="/test">
-                <Test />
+                <NormalLayout>
+                  <Test />
+                </NormalLayout>
               </Route>
               <Route path="/login">
-                <Login />
+                <NormalLayout>
+                  <Login />
+                </NormalLayout>
               </Route>
               <Route path="/signup">
-                <Signup />
+                <NormalLayout>
+                  <Signup />
+                </NormalLayout>
               </Route>
               <Route path="/profile">
-                <Profile />
+                <NormalLayout>
+                  <Profile />
+                </NormalLayout>
               </Route>
               <Route path="/">
-                <Home />
+                <NormalLayout>
+                  <Home />
+                </NormalLayout>
               </Route>
             </Switch>
-            <Footer />
           </AuthProvider>
         </ChakraProvider>
       </Provider>

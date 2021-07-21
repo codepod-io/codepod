@@ -15,15 +15,6 @@ import {
   Spacer,
 } from "@chakra-ui/react";
 import { Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
-import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  PopoverHeader,
-  PopoverBody,
-  PopoverArrow,
-  PopoverCloseButton,
-} from "@chakra-ui/react";
 import { HStack, VStack, Select } from "@chakra-ui/react";
 import { useClipboard } from "@chakra-ui/react";
 
@@ -47,6 +38,9 @@ import io from "socket.io-client";
 import { Node } from "slate";
 import { v4 as uuidv4 } from "uuid";
 
+import Popover from "@material-ui/core/Popover";
+import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
+
 import {
   repoSlice,
   loadPodQueue,
@@ -62,6 +56,98 @@ import { XTerm, DummyTerm } from "../components/MyXTerm";
 import * as wsActions from "../lib/wsActions";
 
 import brace from "../GullBraceLeft.svg";
+
+function SessionBar(props) {
+  let { username, reponame } = useParams();
+  const sessionId = useSelector((state) => state.repo.sessionId);
+  const sessionRuntime = useSelector((state) => state.repo.sessionRuntime);
+  const runtimeConnected = useSelector((state) => state.repo.runtimeConnected);
+  const kernels = useSelector((state) => state.repo.kernels);
+  const dispatch = useDispatch();
+
+  return (
+    <Box {...props}>
+      <Text>
+        Repo:{" "}
+        <Link to={`/${username}`} as={ReactLink}>
+          {username}
+        </Link>{" "}
+        /{" "}
+        <Link to={`/${username}/${reponame}`} as={ReactLink}>
+          {reponame}
+        </Link>
+      </Text>
+      {/* <Text>SyncQueue: {queueL}</Text> */}
+      <Text>Session ID: {sessionId}</Text>
+      <Button
+        onClick={() => {
+          dispatch(repoSlice.actions.resetSessionId());
+        }}
+      >
+        Reset Session
+      </Button>
+      <Text>
+        Session Runtime:
+        <Code>{Object.keys(sessionRuntime)}</Code>
+      </Text>
+      <Text>Runtime connected? {runtimeConnected ? "Yes" : "No"}</Text>
+
+      <Button
+        onClick={() => {
+          dispatch(wsActions.wsConnect("host"));
+        }}
+      >
+        Connect
+      </Button>
+      <Button
+        onClick={() => {
+          dispatch(wsActions.wsDisconnect());
+        }}
+      >
+        Disconnect
+      </Button>
+      {/* CAUTION Object.entries is very tricky. Must use for .. of, and the destructure must be [k,v] LIST */}
+      {Object.entries(kernels).map(([lang, kernel]) => (
+        <Box key={`lang-${lang}`}>
+          <Text>kernel name: {lang}</Text>
+          <Text>
+            Status: {runtimeConnected ? kernel.status : "runtime disconnected"}
+          </Text>
+          <Button
+            onClick={() => {
+              dispatch(wsActions.wsRequestStatus(lang));
+            }}
+          >
+            Request Kernel Status
+          </Button>
+        </Box>
+      ))}
+
+      <Box>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer luctus
+        fringilla urna accumsan sollicitudin. Proin tellus eros, imperdiet vitae
+        justo ut, blandit vulputate sapien. Proin feugiat dolor sed ligula
+        interdum mollis. Curabitur laoreet elementum efficitur. Proin id laoreet
+        lacus, sit amet mattis libero. Mauris eget ultrices enim, ut bibendum
+        dolor. Ut eu lorem mattis, imperdiet turpis a, porta ante. Maecenas
+        rutrum, urna eu sollicitudin sagittis, dui lacus porta augue, sed
+        faucibus ipsum mauris sed metus. In consequat odio ac bibendum
+        scelerisque. Vivamus non tortor sagittis ligula ullamcorper aliquam ut
+        quis arcu. Fusce nec lorem ac tellus malesuada laoreet. Suspendisse sit
+        amet tellus vel dolor malesuada semper in nec justo.
+      </Box>
+      <Box>
+        Suspendisse id elit sodales, efficitur dolor id, dapibus dui. Curabitur
+        sed metus orci. Nunc bibendum sapien sed auctor posuere. Duis ut nisl
+        scelerisque, blandit est condimentum, laoreet massa. Aliquam tincidunt
+        fermentum nunc id tempor. Phasellus laoreet lacus vel ipsum malesuada
+        blandit. Proin massa mi, imperdiet sit amet urna ut, eleifend
+        condimentum dolor. Sed at urna augue. Suspendisse potenti. Donec quis
+        erat et leo vehicula laoreet ac id libero.
+      </Box>
+    </Box>
+  );
+}
 
 export default function Repo() {
   let { username, reponame } = useParams();
@@ -79,91 +165,31 @@ export default function Repo() {
   //
   // const queueL = useSelector((state) => state.repo.queue.length);
   const repoLoaded = useSelector((state) => state.repo.repoLoaded);
-  const sessionId = useSelector((state) => state.repo.sessionId);
-  const sessionRuntime = useSelector((state) => state.repo.sessionRuntime);
-  const runtimeConnected = useSelector((state) => state.repo.runtimeConnected);
-  const kernels = useSelector((state) => state.repo.kernels);
 
   return (
-    <Flex direction="column" m="auto">
-      {/* <Box m="auto" w="lg">
-        <MyXTerm />
-      </Box> */}
-      <Box pb={10} m="auto">
-        <Text>
-          Repo:{" "}
-          <Link to={`/${username}`} as={ReactLink}>
-            {username}
-          </Link>{" "}
-          /{" "}
-          <Link to={`/${username}/${reponame}`} as={ReactLink}>
-            {reponame}
-          </Link>
-        </Text>
-        {/* <Text>SyncQueue: {queueL}</Text> */}
-        <Text>Session ID: {sessionId}</Text>
-        <Button
-          onClick={() => {
-            dispatch(repoSlice.actions.resetSessionId());
-          }}
-        >
-          Reset Session
-        </Button>
-        <Text>
-          Session Runtime:
-          <Code>{Object.keys(sessionRuntime)}</Code>
-        </Text>
-        <Text>Runtime connected? {runtimeConnected ? "Yes" : "No"}</Text>
-
-        <Button
-          onClick={() => {
-            dispatch(wsActions.wsConnect("host"));
-          }}
-        >
-          Connect
-        </Button>
-        <Button
-          onClick={() => {
-            dispatch(wsActions.wsDisconnect());
-          }}
-        >
-          Disconnect
-        </Button>
-        {/* CAUTION Object.entries is very tricky. Must use for .. of, and the destructure must be [k,v] LIST */}
-        {Object.entries(kernels).map(([lang, kernel]) => (
-          <Box key={`lang-${lang}`}>
-            <Text>kernel name: {lang}</Text>
-            <Text>
-              Status:{" "}
-              {runtimeConnected ? kernel.status : "runtime disconnected"}
-            </Text>
-            <Button
-              onClick={() => {
-                dispatch(wsActions.wsRequestStatus(lang));
-              }}
-            >
-              Request Kernel Status
-            </Button>
-          </Box>
-        ))}
+    <Box m="auto" height="100%">
+      <SessionBar
+        display="inline-block"
+        verticalAlign="top"
+        height="100%"
+        w="18%"
+        overflow="auto"
+      />
+      <Box
+        display="inline-block"
+        verticalAlign="top"
+        height="100%"
+        w="80%"
+        overflow="scroll"
+      >
         {!repoLoaded && <Text>Repo Loading ...</Text>}
-      </Box>
-      {repoLoaded && (
-        <Box m="auto">
-          <Box
-            overflowX="scroll"
-            border="solid 3px"
-            p={5}
-            m={5}
-            // maxW={["sm", "lg", "3xl", "4xl", "6xl"]}
-          >
-            <Box>
-              <Deck id="ROOT" />
-            </Box>
+        {repoLoaded && (
+          <Box height="100%" border="solid 3px" p={5} overflow="auto">
+            <Deck id="ROOT" />
           </Box>
-        </Box>
-      )}
-    </Flex>
+        )}
+      </Box>
+    </Box>
   );
 }
 
@@ -208,40 +234,55 @@ function InfoBar({ pod }) {
   /* eslint-disable no-unused-vars */
   const [value, setValue] = useState(pod.id);
   const { hasCopied, onCopy } = useClipboard(value);
+  const [anchorEl, setAnchorEl] = React.useState(null);
   return (
     <Box>
-      {/* <DragHandleIcon mr="3px" /> */}
-      <Popover>
-        <PopoverTrigger>
-          <IconButton size="sm" icon={<InfoIcon />}></IconButton>
-          {/* <InfoIcon /> */}
-        </PopoverTrigger>
-        <PopoverContent w="lg">
-          <PopoverArrow />
-          <PopoverCloseButton />
-          <PopoverHeader>Info</PopoverHeader>
-          <PopoverBody>
-            <Text>
-              ID:{" "}
-              <Code colorScheme="blackAlpha">
-                {
-                  // pod.id.substring(0, 8)
-                  pod.id
-                }
-              </Code>
-              <Button onClick={onCopy}>{hasCopied ? "Copied" : "Copy"}</Button>
-            </Text>
-            <Text>
-              Namespace:
-              <Code colorScheme="blackAlpha">{pod.ns}</Code>
-            </Text>
-            <Text mr={5}>Index: {pod.index}</Text>
-            <Text>
-              Parent:{" "}
-              <Code colorScheme="blackAlpha">{pod.parent.substring(0, 8)}</Code>
-            </Text>
-          </PopoverBody>
-        </PopoverContent>
+      <Button
+        size="sm"
+        onClick={(e) => {
+          setAnchorEl(e.currentTarget);
+        }}
+      >
+        {/* <InfoOutlinedIcon /> */}
+        <InfoIcon />
+      </Button>
+      <Popover
+        open={Boolean(anchorEl)}
+        onClose={() => {
+          setAnchorEl(null);
+        }}
+        anchorEl={anchorEl}
+        anchorOrigin={{
+          vertical: "bottom",
+          horizontal: "center",
+        }}
+        transformOrigin={{
+          vertical: "top",
+          horizontal: "center",
+        }}
+      >
+        The content of the Popover.
+        <Box>
+          <Text>
+            ID:{" "}
+            <Code colorScheme="blackAlpha">
+              {
+                // pod.id.substring(0, 8)
+                pod.id
+              }
+            </Code>
+            <Button onClick={onCopy}>{hasCopied ? "Copied" : "Copy"}</Button>
+          </Text>
+          <Text>
+            Namespace:
+            <Code colorScheme="blackAlpha">{pod.ns}</Code>
+          </Text>
+          <Text mr={5}>Index: {pod.index}</Text>
+          <Text>
+            Parent:{" "}
+            <Code colorScheme="blackAlpha">{pod.parent.substring(0, 8)}</Code>
+          </Text>
+        </Box>
       </Popover>
     </Box>
   );
@@ -343,62 +384,24 @@ function TypeMenu({ pod }) {
   const dispatch = useDispatch();
   return (
     <Box>
-      <Menu>
-        <MenuButton size="sm" as={Button} rightIcon={<ChevronDownIcon />}>
-          {pod.type}
-        </MenuButton>
-        <MenuList>
-          <MenuItem
-            onClick={() => {
-              dispatch(
-                repoSlice.actions.setPodType({
-                  id: pod.id,
-                  type: "CODE",
-                })
-              );
-            }}
-          >
-            Code
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              dispatch(
-                repoSlice.actions.setPodType({
-                  id: pod.id,
-                  type: "WYSIWYG",
-                })
-              );
-            }}
-          >
-            WYSIWYG
-          </MenuItem>
-          <MenuItem
-            onClick={() => {
-              dispatch(
-                repoSlice.actions.setPodType({
-                  id: pod.id,
-                  type: "REPL",
-                })
-              );
-            }}
-          >
-            REPL
-          </MenuItem>
-          <MenuItem
-            isDisabled
-            onClick={() => {
-              dispatch(
-                repoSlice.actions.setPodType({
-                  id: pod.id,
-                  type: "MD",
-                })
-              );
-            }}
-          >
-            Markdown
-          </MenuItem>
-        </MenuList>
-      </Menu>
+      <Select
+        size="xs"
+        placeholder="Select option"
+        value={pod.type || ""}
+        onChange={(e) =>
+          dispatch(
+            repoSlice.actions.setPodType({
+              id: pod.id,
+              type: e.target.value,
+            })
+          )
+        }
+      >
+        <option value="CODE">CODE</option>
+        <option value="WYSIWYG">WYSIWYG</option>
+        <option value="REPL">REPL</option>
+        <option value="MD">Markdown</option>
+      </Select>
     </Box>
   );
 }

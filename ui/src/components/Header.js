@@ -39,11 +39,14 @@ export function Header() {
 
   return (
     <Flex
-      mb={8}
-      p={8}
+      px={8}
       as="nav"
       align="center"
       justify="space-between"
+      position="fixed"
+      top="0px"
+      bg="white"
+      zIndex={1}
       wrap="wrap"
       w="100%"
     >
