@@ -300,7 +300,8 @@ function ToolBar({ pod }) {
             repoSlice.actions.addPod({
               parent: pod.parent,
               index: pod.index,
-              type: "CODE",
+              type: pod.type,
+              lang: pod.lang,
             })
           );
         }}
@@ -314,7 +315,8 @@ function ToolBar({ pod }) {
             repoSlice.actions.addPod({
               parent: pod.parent,
               index: pod.index + 1,
-              type: "CODE",
+              type: pod.type,
+              lang: pod.lang,
             })
           );
         }}
@@ -327,7 +329,8 @@ function ToolBar({ pod }) {
           dispatch(
             repoSlice.actions.addPod({
               parent: pod.id,
-              type: "CODE",
+              type: pod.type,
+              lang: pod.lang,
               index: 0,
             })
           );

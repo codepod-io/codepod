@@ -327,7 +327,7 @@ export const repoSlice = createSlice({
       state.username = username;
     },
     addPod: (state, action) => {
-      let { parent, index, type, id } = action.payload;
+      let { parent, index, type, id, lang } = action.payload;
       if (!parent) {
         parent = "ROOT";
       }
@@ -357,6 +357,7 @@ export const repoSlice = createSlice({
         result: "",
         stdout: "",
         error: null,
+        lang: lang,
         exports: {},
         imports: {},
         isSyncing: false,
