@@ -10,7 +10,6 @@ import {
   Image,
   IconButton,
   Spinner,
-  Switch,
   Code,
   Spacer,
 } from "@chakra-ui/react";
@@ -40,6 +39,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import Popover from "@material-ui/core/Popover";
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
+import { Switch } from "@material-ui/core";
 
 import {
   repoSlice,
@@ -492,8 +492,7 @@ function ImportList({ pod }) {
           {Object.entries(pod.imports).map(([k, v]) => (
             <Box key={k}>
               <Switch
-                mr="1rem"
-                isChecked={v}
+                checked={v}
                 onChange={() => {
                   dispatch(wsActions.wsToggleImport({ id: pod.id, name: k }));
                 }}
@@ -576,8 +575,7 @@ function CodePod({ pod }) {
             {Object.entries(pod.exports).map(([k, v]) => (
               <Box key={k}>
                 <Switch
-                  mr="1rem"
-                  isChecked={v}
+                  checked={v}
                   onChange={() => {
                     dispatch(wsActions.wsToggleExport({ id: pod.id, name: k }));
                   }}
