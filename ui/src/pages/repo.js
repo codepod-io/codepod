@@ -22,6 +22,7 @@ import {
   ArrowForwardIcon,
   ArrowDownIcon,
   CheckIcon,
+  CloseIcon,
   RepeatIcon,
   HamburgerIcon,
   InfoIcon,
@@ -39,6 +40,7 @@ import { v4 as uuidv4 } from "uuid";
 
 import Popover from "@material-ui/core/Popover";
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
+// import { CheckIcon } from "@material-ui/icons";
 import { Switch } from "@material-ui/core";
 
 import {
@@ -479,9 +481,17 @@ function IOStatus({ id, name }) {
   if (!status) {
     return <Box as="span">Unknown</Box>;
   } else if ("result" in status) {
-    return <Box as="span">Success</Box>;
+    return (
+      <Box as="span">
+        <CheckIcon color="green" />
+      </Box>
+    );
   } else if ("error" in status) {
-    return <Box as="span">Error</Box>;
+    return (
+      <Box as="span">
+        <CloseIcon color="red" />
+      </Box>
+    );
   }
 }
 
