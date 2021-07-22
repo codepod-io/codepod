@@ -263,6 +263,11 @@ async function startApolloServer() {
             break;
           }
           case "stream": {
+            if (!msgs.parent_header.msg_id) {
+              console.log("No msg_id, skipped");
+              console.log(msgs.parent_header);
+              break;
+            }
             let [podId, name] = msgs.parent_header.msg_id.split("#");
             // iracket use this to send stderr
             // FIXME there are many frames
