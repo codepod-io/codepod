@@ -12,6 +12,7 @@ import {
   Spinner,
   Code,
   Spacer,
+  Divider,
 } from "@chakra-ui/react";
 import { Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
 import { HStack, VStack, Select } from "@chakra-ui/react";
@@ -35,19 +36,21 @@ import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import useResizeObserver from "use-resize-observer";
 import io from "socket.io-client";
-import { Node } from "slate";
-import { v4 as uuidv4 } from "uuid";
 
 import Popover from "@material-ui/core/Popover";
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
 // import { CheckIcon } from "@material-ui/icons";
+import RefreshIcon from "@material-ui/icons/Refresh";
+import CloudUploadIcon from "@material-ui/icons/CloudUpload";
 import { Switch } from "@material-ui/core";
 
 import {
   repoSlice,
   loadPodQueue,
   remoteUpdatePod,
+  remoteUpdateAllPods,
   selectIsDirty,
+  selectNumDirty,
 } from "../lib/store";
 import { MySlate } from "../components/MySlate";
 import { RichCodeSlate as CodeSlate } from "../components/CodeSlate";
@@ -59,16 +62,12 @@ import * as wsActions from "../lib/wsActions";
 
 import brace from "../GullBraceLeft.svg";
 
-function SessionBar(props) {
+function SidebarSession() {
   let { username, reponame } = useParams();
   const sessionId = useSelector((state) => state.repo.sessionId);
-  const sessionRuntime = useSelector((state) => state.repo.sessionRuntime);
-  const runtimeConnected = useSelector((state) => state.repo.runtimeConnected);
-  const kernels = useSelector((state) => state.repo.kernels);
   const dispatch = useDispatch();
-
   return (
-    <Box {...props}>
+    <Box>
       <Text>
         Repo:{" "}
         <Link to={`/${username}`} as={ReactLink}>
@@ -80,50 +79,143 @@ function SessionBar(props) {
         </Link>
       </Text>
       {/* <Text>SyncQueue: {queueL}</Text> */}
-      <Text>Session ID: {sessionId}</Text>
-      <Button
-        onClick={() => {
-          dispatch(repoSlice.actions.resetSessionId());
-        }}
-      >
-        Reset Session
-      </Button>
+      <Text>
+        Session ID: <Code>{sessionId}</Code>
+        <Button
+          size="xs"
+          onClick={() => {
+            dispatch(repoSlice.actions.resetSessionId());
+          }}
+        >
+          <RefreshIcon />
+        </Button>
+      </Text>
+    </Box>
+  );
+}
+
+function SidebarRuntime() {
+  const sessionRuntime = useSelector((state) => state.repo.sessionRuntime);
+  const runtimeConnected = useSelector((state) => state.repo.runtimeConnected);
+  const dispatch = useDispatch();
+  return (
+    <Box>
       <Text>
         Session Runtime:
         <Code>{Object.keys(sessionRuntime)}</Code>
       </Text>
-      <Text>Runtime connected? {runtimeConnected ? "Yes" : "No"}</Text>
+      <Text>
+        Runtime connected?{" "}
+        {runtimeConnected ? (
+          <Box as="span" color="green">
+            Yes
+          </Box>
+        ) : (
+          <Box as="span" color="red">
+            No
+          </Box>
+        )}
+      </Text>
 
-      <Button
-        onClick={() => {
-          dispatch(wsActions.wsConnect("host"));
-        }}
-      >
-        Connect
-      </Button>
-      <Button
-        onClick={() => {
-          dispatch(wsActions.wsDisconnect());
-        }}
-      >
-        Disconnect
-      </Button>
+      <HStack>
+        <Button
+          size="sm"
+          onClick={() => {
+            dispatch(wsActions.wsConnect("host"));
+          }}
+        >
+          Connect
+        </Button>
+        {/* <Spacer /> */}
+        <Button
+          size="sm"
+          onClick={() => {
+            dispatch(wsActions.wsDisconnect());
+          }}
+        >
+          Disconnect
+        </Button>
+      </HStack>
+    </Box>
+  );
+}
+
+function SidebarKernel() {
+  const kernels = useSelector((state) => state.repo.kernels);
+  const runtimeConnected = useSelector((state) => state.repo.runtimeConnected);
+  const dispatch = useDispatch();
+  return (
+    <Box>
       {/* CAUTION Object.entries is very tricky. Must use for .. of, and the destructure must be [k,v] LIST */}
       {Object.entries(kernels).map(([lang, kernel]) => (
         <Box key={`lang-${lang}`}>
-          <Text>kernel name: {lang}</Text>
           <Text>
-            Status: {runtimeConnected ? kernel.status : "runtime disconnected"}
+            kernel name:{" "}
+            <Box as="span" color="blue">
+              {lang}
+            </Box>
           </Text>
-          <Button
-            onClick={() => {
-              dispatch(wsActions.wsRequestStatus(lang));
-            }}
-          >
-            Request Kernel Status
-          </Button>
+          <Text>
+            Status:{" "}
+            {runtimeConnected ? (
+              <Box as="span" color="blue">
+                {kernel.status}
+              </Box>
+            ) : (
+              <Box color="red" as="span">
+                disconnected
+              </Box>
+            )}
+            <Button
+              size="xs"
+              onClick={() => {
+                dispatch(wsActions.wsRequestStatus(lang));
+              }}
+            >
+              <RefreshIcon />
+            </Button>
+          </Text>
         </Box>
       ))}
+    </Box>
+  );
+}
+
+function Sidebar() {
+  const dispatch = useDispatch();
+  const numDirty = useSelector(selectNumDirty());
+  return (
+    <Box px="1rem">
+      <SidebarSession />
+      <SidebarRuntime />
+      <SidebarKernel />
+
+      <HStack>
+        <Button
+          size="sm"
+          onClick={() => {
+            // run all pods
+            dispatch(wsActions.wsRunAll());
+          }}
+        >
+          Apply All Pods
+        </Button>
+
+        <Button
+          size="sm"
+          disabled={numDirty == 0}
+          onClick={() => {
+            dispatch(remoteUpdateAllPods());
+          }}
+        >
+          <CloudUploadIcon />
+          <Text as="span" color="blue" mx={1}>
+            {numDirty}
+          </Text>
+        </Button>
+      </HStack>
+
+      <Divider my={2} />
 
       <Box>
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer luctus
@@ -170,13 +262,15 @@ export default function Repo() {
 
   return (
     <Box m="auto" height="100%">
-      <SessionBar
+      <Box
         display="inline-block"
         verticalAlign="top"
         height="100%"
         w="18%"
         overflow="auto"
-      />
+      >
+        <Sidebar />
+      </Box>
       <Box
         display="inline-block"
         verticalAlign="top"
@@ -459,23 +553,6 @@ function Deck({ id }) {
   );
 }
 
-const slackGetPlainText = (nodes) => {
-  return nodes.map((n) => Node.string(n)).join("\n");
-};
-
-function findExports(content) {
-  if (!content) return [];
-  let res = [];
-  for (let node of content) {
-    for (let [n, p] of Node.texts(node)) {
-      if (n.export) {
-        res.push(n.text);
-      }
-    }
-  }
-  return res;
-}
-
 function IOStatus({ id, name }) {
   const status = useSelector((state) => state.repo.pods[id].io[name]);
   if (!status) {
@@ -541,15 +618,7 @@ function CodePod({ pod }) {
             // clear previous results
             dispatch(repoSlice.actions.clearResults(pod.id));
             // 2. send
-            dispatch(
-              wsActions.wsRun({
-                lang: pod.lang,
-                code: slackGetPlainText(pod.content),
-                namespace: pod.ns,
-                podId: pod.id,
-                sessionId: "sessionId",
-              })
-            );
+            dispatch(wsActions.wsRun(pod));
             // 3. the socket should have onData set to set the output
           }}
         >

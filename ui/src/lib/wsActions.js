@@ -14,6 +14,10 @@ export const wsRun = (payload) => ({
   type: "WS_RUN",
   payload,
 });
+export const wsRunAll = (payload) => ({
+  type: "WS_RUN_ALL",
+  payload,
+});
 export const wsResult = (payload) => ({
   type: "WS_RESULT",
   payload,

@@ -2,7 +2,6 @@ import { configureStore, createAsyncThunk } from "@reduxjs/toolkit";
 
 import { createSlice } from "@reduxjs/toolkit";
 
-import { v4 as uuidv4 } from "uuid";
 import produce from "immer";
 
 import sha256 from "crypto-js/sha256";
@@ -10,6 +9,8 @@ import { io } from "socket.io-client";
 import wsMiddleware from "./wsMiddleware";
 import { customAlphabet } from "nanoid";
 import { nolookalikes } from "nanoid-dictionary";
+// FIXME safety
+const nanoid = customAlphabet(nolookalikes, 10);
 
 export const loadPodQueue = createAsyncThunk(
   "loadPodQueue",
@@ -90,6 +91,32 @@ export function selectIsDirty(id) {
     } else {
       return true;
     }
+  };
+}
+
+function mapPods(pods, func) {
+  function helper(id) {
+    let pod = pods[id];
+    if (id !== "ROOT") {
+      func(pod);
+    }
+    pod.children.map(helper);
+  }
+  helper("ROOT");
+}
+
+// FIXME performance
+export function selectNumDirty() {
+  return (state) => {
+    let res = 0;
+    if (state.repo.repoLoaded) {
+      mapPods(state.repo.pods, (pod) => {
+        if (pod.remoteHash !== hashPod(pod)) {
+          res += 1;
+        }
+      });
+    }
+    return res;
   };
 }
 
@@ -216,6 +243,22 @@ async function doRemoteDeletePod({ id, toDelete }) {
   return res.json();
 }
 
+export const remoteUpdateAllPods = createAsyncThunk(
+  "remoteUpdateAllPods",
+  (action, { dispatch, getState }) => {
+    function helper(id) {
+      let pod = getState().repo.pods[id];
+      pod.children.map(helper);
+      if (id !== "ROOT") {
+        if (pod.remoteHash !== hashPod(pod)) {
+          dispatch(remoteUpdatePod(pod));
+        }
+      }
+    }
+    helper("ROOT");
+  }
+);
+
 export const remoteUpdatePod = createAsyncThunk(
   "remoteUpdatePod",
   async (pod) => {
@@ -296,7 +339,7 @@ export const repoSlice = createSlice({
     repoLoaded: false,
     pods: {},
     queue: [],
-    sessionId: uuidv4(),
+    sessionId: nanoid(),
     sessionRuntime: {},
     runtimeConnected: false,
     kernels: {
@@ -311,7 +354,7 @@ export const repoSlice = createSlice({
   },
   reducers: {
     resetSessionId: (state, action) => {
-      state.sessionId = uuidv4();
+      state.sessionId = nanoid();
     },
     ensureSessionRuntime: (state, action) => {
       const { lang } = action.payload;
@@ -502,6 +545,8 @@ export const repoSlice = createSlice({
       // TODO display some error message
       // TODO use enum instead of string?
       // state.pods[action.payload.id].status = "dirty";
+      console.log(action.payload);
+      throw new Error("updatePod rejected");
       throw new Error("updatePod rejected" + action.payload.errors[0].message);
     },
     WS_STATUS: (state, action) => {
@@ -579,9 +624,6 @@ const podQueueMiddleware = (storeAPI) => (next) => (action) => {
   if (action.type === repoSlice.actions.addPod.type) {
     // construct the ID here so that the client and the server got the same ID
     action = produce(action, (draft) => {
-      // const id = uuidv4();
-      // FIXME safety
-      const nanoid = customAlphabet(nolookalikes, 10);
       const id = "CP" + nanoid();
       draft.payload.id = id;
     });

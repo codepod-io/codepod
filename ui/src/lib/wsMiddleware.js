@@ -1,9 +1,14 @@
 // from https://dev.to/aduranil/how-to-use-websockets-with-redux-a-step-by-step-guide-to-writing-understanding-connecting-socket-middleware-to-your-project-km3
 import { io } from "socket.io-client";
+import { Node } from "slate";
 
 import * as actions from "./wsActions";
 
 import { repoSlice } from "../lib/store";
+
+const slackGetPlainText = (nodes) => {
+  return nodes.map((n) => Node.string(n)).join("\n");
+};
 
 const socketMiddleware = () => {
   let socket = null;
@@ -97,18 +102,61 @@ const socketMiddleware = () => {
         break;
       case "WS_RUN":
         console.log("run code");
-        if (socket) {
-          socket.emit("runCode", action.payload);
-        } else {
-          console.log("ERROR: not connected");
+        let pod = action.payload;
+        if (!socket) {
           store.dispatch(
             actions.wsSimpleError({
-              podId: action.payload.podId,
+              podId: pod.id,
               msg: "Runtime not connected",
             })
           );
+          break;
         }
+        // clear pod results
+        store.dispatch(repoSlice.actions.clearResults(pod.id));
+        // emit runCode command
+        socket.emit("runCode", {
+          lang: pod.lang,
+          code: slackGetPlainText(pod.content),
+          namespace: pod.ns,
+          podId: pod.id,
+          sessionId: "sessionId",
+        });
         break;
+      case "WS_RUN_ALL": {
+        console.log("run all");
+        if (!socket) {
+          console.log("ERROR: Runtime socket not connected");
+          break;
+        }
+        // get all pods
+        let pods = store.getState().repo.pods;
+        function helper(id) {
+          let pod = pods[id];
+          pod.children.map(helper);
+          // evaluate child first, then parent
+          if (id !== "ROOT") {
+            // if the pod content code
+            // console.log("ID:", pod.id);
+            let code = slackGetPlainText(pod.content);
+            // console.log("Code:", code);
+            // FIXME check validity, i.e. have code, etc
+            if (code) {
+              store.dispatch(repoSlice.actions.clearResults(pod.id));
+              socket.emit("runCode", {
+                lang: pod.lang,
+                code: slackGetPlainText(pod.content),
+                namespace: pod.ns,
+                podId: pod.id,
+                sessionId: "sessionId",
+              });
+            }
+          }
+        }
+        helper("ROOT");
+        // run each one in order
+        break;
+      }
       case "WS_REQUEST_STATUS":
         if (socket) {
           // set to unknown
