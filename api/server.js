@@ -308,9 +308,13 @@ async function startApolloServer() {
           stdout: `Error: Invalid Language ${lang}`,
         });
       } else {
-        kernels[lang].sendShellMessage(
-          constructExecuteRequest({ code, msg_id: podId, cp: { namespace } })
-        );
+        if (code) {
+          kernels[lang].sendShellMessage(
+            constructExecuteRequest({ code, msg_id: podId, cp: { namespace } })
+          );
+        } else {
+          console.log("Code is empty");
+        }
       }
     });
 

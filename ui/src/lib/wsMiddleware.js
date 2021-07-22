@@ -7,6 +7,9 @@ import * as actions from "./wsActions";
 import { repoSlice } from "../lib/store";
 
 const slackGetPlainText = (nodes) => {
+  if (!nodes) {
+    return "";
+  }
   return nodes.map((n) => Node.string(n)).join("\n");
 };
 
