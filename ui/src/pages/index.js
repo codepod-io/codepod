@@ -2,13 +2,16 @@ import { Box, Text, Heading, Center } from "@chakra-ui/layout";
 
 export default function Home() {
   return (
-    <Box maxW="lg" m="auto">
-      <Center>
-        <Heading>CodePod</Heading>
-        <Text>Your next IDE is not an IDE</Text>
-      </Center>
+    <Box maxW="3xl" m="auto">
+      <Box my={20}>
+        <Heading align="center">CodePod</Heading>
+        <Text align="center" fontSize="xl">
+          Your next IDE, without a file editor
+        </Text>
+      </Box>
+
       <Box>
-        <Heading>Sidebar</Heading>
+        <Heading>Lipsums</Heading>
         <Box>
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
           luctus fringilla urna accumsan sollicitudin. Proin tellus eros,
@@ -31,41 +34,6 @@ export default function Home() {
           vel ipsum malesuada blandit. Proin massa mi, imperdiet sit amet urna
           ut, eleifend condimentum dolor. Sed at urna augue. Suspendisse
           potenti. Donec quis erat et leo vehicula laoreet ac id libero.
-        </Box>
-        Proin elementum venenatis tortor, et euismod mi aliquet in. Curabitur
-        metus nibh, iaculis a dui nec, sollicitudin molestie neque. Suspendisse
-        ornare quis justo ornare viverra. Ut sagittis et urna fermentum
-        scelerisque. Pellentesque sit amet lacus purus. Sed bibendum, odio ac
-        interdum tristique, augue leo dictum ex, quis pellentesque sapien lectus
-        id massa. Sed eget justo a lacus condimentum vehicula. Curabitur lorem
-        massa, ultrices nec suscipit eget, porttitor sit amet arcu. Morbi sit
-        amet ligula vitae mi placerat iaculis. Class aptent taciti sociosqu ad
-        litora torquent per conubia nostra, per inceptos himenaeos.
-        <Box>
-          Pellentesque ac magna non dolor venenatis mattis volutpat id ex. Fusce
-          sagittis ultricies erat, sed imperdiet metus suscipit ut. Praesent
-          tincidunt iaculis libero, sit amet feugiat elit pellentesque sed.
-          Pellentesque interdum, ante nec tincidunt luctus, elit quam semper
-          libero, ac venenatis tellus purus quis elit. Nullam gravida a mauris
-          non malesuada. Curabitur interdum erat nulla, sit amet aliquam purus
-          luctus sed. Donec eget placerat tortor, et semper orci. Donec nec
-          blandit arcu. Vivamus volutpat libero sit amet malesuada pulvinar.
-          Nunc id mollis erat, eu hendrerit orci. Vivamus imperdiet odio vitae
-          semper lobortis. In vehicula mauris vitae urna aliquet, et pharetra
-          eros pretium. Nulla interdum purus nec semper vulputate. Curabitur
-          venenatis nisi mauris, ac fermentum dui iaculis a.
-        </Box>
-        <Box>
-          Interdum et malesuada fames ac ante ipsum primis in faucibus.
-          Suspendisse eu eros vitae leo egestas tristique. Etiam at quam
-          condimentum, blandit enim ac, tincidunt mauris. Donec dignissim
-          malesuada mi, eget sollicitudin velit fermentum nec. Sed vel ex
-          efficitur, congue enim nec, finibus odio. Sed eros leo, bibendum id
-          lectus at, mollis viverra nunc. Integer et velit mattis, lacinia lacus
-          placerat, porta eros. Fusce id justo sit amet nulla egestas malesuada.
-          Aliquam suscipit maximus purus, id fermentum nibh iaculis sed. Sed
-          elementum vehicula quam sit amet faucibus. Maecenas et tempus elit.
-          Mauris ac velit urna.
         </Box>
       </Box>
     </Box>
