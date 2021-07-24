@@ -139,6 +139,10 @@ async function startApolloServer() {
   });
 
   let procs = {};
+  let kernelTerminals = {
+    julia: null,
+    racket: null,
+  };
 
   console.log("connnecting to kernel ..");
   let kernels = {
@@ -195,6 +199,43 @@ async function startApolloServer() {
         proc.write(data);
       } else {
         console.log("warning: received input, but proc not connected");
+      }
+    });
+
+    socket.on("kernelTerminalSpawn", (lang) => {
+      // if (!kernelTerminals[lang]) {
+      // kernelTerminals[lang].kill();
+      let container_name = `${lang}_kernel_1`;
+      let cmd = `/usr/local/bin/docker exec -it ${container_name} bash -c '/start.sh'`;
+      console.log("====== spawning ", cmd);
+      // console.log(cmd.split(" ")[0]);
+      // console.log(cmd.split(" ").splice(1));
+      // let proc = pty.spawn(cmd.split()[0], cmd.split().splice(1));
+      let proc = pty.spawn("docker", [
+        "exec",
+        "-it",
+        `${lang}_kernel_1`,
+        "bash",
+        "-c",
+        "'/start.sh'",
+      ]);
+      // let proc = pty.spawn("julia");
+      kernelTerminals[lang] = proc;
+      // }
+      console.log("setting callback ..");
+      kernelTerminals[lang].onData((data) => {
+        // console.log("-----", data);
+        socket.emit("kernelTerminalOutput", {
+          lang,
+          data,
+        });
+      });
+    });
+
+    socket.on("kernelTerminalInput", ({ lang, data }) => {
+      // console.log("received input ..");
+      if (kernelTerminals[lang]) {
+        kernelTerminals[lang].write(data);
       }
     });
 

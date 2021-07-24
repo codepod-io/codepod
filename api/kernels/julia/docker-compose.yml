@@ -1,12 +1,13 @@
 services:
-  racket:
+  kernel:
     build: .
     ports:
-      - 127.0.0.1:60726:60726
-      - 127.0.0.1:60727:60727
-      - 127.0.0.1:60728:60728
-      - 127.0.0.1:60729:60729
-      - 127.0.0.1:60730:60730
+      - 60726:60726
+      - 60727:60727
+      - 60728:60728
+      - 60729:60729
+      - 60730:60730
+    # entrypoint: julia -i --color=yes --project=/IJulia.jl /IJulia.jl/src/kernel.jl /conn.json
     volumes:
       - ./IJulia.jl:/IJulia.jl
       - ./conn.json:/conn.json

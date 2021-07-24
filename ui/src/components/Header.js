@@ -70,6 +70,7 @@ export function Header() {
         >
           <MyMenuItem to="/">Home</MyMenuItem>
           <MyMenuItem to="/repos">Repos</MyMenuItem>
+          <MyMenuItem to="/kernels">Kernels</MyMenuItem>
           <MyMenuItem to="/commitnote">CommitNote</MyMenuItem>
           <MyMenuItem to="/test">Test</MyMenuItem>
           <MyMenuItem to="/about">About</MyMenuItem>

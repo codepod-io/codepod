@@ -13,6 +13,7 @@ FROM racket/racket:8.1-full
 RUN raco pkg install --auto zeromq-r-lib uuid sha
 
 # COPY ./codepod-conn-racket.json /codepod-conn-racket.json
+COPY ./start.sh /start.sh
 
 # FIXME I need to map the ports
 # CMD ["racket", "-l", "iracket/iracket", "--", "/codepod-conn-racket.json"]

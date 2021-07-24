@@ -1,5 +1,5 @@
 services:
-  racket:
+  kernel:
     build: .
     ports:
       - 61397:61397
@@ -7,6 +7,7 @@ services:
       - 61399:61399
       - 61400:61400
       - 61401:61401
+    # entrypoint: raco pkg install /iracket --auto && racket -l iracket/iracket -- /conn.json
     volumes:
       # I'm developing iracket
       - ./iracket:/iracket

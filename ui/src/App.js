@@ -22,6 +22,7 @@ import { Header, Footer } from "./components/Header";
 import { Provider } from "react-redux";
 
 import store from "./lib/store";
+import Kernels from "./pages/kernels";
 
 function NormalLayout({ children }) {
   return (
@@ -57,6 +58,11 @@ function App() {
                     <Repo />
                   </Box>
                 </Box>
+              </Route>
+              <Route path="/kernels">
+                <NormalLayout>
+                  <Kernels />
+                </NormalLayout>
               </Route>
               <Route path="/commitnote">
                 <NormalLayout>
