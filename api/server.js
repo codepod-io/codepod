@@ -230,6 +230,7 @@ const listenOnRunCode = (() => {
               count: msgs.content.execution_count,
             };
             if (name) {
+              console.log("emitting IO result");
               socket.emit("IO:execute_result", payload);
             } else {
               socket.emit("execute_result", payload);
@@ -287,6 +288,12 @@ const listenOnRunCode = (() => {
             } else if (msgs.content.name === "stderr") {
               console.log("emitting error stream ..");
               if (!name) {
+                socket.emit("stream", {
+                  podId,
+                  text: msgs.content.text,
+                });
+              } else {
+                // FIXME this is stream for import/export. I should move it somewhere
                 socket.emit("stream", {
                   podId,
                   text: msgs.content.text,
