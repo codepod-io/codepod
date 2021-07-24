@@ -43,7 +43,6 @@ const socketMiddleware = () => {
           store.dispatch(actions.wsStdout(data));
         });
         socket.on("execute_result", (data) => {
-          console.log("execute result!!!", data);
           store.dispatch(actions.wsResult(data));
         });
         socket.on("error", (data) => {
@@ -59,7 +58,6 @@ const socketMiddleware = () => {
           store.dispatch(actions.wsIOError(data));
         });
         socket.on("status", (lang, status) => {
-          console.log("kernel status:", status);
           store.dispatch(actions.wsStatus(lang, status));
         });
         // well, since it is already opened, this won't be called
@@ -104,7 +102,6 @@ const socketMiddleware = () => {
         );
         break;
       case "WS_RUN":
-        console.log("run code");
         let pod = action.payload;
         if (!socket) {
           store.dispatch(repoSlice.actions.addError("Runtime not connected"));
@@ -122,9 +119,8 @@ const socketMiddleware = () => {
         });
         break;
       case "WS_RUN_ALL": {
-        console.log("run all");
         if (!socket) {
-          console.log("ERROR: Runtime socket not connected");
+          store.dispatch(repoSlice.actions.addError("Runtime not connected"));
           break;
         }
         // get all pods
