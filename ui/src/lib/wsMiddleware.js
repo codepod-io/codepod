@@ -139,6 +139,30 @@ const socketMiddleware = () => {
             let code = slackGetPlainText(pod.content);
             // console.log("Code:", code);
             // FIXME check validity, i.e. have code, etc
+            // import
+            if (pod.imports) {
+              for (const [k, v] of Object.entries(pod.imports)) {
+                // store.dispatch(actions.wsToggleImport);
+                // console.log("???", k, v);
+                //
+                // I don't need to check v, because v means whether this is
+                // further exported to parent ns. As long as it is shown here,
+                // it is exported from child.
+                // console.log("addImport", k, v);
+                socket.emit("addImport", {
+                  lang: pod.lang,
+                  // this is the child's ns, actually only related to current
+                  // parent CAUTION but i'm computing it here. Should be
+                  // extracted to somewhere
+                  // from: pod.ns,
+                  from: `${pod.ns}/${pod.id}`,
+                  to: pod.ns,
+                  id: pod.id,
+                  name: k,
+                });
+              }
+            }
+
             if (code) {
               store.dispatch(repoSlice.actions.clearResults(pod.id));
               socket.emit("runCode", {
