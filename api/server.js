@@ -104,59 +104,9 @@ const typeDefs = gql`
 //     `);
 // });
 
-async function startApolloServer() {
-  const apollo = new ApolloServer({
-    typeDefs,
-    resolvers,
-    context: ({ req }) => {
-      const token = req?.headers?.authorization?.slice(7);
-      let userId;
-
-      if (token) {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        userId = decoded.id;
-      }
-      return {
-        userId,
-      };
-    },
-  });
-
-  const app = express();
-  const http_server = http.createServer(app);
-  const io = new Server(http_server, {
-    cors: {
-      origin: "*",
-    },
-  });
-
-  apollo.applyMiddleware({ app });
-
-  app.use((req, res) => {
-    res.status(200);
-    res.send("Hello!");
-    res.end();
-  });
-
+const listenOnRepl = (() => {
   let procs = {};
-  let kernelTerminals = {
-    julia: null,
-    racket: null,
-  };
-
-  console.log("connnecting to kernel ..");
-  let kernels = {
-    julia: new Kernel("./kernels/julia/conn.json"),
-    racket: new Kernel("./kernels/racket/conn.json"),
-  };
-  console.log("kernel connected");
-
-  io.on("connection", (socket) => {
-    console.log("a user connected");
-    // CAUTION should listen to message on this socket instead of io
-    socket.on("disconnect", () => {
-      console.log("user disconnected");
-    });
+  return (socket) => {
     // FIXME kill previous julia process?
     let proc;
     socket.on("spawn", (sessionId, lang) => {
@@ -201,7 +151,16 @@ async function startApolloServer() {
         console.log("warning: received input, but proc not connected");
       }
     });
+  };
+})();
 
+const listenOnKernelManagement = (() => {
+  let kernelTerminals = {
+    julia: null,
+    racket: null,
+  };
+
+  return (socket) => {
     socket.on("kernelTerminalSpawn", (lang) => {
       // if (!kernelTerminals[lang]) {
       // kernelTerminals[lang].kill();
@@ -238,7 +197,18 @@ async function startApolloServer() {
         kernelTerminals[lang].write(data);
       }
     });
+  };
+})();
 
+const listenOnRunCode = (() => {
+  console.log("connnecting to kernel ..");
+  let kernels = {
+    julia: new Kernel("./kernels/julia/conn.json"),
+    racket: new Kernel("./kernels/racket/conn.json"),
+  };
+  console.log("kernel connected");
+
+  return (socket) => {
     // listen IOPub
     for (const [lang, kernel] of Object.entries(kernels)) {
       kernel.listenIOPub((topic, msgs) => {
@@ -398,6 +368,53 @@ async function startApolloServer() {
         })
       );
     });
+  };
+})();
+
+async function startApolloServer() {
+  const apollo = new ApolloServer({
+    typeDefs,
+    resolvers,
+    context: ({ req }) => {
+      const token = req?.headers?.authorization?.slice(7);
+      let userId;
+
+      if (token) {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        userId = decoded.id;
+      }
+      return {
+        userId,
+      };
+    },
+  });
+
+  const app = express();
+  const http_server = http.createServer(app);
+  const io = new Server(http_server, {
+    cors: {
+      origin: "*",
+    },
+  });
+
+  apollo.applyMiddleware({ app });
+
+  app.use((req, res) => {
+    res.status(200);
+    res.send("Hello!");
+    res.end();
+  });
+
+  io.on("connection", (socket) => {
+    console.log("a user connected");
+    // CAUTION should listen to message on this socket instead of io
+    socket.on("disconnect", () => {
+      console.log("user disconnected");
+    });
+
+    listenOnRepl(socket);
+    listenOnKernelManagement(socket);
+    listenOnRunCode(socket);
   });
 
   // should call http_server.listen instead of express app.listen, otherwise
