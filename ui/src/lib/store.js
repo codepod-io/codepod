@@ -499,6 +499,12 @@ export const repoSlice = createSlice({
     addPodQueue: (state, action) => {
       state.queue.push(action.payload);
     },
+    addError: (state, action) => {
+      state.error = action.payload;
+    },
+    clearError: (state, action) => {
+      state.error = null;
+    },
   },
   extraReducers: {
     [loopPodQueue.pending]: (state, action) => {
@@ -571,12 +577,6 @@ export const repoSlice = createSlice({
       // FIXME this is stream
       // FIXME this is base64 encoded
       state.pods[podId].stdout = stdout;
-    },
-    WS_SIMPLE_ERROR: (state, action) => {
-      let { podId, msg } = action.payload;
-      state.pods[podId].error = {
-        evalue: msg,
-      };
     },
     WS_ERROR: (state, action) => {
       let { podId, ename, evalue, stacktrace } = action.payload;

@@ -13,6 +13,7 @@ import {
   Code,
   Spacer,
   Divider,
+  useToast,
 } from "@chakra-ui/react";
 import { Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
 import { HStack, VStack, Select } from "@chakra-ui/react";
@@ -181,6 +182,26 @@ function SidebarKernel() {
   );
 }
 
+function ToastError() {
+  const toast = useToast();
+  const msg = useSelector((state) => state.repo.error);
+  const dispatch = useDispatch();
+  useEffect(() => {
+    if (msg) {
+      toast({
+        title: `ERROR`,
+        description: msg,
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+      // I'll need to clear this msg once it is displayed
+      dispatch(repoSlice.actions.clearError());
+    }
+  }, [msg]);
+  return <Box></Box>;
+}
+
 function Sidebar() {
   const dispatch = useDispatch();
   const numDirty = useSelector(selectNumDirty());
@@ -189,6 +210,7 @@ function Sidebar() {
       <SidebarSession />
       <SidebarRuntime />
       <SidebarKernel />
+      <ToastError />
 
       <HStack>
         <Button

@@ -107,12 +107,7 @@ const socketMiddleware = () => {
         console.log("run code");
         let pod = action.payload;
         if (!socket) {
-          store.dispatch(
-            actions.wsSimpleError({
-              podId: pod.id,
-              msg: "Runtime not connected",
-            })
-          );
+          store.dispatch(repoSlice.actions.addError("Runtime not connected"));
           break;
         }
         // clear pod results
@@ -172,12 +167,7 @@ const socketMiddleware = () => {
       case "WS_TOGGLE_EXPORT": {
         let { id, name } = action.payload;
         if (!socket) {
-          store.dispatch(
-            actions.wsSimpleError({
-              podId: id,
-              msg: "Runtime not connected",
-            })
-          );
+          store.dispatch(repoSlice.actions.addError("Runtime not connected"));
           break;
         }
         store.dispatch(repoSlice.actions.togglePodExport({ id, name }));
@@ -216,12 +206,7 @@ const socketMiddleware = () => {
       case "WS_TOGGLE_IMPORT": {
         let { id, name } = action.payload;
         if (!socket) {
-          store.dispatch(
-            actions.wsSimpleError({
-              podId: id,
-              msg: "Runtime not connected",
-            })
-          );
+          store.dispatch(repoSlice.actions.addError("Runtime not connected"));
           break;
         }
         store.dispatch(repoSlice.actions.togglePodImport({ id, name }));

@@ -42,10 +42,6 @@ export const wsIOError = (payload) => ({
   type: "WS_IO_ERROR",
   payload,
 });
-export const wsSimpleError = (payload) => ({
-  type: "WS_SIMPLE_ERROR",
-  payload,
-});
 
 export const wsToggleExport = (payload) => ({
   type: "WS_TOGGLE_EXPORT",
