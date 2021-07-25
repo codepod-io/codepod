@@ -103,7 +103,7 @@ const socketMiddleware = () => {
           JSON.stringify({ command: "NEW_MESSAGE", message: action.msg })
         );
         break;
-      case "WS_RUN":
+      case "WS_RUN": {
         let pod = action.payload;
         if (!socket) {
           store.dispatch(repoSlice.actions.addError("Runtime not connected"));
@@ -119,40 +119,43 @@ const socketMiddleware = () => {
           podId: pod.id,
           sessionId: "sessionId",
         });
-        // TODO update all parent imports
-        // 1. get all active exports
-        let names = Object.entries(pod.exports)
-          .filter(([k, v]) => v)
-          .map(([k, v]) => k);
-        // 2. get to ancestors and update
-        let pods = store.getState().repo.pods;
-        // verify imports for id, and propagate
-        function helper(id, names) {
-          if (names.length == 0) return;
-          // emit varify improt
-          let pod = pods[id];
-          console.log("ensureImports:", id, names);
-          socket.emit("ensureImports", {
-            names,
-            lang: pod.lang,
-            to: pod.ns,
-            // FIXME keep consistent with computeNamespace
-            from: pod.ns === "" ? `${pod.id}` : `${pod.ns}/${pod.id}`,
-            id: pod.id,
-          });
-          // recurse
-          helper(
-            pod.parent,
-            // update names
-            Object.entries(pod.imports)
-              // CAUTION k in names won't work and always return false for list of
-              // strings
-              .filter(([k, v]) => v && names.includes(k))
-              .map(([k, v]) => k)
-          );
+        if (pod.exports) {
+          // TODO update all parent imports
+          // 1. get all active exports
+          let names = Object.entries(pod.exports)
+            .filter(([k, v]) => v)
+            .map(([k, v]) => k);
+          // 2. get to ancestors and update
+          let pods = store.getState().repo.pods;
+          // verify imports for id, and propagate
+          function helper(id, names) {
+            if (names.length == 0) return;
+            // emit varify improt
+            let pod = pods[id];
+            console.log("ensureImports:", id, names);
+            socket.emit("ensureImports", {
+              names,
+              lang: pod.lang,
+              to: pod.ns,
+              // FIXME keep consistent with computeNamespace
+              from: pod.ns === "" ? `${pod.id}` : `${pod.ns}/${pod.id}`,
+              id: pod.id,
+            });
+            // recurse
+            helper(
+              pod.parent,
+              // update names
+              Object.entries(pod.imports)
+                // CAUTION k in names won't work and always return false for list of
+                // strings
+                .filter(([k, v]) => v && names.includes(k))
+                .map(([k, v]) => k)
+            );
+          }
+          helper(pod.parent, names);
         }
-        helper(pod.parent, names);
         break;
+      }
       case "WS_RUN_ALL": {
         if (!socket) {
           store.dispatch(repoSlice.actions.addError("Runtime not connected"));
