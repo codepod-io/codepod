@@ -1,0 +1,41 @@
+{
+  "specFile": "/Users/hebi/Library/Jupyter/kernels/python394jvsc74a57bd0b0fa6594d8f4cbf19f97940f81e996739fb7646882a419484c72d19e05852a7e/kernel.json",
+  "interpreterPath": "/opt/homebrew/bin/python3",
+  "name": "python394jvsc74a57bd0b0fa6594d8f4cbf19f97940f81e996739fb7646882a419484c72d19e05852a7e",
+  "argv": [
+    "/opt/homebrew/bin/python3",
+    "-m",
+    "ipykernel_launcher",
+    "-f",
+    "{connection_file}"
+  ],
+  "language": "python",
+  "path": "python",
+  "display_name": "Python 3.9.4 64-bit",
+  "metadata": {
+    "interpreter": {
+      "architecture": 3,
+      "path": "/opt/homebrew/bin/python3",
+      "version": {
+        "options": {
+          "loose": false,
+          "includePrerelease": false
+        },
+        "loose": false,
+        "raw": "3.9.4",
+        "major": 3,
+        "minor": 9,
+        "patch": 4,
+        "prerelease": [],
+        "build": [],
+        "version": "3.9.4"
+      },
+      "sysVersion": "3.9.4 (default, Apr  4 2021, 17:42:23) \n[Clang 12.0.0 (clang-1200.0.32.29)]",
+      "sysPrefix": "/opt/homebrew/opt/python@3.9/Frameworks/Python.framework/Versions/3.9",
+      "fileHash": "8c400cac407f65ec436ffffa70b20bd9e9dabdbfe0fa005b69359a8a17b552555f1d669fc5f46148d3fc5abf95006fef8e59694a9d33dbab0183d462f4521243",
+      "envType": "Unknown",
+      "displayName": "Python 3.9.4 64-bit"
+    }
+  },
+  "env": {}
+}

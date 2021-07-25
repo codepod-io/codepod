@@ -9,7 +9,13 @@ import { Server } from "socket.io";
 
 import * as pty from "node-pty";
 
-import { Kernel, constructMessage, constructExecuteRequest } from "./kernel.js";
+import {
+  Kernel,
+  WrappedKernel,
+  PYTHON_CODEPOD,
+  constructMessage,
+  constructExecuteRequest,
+} from "./kernel.js";
 
 const typeDefs = gql`
   type Query {
@@ -205,6 +211,7 @@ const listenOnRunCode = (() => {
   let kernels = {
     julia: new Kernel("./kernels/julia/conn.json"),
     racket: new Kernel("./kernels/racket/conn.json"),
+    python: new WrappedKernel("./kernels/python/conn.json", PYTHON_CODEPOD),
   };
   console.log("kernel connected");
 
@@ -327,9 +334,27 @@ const listenOnRunCode = (() => {
         });
       } else {
         if (code) {
-          kernels[lang].sendShellMessage(
-            constructExecuteRequest({ code, msg_id: podId, cp: { namespace } })
-          );
+          if (lang === "python") {
+            code = `codepod("""${code.replaceAll(
+              '"',
+              '\\"'
+            )}""", "${namespace}")`;
+            console.log("---- the code", code);
+            kernels[lang].sendShellMessage(
+              constructExecuteRequest({
+                code,
+                msg_id: podId,
+              })
+            );
+          } else {
+            kernels[lang].sendShellMessage(
+              constructExecuteRequest({
+                code,
+                msg_id: podId,
+                cp: { namespace },
+              })
+            );
+          }
         } else {
           console.log("Code is empty");
         }

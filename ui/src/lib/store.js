@@ -349,6 +349,9 @@ export const repoSlice = createSlice({
       racket: {
         status: "NA",
       },
+      python: {
+        status: "NA",
+      },
     },
     queueProcessing: false,
   },

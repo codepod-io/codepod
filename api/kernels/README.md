@@ -1,5 +1,13 @@
 # Start kernel manually for debugging
 
+## Python
+
+On the host, do
+
+```
+python3 -m ipykernel_launcher -f ./conn.json
+```
+
 ## Julia
 
 First go into the `julia` folder. All the commands below assume this as current directory.
