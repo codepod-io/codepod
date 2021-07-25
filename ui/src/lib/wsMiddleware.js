@@ -63,14 +63,14 @@ const socketMiddleware = () => {
         // well, since it is already opened, this won't be called
         //
         // UPDATE it works, this will be called even after connection
+
         socket.on("connect", () => {
           console.log("connected");
           store.dispatch(actions.wsConnected());
           // request kernel status after connection
-          // FIXME hardcoded languages. Should read from state kernels
-          store.dispatch(actions.wsRequestStatus("julia"));
-          store.dispatch(actions.wsRequestStatus("racket"));
-          store.dispatch(actions.wsRequestStatus("python"));
+          Object.keys(store.getState().repo.kernels).map((k) => {
+            store.dispatch(actions.wsRequestStatus(k));
+          });
         });
         // so I'm setting this
         // Well, I should probably not dispatch action inside another action
