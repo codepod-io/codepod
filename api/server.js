@@ -291,7 +291,12 @@ const listenOnRunCode = (() => {
             // iracket use this to send stderr
             // FIXME there are many frames
             if (msgs.content.name === "stdout") {
-              console.log("ignore stdout stream");
+              // console.log("ignore stdout stream");
+              console.log("emitting stdout stream ..");
+              socket.emit("stream", {
+                podId,
+                text: msgs.content.text,
+              });
             } else if (msgs.content.name === "stderr") {
               console.log("emitting error stream ..");
               if (!name) {

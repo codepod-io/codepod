@@ -696,13 +696,23 @@ function CodePod({ pod }) {
         <ImportList pod={pod} />
       </Flex>
 
-      {pod.stdout && <Text>{pod.stdout}</Text>}
+      {pod.stdout && (
+        <Text>
+          <Code maxW="lg" whiteSpace="pre-wrap">
+            {pod.stdout}
+          </Code>
+        </Text>
+      )}
       {pod.result && (
         <Flex>
           <Text color="gray" mr="1rem">
             [{pod.result.count}]:
           </Text>
-          <Text>{pod.result.text}</Text>
+          <Text>
+            <Code maxW="lg" whiteSpace="pre-wrap">
+              {pod.result.text}
+            </Code>
+          </Text>
         </Flex>
       )}
       {pod.error && (
