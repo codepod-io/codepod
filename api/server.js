@@ -340,7 +340,7 @@ const listenOnRunCode = (() => {
       } else {
         if (code) {
           if (lang === "python") {
-            code = `codepod("""${code.replaceAll(
+            code = `CODEPOD_EVAL("""${code.replaceAll(
               '"',
               '\\"'
             )}""", "${namespace}")`;
@@ -378,32 +378,60 @@ const listenOnRunCode = (() => {
 
     socket.on("addImport", ({ lang, id, from, to, name }) => {
       console.log("received addImport");
-      kernels[lang].sendShellMessage(
-        constructExecuteRequest({
-          code: "CPAddImport",
-          msg_id: id + "#" + name,
-          cp: {
-            from,
-            to,
-            name,
-            namespace: "",
-          },
-        })
-      );
+      if (lang === "python") {
+        // FIXME this should be re-evaluated everytime the function changes
+        // I cannot use importlib because the module here lacks the finder, and
+        // some other attribute functions
+        let code = `CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${from}").__dict__["${name}"]\n0""", "${to}")`;
+        console.log("---- the code", code);
+        kernels[lang].sendShellMessage(
+          constructExecuteRequest({
+            code,
+            msg_id: id + "#" + name,
+          })
+        );
+      } else {
+        kernels[lang].sendShellMessage(
+          constructExecuteRequest({
+            code: "CPAddImport",
+            msg_id: id + "#" + name,
+            cp: {
+              from,
+              to,
+              name,
+              namespace: "",
+            },
+          })
+        );
+      }
     });
     socket.on("deleteImport", ({ lang, id, name, ns }) => {
       console.log("received addImport");
-      kernels[lang].sendShellMessage(
-        constructExecuteRequest({
-          code: "CPDeleteImport",
-          msg_id: id + "#" + name,
-          cp: {
-            ns,
-            name,
-            namespace: "",
-          },
-        })
-      );
+      if (lang === "python") {
+        // FIXME this should be re-evaluated everytime the function changes
+        // I cannot use importlib because the module here lacks the finder, and
+        // some other attribute functions
+        let code = `CODEPOD_EVAL("del ${name}", "${ns}")`;
+        console.log("---- the code", code);
+        kernels[lang].sendShellMessage(
+          constructExecuteRequest({
+            code,
+            msg_id: id + "#" + name,
+          })
+        );
+      } else {
+        kernels[lang].sendShellMessage(
+          constructExecuteRequest({
+            code: "CPDeleteImport",
+            msg_id: id + "#" + name,
+            cp: {
+              ns,
+              name,
+              namespace: "",
+            },
+          })
+        );
+      }
     });
   };
 })();

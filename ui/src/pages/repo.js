@@ -576,19 +576,55 @@ function Deck({ id }) {
 }
 
 function IOStatus({ id, name }) {
+  const [anchorEl, setAnchorEl] = React.useState(null);
   const status = useSelector((state) => state.repo.pods[id].io[name]);
   if (!status) {
     return <Box as="span">Unknown</Box>;
   } else if ("result" in status) {
     return (
-      <Box as="span">
+      <Button as="span">
         <CheckIcon color="green" />
-      </Box>
+      </Button>
     );
   } else if ("error" in status) {
+    console.log("Error:", status);
     return (
-      <Box as="span">
-        <CloseIcon color="red" />
+      <Box>
+        <Button
+          as="span"
+          onClick={(e) => {
+            setAnchorEl(e.currentTarget);
+          }}
+        >
+          <CloseIcon color="red" />
+        </Button>
+        <Popover
+          open={Boolean(anchorEl)}
+          onClose={() => {
+            setAnchorEl(null);
+          }}
+          anchorEl={anchorEl}
+          anchorOrigin={{
+            vertical: "bottom",
+            horizontal: "center",
+          }}
+          transformOrigin={{
+            vertical: "top",
+            horizontal: "center",
+          }}
+        >
+          <Box maxW="lg">
+            <Text color="red">{status.error.evalue}</Text>
+            {status.error.stacktrace && (
+              <Text>
+                StackTrace:
+                <Code whiteSpace="pre-wrap">
+                  {status.error.stacktrace.join("\n")}
+                </Code>
+              </Text>
+            )}
+          </Box>
+        </Popover>
       </Box>
     );
   }

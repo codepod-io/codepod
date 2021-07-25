@@ -357,9 +357,11 @@ def _make_codepod():
     def getmod(ns):
         if ns not in d:
             d[ns] = types.ModuleType(ns)
+            # for testing purpose
+            d[ns].__dict__["CODEPOD_GETMOD"] = getmod
         return d[ns]
 
-    def func(code, ns):
+    def eval_func(code, ns):
         # the codepod(code) is the program sent to backend
         # codepod is defined on the kernel
         mod = getmod(ns)
@@ -369,9 +371,9 @@ def _make_codepod():
         if expr:
             return eval(expr, mod.__dict__)
 
-    return func
+    return eval_func, getmod
 
-codepod = _make_codepod()`;
+CODEPOD_EVAL, CODEPOD_GETMOD = _make_codepod()`;
 
 function sleep(ms) {
   return new Promise((resolve) => {
