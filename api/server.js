@@ -376,6 +376,23 @@ const listenOnRunCode = (() => {
       }
     });
 
+    socket.on("ensureImports", ({ lang, id, from, to, names }) => {
+      if (lang === "python") {
+        console.log("ensureImports for python");
+        // only python needs to re-evaluate for imports
+        for (let name of names) {
+          let code = `CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${from}").__dict__["${name}"]\n0""", "${to}")`;
+          console.log("---- the code:", code);
+          kernels[lang].sendShellMessage(
+            constructExecuteRequest({
+              code,
+              msg_id: id + "#" + name,
+            })
+          );
+        }
+      }
+    });
+
     socket.on("addImport", ({ lang, id, from, to, name }) => {
       console.log("received addImport");
       if (lang === "python") {

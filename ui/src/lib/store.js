@@ -130,6 +130,7 @@ function normalize(pods) {
       // XXX should I save these to db?
       exports: {},
       imports: {},
+      io: {},
     },
   };
 
