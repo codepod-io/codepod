@@ -212,6 +212,7 @@ const listenOnRunCode = (() => {
     julia: new Kernel("./kernels/julia/conn.json"),
     racket: new Kernel("./kernels/racket/conn.json"),
     python: new WrappedKernel("./kernels/python/conn.json", PYTHON_CODEPOD),
+    js: new Kernel("./kernels/javascript/conn.json"),
   };
   console.log("kernel connected");
 
