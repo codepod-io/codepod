@@ -215,7 +215,10 @@ const listenOnRunCode = (() => {
       "./kernels/julia/conn.json",
       readFileSync("./kernels/julia/codepod.jl", "utf8")
     ),
-    racket: new Kernel("./kernels/racket/conn.json"),
+    racket: new WrappedKernel(
+      "./kernels/racket/conn.json",
+      readFileSync("./kernels/racket/codepod.rkt", "utf8")
+    ),
     python: new WrappedKernel(
       "./kernels/python/conn.json",
       readFileSync("./kernels/python/codepod.py", "utf8")
@@ -343,7 +346,7 @@ const listenOnRunCode = (() => {
       });
     }
 
-    socket.on("runCode", ({ lang, code, podId, namespace, midports }) => {
+    socket.on("runCode", ({ lang, raw, code, podId, namespace, midports }) => {
       if (!(lang in kernels)) {
         console.log("Invalid language", lang);
         socket.emit("stdout", {
@@ -384,6 +387,13 @@ const listenOnRunCode = (() => {
             kernels[lang].sendShellMessage(
               constructExecuteRequest({
                 code: `CODEPOD_EVAL("""${code}""", "${namespace}")`,
+                msg_id: podId,
+              })
+            );
+          } else if (lang === "racket") {
+            kernels[lang].sendShellMessage(
+              constructExecuteRequest({
+                code: `(enter! #f) (CODEPOD-EVAL "${code}" "${namespace}")`,
                 msg_id: podId,
               })
             );
@@ -459,6 +469,13 @@ const listenOnRunCode = (() => {
             msg_id: id + "#" + name,
           })
         );
+      } else if (lang === "racket") {
+        kernels[lang].sendShellMessage(
+          constructExecuteRequest({
+            code: `(enter! #f) (CODEPOD-ADD-IMPORT "${from}" "${to}" "${name}")`,
+            msg_id: id + "#" + name,
+          })
+        );
       } else {
         kernels[lang].sendShellMessage(
           constructExecuteRequest({
@@ -501,6 +518,13 @@ const listenOnRunCode = (() => {
         kernels[lang].sendShellMessage(
           constructExecuteRequest({
             code: `CODEPOD_DELETE_IMPORT("${ns}", "${name}")`,
+            msg_id: id + "#" + name,
+          })
+        );
+      } else if (lang === "racket") {
+        kernels[lang].sendShellMessage(
+          constructExecuteRequest({
+            code: `(enter! #f) (CODEPOD-DELETE-IMPORT "${ns}" "${name}")`,
             msg_id: id + "#" + name,
           })
         );
