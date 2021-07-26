@@ -68,8 +68,8 @@ async function testRacket() {
 }
 
 async function main() {
-  // await genConnSpec();
-  await testRacket();
+  await genConnSpec();
+  // await testRacket();
   // await testJulia();
 }
 
