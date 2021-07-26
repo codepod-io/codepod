@@ -211,7 +211,10 @@ const listenOnKernelManagement = (() => {
 const listenOnRunCode = (() => {
   console.log("connnecting to kernel ..");
   let kernels = {
-    julia: new Kernel("./kernels/julia/conn.json"),
+    julia: new WrappedKernel(
+      "./kernels/julia/conn.json",
+      readFileSync("./kernels/julia/codepod.jl", "utf8")
+    ),
     racket: new Kernel("./kernels/racket/conn.json"),
     python: new WrappedKernel(
       "./kernels/python/conn.json",
@@ -377,6 +380,13 @@ const listenOnRunCode = (() => {
                 msg_id: podId,
               })
             );
+          } else if (lang === "julia") {
+            kernels[lang].sendShellMessage(
+              constructExecuteRequest({
+                code: `CODEPOD_EVAL("""${code}""", "${namespace}")`,
+                msg_id: podId,
+              })
+            );
           } else {
             kernels[lang].sendShellMessage(
               constructExecuteRequest({
@@ -442,6 +452,13 @@ const listenOnRunCode = (() => {
             msg_id: id + "#" + name,
           })
         );
+      } else if (lang === "julia") {
+        kernels[lang].sendShellMessage(
+          constructExecuteRequest({
+            code: `CODEPOD_ADD_IMPORT("${from}", "${to}", "${name}")`,
+            msg_id: id + "#" + name,
+          })
+        );
       } else {
         kernels[lang].sendShellMessage(
           constructExecuteRequest({
@@ -477,6 +494,13 @@ const listenOnRunCode = (() => {
         kernels[lang].sendShellMessage(
           constructExecuteRequest({
             code,
+            msg_id: id + "#" + name,
+          })
+        );
+      } else if (lang === "julia") {
+        kernels[lang].sendShellMessage(
+          constructExecuteRequest({
+            code: `CODEPOD_DELETE_IMPORT("${ns}", "${name}")`,
             msg_id: id + "#" + name,
           })
         );

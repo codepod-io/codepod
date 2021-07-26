@@ -51,6 +51,12 @@ julia -i --color=yes --project=/IJulia.jl /IJulia.jl/src/kernel.jl /conn.json
 julia -i --color=yes --project=./IJulia.jl ./IJulia.jl/src/kernel.jl ./conn.json
 ```
 
+Using the vanilla IJulia
+
+```
+julia -i --color=yes --project=/Users/hebi/.julia/packages/IJulia/e8kqU/ /Users/hebi/.julia/packages/IJulia/e8kqU/src/kernel.jl ./conn.json
+```
+
 ## Racket
 
 ```
