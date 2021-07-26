@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
+import { readFileSync } from "fs";
 
 import * as pty from "node-pty";
 
@@ -212,7 +213,10 @@ const listenOnRunCode = (() => {
     julia: new Kernel("./kernels/julia/conn.json"),
     racket: new Kernel("./kernels/racket/conn.json"),
     python: new WrappedKernel("./kernels/python/conn.json", PYTHON_CODEPOD),
-    js: new Kernel("./kernels/javascript/conn.json"),
+    js: new WrappedKernel(
+      "./kernels/javascript/conn.json",
+      readFileSync("./kernels/javascript/codepod.js", "utf8")
+    ),
     ts: new Kernel("./kernels/javascript/ts.conn.json"),
   };
   console.log("kernel connected");
@@ -350,6 +354,16 @@ const listenOnRunCode = (() => {
             kernels[lang].sendShellMessage(
               constructExecuteRequest({
                 code,
+                msg_id: podId,
+              })
+            );
+          } else if (lang === "js") {
+            // TODO add names
+            let code1 = `CODEPOD_EVAL(\`${code}\`, "${namespace}", [])`;
+            console.log("js wrapper code:", code1);
+            kernels[lang].sendShellMessage(
+              constructExecuteRequest({
+                code: code1,
                 msg_id: podId,
               })
             );
