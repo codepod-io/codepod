@@ -237,6 +237,8 @@ const socketMiddleware = () => {
         let parent = pods[pod.parent];
         // just send socket
         if (pod.midports[name]) {
+          // this name is then ready to be exported!
+          store.dispatch(repoSlice.actions.addPodExport({ id, name }));
           // it is exported, then run the pod again
           socket.emit("runCode", {
             lang: pod.lang,
@@ -249,6 +251,11 @@ const socketMiddleware = () => {
               Object.keys(pod.midports).filter((k) => pod.midports[k]),
           });
         } else {
+          // FIXME should call removePodExport and update all parents
+          // store.dispatch(actions.wsToggleExport)
+          //
+          // FIXME also, the Slate editor action should do some toggle as well
+          store.dispatch(repoSlice.actions.deletePodExport({ id, name }));
           // it is deleted, run delete
           socket.emit("deleteMidport", {
             lang: pod.lang,
@@ -257,13 +264,6 @@ const socketMiddleware = () => {
             name,
           });
         }
-        socket.emit("addImport", {
-          lang: pod.lang,
-          from: pod.ns,
-          to: parent.ns,
-          id: parent.id,
-          name,
-        });
         break;
       }
       case "WS_TOGGLE_EXPORT": {

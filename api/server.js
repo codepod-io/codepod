@@ -365,7 +365,7 @@ const listenOnRunCode = (() => {
             if (midports) {
               names = midports.map((name) => `"${name}"`);
             }
-            let code1 = `CODEPOD_EVAL(\`${code}\`, "${namespace}", [${names.join(
+            let code1 = `CODEPOD.eval(\`${code}\`, "${namespace}", [${names.join(
               ","
             )}])`;
             console.log("js wrapper code:", code1);
@@ -431,6 +431,15 @@ const listenOnRunCode = (() => {
             msg_id: id + "#" + name,
           })
         );
+      } else if (lang === "js") {
+        let code = `CODEPOD.addImport("${from}", "${to}", "${name}")`;
+        console.log("---- the code", code);
+        kernels[lang].sendShellMessage(
+          constructExecuteRequest({
+            code,
+            msg_id: id + "#" + name,
+          })
+        );
       } else {
         kernels[lang].sendShellMessage(
           constructExecuteRequest({
@@ -460,6 +469,15 @@ const listenOnRunCode = (() => {
             msg_id: id + "#" + name,
           })
         );
+      } else if (lang === "js") {
+        let code = `CODEPOD.deleteImport("${ns}", "${name}")`;
+        console.log("---- the code", code);
+        kernels[lang].sendShellMessage(
+          constructExecuteRequest({
+            code,
+            msg_id: id + "#" + name,
+          })
+        );
       } else {
         kernels[lang].sendShellMessage(
           constructExecuteRequest({
@@ -478,7 +496,7 @@ const listenOnRunCode = (() => {
       if (lang !== "js") {
         throw new Error("Only js supprot deleteMidport.");
       }
-      let code1 = `CODEPOD_DELETE_NAMES("${ns}", ["${name}"])`;
+      let code1 = `CODEPOD.deleteNames("${ns}", ["${name}"])`;
       console.log("js wrapper code:", code1);
       kernels[lang].sendShellMessage(
         constructExecuteRequest({

@@ -2,23 +2,35 @@
 
 // CAUTION this must be var so that it can be evaluted multiple times (during
 // debugging)
-var { CODEPOD_EVAL, CODEPOD_GETMOD, CODEPOD_DELETE_NAMES } = (() => {
-  var CODEPOD_MOD = {};
+var CODEPOD_MOD = CODEPOD_MOD || {};
 
-  function CODEPOD_GETMOD() {
-    return CODEPOD_MOD;
-  }
-
-  function CODEPOD_DELETE_NAMES(ns, names) {
+var CODEPOD = {
+  deleteNames: (ns, names) => {
     if (!CODEPOD_MOD[ns]) {
       CODEPOD_MOD[ns] = {};
     }
     for (let name of names) {
       eval(`delete CODEPOD_MOD["${ns}"].${name}`);
     }
-  }
-
-  function CODEPOD_EVAL(code, ns, names) {
+  },
+  addImport: (from, to, name) => {
+    if (!CODEPOD_MOD[from]) {
+      CODEPOD_MOD[from] = {};
+    }
+    if (!CODEPOD_MOD[to]) {
+      CODEPOD_MOD[to] = {};
+    }
+    // console.log("CODEPOD: addImport", from, to, name);
+    eval(`CODEPOD_MOD["${to}"].${name} = CODEPOD_MOD["${from}"].${name}`);
+    return "OK";
+  },
+  deleteImport: (ns, name) => {
+    if (!CODEPOD_MOD[ns]) {
+      CODEPOD_MOD[ns] = {};
+    }
+    eval(`delete CODEPOD_MOD["${ns}"].${name}`);
+  },
+  eval: (code, ns, names) => {
     // ensure namespace
     if (!CODEPOD_MOD[ns]) {
       CODEPOD_MOD[ns] = {};
@@ -35,10 +47,8 @@ var { CODEPOD_EVAL, CODEPOD_GETMOD, CODEPOD_DELETE_NAMES } = (() => {
       eval(`CODEPOD_MOD["${ns}"].${name} = ${name}`);
     }
     return res;
-  }
-
-  return { CODEPOD_EVAL, CODEPOD_GETMOD, CODEPOD_DELETE_NAMES };
-})();
+  },
+};
 
 // function CODEPOD3(code, ns, names) {
 //   // ensure namespace
