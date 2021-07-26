@@ -356,6 +356,9 @@ export const repoSlice = createSlice({
       js: {
         status: "NA",
       },
+      ts: {
+        status: "NA",
+      },
     },
     queueProcessing: false,
   },

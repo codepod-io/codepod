@@ -14,6 +14,12 @@ python3 -m ipykernel_launcher -f ./conn.json
 ijskernel --hide-undefined ./conn.json --protocol=5.1
 ```
 
+typescript
+
+```
+itskernel --hide-undefined ./ts.conn.json --protocol=5.1
+```
+
 ## Julia
 
 First go into the `julia` folder. All the commands below assume this as current directory.

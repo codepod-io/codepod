@@ -213,6 +213,7 @@ const listenOnRunCode = (() => {
     racket: new Kernel("./kernels/racket/conn.json"),
     python: new WrappedKernel("./kernels/python/conn.json", PYTHON_CODEPOD),
     js: new Kernel("./kernels/javascript/conn.json"),
+    ts: new Kernel("./kernels/javascript/ts.conn.json"),
   };
   console.log("kernel connected");
 

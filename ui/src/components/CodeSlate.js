@@ -6,6 +6,7 @@ import "prismjs/components/prism-java";
 import "prismjs/components/prism-julia";
 import "prismjs/components/prism-scheme";
 import "prismjs/components/prism-racket";
+import "prismjs/components/prism-typescript";
 
 import React, {
   useState,

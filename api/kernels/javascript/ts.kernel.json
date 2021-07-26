@@ -1,0 +1,10 @@
+{
+  "argv": [
+    "/Users/hebi/.nvm/versions/node/v15.14.0/bin/node",
+    "/Users/hebi/.nvm/versions/node/v15.14.0/lib/node_modules/itypescript/lib/kernel.js",
+    "{connection_file}",
+    "--protocol=5.1"
+  ],
+  "display_name": "Typescript 4.3",
+  "language": "typescript"
+}
