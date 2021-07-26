@@ -422,6 +422,7 @@ export const repoSlice = createSlice({
         stdout: "",
         error: null,
         lang: lang,
+        raw: false,
         exports: {},
         imports: {},
         midports: {},
@@ -536,6 +537,10 @@ export const repoSlice = createSlice({
     setPodLang: (state, action) => {
       const { id, lang } = action.payload;
       state.pods[id].lang = lang;
+    },
+    toggleRaw: (state, action) => {
+      const id = action.payload;
+      state.pods[id].raw = !state.pods[id].raw;
     },
     addPodQueue: (state, action) => {
       state.queue.push(action.payload);

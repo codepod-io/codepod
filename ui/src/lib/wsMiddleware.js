@@ -114,6 +114,7 @@ const socketMiddleware = () => {
         // emit runCode command
         socket.emit("runCode", {
           lang: pod.lang,
+          raw: pod.raw,
           code: slackGetPlainText(pod.content),
           namespace: pod.ns,
           podId: pod.id,

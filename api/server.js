@@ -355,7 +355,14 @@ const listenOnRunCode = (() => {
         });
       } else {
         if (code) {
-          if (lang === "python") {
+          if (raw) {
+            kernels[lang].sendShellMessage(
+              constructExecuteRequest({
+                code,
+                msg_id: podId,
+              })
+            );
+          } else if (lang === "python") {
             code = `CODEPOD_EVAL("""${code.replaceAll(
               '"',
               '\\"'

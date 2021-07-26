@@ -704,6 +704,14 @@ function CodePod({ pod }) {
         <LanguageMenu pod={pod} />
         <Button
           size="sm"
+          onClick={() => {
+            dispatch(repoSlice.actions.toggleRaw(pod.id));
+          }}
+        >
+          {pod.raw ? "raw" : "wrapped"}
+        </Button>
+        <Button
+          size="sm"
           isDisabled={!pod.lang}
           onClick={() => {
             // 1. create or load runtime socket
