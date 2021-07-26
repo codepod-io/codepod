@@ -1,4 +1,4 @@
-import { useParams, Link as ReactLink } from "react-router-dom";
+import { useParams, Link as ReactLink, Prompt } from "react-router-dom";
 
 import {
   Box,
@@ -202,40 +202,76 @@ function ToastError() {
   return <Box></Box>;
 }
 
-function Sidebar() {
+function ApplyAll() {
   const dispatch = useDispatch();
+  const toast = useToast();
   const numDirty = useSelector(selectNumDirty());
+
+  function alertUser(e) {
+    // I have to have both of these
+    e.preventDefault();
+    e.returnValue = "";
+    toast({
+      title: `ERROR`,
+      description: "You have unsaved changes!",
+      status: "error",
+      duration: 3000,
+      isClosable: true,
+    });
+  }
+
+  useEffect(() => {
+    if (numDirty > 0) {
+      // window.onbeforeunload = () => true;
+      window.addEventListener("beforeunload", alertUser);
+    } else {
+      // window.onbeforeunload = undefined;
+    }
+    return () => {
+      window.removeEventListener("beforeunload", alertUser);
+    };
+  }, [numDirty]);
+  return (
+    <HStack>
+      <Button
+        size="sm"
+        onClick={() => {
+          // run all pods
+          dispatch(wsActions.wsRunAll());
+        }}
+      >
+        Apply All Pods
+      </Button>
+
+      <Prompt
+        when={numDirty > 0}
+        message="You have unsaved changes. Are you sure you want to leave?"
+      />
+
+      <Button
+        size="sm"
+        disabled={numDirty == 0}
+        onClick={() => {
+          dispatch(remoteUpdateAllPods());
+        }}
+      >
+        <CloudUploadIcon />
+        <Text as="span" color="blue" mx={1}>
+          {numDirty}
+        </Text>
+      </Button>
+    </HStack>
+  );
+}
+
+function Sidebar() {
   return (
     <Box px="1rem">
       <SidebarSession />
       <SidebarRuntime />
       <SidebarKernel />
       <ToastError />
-
-      <HStack>
-        <Button
-          size="sm"
-          onClick={() => {
-            // run all pods
-            dispatch(wsActions.wsRunAll());
-          }}
-        >
-          Apply All Pods
-        </Button>
-
-        <Button
-          size="sm"
-          disabled={numDirty == 0}
-          onClick={() => {
-            dispatch(remoteUpdateAllPods());
-          }}
-        >
-          <CloudUploadIcon />
-          <Text as="span" color="blue" mx={1}>
-            {numDirty}
-          </Text>
-        </Button>
-      </HStack>
+      <ApplyAll />
 
       <Divider my={2} />
 
