@@ -2,11 +2,20 @@
 
 // CAUTION this must be var so that it can be evaluted multiple times (during
 // debugging)
-var { CODEPOD_EVAL, CODEPOD_GETMOD } = (() => {
+var { CODEPOD_EVAL, CODEPOD_GETMOD, CODEPOD_DELETE_NAMES } = (() => {
   var CODEPOD_MOD = {};
 
   function CODEPOD_GETMOD() {
     return CODEPOD_MOD;
+  }
+
+  function CODEPOD_DELETE_NAMES(ns, names) {
+    if (!CODEPOD_MOD[ns]) {
+      CODEPOD_MOD[ns] = {};
+    }
+    for (let name of names) {
+      eval(`delete CODEPOD_MOD["${ns}"].${name}`);
+    }
   }
 
   function CODEPOD_EVAL(code, ns, names) {
@@ -28,7 +37,7 @@ var { CODEPOD_EVAL, CODEPOD_GETMOD } = (() => {
     return res;
   }
 
-  return { CODEPOD_EVAL, CODEPOD_GETMOD };
+  return { CODEPOD_EVAL, CODEPOD_GETMOD, CODEPOD_DELETE_NAMES };
 })();
 
 // function CODEPOD3(code, ns, names) {

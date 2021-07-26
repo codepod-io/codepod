@@ -62,6 +62,7 @@ const typeDefs = gql`
     error: String
     imports: String
     exports: String
+    midports: String
   }
 
   type Mutation {
@@ -92,6 +93,7 @@ const typeDefs = gql`
       error: String
       imports: String
       exports: String
+      midports: String
     ): Pod
     clearUser: Boolean
     clearRepo: Boolean
@@ -336,7 +338,7 @@ const listenOnRunCode = (() => {
       });
     }
 
-    socket.on("runCode", ({ lang, code, podId, namespace }) => {
+    socket.on("runCode", ({ lang, code, podId, namespace, midports }) => {
       if (!(lang in kernels)) {
         console.log("Invalid language", lang);
         socket.emit("stdout", {
@@ -359,7 +361,13 @@ const listenOnRunCode = (() => {
             );
           } else if (lang === "js") {
             // TODO add names
-            let code1 = `CODEPOD_EVAL(\`${code}\`, "${namespace}", [])`;
+            let names = [];
+            if (midports) {
+              names = midports.map((name) => `"${name}"`);
+            }
+            let code1 = `CODEPOD_EVAL(\`${code}\`, "${namespace}", [${names.join(
+              ","
+            )}])`;
             console.log("js wrapper code:", code1);
             kernels[lang].sendShellMessage(
               constructExecuteRequest({
@@ -465,6 +473,19 @@ const listenOnRunCode = (() => {
           })
         );
       }
+    });
+    socket.on("deleteMidport", ({ lang, id, ns, name }) => {
+      if (lang !== "js") {
+        throw new Error("Only js supprot deleteMidport.");
+      }
+      let code1 = `CODEPOD_DELETE_NAMES("${ns}", ["${name}"])`;
+      console.log("js wrapper code:", code1);
+      kernels[lang].sendShellMessage(
+        constructExecuteRequest({
+          code: code1,
+          msg_id: id,
+        })
+      );
     });
   };
 })();

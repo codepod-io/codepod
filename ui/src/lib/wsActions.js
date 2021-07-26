@@ -52,3 +52,8 @@ export const wsToggleImport = (payload) => ({
   type: "WS_TOGGLE_IMPORT",
   payload,
 });
+
+export const wsToggleMidport = (payload) => ({
+  type: "WS_TOGGLE_MIDPORT",
+  payload,
+});

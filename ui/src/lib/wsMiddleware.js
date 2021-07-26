@@ -118,6 +118,9 @@ const socketMiddleware = () => {
           namespace: pod.ns,
           podId: pod.id,
           sessionId: "sessionId",
+          midports:
+            pod.midports &&
+            Object.keys(pod.midports).filter((k) => pod.midports[k]),
         });
         if (pod.exports) {
           // TODO update all parent imports
@@ -222,6 +225,47 @@ const socketMiddleware = () => {
           console.log("ERROR: not connected");
         }
         break;
+      case "WS_TOGGLE_MIDPORT": {
+        let { id, name } = action.payload;
+        if (!socket) {
+          store.dispatch(repoSlice.actions.addError("Runtime not connected"));
+          break;
+        }
+        store.dispatch(repoSlice.actions.togglePodMidport({ id, name }));
+        let pods = store.getState().repo.pods;
+        let pod = pods[id];
+        let parent = pods[pod.parent];
+        // just send socket
+        if (pod.midports[name]) {
+          // it is exported, then run the pod again
+          socket.emit("runCode", {
+            lang: pod.lang,
+            code: slackGetPlainText(pod.content),
+            namespace: pod.ns,
+            podId: pod.id,
+            sessionId: "sessionId",
+            midports:
+              pod.midports &&
+              Object.keys(pod.midports).filter((k) => pod.midports[k]),
+          });
+        } else {
+          // it is deleted, run delete
+          socket.emit("deleteMidport", {
+            lang: pod.lang,
+            id: pod.id,
+            ns: pod.ns,
+            name,
+          });
+        }
+        socket.emit("addImport", {
+          lang: pod.lang,
+          from: pod.ns,
+          to: parent.ns,
+          id: parent.id,
+          name,
+        });
+        break;
+      }
       case "WS_TOGGLE_EXPORT": {
         let { id, name } = action.payload;
         if (!socket) {

@@ -743,6 +743,15 @@ function CodePod({ pod }) {
               dispatch(repoSlice.actions.addPodExport({ id: pod.id, name }));
             }
           }}
+          onMidport={(name, isActive) => {
+            if (isActive) {
+              dispatch(
+                repoSlice.actions.deletePodMidport({ id: pod.id, name })
+              );
+            } else {
+              dispatch(repoSlice.actions.addPodMidport({ id: pod.id, name }));
+            }
+          }}
         />
       </Box>
       <Flex w="100%">
@@ -760,6 +769,29 @@ function CodePod({ pod }) {
                 <Code>{k}</Code>
                 {/* No need IOStatus for exports */}
                 {/* <IOStatus id={pod.id} name={k} /> */}
+              </Box>
+            ))}
+          </Box>
+        )}
+        <Spacer />
+        {pod.midports && Object.keys(pod.midports).length > 0 && (
+          <Box>
+            Midports{" "}
+            {Object.entries(pod.midports).map(([k, v]) => (
+              <Box key={k}>
+                <Switch
+                  checked={v}
+                  onChange={() => {
+                    dispatch(
+                      wsActions.wsToggleMidport({ id: pod.id, name: k })
+                      // repoSlice.actions.togglePodMidport({
+                      //   id: pod.id,
+                      //   name: k,
+                      // })
+                    );
+                  }}
+                />
+                <Code>{k}</Code>
               </Box>
             ))}
           </Box>

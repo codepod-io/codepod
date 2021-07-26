@@ -90,6 +90,7 @@ model Pod {
   error    String?
   imports  String?
   exports  String?
+  midports String?
   // repo        Repo?    @relation("ROOT")
   repo     Repo    @relation("BELONG", fields: [repoId], references: [id])
 

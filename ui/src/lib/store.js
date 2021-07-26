@@ -35,6 +35,7 @@ export const loadPodQueue = createAsyncThunk(
           error
           imports
           exports
+          midports
           index
           parent {
             id
@@ -77,6 +78,7 @@ function hashPod(pod) {
       error: pod.error,
       imports: pod.imports,
       exports: pod.exports,
+      midports: pod.midports,
     })
   ).toString();
 }
@@ -130,6 +132,7 @@ function normalize(pods) {
       // XXX should I save these to db?
       exports: {},
       imports: {},
+      midport: {},
       io: {},
     },
   };
@@ -165,6 +168,9 @@ function normalize(pods) {
     }
     if (pod.exports) {
       pod.exports = JSON.parse(pod.exports);
+    }
+    if (pod.midports) {
+      pod.midports = JSON.parse(pod.midports);
     }
     pod.remoteHash = hashPod(pod);
   });
@@ -271,8 +277,12 @@ export const remoteUpdatePod = createAsyncThunk(
       },
       body: JSON.stringify({
         query: `
-        mutation updatePod($id: String, $content: String, $type: String, $lang: String, $result: String, $stdout: String, $error: String, $imports: String, $exports: String) {
-          updatePod(id: $id, content: $content, type: $type, lang: $lang, result: $result, stdout: $stdout, error: $error, imports: $imports, exports: $exports) {
+        mutation updatePod($id: String, $content: String, $type: String, $lang: String,
+                           $result: String, $stdout: String, $error: String,
+                           $imports: String, $exports: String, $midports: String) {
+          updatePod(id: $id, content: $content, type: $type, lang: $lang,
+                    result: $result, stdout: $stdout, error: $error,
+                    imports: $imports, exports: $exports, midports: $midports) {
             id
           }
         }`,
@@ -283,6 +293,7 @@ export const remoteUpdatePod = createAsyncThunk(
           error: JSON.stringify(pod.error),
           imports: JSON.stringify(pod.imports),
           exports: JSON.stringify(pod.exports),
+          midports: JSON.stringify(pod.midports),
         },
       }),
     });
@@ -413,6 +424,7 @@ export const repoSlice = createSlice({
         lang: lang,
         exports: {},
         imports: {},
+        midports: {},
         isSyncing: false,
         lastPosUpdate: Date.now(),
         children: [],
@@ -501,6 +513,25 @@ export const repoSlice = createSlice({
       let { id, name } = action.payload;
       let pod = state.pods[id];
       pod.imports[name] = !pod.imports[name];
+    },
+    addPodMidport: (state, action) => {
+      let { id, name } = action.payload;
+      let pod = state.pods[id];
+      if (!pod.midports) {
+        pod.midports = {};
+      }
+      pod.midports[name] = false;
+    },
+    deletePodMidport: (state, action) => {
+      let { id, name } = action.payload;
+      if (state.pods[id].midports) {
+        delete state.pods[id].midports[name];
+      }
+    },
+    togglePodMidport: (state, action) => {
+      let { id, name } = action.payload;
+      let pod = state.pods[id];
+      pod.midports[name] = !pod.midports[name];
     },
     setPodLang: (state, action) => {
       const { id, lang } = action.payload;

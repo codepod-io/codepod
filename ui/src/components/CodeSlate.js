@@ -27,8 +27,12 @@ import {
   FaStrikethrough,
   FaExternalLinkSquareAlt,
   FaExternalLinkAlt,
+  FaArrowsAltV,
 } from "react-icons/fa";
+import { MdImportExport, MdSwapVert, MdCallMissed } from "react-icons/md";
 import { FcIdea } from "react-icons/fc";
+import { ArrowUpDownIcon } from "@chakra-ui/icons";
+import ImportExportIcon from "@material-ui/icons/ImportExport";
 
 import { Box } from "@chakra-ui/react";
 
@@ -77,10 +81,18 @@ const RichLeaf = ({ attributes, children, leaf }) => {
     );
   }
 
+  if (leaf.midport) {
+    children = (
+      <Box as="span" bg="cyan">
+        {children}
+      </Box>
+    );
+  }
+
   return { attributes, children, leaf };
 };
 
-const HoveringToolbar = ({ onExport = () => {} }) => {
+const HoveringToolbar = ({ onExport = () => {}, onMidport = () => {} }) => {
   const ref = useRef();
   const editor = useSlate();
 
@@ -133,12 +145,22 @@ const HoveringToolbar = ({ onExport = () => {} }) => {
         <FormatButton format="italic" icon={<FaItalic />} />
         <FormatButton
           format="export"
-          icon={<FaExternalLinkSquareAlt />}
+          icon={<MdCallMissed />}
           onMouseDown={() => {
             const isActive = isFormatActive(editor, "export");
             // what if partially active?
             let name = Editor.string(editor, editor.selection);
             onExport(name, isActive);
+          }}
+        />
+        <FormatButton
+          format="midport"
+          icon={<MdImportExport />}
+          onMouseDown={() => {
+            const isActive = isFormatActive(editor, "midport");
+            // what if partially active?
+            let name = Editor.string(editor, editor.selection);
+            onMidport(name, isActive);
           }}
         />
         <FormatButton format="underlined" icon={<FaUnderline />} />
@@ -170,6 +192,7 @@ export function RichCodeSlate({
   onChange,
   language = "javascript",
   onExport = () => {},
+  onMidport = () => {},
 }) {
   const renderLeaf = useCallback((props) => <Leaf {...RichLeaf(props)} />, []);
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
@@ -206,7 +229,7 @@ export function RichCodeSlate({
 
   return (
     <Slate editor={editor} value={value} onChange={onChange}>
-      <HoveringToolbar onExport={onExport} />
+      <HoveringToolbar onExport={onExport} onMidport={onMidport} />
       <Editable
         decorate={decorate}
         renderLeaf={renderLeaf}
