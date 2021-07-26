@@ -13,7 +13,6 @@ import * as pty from "node-pty";
 import {
   Kernel,
   WrappedKernel,
-  PYTHON_CODEPOD,
   constructMessage,
   constructExecuteRequest,
 } from "./kernel.js";
@@ -214,7 +213,10 @@ const listenOnRunCode = (() => {
   let kernels = {
     julia: new Kernel("./kernels/julia/conn.json"),
     racket: new Kernel("./kernels/racket/conn.json"),
-    python: new WrappedKernel("./kernels/python/conn.json", PYTHON_CODEPOD),
+    python: new WrappedKernel(
+      "./kernels/python/conn.json",
+      readFileSync("./kernels/python/codepod.py", "utf8")
+    ),
     js: new WrappedKernel(
       "./kernels/javascript/conn.json",
       readFileSync("./kernels/javascript/codepod.js", "utf8")
