@@ -33,17 +33,19 @@ import {
   DeleteIcon,
   AddIcon,
 } from "@chakra-ui/icons";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import useResizeObserver from "use-resize-observer";
 import io from "socket.io-client";
 
 import Popover from "@material-ui/core/Popover";
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
+import { CgMenuRound } from "react-icons/cg";
 // import { CheckIcon } from "@material-ui/icons";
 import RefreshIcon from "@material-ui/icons/Refresh";
 import CloudUploadIcon from "@material-ui/icons/CloudUpload";
 import { Switch } from "@material-ui/core";
+import Popper from "@material-ui/core/Popper";
 
 import {
   repoSlice,
@@ -692,76 +694,149 @@ function ImportList({ pod }) {
   );
 }
 
+function HoveringBar({ pod, showMenu }) {
+  let dispatch = useDispatch();
+  // const [anchorEl, setAnchorEl] = React.useState(null);
+  const [show, setShow] = useState(false);
+  const anchorEl = useRef(null);
+  const [showForce, setShowForce] = useState(false);
+  return (
+    <Box
+      style={{
+        margin: "5px",
+        position: "absolute",
+        top: "0px",
+        right: "0px",
+      }}
+      visibility={showMenu || show || showForce ? "visible" : "hidden"}
+    >
+      {/* <Button
+        size="sm"
+        onClick={(e) => {
+          setAnchorEl(anchorEl ? null : e.currentTarget);
+        }}
+      >
+        Tool
+      </Button> */}
+      <Box
+        ref={anchorEl}
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        onClick={() => setShowForce(!showForce)}
+      >
+        <CgMenuRound size={25} />
+      </Box>
+      <Popper
+        // open={Boolean(anchorEl)}
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        open={showForce || show}
+        anchorEl={anchorEl.current}
+        placement="left-start"
+      >
+        <Flex
+          direction="column"
+          bg="white"
+          border="1px"
+          p={3}
+          rounded="md"
+          boxShadow="md"
+        >
+          <HStack>
+            <InfoBar pod={pod} />
+            <ToolBar pod={pod} />
+            <SyncStatus pod={pod} />
+          </HStack>
+          <HStack my={2}>
+            <TypeMenu pod={pod} />
+            <LanguageMenu pod={pod} />
+          </HStack>
+          <HStack>
+            <Button
+              size="sm"
+              onClick={() => {
+                dispatch(repoSlice.actions.toggleRaw(pod.id));
+              }}
+            >
+              {pod.raw ? "raw" : "wrapped"}
+            </Button>
+            <Button
+              size="sm"
+              isDisabled={!pod.lang}
+              onClick={() => {
+                // 1. create or load runtime socket
+                // dispatch(
+                //   repoSlice.actions.ensureSessionRuntime({ lang: pod.lang })
+                // );
+                // clear previous results
+                dispatch(repoSlice.actions.clearResults(pod.id));
+                // 2. send
+                dispatch(wsActions.wsRun(pod));
+                // 3. the socket should have onData set to set the output
+              }}
+            >
+              Run
+            </Button>
+          </HStack>
+        </Flex>
+      </Popper>
+    </Box>
+  );
+}
+
 function CodePod({ pod }) {
   let dispatch = useDispatch();
+  const [showMenu, setShowMenu] = useState(false);
   return (
     <VStack align="start" p={2}>
-      <HStack>
-        <InfoBar pod={pod} />
-        <ToolBar pod={pod} />
-        <SyncStatus pod={pod} />
-        <TypeMenu pod={pod} />
-        <LanguageMenu pod={pod} />
-        <Button
-          size="sm"
-          onClick={() => {
-            dispatch(repoSlice.actions.toggleRaw(pod.id));
-          }}
+      <Box position="relative">
+        <Box
+          border="1px"
+          w="sm"
+          p="1rem"
+          alignContent="center"
+          onMouseEnter={() => setShowMenu(true)}
+          onMouseLeave={() => setShowMenu(false)}
         >
-          {pod.raw ? "raw" : "wrapped"}
-        </Button>
-        <Button
-          size="sm"
-          isDisabled={!pod.lang}
-          onClick={() => {
-            // 1. create or load runtime socket
-            // dispatch(
-            //   repoSlice.actions.ensureSessionRuntime({ lang: pod.lang })
-            // );
-            // clear previous results
-            dispatch(repoSlice.actions.clearResults(pod.id));
-            // 2. send
-            dispatch(wsActions.wsRun(pod));
-            // 3. the socket should have onData set to set the output
-          }}
-        >
-          Run
-        </Button>
-      </HStack>
-      <Box border="1px" w="sm" p="1rem" alignContent="center">
-        <CodeSlate
-          value={
-            pod.content || [
-              {
-                type: "paragraph",
-                children: [{ text: "" }],
-              },
-            ]
-          }
-          onChange={(value) => {
-            dispatch(
-              repoSlice.actions.setPodContent({ id: pod.id, content: value })
-            );
-          }}
-          language={pod.lang || "javascript"}
-          onExport={(name, isActive) => {
-            if (isActive) {
-              dispatch(repoSlice.actions.deletePodExport({ id: pod.id, name }));
-            } else {
-              dispatch(repoSlice.actions.addPodExport({ id: pod.id, name }));
+          <CodeSlate
+            value={
+              pod.content || [
+                {
+                  type: "paragraph",
+                  children: [{ text: "" }],
+                },
+              ]
             }
-          }}
-          onMidport={(name, isActive) => {
-            if (isActive) {
+            onChange={(value) => {
               dispatch(
-                repoSlice.actions.deletePodMidport({ id: pod.id, name })
+                repoSlice.actions.setPodContent({ id: pod.id, content: value })
               );
-            } else {
-              dispatch(repoSlice.actions.addPodMidport({ id: pod.id, name }));
-            }
-          }}
-        />
+            }}
+            language={pod.lang || "javascript"}
+            onExport={(name, isActive) => {
+              if (isActive) {
+                dispatch(
+                  repoSlice.actions.deletePodExport({ id: pod.id, name })
+                );
+              } else {
+                dispatch(repoSlice.actions.addPodExport({ id: pod.id, name }));
+              }
+            }}
+            onMidport={(name, isActive) => {
+              if (isActive) {
+                dispatch(
+                  repoSlice.actions.deletePodMidport({ id: pod.id, name })
+                );
+              } else {
+                dispatch(repoSlice.actions.addPodMidport({ id: pod.id, name }));
+              }
+            }}
+          />
+        </Box>
+
+        <HoveringBar pod={pod} showMenu={showMenu} />
       </Box>
+
       <Flex w="100%">
         {pod.exports && Object.keys(pod.exports).length > 0 && (
           <Box>
