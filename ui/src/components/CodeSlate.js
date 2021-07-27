@@ -193,6 +193,7 @@ export function RichCodeSlate({
   language = "javascript",
   onExport = () => {},
   onMidport = () => {},
+  onRun = () => {},
 }) {
   const renderLeaf = useCallback((props) => <Leaf {...RichLeaf(props)} />, []);
   const editor = useMemo(() => withHistory(withReact(createEditor())), []);
@@ -234,6 +235,14 @@ export function RichCodeSlate({
         decorate={decorate}
         renderLeaf={renderLeaf}
         placeholder="Write some code..."
+        onKeyDown={(event) => {
+          if (event.shiftKey && event.key === "Enter") {
+            // console.log("Shift-enter!");
+            event.preventDefault();
+            // run code
+            onRun();
+          }
+        }}
       />
     </Slate>
   );

@@ -822,6 +822,10 @@ function CodePod({ pod }) {
                 dispatch(repoSlice.actions.addPodMidport({ id: pod.id, name }));
               }
             }}
+            onRun={() => {
+              dispatch(repoSlice.actions.clearResults(pod.id));
+              dispatch(wsActions.wsRun(pod));
+            }}
           />
         </Box>
       </Box>
