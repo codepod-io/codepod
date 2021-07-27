@@ -353,16 +353,24 @@ const listenOnRunCode = (() => {
           podId: podId,
           stdout: `Error: Invalid Language ${lang}`,
         });
-      } else {
-        if (code) {
-          if (raw) {
-            kernels[lang].sendShellMessage(
-              constructExecuteRequest({
-                code,
-                msg_id: podId,
-              })
-            );
-          } else if (lang === "python") {
+        return;
+      }
+      if (!code) {
+        console.log("Code is empty");
+        return;
+      }
+      if (raw) {
+        kernels[lang].sendShellMessage(
+          constructExecuteRequest({
+            code,
+            msg_id: podId,
+          })
+        );
+        return;
+      }
+      switch (lang) {
+        case "python":
+          {
             code = `CODEPOD_EVAL("""${code.replaceAll(
               '"',
               '\\"'
@@ -374,8 +382,10 @@ const listenOnRunCode = (() => {
                 msg_id: podId,
               })
             );
-          } else if (lang === "js") {
-            // TODO add names
+          }
+          break;
+        case "js":
+          {
             let names = [];
             if (midports) {
               names = midports.map((name) => `"${name}"`);
@@ -390,31 +400,35 @@ const listenOnRunCode = (() => {
                 msg_id: podId,
               })
             );
-          } else if (lang === "julia") {
+          }
+          break;
+        case "julia":
+          {
             kernels[lang].sendShellMessage(
               constructExecuteRequest({
                 code: `CODEPOD_EVAL("""${code}""", "${namespace}")`,
                 msg_id: podId,
               })
             );
-          } else if (lang === "racket") {
+          }
+          break;
+        case "racket":
+          {
             kernels[lang].sendShellMessage(
               constructExecuteRequest({
                 code: `(enter! #f) (CODEPOD-EVAL "${code}" "${namespace}")`,
                 msg_id: podId,
               })
             );
-          } else {
-            kernels[lang].sendShellMessage(
-              constructExecuteRequest({
-                code,
-                msg_id: podId,
-                cp: { namespace },
-              })
-            );
           }
-        } else {
-          console.log("Code is empty");
+          break;
+        default: {
+          kernels[lang].sendShellMessage(
+            constructExecuteRequest({
+              code,
+              msg_id: podId,
+            })
+          );
         }
       }
     });
@@ -448,105 +462,112 @@ const listenOnRunCode = (() => {
 
     socket.on("addImport", ({ lang, id, from, to, name }) => {
       console.log("received addImport");
-      if (lang === "python") {
-        // FIXME this should be re-evaluated everytime the function changes
-        // I cannot use importlib because the module here lacks the finder, and
-        // some other attribute functions
-        let code = `CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${from}").__dict__["${name}"]\n0""", "${to}")`;
-        console.log("---- the code", code);
-        kernels[lang].sendShellMessage(
-          constructExecuteRequest({
-            code,
-            msg_id: id + "#" + name,
-          })
-        );
-      } else if (lang === "js") {
-        let code = `CODEPOD.addImport("${from}", "${to}", "${name}")`;
-        console.log("---- the code", code);
-        kernels[lang].sendShellMessage(
-          constructExecuteRequest({
-            code,
-            msg_id: id + "#" + name,
-          })
-        );
-      } else if (lang === "julia") {
-        kernels[lang].sendShellMessage(
-          constructExecuteRequest({
-            code: `CODEPOD_ADD_IMPORT("${from}", "${to}", "${name}")`,
-            msg_id: id + "#" + name,
-          })
-        );
-      } else if (lang === "racket") {
-        kernels[lang].sendShellMessage(
-          constructExecuteRequest({
-            code: `(enter! #f) (CODEPOD-ADD-IMPORT "${from}" "${to}" "${name}")`,
-            msg_id: id + "#" + name,
-          })
-        );
-      } else {
-        kernels[lang].sendShellMessage(
-          constructExecuteRequest({
-            code: "CPAddImport",
-            msg_id: id + "#" + name,
-            cp: {
-              from,
-              to,
-              name,
-              namespace: "",
-            },
-          })
-        );
+      switch (lang) {
+        case "python":
+          {
+            // FIXME this should be re-evaluated everytime the function changes
+            // I cannot use importlib because the module here lacks the finder, and
+            // some other attribute functions
+            let code = `CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${from}").__dict__["${name}"]\n0""", "${to}")`;
+            console.log("---- the code", code);
+            kernels[lang].sendShellMessage(
+              constructExecuteRequest({
+                code,
+                msg_id: id + "#" + name,
+              })
+            );
+          }
+          break;
+        case "js":
+          {
+            let code = `CODEPOD.addImport("${from}", "${to}", "${name}")`;
+            console.log("---- the code", code);
+            kernels[lang].sendShellMessage(
+              constructExecuteRequest({
+                code,
+                msg_id: id + "#" + name,
+              })
+            );
+          }
+          break;
+        case "julia":
+          {
+            kernels[lang].sendShellMessage(
+              constructExecuteRequest({
+                code: `CODEPOD_ADD_IMPORT("${from}", "${to}", "${name}")`,
+                msg_id: id + "#" + name,
+              })
+            );
+          }
+          break;
+        case "racket":
+          {
+            kernels[lang].sendShellMessage(
+              constructExecuteRequest({
+                code: `(enter! #f) (CODEPOD-ADD-IMPORT "${from}" "${to}" "${name}")`,
+                msg_id: id + "#" + name,
+              })
+            );
+          }
+          break;
+        default: {
+          console.log("WARNING: unsupported language:", lang);
+        }
       }
     });
     socket.on("deleteImport", ({ lang, id, name, ns }) => {
       console.log("received addImport");
-      if (lang === "python") {
-        // FIXME this should be re-evaluated everytime the function changes
-        // I cannot use importlib because the module here lacks the finder, and
-        // some other attribute functions
-        let code = `CODEPOD_EVAL("del ${name}", "${ns}")`;
-        console.log("---- the code", code);
-        kernels[lang].sendShellMessage(
-          constructExecuteRequest({
-            code,
-            msg_id: id + "#" + name,
-          })
-        );
-      } else if (lang === "js") {
-        let code = `CODEPOD.deleteImport("${ns}", "${name}")`;
-        console.log("---- the code", code);
-        kernels[lang].sendShellMessage(
-          constructExecuteRequest({
-            code,
-            msg_id: id + "#" + name,
-          })
-        );
-      } else if (lang === "julia") {
-        kernels[lang].sendShellMessage(
-          constructExecuteRequest({
-            code: `CODEPOD_DELETE_IMPORT("${ns}", "${name}")`,
-            msg_id: id + "#" + name,
-          })
-        );
-      } else if (lang === "racket") {
-        kernels[lang].sendShellMessage(
-          constructExecuteRequest({
-            code: `(enter! #f) (CODEPOD-DELETE-IMPORT "${ns}" "${name}")`,
-            msg_id: id + "#" + name,
-          })
-        );
-      } else {
-        kernels[lang].sendShellMessage(
-          constructExecuteRequest({
-            code: "CPDeleteImport",
-            msg_id: id + "#" + name,
-            cp: {
-              ns,
-              name,
-              namespace: "",
-            },
-          })
-        );
+      switch (lang) {
+        case "python":
+          {
+            // FIXME this should be re-evaluated everytime the function changes
+            // I cannot use importlib because the module here lacks the finder, and
+            // some other attribute functions
+            let code = `CODEPOD_EVAL("del ${name}", "${ns}")`;
+            console.log("---- the code", code);
+            kernels[lang].sendShellMessage(
+              constructExecuteRequest({
+                code,
+                msg_id: id + "#" + name,
+              })
+            );
+          }
+          break;
+        case "js":
+          {
+            let code = `CODEPOD.deleteImport("${ns}", "${name}")`;
+            console.log("---- the code", code);
+            kernels[lang].sendShellMessage(
+              constructExecuteRequest({
+                code,
+                msg_id: id + "#" + name,
+              })
+            );
+          }
+          break;
+        case "julia":
+          {
+            kernels[lang].sendShellMessage(
+              constructExecuteRequest({
+                code: `CODEPOD_DELETE_IMPORT("${ns}", "${name}")`,
+                msg_id: id + "#" + name,
+              })
+            );
+          }
+          break;
+        case "racket":
+          {
+            kernels[lang].sendShellMessage(
+              constructExecuteRequest({
+                code: `(enter! #f) (CODEPOD-DELETE-IMPORT "${ns}" "${name}")`,
+                msg_id: id + "#" + name,
+              })
+            );
+          }
+          break;
+        default: {
+          console.log("WARNING: invalid lang:", lang);
+        }
       }
     });
     socket.on("deleteMidport", ({ lang, id, ns, name }) => {
