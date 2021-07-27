@@ -39,6 +39,8 @@ import useResizeObserver from "use-resize-observer";
 import io from "socket.io-client";
 
 import Popover from "@material-ui/core/Popover";
+import Paper from "@material-ui/core/Paper";
+
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
 import { CgMenuRound } from "react-icons/cg";
 // import { CheckIcon } from "@material-ui/icons";
@@ -390,56 +392,52 @@ function InfoBar({ pod }) {
   /* eslint-disable no-unused-vars */
   const [value, setValue] = useState(pod.id);
   const { hasCopied, onCopy } = useClipboard(value);
-  const [anchorEl, setAnchorEl] = React.useState(null);
+  const [show, setShow] = useState(false);
+  const anchorEl = useRef(null);
   return (
     <Box>
       <Button
         size="sm"
+        ref={anchorEl}
         onClick={(e) => {
-          setAnchorEl(e.currentTarget);
+          setShow(!show);
         }}
       >
         {/* <InfoOutlinedIcon /> */}
         <InfoIcon />
       </Button>
-      <Popover
-        open={Boolean(anchorEl)}
-        onClose={() => {
-          setAnchorEl(null);
-        }}
-        anchorEl={anchorEl}
-        anchorOrigin={{
-          vertical: "bottom",
-          horizontal: "center",
-        }}
-        transformOrigin={{
-          vertical: "top",
-          horizontal: "center",
-        }}
-      >
-        The content of the Popover.
-        <Box>
-          <Text>
-            ID:{" "}
-            <Code colorScheme="blackAlpha">
-              {
-                // pod.id.substring(0, 8)
-                pod.id
-              }
-            </Code>
-            <Button onClick={onCopy}>{hasCopied ? "Copied" : "Copy"}</Button>
-          </Text>
-          <Text>
-            Namespace:
-            <Code colorScheme="blackAlpha">{pod.ns}</Code>
-          </Text>
-          <Text mr={5}>Index: {pod.index}</Text>
-          <Text>
-            Parent:{" "}
-            <Code colorScheme="blackAlpha">{pod.parent.substring(0, 8)}</Code>
-          </Text>
-        </Box>
-      </Popover>
+      <Popper open={show} anchorEl={anchorEl.current} placement="left-start">
+        <Paper>
+          <Box p={5}>
+            The content of the Popover.
+            <Box>
+              <Text>
+                ID:{" "}
+                <Code colorScheme="blackAlpha">
+                  {
+                    // pod.id.substring(0, 8)
+                    pod.id
+                  }
+                </Code>
+                <Button onClick={onCopy}>
+                  {hasCopied ? "Copied" : "Copy"}
+                </Button>
+              </Text>
+              <Text>
+                Namespace:
+                <Code colorScheme="blackAlpha">{pod.ns}</Code>
+              </Text>
+              <Text mr={5}>Index: {pod.index}</Text>
+              <Text>
+                Parent:{" "}
+                <Code colorScheme="blackAlpha">
+                  {pod.parent.substring(0, 8)}
+                </Code>
+              </Text>
+            </Box>
+          </Box>
+        </Paper>
+      </Popper>
     </Box>
   );
 }
@@ -584,7 +582,7 @@ function Deck({ id }) {
       <Box>
         {/* LEFT */}
         <Flex align="center">
-          <Pod id={pod.id} />
+          {pod.id !== "ROOT" && <Pod id={pod.id} />}
           {pod.children.length > 0 && (
             <Flex>
               {/* The brace */}
@@ -782,15 +780,14 @@ function HoveringBar({ pod, showMenu }) {
 
 function CodePod({ pod }) {
   let dispatch = useDispatch();
-  const [showMenu, setShowMenu] = useState(false);
+
   return (
-    <VStack
+    // FIXME using VStack will cause some strange padding
+    <Box
       align="start"
       // p={2}
-      onMouseEnter={() => setShowMenu(true)}
-      onMouseLeave={() => setShowMenu(false)}
     >
-      <Box position="relative" ml={5}>
+      <Box>
         <Box border="1px" w="sm" p="1rem" alignContent="center">
           <CodeSlate
             value={
@@ -826,27 +823,6 @@ function CodePod({ pod }) {
               }
             }}
           />
-        </Box>
-        <Box
-          style={{
-            margin: "5px",
-            position: "absolute",
-            top: "0px",
-            left: "-30px",
-          }}
-        >
-          <HoveringBar pod={pod} showMenu={showMenu} />
-        </Box>
-
-        <Box
-          style={{
-            margin: "5px",
-            position: "absolute",
-            top: "0px",
-            right: "8px",
-          }}
-        >
-          <SyncStatus pod={pod} />
         </Box>
       </Box>
 
@@ -929,7 +905,7 @@ function CodePod({ pod }) {
           )}
         </Box>
       )}
-    </VStack>
+    </Box>
   );
 }
 
@@ -956,12 +932,7 @@ function ReplPod({ pod }) {
 
   return (
     <VStack align="start" p={2}>
-      <HStack>
-        <InfoBar pod={pod} />
-        <ToolBar pod={pod} />
-        <SyncStatus pod={pod} />
-        <TypeMenu pod={pod} />
-        <LanguageMenu pod={pod} />
+      {/* <HStack>
         <Button
           size="sm"
           isDisabled={!term}
@@ -981,7 +952,7 @@ function ReplPod({ pod }) {
         >
           Connect
         </Button>
-      </HStack>
+      </HStack> */}
       <Box border="1px" w="sm" h="8rem">
         {/* <XTerm /> */}
         {term && <XTerm term={term} />}
@@ -993,13 +964,7 @@ function ReplPod({ pod }) {
 function WysiwygPod({ pod }) {
   let dispatch = useDispatch();
   return (
-    <VStack align="start" p={2}>
-      <HStack>
-        <InfoBar pod={pod} />
-        <ToolBar pod={pod} />
-        <SyncStatus pod={pod} />
-        <TypeMenu pod={pod} />
-      </HStack>
+    <VStack align="start">
       <Box border="1px" w="sm" p="1rem">
         <MySlate
           value={
@@ -1027,6 +992,55 @@ function WysiwygPod({ pod }) {
 }
 
 function Pod({ id }) {
+  const pod = useSelector((state) => state.repo.pods[id]);
+  const [showMenu, setShowMenu] = useState(false);
+  return (
+    <Box
+      position="relative"
+      ml={5}
+      mb={1}
+      onMouseEnter={() => setShowMenu(true)}
+      onMouseLeave={() => setShowMenu(false)}
+    >
+      <ThePod id={id} />
+
+      <Box
+        style={{
+          margin: "5px",
+          position: "absolute",
+          top: "0px",
+          left: "-30px",
+        }}
+      >
+        <HoveringBar pod={pod} showMenu={showMenu} />
+      </Box>
+
+      <Flex
+        style={{
+          margin: "5px",
+          position: "absolute",
+          top: "0px",
+          right: "8px",
+        }}
+      >
+        {/* The lang */}
+        {pod.type === "WYSIWYG" && (
+          <Text color="gray" mr={2}>
+            {pod.type}
+          </Text>
+        )}
+        {pod.type === "CODE" && (
+          <Text mr={2} color="gray">
+            {pod.lang}
+          </Text>
+        )}
+        <SyncStatus pod={pod} />
+      </Flex>
+    </Box>
+  );
+}
+
+function ThePod({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
   const dispatch = useDispatch();
   if (pod.type === "WYSIWYG") {
