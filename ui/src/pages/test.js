@@ -7,30 +7,13 @@ import io from "socket.io-client";
 
 import { XTerm } from "../components/MyXTerm";
 import { Terminal } from "xterm";
+import { MyMonaco } from "../components/MyMonaco";
 
 export default function Test() {
-  let socket = io("http://localhost:4000");
-  let term = new Terminal();
-  term.onData((data) => {
-    socket.emit("terminalInput", data);
-  });
-  socket.on("terminalOutput", (data) => {
-    term.write(data);
-  });
-
   return (
-    <Box maxW="5xl" align="center" m="auto">
+    <Box maxW="5xl" m="auto" minH="lg">
       <Heading>Test</Heading>
-      <Box border="1px" w="3xl" h="lg">
-        <XTerm term={term} />
-      </Box>
-      <Heading>Term2</Heading>
-      <Box border="1px" w="3xl" h="lg">
-        <XTerm />
-      </Box>
-      <Box border="1px">
-        <MySlateExample />
-      </Box>
+      <MyMonaco />
     </Box>
   );
 }
