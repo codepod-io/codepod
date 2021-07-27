@@ -4,6 +4,7 @@ export function MyMonaco({
   lang = "javascript",
   value = "\n\n\n",
   onChange = () => {},
+  onRun = () => {},
 }) {
   // there's no racket language support
   if (lang === "racket") {
@@ -43,6 +44,13 @@ export function MyMonaco({
           editor.layout();
         };
         editor.onDidContentSizeChange(updateHeight);
+        // FIXME clean up?
+        var myBinding = editor.addCommand(
+          [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
+          function () {
+            onRun();
+          }
+        );
       }}
     />
   );
