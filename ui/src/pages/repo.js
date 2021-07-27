@@ -340,7 +340,7 @@ export default function Repo() {
       >
         {!repoLoaded && <Text>Repo Loading ...</Text>}
         {repoLoaded && (
-          <Box height="100%" border="solid 3px" p={5} overflow="auto">
+          <Box height="100%" border="solid 3px" p={2} overflow="auto">
             <Deck id="ROOT" />
           </Box>
         )}
@@ -360,7 +360,7 @@ function SyncStatus({ pod }) {
           speed="0.65s"
           emptyColor="gray.200"
           color="blue.500"
-          size="xl"
+          size="sm"
         />
       </Box>
     );
@@ -368,9 +368,9 @@ function SyncStatus({ pod }) {
     return (
       <Box>
         <IconButton
-          size="sm"
+          size="xs"
           icon={<RepeatIcon />}
-          colorScheme={"yellow"}
+          // colorScheme={"yellow"}
           onClick={() => {
             dispatch(remoteUpdatePod(pod));
           }}
@@ -380,7 +380,7 @@ function SyncStatus({ pod }) {
   } else {
     return (
       <Box>
-        <CheckIcon color="green" />
+        <CheckIcon color="gray.300" />
       </Box>
     );
   }
@@ -580,25 +580,27 @@ function getDeck(id) {
 function Deck({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
   return (
-    <VStack align="start" p={2}>
-      <Box border="solid 1px" p={3}>
+    <VStack align="start">
+      <Box>
         {/* LEFT */}
         <Flex align="center">
           <Pod id={pod.id} />
           {pod.children.length > 0 && (
             <Flex>
               {/* The brace */}
-              <div>
-                <Image
-                  // src={require("../GullBraceLeft.svg")}
-                  src={brace}
-                  // src="../GullBraceLeft.svg"
-                  alt="brace"
-                  h="100%"
-                  maxW="none"
-                  w="20px"
-                />
-              </div>
+              {pod.id !== "ROOT" && (
+                <Box ml={1}>
+                  <Image
+                    // src={require("../GullBraceLeft.svg")}
+                    src={brace}
+                    // src="../GullBraceLeft.svg"
+                    alt="brace"
+                    h="100%"
+                    maxW="none"
+                    w="20px"
+                  />
+                </Box>
+              )}
               {/* RIGHT */}
               <Flex direction="column">
                 <Code colorScheme="blackAlpha">{pod.id}</Code>
@@ -701,15 +703,7 @@ function HoveringBar({ pod, showMenu }) {
   const anchorEl = useRef(null);
   const [showForce, setShowForce] = useState(false);
   return (
-    <Box
-      style={{
-        margin: "5px",
-        position: "absolute",
-        top: "0px",
-        right: "0px",
-      }}
-      visibility={showMenu || show || showForce ? "visible" : "hidden"}
-    >
+    <Flex>
       {/* <Button
         size="sm"
         onClick={(e) => {
@@ -718,14 +712,17 @@ function HoveringBar({ pod, showMenu }) {
       >
         Tool
       </Button> */}
+
       <Box
         ref={anchorEl}
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
         onClick={() => setShowForce(!showForce)}
+        visibility={showMenu || show || showForce ? "visible" : "hidden"}
       >
         <CgMenuRound size={25} />
       </Box>
+
       <Popper
         // open={Boolean(anchorEl)}
         onMouseEnter={() => setShow(true)}
@@ -745,7 +742,6 @@ function HoveringBar({ pod, showMenu }) {
           <HStack>
             <InfoBar pod={pod} />
             <ToolBar pod={pod} />
-            <SyncStatus pod={pod} />
           </HStack>
           <HStack my={2}>
             <TypeMenu pod={pod} />
@@ -780,7 +776,7 @@ function HoveringBar({ pod, showMenu }) {
           </HStack>
         </Flex>
       </Popper>
-    </Box>
+    </Flex>
   );
 }
 
@@ -788,16 +784,14 @@ function CodePod({ pod }) {
   let dispatch = useDispatch();
   const [showMenu, setShowMenu] = useState(false);
   return (
-    <VStack align="start" p={2}>
-      <Box position="relative">
-        <Box
-          border="1px"
-          w="sm"
-          p="1rem"
-          alignContent="center"
-          onMouseEnter={() => setShowMenu(true)}
-          onMouseLeave={() => setShowMenu(false)}
-        >
+    <VStack
+      align="start"
+      // p={2}
+      onMouseEnter={() => setShowMenu(true)}
+      onMouseLeave={() => setShowMenu(false)}
+    >
+      <Box position="relative" ml={5}>
+        <Box border="1px" w="sm" p="1rem" alignContent="center">
           <CodeSlate
             value={
               pod.content || [
@@ -833,8 +827,27 @@ function CodePod({ pod }) {
             }}
           />
         </Box>
+        <Box
+          style={{
+            margin: "5px",
+            position: "absolute",
+            top: "0px",
+            left: "-30px",
+          }}
+        >
+          <HoveringBar pod={pod} showMenu={showMenu} />
+        </Box>
 
-        <HoveringBar pod={pod} showMenu={showMenu} />
+        <Box
+          style={{
+            margin: "5px",
+            position: "absolute",
+            top: "0px",
+            right: "8px",
+          }}
+        >
+          <SyncStatus pod={pod} />
+        </Box>
       </Box>
 
       <Flex w="100%">
@@ -1039,21 +1052,24 @@ function Pod({ id }) {
     return (
       <Box>
         {/* <ToolBar pod={pod} /> */}
-        <Button
-          size="sm"
-          onClick={() => {
-            dispatch(
-              repoSlice.actions.addPod({
-                parent: pod.id,
-                type: "CODE",
-                index: 0,
-              })
-            );
-          }}
-        >
-          <AddIcon />
-        </Button>
-        <Text>Deck</Text>
+        {pod.children.length == 0 && (
+          <Button
+            size="sm"
+            onClick={() => {
+              dispatch(
+                repoSlice.actions.addPod({
+                  parent: pod.id,
+                  type: "CODE",
+                  index: 0,
+                })
+              );
+            }}
+          >
+            <AddIcon />
+          </Button>
+        )}
+
+        {/* <Text>Deck</Text> */}
       </Box>
     );
   } else {
