@@ -59,6 +59,7 @@ import {
 } from "../lib/store";
 import { MySlate } from "../components/MySlate";
 import { RichCodeSlate as CodeSlate } from "../components/CodeSlate";
+import { MyMonaco } from "../components/MyMonaco";
 import { StyledLink as Link } from "../components/utils";
 
 import { Terminal } from "xterm";
@@ -526,8 +527,8 @@ function LanguageMenu({ pod }) {
         <option value="julia">Julia</option>
         <option value="racket">Racket</option>
         <option value="scheme">Scheme</option>
-        <option value="js">JavaScript</option>
-        <option value="ts">TypeScript</option>
+        <option value="javascript">JavaScript</option>
+        <option value="typescript">TypeScript</option>
         <option value="css">CSS</option>
         <option value="html">HTML</option>
         <option value="sql">SQL</option>
@@ -576,13 +577,35 @@ function getDeck(id) {
 }
 
 function Deck({ id }) {
+  const dispatch = useDispatch();
   const pod = useSelector((state) => state.repo.pods[id]);
   return (
     <VStack align="start">
       <Box>
         {/* LEFT */}
         <Flex align="center">
-          {pod.id !== "ROOT" && <Pod id={pod.id} />}
+          {pod.id === "ROOT" ? (
+            <Box>
+              {pod.children.length == 0 && (
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    dispatch(
+                      repoSlice.actions.addPod({
+                        parent: pod.id,
+                        type: "CODE",
+                        index: 0,
+                      })
+                    );
+                  }}
+                >
+                  <AddIcon />
+                </Button>
+              )}
+            </Box>
+          ) : (
+            <Pod id={pod.id} />
+          )}
           {pod.children.length > 0 && (
             <Flex>
               {/* The brace */}
@@ -789,21 +812,14 @@ function CodePod({ pod }) {
     >
       <Box>
         <Box border="1px" w="sm" p="1rem" alignContent="center">
-          <CodeSlate
-            value={
-              pod.content || [
-                {
-                  type: "paragraph",
-                  children: [{ text: "" }],
-                },
-              ]
-            }
+          <MyMonaco
+            value={pod.content || "\n\n\n"}
             onChange={(value) => {
               dispatch(
                 repoSlice.actions.setPodContent({ id: pod.id, content: value })
               );
             }}
-            language={pod.lang || "javascript"}
+            lang={pod.lang || "javascript"}
             onExport={(name, isActive) => {
               if (isActive) {
                 dispatch(

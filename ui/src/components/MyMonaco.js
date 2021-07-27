@@ -1,12 +1,19 @@
 import MonacoEditor from "react-monaco-editor";
 
-export function MyMonaco() {
+export function MyMonaco({
+  lang = "javascript",
+  value = "\n\n\n",
+  onChange = () => {},
+}) {
+  // there's no racket language support
+  if (lang === "racket") {
+    lang = "scheme";
+  }
   return (
     <MonacoEditor
-      language="javascript"
-      theme="vs-dark"
-      // initial height: 3 lines
-      value={"\n\n\n"}
+      language={lang}
+      // theme="vs-dark"
+      value={value}
       options={{
         selectOnLineNumbers: true,
         scrollBeyondLastLine: false,
@@ -16,7 +23,7 @@ export function MyMonaco() {
           enabled: false,
         },
       }}
-      onChange={() => {}}
+      onChange={onChange}
       editorDidMount={(editor, monaco) => {
         console.log("Did mount!");
         console.log(editor);
@@ -25,14 +32,15 @@ export function MyMonaco() {
         const updateHeight = () => {
           // max height: 400
           const contentHeight = Math.min(400, editor.getContentHeight());
-          console.log("target height:", contentHeight);
+          // console.log("target height:", contentHeight);
           const editorElement = editor.getDomNode();
           if (!editorElement) {
             return;
           }
           editorElement.style.height = `${contentHeight}px`;
           // width: 800
-          editor.layout({ width: 800, height: contentHeight });
+          // editor.layout({ width: 800, height: contentHeight });
+          editor.layout();
         };
         editor.onDidContentSizeChange(updateHeight);
       }}

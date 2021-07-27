@@ -407,17 +407,7 @@ export const repoSlice = createSlice({
         type,
         index,
         parent,
-        // content: "",
-        content: [
-          {
-            type: "paragraph",
-            children: [
-              {
-                text: "",
-              },
-            ],
-          },
-        ],
+        content: "",
         result: "",
         stdout: "",
         error: null,
