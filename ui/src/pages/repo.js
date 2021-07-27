@@ -14,6 +14,7 @@ import {
   Spacer,
   Divider,
   useToast,
+  Input,
 } from "@chakra-ui/react";
 import { Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
 import { HStack, VStack, Select } from "@chakra-ui/react";
@@ -795,9 +796,46 @@ function HoveringBar({ pod, showMenu }) {
               Run
             </Button>
           </HStack>
+          <Box>
+            <MyInputButton
+              placeholder="identifier"
+              onClick={(name) => {
+                dispatch(repoSlice.actions.addPodExport({ id: pod.id, name }));
+              }}
+            >
+              Add Ex-port
+            </MyInputButton>
+            <MyInputButton
+              placeholder="identifier"
+              onClick={(name) => {
+                dispatch(repoSlice.actions.addPodMidport({ id: pod.id, name }));
+              }}
+            >
+              Add Mid-port
+            </MyInputButton>
+          </Box>
         </Flex>
       </Popper>
     </Flex>
+  );
+}
+
+function MyInputButton({ onClick = (v) => {}, placeholder, children }) {
+  const [value, setValue] = useState("");
+  return (
+    <Box>
+      <Input
+        size="sm"
+        // maxWidth={20}
+        w="50%"
+        placeholder={placeholder}
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+      ></Input>
+      <Button size="sm" onClick={() => onClick(value)}>
+        {children}
+      </Button>
+    </Box>
   );
 }
 
