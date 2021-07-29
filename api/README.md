@@ -29,6 +29,8 @@ DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:5432/$
 
 ## Prisma
 
+Need to run migrate for the first time if the DB is not initialized on a new server.
+
 migrate DB:
 
 ```
@@ -51,4 +53,14 @@ When I mess up with the database and want to start from scratch:
 
 ```
 npx prisma db push --preview-feature
+```
+
+
+## Building node-pty
+
+Install nvm and node, yarn as usual. Running of `yarn` may fail (to build
+node-pty) due to missing development packages. On Ubuntu install:
+
+```
+sudo apt install -y make python build-essential
 ```

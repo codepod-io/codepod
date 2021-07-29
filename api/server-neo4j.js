@@ -1,6 +1,6 @@
 import { makeAugmentedSchema, assertSchema } from "neo4j-graphql-js";
 import neo4j from "neo4j-driver";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
 import { ApolloServer } from "apollo-server";
