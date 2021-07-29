@@ -9,6 +9,7 @@ import { Server } from "socket.io";
 
 import {
   listenOnKernelManagement,
+  listenOnSessionManagement,
   listenOnRepl,
   listenOnRunCode,
 } from "./socket.js";
@@ -151,6 +152,7 @@ async function startApolloServer() {
 
     listenOnRepl(socket);
     listenOnKernelManagement(socket);
+    listenOnSessionManagement(socket);
     listenOnRunCode(socket);
   });
 

@@ -5,11 +5,14 @@ export const wsConnecting = (host) => ({ type: "WS_CONNECTING", host });
 export const wsConnected = () => ({ type: "WS_CONNECTED" });
 export const wsDisconnect = () => ({ type: "WS_DISCONNECT" });
 export const wsDisconnected = () => ({ type: "WS_DISCONNECTED" });
-export const wsStatus = (lang, status) => ({
+export const wsStatus = (payload) => ({
   type: "WS_STATUS",
-  payload: { lang, status },
+  payload,
 });
-export const wsRequestStatus = (lang) => ({ type: "WS_REQUEST_STATUS", lang });
+export const wsRequestStatus = (payload) => ({
+  type: "WS_REQUEST_STATUS",
+  payload,
+});
 export const wsRun = (payload) => ({
   type: "WS_RUN",
   payload,

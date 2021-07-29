@@ -57,8 +57,8 @@ const socketMiddleware = () => {
         socket.on("IO:error", (data) => {
           store.dispatch(actions.wsIOError(data));
         });
-        socket.on("status", (lang, status) => {
-          store.dispatch(actions.wsStatus(lang, status));
+        socket.on("status", ({ lang, status }) => {
+          store.dispatch(actions.wsStatus({ lang, status }));
         });
         // well, since it is already opened, this won't be called
         //
@@ -67,9 +67,20 @@ const socketMiddleware = () => {
         socket.on("connect", () => {
           console.log("connected");
           store.dispatch(actions.wsConnected());
+          // call connect kernel
+
           // request kernel status after connection
           Object.keys(store.getState().repo.kernels).map((k) => {
-            store.dispatch(actions.wsRequestStatus(k));
+            // store.dispatch(
+            //   actions.wsRequestStatus({
+            //     lang: k,
+            //     sessionId: store.getState().repo.sessionId,
+            //   })
+            // );
+            socket.emit("connectKernel", socket.id, {
+              lang: k,
+              sessionId: store.getState().repo.sessionId,
+            });
           });
         });
         // so I'm setting this
@@ -104,18 +115,20 @@ const socketMiddleware = () => {
         );
         break;
       case "WS_RUN": {
-        let pod = action.payload;
+        let id = action.payload;
         if (!socket) {
           store.dispatch(repoSlice.actions.addError("Runtime not connected"));
           break;
         }
+        let pod = store.getState().repo.pods[id];
         // clear pod results
         store.dispatch(repoSlice.actions.clearResults(pod.id));
         // emit runCode command
         socket.emit("runCode", {
           lang: pod.lang,
           raw: pod.raw,
-          code: slackGetPlainText(pod.content),
+          // code: slackGetPlainText(pod.content),
+          code: pod.content,
           namespace: pod.ns,
           podId: pod.id,
           sessionId: "sessionId",
@@ -220,8 +233,10 @@ const socketMiddleware = () => {
       case "WS_REQUEST_STATUS":
         if (socket) {
           // set to unknown
-          store.dispatch(actions.wsStatus(action.lang, "uknown"));
-          socket.emit("requestKernelStatus", action.lang);
+          store.dispatch(
+            actions.wsStatus({ status: "uknown", ...action.payload })
+          );
+          socket.emit("requestKernelStatus", action.payload);
         } else {
           console.log("ERROR: not connected");
         }

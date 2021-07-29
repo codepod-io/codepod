@@ -265,7 +265,7 @@ export function constructExecuteRequest({ code, msg_id, cp = {} }) {
   });
 }
 
-export class Kernel {
+export class ZmqWire {
   constructor(connFname) {
     this.kernelSpec = JSON.parse(readFileSync(connFname));
     console.log(this.kernelSpec);
@@ -290,7 +290,7 @@ export class Kernel {
   sendShellMessage(msg) {
     // bind zeromq socket to the ports
     console.log("sending shell mesasge ..");
-    console.log(msg);
+    // console.log(msg);
     // FIXME how to receive the message?
     //   sock.on("message", (msg) => {
     //     console.log("sock on:", msg);
@@ -323,13 +323,170 @@ export class Kernel {
   }
 }
 
-// This class augment kernel with initial setup code
-export class WrappedKernel extends Kernel {
-  constructor(connFname, code) {
-    super(connFname);
-    // this.code = code;
-    // send initial wrapper code
-    this.sendShellMessage(constructExecuteRequest({ code, msg_id: "CODEPOD" }));
+export class CodePodKernel {
+  constructor(startupFile, fname) {
+    console.log("CodePodKernel", startupFile, fname);
+    if (!fname) {
+      let fname = genConnSpec();
+      this.spawnJupyterKernel(fname);
+    }
+    // FIXME I don't want to extend Kernel, I'm using composition
+    console.log("connecting to zmq ..");
+    this.wire = new ZmqWire(fname);
+    console.log("executing startup file ..");
+    let startupCode = readFileSync(startupFile, "utf8");
+    this.wire.sendShellMessage(
+      constructExecuteRequest({ code: startupCode, msg_id: "CODEPOD" })
+    );
+    console.log("kernel initialized successfully");
+  }
+  runCode({ code, msg_id }) {
+    this.wire.sendShellMessage(
+      constructExecuteRequest({
+        code,
+        msg_id,
+      })
+    );
+  }
+  requestKernelStatus() {
+    this.wire.sendShellMessage(
+      constructMessage({ msg_type: "kernel_info_request" })
+    );
+  }
+  // 2. runCode
+  eval({ code, podId, namespace, midports }) {
+    this.runCode({
+      code: this.mapEval({ code, namespace }),
+      msg_id: podId,
+    });
+  }
+  evalRaw({ code, podId }) {
+    this.runCode({
+      code,
+      msg_id: podId,
+    });
+  }
+  // 4. addImport
+  addImport({ id, from, to, name }) {
+    this.runCode({
+      code: this.mapAddImport({ from, to, name }),
+      msg_id: id + "#" + name,
+    });
+  }
+  // 5. deleteImport
+  deleteImport({ id, ns, name }) {
+    this.runCode({
+      code: this.mapDeleteImport({ ns, name }),
+      msg_id: id + "#" + name,
+    });
+  }
+  // 6. ensureImports
+  ensureImports({ id, from, to, names }) {
+    for (let name of names) {
+      // only python needs to re-evaluate for imports
+      this.runCode({
+        code: this.mapEnsureImports({ from, to, name }),
+        msg_id: id + "#" + name,
+      });
+    }
+  }
+
+  // FIXME default implementation should throw errors
+  // mapEval() {}
+  // mapAddImport() {}
+  // mapDeleteImport() {}
+  // mapEnsureImports() {}
+}
+
+export function createKernel(lang) {
+  switch (lang) {
+    case "julia":
+      return new JuliaKernel("./kernels/julia/conn.json");
+    case "js":
+      return new JavascriptKernel("./kernels/javascript/conn.json");
+    case "racket":
+      return new RacketKernel("./kernels/racket/conn.json");
+    case "python":
+      return new PythonKernel("./kernels/python/conn.json");
+    default:
+      console.log("ERROR: language not implemented", lang);
+    // throw new Error(`Language not valid: ${lang}`);
+  }
+}
+
+export class JuliaKernel extends CodePodKernel {
+  constructor(fname) {
+    super("./kernels/julia/codepod.jl", fname);
+  }
+  spawnJupyterKernel(fname) {
+    spawn("docker", ["run", "-d", "jp-julia"]);
+  }
+  mapEval({ code, namespace }) {
+    return `CODEPOD_EVAL("""${code}""", "${namespace}")`;
+  }
+  mapAddImport({ from, to, name }) {
+    return `CODEPOD_ADD_IMPORT("${from}", "${to}", "${name}")`;
+  }
+  mapDeleteImport({ ns, name }) {
+    return `CODEPOD_DELETE_IMPORT("${ns}", "${name}")`;
+  }
+}
+
+export class PythonKernel extends CodePodKernel {
+  constructor(fname) {
+    super("./kernels/python/codepod.py", fname);
+  }
+  mapEval({ code, namespace }) {
+    return `CODEPOD_EVAL("""${code.replaceAll('"', '\\"')}""", "${namespace}")`;
+  }
+  mapAddImport({ from, to, name }) {
+    // FIXME this should be re-evaluated everytime the function changes
+    // I cannot use importlib because the module here lacks the finder, and
+    // some other attribute functions
+    return `CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${from}").__dict__["${name}"]\n0""", "${to}")`;
+  }
+  mapDeleteImport({ ns, name }) {
+    return `CODEPOD_EVAL("del ${name}", "${ns}")`;
+  }
+  mapEnsureImports({ from, to, name }) {
+    return `CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${from}").__dict__["${name}"]\n0""", "${to}")`;
+  }
+}
+
+export class RacketKernel extends CodePodKernel {
+  constructor(fname) {
+    super("./kernels/racket/codepod.rkt", fname);
+  }
+  mapEval({ code, namespace }) {
+    return `(enter! #f) (CODEPOD-EVAL "${code}" "${namespace}")`;
+  }
+  mapAddImport({ from, to, name }) {
+    return `(enter! #f) (CODEPOD-ADD-IMPORT "${from}" "${to}" "${name}")`;
+  }
+  mapDeleteImport({ ns, name }) {
+    return `(enter! #f) (CODEPOD-DELETE-IMPORT "${ns}" "${name}")`;
+  }
+}
+
+export class JavascriptKernel extends CodePodKernel {
+  constructor(fname) {
+    super("./kernels/javascript/codepod.js", fname);
+  }
+  mapEval({ code, namespace, midports }) {
+    let names = [];
+    if (midports) {
+      names = midports.map((name) => `"${name}"`);
+    }
+    let code1 = `CODEPOD.eval(\`${code}\`, "${namespace}", [${names.join(
+      ","
+    )}])`;
+    return code1;
+  }
+  mapAddImport({ from, to, name }) {
+    return `CODEPOD.addImport("${from}", "${to}", "${name}")`;
+  }
+  mapDeleteImport({ ns, name }) {
+    return `CODEPOD.deleteImport("${ns}", "${name}")`;
   }
 }
 
@@ -340,7 +497,12 @@ function sleep(ms) {
 }
 
 export async function genConnSpec() {
-  let connFname = "/Users/hebi/Documents/GitHub/codepod/api/codepod-conn.json";
+  // ensure directory exist
+  if (!fs.existsSync("./conns")) {
+    fs.mkdirSync("./conns");
+  }
+  let fname = `./conns/${uuidv4()}.json`;
   let spec = await createNewConnSpec();
-  writeFileSync(connFname, JSON.stringify(spec));
+  writeFileSync(fname, JSON.stringify(spec));
+  return fname;
 }

@@ -3,10 +3,9 @@ import { readFileSync } from "fs";
 import * as pty from "node-pty";
 
 import {
-  Kernel,
-  WrappedKernel,
   constructMessage,
   constructExecuteRequest,
+  createKernel,
 } from "./kernel.js";
 
 export const listenOnRepl = (() => {
@@ -105,39 +104,44 @@ export const listenOnKernelManagement = (() => {
   };
 })();
 
-export const listenOnRunCode = (() => {
-  console.log("connnecting to kernel ..");
-  let kernels = {
-    julia: new WrappedKernel(
-      "./kernels/julia/conn.json",
-      readFileSync("./kernels/julia/codepod.jl", "utf8")
-    ),
-    racket: new WrappedKernel(
-      "./kernels/racket/conn.json",
-      readFileSync("./kernels/racket/codepod.rkt", "utf8")
-    ),
-    python: new WrappedKernel(
-      "./kernels/python/conn.json",
-      readFileSync("./kernels/python/codepod.py", "utf8")
-    ),
-    js: new WrappedKernel(
-      "./kernels/javascript/conn.json",
-      readFileSync("./kernels/javascript/codepod.js", "utf8")
-    ),
-    ts: new Kernel("./kernels/javascript/ts.conn.json"),
+const getSessionKernel = (() => {
+  let sessions = {};
+  return ({ sessionId, lang }) => {
+    if (!sessionId || !lang) {
+      console.log("sesisonId or lang is undefined", sessionId, lang);
+      return null;
+    }
+    if (!(sessionId in sessions)) {
+      sessions[sessionId] = {};
+    }
+    let session = sessions[sessionId];
+    if (session[lang]) return session[lang];
+    let kernel = createKernel(lang);
+    if (kernel) {
+      session[lang] = kernel;
+      return kernel;
+    }
   };
-  console.log("kernel connected");
+})();
 
+export const listenOnSessionManagement = (() => {
   return (socket) => {
-    // listen IOPub
-    for (const [lang, kernel] of Object.entries(kernels)) {
-      kernel.listenIOPub((topic, msgs) => {
+    socket.on("connectKernel", (socketId, { sessionId, lang }) => {
+      // console.log("==== connectKernel", socketId, sessionId, lang);
+      let kernel = getSessionKernel({ sessionId, lang });
+      if (!kernel) {
+        console.log("ERROR: kernel error");
+        return;
+      }
+      kernel.wire.listenIOPub((topic, msgs) => {
         // console.log("-----", topic, msgs);
         // iracket's topic seems to be an ID. I should use msg type instead
         switch (msgs.header.msg_type) {
           case "status": {
-            console.log("emiting status ..");
-            socket.emit("status", lang, msgs.content.execution_state);
+            socket.emit("status", {
+              lang: lang,
+              status: msgs.content.execution_state,
+            });
             break;
           }
           case "execute_result": {
@@ -241,231 +245,51 @@ export const listenOnRunCode = (() => {
             break;
         }
       });
-    }
+    });
+  };
+})();
 
-    socket.on("runCode", ({ lang, raw, code, podId, namespace, midports }) => {
-      if (!(lang in kernels)) {
-        console.log("Invalid language", lang);
-        socket.emit("stdout", {
-          podId: podId,
-          stdout: `Error: Invalid Language ${lang}`,
-        });
-        return;
-      }
-      if (!code) {
-        console.log("Code is empty");
-        return;
-      }
-      if (raw) {
-        kernels[lang].sendShellMessage(
-          constructExecuteRequest({
-            code,
-            msg_id: podId,
-          })
-        );
-        return;
-      }
-      switch (lang) {
-        case "python":
-          {
-            code = `CODEPOD_EVAL("""${code.replaceAll(
-              '"',
-              '\\"'
-            )}""", "${namespace}")`;
-            console.log("---- the code", code);
-            kernels[lang].sendShellMessage(
-              constructExecuteRequest({
-                code,
-                msg_id: podId,
-              })
-            );
-          }
-          break;
-        case "js":
-          {
-            let names = [];
-            if (midports) {
-              names = midports.map((name) => `"${name}"`);
-            }
-            let code1 = `CODEPOD.eval(\`${code}\`, "${namespace}", [${names.join(
-              ","
-            )}])`;
-            console.log("js wrapper code:", code1);
-            kernels[lang].sendShellMessage(
-              constructExecuteRequest({
-                code: code1,
-                msg_id: podId,
-              })
-            );
-          }
-          break;
-        case "julia":
-          {
-            kernels[lang].sendShellMessage(
-              constructExecuteRequest({
-                code: `CODEPOD_EVAL("""${code}""", "${namespace}")`,
-                msg_id: podId,
-              })
-            );
-          }
-          break;
-        case "racket":
-          {
-            kernels[lang].sendShellMessage(
-              constructExecuteRequest({
-                code: `(enter! #f) (CODEPOD-EVAL "${code}" "${namespace}")`,
-                msg_id: podId,
-              })
-            );
-          }
-          break;
-        default: {
-          kernels[lang].sendShellMessage(
-            constructExecuteRequest({
-              code,
-              msg_id: podId,
-            })
-          );
+export const listenOnRunCode = (() => {
+  return (socket) => {
+    socket.on(
+      "runCode",
+      ({ sessionId, lang, raw, code, podId, namespace, midports }) => {
+        console.log("runCode", sessionId, lang);
+        let kernel = getSessionKernel({ sessionId, lang });
+        if (!kernel) {
+          console.log("kernel error");
+          return;
+        }
+        if (!code) {
+          console.log("Code is empty");
+          return;
+        }
+        if (raw) {
+          kernel.evalRaw({ code, podId });
+          return;
+        } else {
+          kernel.eval({ code, podId, namespace, midports });
         }
       }
-    });
+    );
 
-    socket.on("requestKernelStatus", (lang) => {
-      if (lang in kernels) {
-        kernels[lang].sendShellMessage(
-          constructMessage({ msg_type: "kernel_info_request" })
-        );
+    socket.on("requestKernelStatus", ({ sessionId, lang }) => {
+      console.log("requestKernelStatus", sessionId, lang);
+      let kernel = getSessionKernel({ sessionId, lang });
+      if (kernel) {
+        kernel.requestKernelStatus();
       } else {
-        console.log("Invalid requestKernelStatus for lang", lang);
+        console.log("ERROR: kernel error");
       }
     });
 
-    socket.on("ensureImports", ({ lang, id, from, to, names }) => {
-      if (lang === "python") {
-        console.log("ensureImports for python");
-        // only python needs to re-evaluate for imports
-        for (let name of names) {
-          let code = `CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${from}").__dict__["${name}"]\n0""", "${to}")`;
-          console.log("---- the code:", code);
-          kernels[lang].sendShellMessage(
-            constructExecuteRequest({
-              code,
-              msg_id: id + "#" + name,
-            })
-          );
-        }
-      }
-    });
+    socket.on("ensureImports", ({ lang, id, from, to, names }) => {});
 
     socket.on("addImport", ({ lang, id, from, to, name }) => {
       console.log("received addImport");
-      switch (lang) {
-        case "python":
-          {
-            // FIXME this should be re-evaluated everytime the function changes
-            // I cannot use importlib because the module here lacks the finder, and
-            // some other attribute functions
-            let code = `CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${from}").__dict__["${name}"]\n0""", "${to}")`;
-            console.log("---- the code", code);
-            kernels[lang].sendShellMessage(
-              constructExecuteRequest({
-                code,
-                msg_id: id + "#" + name,
-              })
-            );
-          }
-          break;
-        case "js":
-          {
-            let code = `CODEPOD.addImport("${from}", "${to}", "${name}")`;
-            console.log("---- the code", code);
-            kernels[lang].sendShellMessage(
-              constructExecuteRequest({
-                code,
-                msg_id: id + "#" + name,
-              })
-            );
-          }
-          break;
-        case "julia":
-          {
-            kernels[lang].sendShellMessage(
-              constructExecuteRequest({
-                code: `CODEPOD_ADD_IMPORT("${from}", "${to}", "${name}")`,
-                msg_id: id + "#" + name,
-              })
-            );
-          }
-          break;
-        case "racket":
-          {
-            kernels[lang].sendShellMessage(
-              constructExecuteRequest({
-                code: `(enter! #f) (CODEPOD-ADD-IMPORT "${from}" "${to}" "${name}")`,
-                msg_id: id + "#" + name,
-              })
-            );
-          }
-          break;
-        default: {
-          console.log("WARNING: unsupported language:", lang);
-        }
-      }
     });
     socket.on("deleteImport", ({ lang, id, name, ns }) => {
-      console.log("received addImport");
-      switch (lang) {
-        case "python":
-          {
-            // FIXME this should be re-evaluated everytime the function changes
-            // I cannot use importlib because the module here lacks the finder, and
-            // some other attribute functions
-            let code = `CODEPOD_EVAL("del ${name}", "${ns}")`;
-            console.log("---- the code", code);
-            kernels[lang].sendShellMessage(
-              constructExecuteRequest({
-                code,
-                msg_id: id + "#" + name,
-              })
-            );
-          }
-          break;
-        case "js":
-          {
-            let code = `CODEPOD.deleteImport("${ns}", "${name}")`;
-            console.log("---- the code", code);
-            kernels[lang].sendShellMessage(
-              constructExecuteRequest({
-                code,
-                msg_id: id + "#" + name,
-              })
-            );
-          }
-          break;
-        case "julia":
-          {
-            kernels[lang].sendShellMessage(
-              constructExecuteRequest({
-                code: `CODEPOD_DELETE_IMPORT("${ns}", "${name}")`,
-                msg_id: id + "#" + name,
-              })
-            );
-          }
-          break;
-        case "racket":
-          {
-            kernels[lang].sendShellMessage(
-              constructExecuteRequest({
-                code: `(enter! #f) (CODEPOD-DELETE-IMPORT "${ns}" "${name}")`,
-                msg_id: id + "#" + name,
-              })
-            );
-          }
-          break;
-        default: {
-          console.log("WARNING: invalid lang:", lang);
-        }
-      }
+      console.log("received deleteImport");
     });
     socket.on("deleteMidport", ({ lang, id, ns, name }) => {
       if (lang !== "js") {

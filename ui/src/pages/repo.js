@@ -149,6 +149,7 @@ function SidebarRuntime() {
 
 function SidebarKernel() {
   const kernels = useSelector((state) => state.repo.kernels);
+  const sessionId = useSelector((state) => state.repo.sessionId);
   const runtimeConnected = useSelector((state) => state.repo.runtimeConnected);
   const dispatch = useDispatch();
   return (
@@ -176,7 +177,7 @@ function SidebarKernel() {
             <Button
               size="xs"
               onClick={() => {
-                dispatch(wsActions.wsRequestStatus(lang));
+                dispatch(wsActions.wsRequestStatus({ sessionId, lang }));
               }}
             >
               <RefreshIcon />
@@ -789,7 +790,7 @@ function HoveringBar({ pod, showMenu }) {
                 // clear previous results
                 dispatch(repoSlice.actions.clearResults(pod.id));
                 // 2. send
-                dispatch(wsActions.wsRun(pod));
+                dispatch(wsActions.wsRun(pod.id));
                 // 3. the socket should have onData set to set the output
               }}
             >
@@ -839,7 +840,8 @@ function MyInputButton({ onClick = (v) => {}, placeholder, children }) {
   );
 }
 
-function CodePod({ pod }) {
+function CodePod({ id }) {
+  let pod = useSelector((state) => state.repo.pods[id]);
   let dispatch = useDispatch();
 
   return (
@@ -878,7 +880,7 @@ function CodePod({ pod }) {
             }}
             onRun={() => {
               dispatch(repoSlice.actions.clearResults(pod.id));
-              dispatch(wsActions.wsRun(pod));
+              dispatch(wsActions.wsRun(pod.id));
             }}
           />
         </Box>
@@ -1117,7 +1119,7 @@ function ThePod({ id }) {
       ></Textarea>
     );
   } else if (pod.type === "CODE") {
-    return <CodePod pod={pod} />;
+    return <CodePod id={id} />;
   } else if (pod.type === "REPL") {
     return <ReplPod pod={pod} />;
   } else if (pod.type === "DECK") {
