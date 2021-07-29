@@ -4,7 +4,7 @@
   "stdin_port": 57567,
   "control_port": 57568,
   "hb_port": 57569,
-  "ip": "127.0.0.1",
+  "ip": "0.0.0.0",
   "key": "412d24d7-baca5d46b674d910851edd2f",
   "transport": "tcp",
   "signature_scheme": "hmac-sha256",

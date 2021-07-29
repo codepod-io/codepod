@@ -106,7 +106,7 @@ export const listenOnKernelManagement = (() => {
 
 const getSessionKernel = (() => {
   let sessions = {};
-  return ({ sessionId, lang }) => {
+  return async ({ sessionId, lang }) => {
     if (!sessionId || !lang) {
       console.log("sesisonId or lang is undefined", sessionId, lang);
       return null;
@@ -115,20 +115,22 @@ const getSessionKernel = (() => {
       sessions[sessionId] = {};
     }
     let session = sessions[sessionId];
+    // so that we don't try to create the container twice and get errors
+    if (session[lang] === "spawning") return null;
     if (session[lang]) return session[lang];
-    let kernel = createKernel(lang);
-    if (kernel) {
-      session[lang] = kernel;
-      return kernel;
-    }
+    // FIXME what if the process never finish?
+    session[lang] = "spawning";
+    let kernel = await createKernel(lang);
+    session[lang] = kernel;
+    return kernel;
   };
 })();
 
 export const listenOnSessionManagement = (() => {
   return (socket) => {
-    socket.on("connectKernel", (socketId, { sessionId, lang }) => {
+    socket.on("connectKernel", async (socketId, { sessionId, lang }) => {
       // console.log("==== connectKernel", socketId, sessionId, lang);
-      let kernel = getSessionKernel({ sessionId, lang });
+      let kernel = await getSessionKernel({ sessionId, lang });
       if (!kernel) {
         console.log("ERROR: kernel error");
         return;
@@ -253,9 +255,9 @@ export const listenOnRunCode = (() => {
   return (socket) => {
     socket.on(
       "runCode",
-      ({ sessionId, lang, raw, code, podId, namespace, midports }) => {
+      async ({ sessionId, lang, raw, code, podId, namespace, midports }) => {
         console.log("runCode", sessionId, lang);
-        let kernel = getSessionKernel({ sessionId, lang });
+        let kernel = await getSessionKernel({ sessionId, lang });
         if (!kernel) {
           console.log("kernel error");
           return;
@@ -273,9 +275,9 @@ export const listenOnRunCode = (() => {
       }
     );
 
-    socket.on("requestKernelStatus", ({ sessionId, lang }) => {
+    socket.on("requestKernelStatus", async ({ sessionId, lang }) => {
       console.log("requestKernelStatus", sessionId, lang);
-      let kernel = getSessionKernel({ sessionId, lang });
+      let kernel = await getSessionKernel({ sessionId, lang });
       if (kernel) {
         kernel.requestKernelStatus();
       } else {

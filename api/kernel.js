@@ -10,6 +10,7 @@ import net from "net";
 import { readFile, readFileSync, writeFile, writeFileSync } from "fs";
 import { v4 as uuidv4 } from "uuid";
 import crypto from "crypto";
+import Docker from "dockerode";
 
 function getFreePort() {
   return new Promise((resolve) => {
@@ -266,12 +267,20 @@ export function constructExecuteRequest({ code, msg_id, cp = {} }) {
 }
 
 export class ZmqWire {
-  constructor(connFname) {
+  constructor(connFname, ip) {
     this.kernelSpec = JSON.parse(readFileSync(connFname));
-    console.log(this.kernelSpec);
+    // console.log(this.kernelSpec);
+    if (ip) {
+      console.log("Got IP Address:", ip);
+      // FIXME hard-coded IP and port
+      this.kernelSpec.ip = ip;
+    }
+
     // Pub/Sub Router/Dealer
     this.shell = new zmq.Dealer();
-    this.shell.connect(`tcp://localhost:${this.kernelSpec.shell_port}`);
+    this.shell.connect(
+      `tcp://${this.kernelSpec.ip}:${this.kernelSpec.shell_port}`
+    );
     // FIXME this is not actually connected. I need to check the real status
     // There does not seem to have any method to check connection status
     console.log("connected to shell port");
@@ -307,7 +316,9 @@ export class ZmqWire {
     }
     this.iopub = new zmq.Subscriber();
     console.log("connecting IOPub");
-    this.iopub.connect(`tcp://localhost:${this.kernelSpec.iopub_port}`);
+    this.iopub.connect(
+      `tcp://${this.kernelSpec.ip}:${this.kernelSpec.iopub_port}`
+    );
     this.iopub.subscribe();
     console.log("waiting for iopub");
 
@@ -323,22 +334,78 @@ export class ZmqWire {
   }
 }
 
+async function removeContainer(name) {
+  return new Promise((resolve, reject) => {
+    var docker = new Docker();
+    console.log("remove if already exist");
+    let old = docker.getContainer(name);
+    old.stop((err, data) => {
+      // FIXME If the container is stopped but not removed, will there be errors
+      // if I call stop?
+      if (err) {
+        // console.log("ERR:", err);
+        // console.log("No such container, resolving ..");
+        // reject();
+        console.log("No such container running. Returning.");
+        resolve();
+      }
+      console.log("Stopped. Removing ..");
+      old.remove((err, data) => {
+        if (err) {
+          console.log("ERR:", err);
+          reject("ERROR!!!");
+          // resolve();
+        }
+        console.log("removed successfully");
+        resolve();
+      });
+    });
+  });
+}
+
+// return promise of IP address
+async function createContainer(image, name) {
+  return new Promise((resolve, reject) => {
+    var docker = new Docker();
+    // spawn("docker", ["run", "-d", "jp-julia"]);
+    // 1. first check if the container already there. If so, stop and delete
+    // let name = "julia_kernel_X";
+    console.log("spawning kernel ..");
+    docker.createContainer({ Image: image, name }, (err, container) => {
+      if (err) {
+        console.log("ERR:", err);
+        return;
+      }
+      container.start((err, data) => {
+        console.log("Container started!");
+        // console.log(container);
+        container.inspect((err, data) => {
+          // console.log("inspect");
+          console.log("IP:", data.NetworkSettings.IPAddress);
+          resolve(data.NetworkSettings.IPAddress);
+        });
+        // console.log("IPaddress:", container.NetworkSettings.IPAddress)
+      });
+    });
+  });
+}
+
 export class CodePodKernel {
-  constructor(startupFile, fname) {
-    console.log("CodePodKernel", startupFile, fname);
-    if (!fname) {
-      let fname = genConnSpec();
-      this.spawnJupyterKernel(fname);
-    }
+  async init() {
+    console.log("CodePodKernel", this.startupFile, this.fname);
+    // fname = await genConnSpec();
+    let ip = await this.spawnJupyterKernel(this.fname);
     // FIXME I don't want to extend Kernel, I'm using composition
     console.log("connecting to zmq ..");
-    this.wire = new ZmqWire(fname);
+    this.wire = new ZmqWire(this.fname, ip);
     console.log("executing startup file ..");
-    let startupCode = readFileSync(startupFile, "utf8");
+    let startupCode = readFileSync(this.startupFile, "utf8");
     this.wire.sendShellMessage(
       constructExecuteRequest({ code: startupCode, msg_id: "CODEPOD" })
     );
     console.log("kernel initialized successfully");
+    // so that we can chain methods
+    return this;
   }
   runCode({ code, msg_id }) {
     this.wire.sendShellMessage(
@@ -347,6 +414,10 @@ export class CodePodKernel {
         msg_id,
       })
     );
+  }
+  async spawnJupyterKernel() {
+    await removeContainer(this.name);
+    return await createContainer(this.image, this.name);
   }
   requestKernelStatus() {
     this.wire.sendShellMessage(
@@ -398,16 +469,16 @@ export class CodePodKernel {
   // mapEnsureImports() {}
 }
 
-export function createKernel(lang) {
+export async function createKernel(lang) {
   switch (lang) {
     case "julia":
-      return new JuliaKernel("./kernels/julia/conn.json");
+      return await new JuliaKernel().init();
     case "js":
-      return new JavascriptKernel("./kernels/javascript/conn.json");
+      return await new JavascriptKernel().init();
     case "racket":
-      return new RacketKernel("./kernels/racket/conn.json");
+      return await new RacketKernel().init();
     case "python":
-      return new PythonKernel("./kernels/python/conn.json");
+      return await new PythonKernel().init();
     default:
       console.log("ERROR: language not implemented", lang);
     // throw new Error(`Language not valid: ${lang}`);
@@ -415,12 +486,10 @@ export function createKernel(lang) {
 }
 
 export class JuliaKernel extends CodePodKernel {
-  constructor(fname) {
-    super("./kernels/julia/codepod.jl", fname);
-  }
-  spawnJupyterKernel(fname) {
-    spawn("docker", ["run", "-d", "jp-julia"]);
-  }
+  startupFile = "./kernels/julia/codepod.jl";
+  fname = "./kernels/julia/conn.json";
+  name = "julia_kernel_X";
+  image = "julia_kernel";
   mapEval({ code, namespace }) {
     return `CODEPOD_EVAL("""${code}""", "${namespace}")`;
   }
@@ -433,9 +502,10 @@ export class JuliaKernel extends CodePodKernel {
 }
 
 export class PythonKernel extends CodePodKernel {
-  constructor(fname) {
-    super("./kernels/python/codepod.py", fname);
-  }
+  startupFile = "./kernels/python/codepod.py";
+  fname = "./kernels/python/conn.json";
+  name = "python_kernel_X";
+  image = "python_kernel";
   mapEval({ code, namespace }) {
     return `CODEPOD_EVAL("""${code.replaceAll('"', '\\"')}""", "${namespace}")`;
   }
@@ -454,9 +524,10 @@ export class PythonKernel extends CodePodKernel {
 }
 
 export class RacketKernel extends CodePodKernel {
-  constructor(fname) {
-    super("./kernels/racket/codepod.rkt", fname);
-  }
+  startupFile = "./kernels/racket/codepod.rkt";
+  fname = "./kernels/racket/conn.json";
+  name = "racket_kernel_X";
+  image = "racket_kernel";
   mapEval({ code, namespace }) {
     return `(enter! #f) (CODEPOD-EVAL "${code}" "${namespace}")`;
   }
@@ -469,9 +540,10 @@ export class RacketKernel extends CodePodKernel {
 }
 
 export class JavascriptKernel extends CodePodKernel {
-  constructor(fname) {
-    super("./kernels/javascript/codepod.js", fname);
-  }
+  startupFile = "./kernels/javascript/codepod.js";
+  fname = "./kernels/javascript/conn.json";
+  name = "javascript_kernel_X";
+  image = "javascript_kernel";
   mapEval({ code, namespace, midports }) {
     let names = [];
     if (midports) {

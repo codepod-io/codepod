@@ -367,9 +367,9 @@ export const repoSlice = createSlice({
       js: {
         status: "NA",
       },
-      ts: {
-        status: "NA",
-      },
+      // ts: {
+      //   status: "NA",
+      // },
     },
     queueProcessing: false,
   },
@@ -603,10 +603,17 @@ export const repoSlice = createSlice({
     },
     WS_RESULT: (state, action) => {
       let { podId, result, count } = action.payload;
-      state.pods[podId].result = {
-        text: result,
-        count: count,
-      };
+      // console.log("podId", podId)
+      if (podId in state.pods) {
+        state.pods[podId].result = {
+          text: result,
+          count: count,
+        };
+      } else {
+        // most likely this podId is "CODEPOD", which is for startup code and
+        // should not be send to the browser
+        console.log("WARNING podId not recognized", podId);
+      }
     },
     WS_STDOUT: (state, action) => {
       let { podId, stdout } = action.payload;
@@ -616,6 +623,7 @@ export const repoSlice = createSlice({
     },
     WS_ERROR: (state, action) => {
       let { podId, ename, evalue, stacktrace } = action.payload;
+      if (podId === "CODEPOD") return;
       state.pods[podId].error = {
         ename,
         evalue,
