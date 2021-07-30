@@ -1,5 +1,5 @@
 import { useQuery, useMutation, gql } from "@apollo/client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import useMe from "../lib/me";
 import { StyledLink as Link } from "../components/utils";
 
@@ -18,25 +18,26 @@ import {
 import { Formik } from "formik";
 import { chakra } from "@chakra-ui/system";
 
+const FETCH_REPOS = gql`
+  query GetRepos {
+    myRepos {
+      name
+      id
+    }
+  }
+`;
+
 function Repos() {
-  const { loading, error, data } = useQuery(
-    gql`
-      query Repos {
-        myRepos {
-          name
-          id
-        }
-      }
-    `
-  );
+  const { loading, error, data } = useQuery(FETCH_REPOS);
   const { me } = useMe();
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error :(</p>;
+  let repos = data.myRepos;
   return (
     <Box>
       <CreateRepoForm />
-      <Heading>Your repos {data.myRepos.length}:</Heading>
-      {data.myRepos.map((repo) => (
+      <Heading>Your repos {repos.length}:</Heading>
+      {repos.map((repo) => (
         <Text key={repo.id}>
           The link:{" "}
           <Link
@@ -50,14 +51,23 @@ function Repos() {
 
 function CreateRepoForm(props) {
   const [error, setError] = useState(null);
-  const [createRepo, { data }] = useMutation(gql`
-    mutation CreateRepo($name: String!) {
-      createRepo(name: $name) {
-        id
-        name
+  const [createRepo, {}] = useMutation(
+    gql`
+      mutation CreateRepo($name: String!) {
+        createRepo(name: $name) {
+          id
+          name
+        }
       }
+    `,
+    {
+      refetchQueries: [
+        // using this did not work
+        // FETCH_REPOS,
+        "GetRepos",
+      ],
     }
-  `);
+  );
   return (
     <Formik
       initialValues={{ reponame: "" }}
@@ -80,7 +90,6 @@ function CreateRepoForm(props) {
             name: values.reponame,
           },
         });
-        console.log(data);
         setSubmitting(false);
         // resetForm({ values: { reponame: "" } });
         resetForm();
