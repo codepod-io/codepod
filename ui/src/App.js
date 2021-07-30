@@ -23,6 +23,7 @@ import { Provider } from "react-redux";
 
 import store from "./lib/store";
 import Kernels from "./pages/kernels";
+import Docs from "./pages/docs";
 
 function NormalLayout({ children }) {
   return (
@@ -44,6 +45,11 @@ function App() {
               <Route path="/about">
                 <NormalLayout>
                   <About />
+                </NormalLayout>
+              </Route>
+              <Route path="/docs">
+                <NormalLayout>
+                  <Docs />
                 </NormalLayout>
               </Route>
               <Route path="/repos">
