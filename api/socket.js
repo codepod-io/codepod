@@ -120,7 +120,7 @@ const getSessionKernel = (() => {
     if (session[lang]) return session[lang];
     // FIXME what if the process never finish?
     session[lang] = "spawning";
-    let kernel = await createKernel(lang);
+    let kernel = await createKernel({ lang, sessionId });
     session[lang] = kernel;
     return kernel;
   };

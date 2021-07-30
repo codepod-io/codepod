@@ -351,7 +351,8 @@ export const repoSlice = createSlice({
     repoLoaded: false,
     pods: {},
     queue: [],
-    sessionId: nanoid(),
+    // sessionId: nanoid(),
+    sessionId: null,
     sessionRuntime: {},
     runtimeConnected: false,
     kernels: {
@@ -376,6 +377,9 @@ export const repoSlice = createSlice({
   reducers: {
     resetSessionId: (state, action) => {
       state.sessionId = nanoid();
+    },
+    setSessionId: (state, action) => {
+      state.sessionId = action.payload;
     },
     ensureSessionRuntime: (state, action) => {
       const { lang } = action.payload;

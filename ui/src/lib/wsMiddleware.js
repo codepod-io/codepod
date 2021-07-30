@@ -131,7 +131,7 @@ const socketMiddleware = () => {
           code: pod.content,
           namespace: pod.ns,
           podId: pod.id,
-          sessionId: "sessionId",
+          sessionId: store.getState().repo.sessionId,
           midports:
             pod.midports &&
             Object.keys(pod.midports).filter((k) => pod.midports[k]),
@@ -221,7 +221,7 @@ const socketMiddleware = () => {
                 code: slackGetPlainText(pod.content),
                 namespace: pod.ns,
                 podId: pod.id,
-                sessionId: "sessionId",
+                sessionId: store.getState().repo.sessionId,
               });
             }
           }
@@ -261,7 +261,7 @@ const socketMiddleware = () => {
             code: slackGetPlainText(pod.content),
             namespace: pod.ns,
             podId: pod.id,
-            sessionId: "sessionId",
+            sessionId: store.getState().repo.sessionId,
             midports:
               pod.midports &&
               Object.keys(pod.midports).filter((k) => pod.midports[k]),

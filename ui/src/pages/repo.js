@@ -66,13 +66,16 @@ import { StyledLink as Link } from "../components/utils";
 import { Terminal } from "xterm";
 import { XTerm, DummyTerm } from "../components/MyXTerm";
 import * as wsActions from "../lib/wsActions";
+import useMe from "../lib/me";
 
 import brace from "../GullBraceLeft.svg";
 
 function SidebarSession() {
   let { username, reponame } = useParams();
-  const sessionId = useSelector((state) => state.repo.sessionId);
+  // const sessionId = useSelector((state) => state.repo.sessionId);
+  let sessionId = useSelector((state) => state.repo.sessionId);
   const dispatch = useDispatch();
+
   return (
     <Box>
       <Text>
@@ -88,14 +91,14 @@ function SidebarSession() {
       {/* <Text>SyncQueue: {queueL}</Text> */}
       <Text>
         Session ID: <Code>{sessionId}</Code>
-        <Button
+        {/* <Button
           size="xs"
           onClick={() => {
             dispatch(repoSlice.actions.resetSessionId());
           }}
         >
           <RefreshIcon />
-        </Button>
+        </Button> */}
       </Text>
     </Box>
   );
@@ -312,6 +315,16 @@ export default function Repo() {
   let { username, reponame } = useParams();
   const dispatch = useDispatch();
   dispatch(repoSlice.actions.setRepo({ username, reponame }));
+  const { me } = useMe();
+  useEffect(() => {
+    if (me) {
+      dispatch(
+        repoSlice.actions.setSessionId(
+          `${me?.username}_${username}_${reponame}`
+        )
+      );
+    }
+  }, [me]);
   useEffect(() => {
     // load the repo
     dispatch(loadPodQueue({ username, reponame }));

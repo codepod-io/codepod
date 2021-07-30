@@ -398,10 +398,11 @@ async function createContainer(image, name) {
 }
 
 export class CodePodKernel {
-  async init() {
-    console.log("CodePodKernel", this.startupFile, this.fname);
+  async init(sessionId) {
     // fname = await genConnSpec();
-    let ip = await this.spawnJupyterKernel(this.fname);
+    let name = `cpkernel_${sessionId}_${this.lang}`;
+    await removeContainer(name);
+    let ip = await createContainer(this.image, name);
     // FIXME I don't want to extend Kernel, I'm using composition
     console.log("connecting to zmq ..");
     this.wire = new ZmqWire(this.fname, ip);
@@ -421,10 +422,6 @@ export class CodePodKernel {
         msg_id,
       })
     );
-  }
-  async spawnJupyterKernel() {
-    await removeContainer(this.name);
-    return await createContainer(this.image, this.name);
   }
   requestKernelStatus() {
     this.wire.sendShellMessage(
@@ -476,16 +473,16 @@ export class CodePodKernel {
   // mapEnsureImports() {}
 }
 
-export async function createKernel(lang) {
+export async function createKernel({ lang, sessionId }) {
   switch (lang) {
     case "julia":
-      return await new JuliaKernel().init();
+      return await new JuliaKernel().init(sessionId);
     case "js":
-      return await new JavascriptKernel().init();
+      return await new JavascriptKernel().init(sessionId);
     case "racket":
-      return await new RacketKernel().init();
+      return await new RacketKernel().init(sessionId);
     case "python":
-      return await new PythonKernel().init();
+      return await new PythonKernel().init(sessionId);
     default:
       console.log("ERROR: language not implemented", lang);
     // throw new Error(`Language not valid: ${lang}`);
@@ -494,8 +491,9 @@ export async function createKernel(lang) {
 
 export class JuliaKernel extends CodePodKernel {
   startupFile = "./kernels/julia/codepod.jl";
+  // TODO fname is not necessary, I just need a fixed port.
   fname = "./kernels/julia/conn.json";
-  name = "julia_kernel_X";
+  lang = "julia";
   image = "julia_kernel";
   mapEval({ code, namespace }) {
     return `CODEPOD_EVAL("""${code}""", "${namespace}")`;
@@ -511,7 +509,7 @@ export class JuliaKernel extends CodePodKernel {
 export class PythonKernel extends CodePodKernel {
   startupFile = "./kernels/python/codepod.py";
   fname = "./kernels/python/conn.json";
-  name = "python_kernel_X";
+  lang = "python";
   image = "python_kernel";
   mapEval({ code, namespace }) {
     return `CODEPOD_EVAL("""${code.replaceAll('"', '\\"')}""", "${namespace}")`;
@@ -533,7 +531,7 @@ export class PythonKernel extends CodePodKernel {
 export class RacketKernel extends CodePodKernel {
   startupFile = "./kernels/racket/codepod.rkt";
   fname = "./kernels/racket/conn.json";
-  name = "racket_kernel_X";
+  lang = "racket";
   image = "racket_kernel";
   mapEval({ code, namespace }) {
     return `(enter! #f) (CODEPOD-EVAL "${code}" "${namespace}")`;
@@ -549,7 +547,7 @@ export class RacketKernel extends CodePodKernel {
 export class JavascriptKernel extends CodePodKernel {
   startupFile = "./kernels/javascript/codepod.js";
   fname = "./kernels/javascript/conn.json";
-  name = "javascript_kernel_X";
+  lang = "javascript";
   image = "javascript_kernel";
   mapEval({ code, namespace, midports }) {
     let names = [];
