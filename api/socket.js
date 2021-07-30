@@ -168,185 +168,238 @@ async function getSessionKernel({ sessionId, lang }) {
   return kernel;
 }
 
-export const listenOnSessionManagement = (() => {
-  return (socket) => {
-    socket.on("connectKernel", async (socketId, { sessionId, lang }) => {
-      // console.log("==== connectKernel", socketId, sessionId, lang);
-      let kernel = await getSessionKernel({ sessionId, lang });
-      if (!kernel) {
-        console.log("ERROR: kernel error");
-        return;
-      }
-      kernel.wire.listenIOPub((topic, msgs) => {
-        // console.log("-----", topic, msgs);
-        // iracket's topic seems to be an ID. I should use msg type instead
-        switch (msgs.header.msg_type) {
-          case "status": {
-            socket.emit("status", {
+async function handleConnectKernel(socket, { sessionId, lang }) {
+  // console.log("==== connectKernel", socketId, sessionId, lang);
+  let kernel = await getSessionKernel({ sessionId, lang });
+  if (!kernel) {
+    console.log("ERROR: kernel error");
+    return;
+  }
+  kernel.wire.listenIOPub((topic, msgs) => {
+    // console.log("-----", topic, msgs);
+    // iracket's topic seems to be an ID. I should use msg type instead
+    switch (msgs.header.msg_type) {
+      case "status": {
+        console.log("emitting status ..", msgs.content.execution_state);
+        socket.send(
+          JSON.stringify({
+            type: "status",
+            payload: {
               lang: lang,
               status: msgs.content.execution_state,
-            });
-            break;
+            },
+          })
+        );
+        break;
+      }
+      case "execute_result": {
+        console.log("emitting execute_result ..");
+        let [podId, name] = msgs.parent_header.msg_id.split("#");
+        let payload = {
+          podId,
+          name,
+          result: msgs.content.data["text/plain"],
+          count: msgs.content.execution_count,
+        };
+        if (name) {
+          console.log("emitting IO result");
+          socket.send(JSON.stringify({ type: "IO:execute_result", payload }));
+        } else {
+          socket.send(JSON.stringify({ type: "execute_result", payload }));
+        }
+        break;
+      }
+      case "stdout": {
+        console.log("emitting stdout ..");
+        if (msgs.content.text.startsWith("base64 binary data")) {
+          console.log("warning: base64 encoded stdout");
+        } else {
+          let [podId, name] = msgs.parent_header.msg_id.split("#");
+          let payload = {
+            podId,
+            name,
+            stdout: msgs.content.text,
+          };
+          if (name) {
+            // this is Import/Export cmd
+            socket.send(JSON.stringify({ type: "IO:stdout", payload }));
+          } else {
+            socket.send(JSON.stringify({ type: "stdout", payload }));
           }
-          case "execute_result": {
-            console.log("emitting execute_result ..");
-            let [podId, name] = msgs.parent_header.msg_id.split("#");
-            let payload = {
-              podId,
-              name,
-              result: msgs.content.data["text/plain"],
-              count: msgs.content.execution_count,
-            };
-            if (name) {
-              console.log("emitting IO result");
-              socket.emit("IO:execute_result", payload);
-            } else {
-              socket.emit("execute_result", payload);
-            }
-            break;
-          }
-          case "stdout": {
-            console.log("emitting stdout ..");
-            if (msgs.content.text.startsWith("base64 binary data")) {
-              console.log("warning: base64 encoded stdout");
-            } else {
-              let [podId, name] = msgs.parent_header.msg_id.split("#");
-              let payload = {
-                podId,
-                name,
-                stdout: msgs.content.text,
-              };
-              if (name) {
-                // this is Import/Export cmd
-                socket.emit("IO:stdout", payload);
-              } else {
-                socket.emit("stdout", payload);
-              }
-            }
-            break;
-          }
-          case "error": {
-            console.log("emitting error ..");
-            let [podId, name] = msgs.parent_header.msg_id.split("#");
-            let payload = {
-              podId,
-              name,
-              stacktrace: msgs.content.traceback,
-              ename: msgs.content.ename,
-              evalue: msgs.content.evalue,
-            };
-            if (name) {
-              socket.emit("IO:error", payload);
-            } else {
-              socket.emit("error", payload);
-            }
-            break;
-          }
-          case "stream": {
-            if (!msgs.parent_header.msg_id) {
-              console.log("No msg_id, skipped");
-              console.log(msgs.parent_header);
-              break;
-            }
-            let [podId, name] = msgs.parent_header.msg_id.split("#");
-            // iracket use this to send stderr
-            // FIXME there are many frames
-            if (msgs.content.name === "stdout") {
-              // console.log("ignore stdout stream");
-              console.log("emitting stdout stream ..");
-              socket.emit("stream", {
+        }
+        break;
+      }
+      case "error": {
+        console.log("emitting error ..");
+        let [podId, name] = msgs.parent_header.msg_id.split("#");
+        let payload = {
+          podId,
+          name,
+          stacktrace: msgs.content.traceback,
+          ename: msgs.content.ename,
+          evalue: msgs.content.evalue,
+        };
+        if (name) {
+          socket.send(JSON.stringify({ type: "IO:error", payload }));
+        } else {
+          socket.send(JSON.stringify({ type: "error", payload }));
+        }
+        break;
+      }
+      case "stream": {
+        if (!msgs.parent_header.msg_id) {
+          console.log("No msg_id, skipped");
+          console.log(msgs.parent_header);
+          break;
+        }
+        let [podId, name] = msgs.parent_header.msg_id.split("#");
+        // iracket use this to send stderr
+        // FIXME there are many frames
+        if (msgs.content.name === "stdout") {
+          // console.log("ignore stdout stream");
+          console.log("emitting stdout stream ..");
+          socket.send(
+            JSON.stringify({
+              type: "stream",
+              payload: {
                 podId,
                 text: msgs.content.text,
-              });
-            } else if (msgs.content.name === "stderr") {
-              console.log("emitting error stream ..");
-              if (!name) {
-                socket.emit("stream", {
+              },
+            })
+          );
+        } else if (msgs.content.name === "stderr") {
+          console.log("emitting error stream ..");
+          if (!name) {
+            socket.send(
+              JSON.stringify({
+                type: "stream",
+                payload: {
                   podId,
                   text: msgs.content.text,
-                });
-              } else {
-                // FIXME this is stream for import/export. I should move it somewhere
-                socket.emit("stream", {
-                  podId,
-                  text: msgs.content.text,
-                });
-              }
-            } else {
-              console.log(msgs);
-              throw new Error(`Invalid stream type: ${msgs.content.name}`);
-            }
-            break;
-          }
-          default:
-            console.log(
-              "Message Not handled",
-              msgs.header.msg_type,
-              "topic:",
-              topic
+                },
+              })
             );
-            // console.log("Message body:", msgs);
-            break;
-        }
-      });
-    });
-  };
-})();
-
-export const listenOnRunCode = (() => {
-  return (socket) => {
-    socket.on(
-      "runCode",
-      async ({ sessionId, lang, raw, code, podId, namespace, midports }) => {
-        console.log("runCode", sessionId, lang);
-        let kernel = await getSessionKernel({ sessionId, lang });
-        if (!kernel) {
-          console.log("kernel error");
-          return;
-        }
-        if (!code) {
-          console.log("Code is empty");
-          return;
-        }
-        if (raw) {
-          kernel.evalRaw({ code, podId });
-          return;
+          } else {
+            // FIXME this is stream for import/export. I should move it somewhere
+            socket.send(
+              JSON.stringify({
+                type: "stream",
+                payload: {
+                  podId,
+                  text: msgs.content.text,
+                },
+              })
+            );
+          }
         } else {
-          kernel.eval({ code, podId, namespace, midports });
+          console.log(msgs);
+          throw new Error(`Invalid stream type: ${msgs.content.name}`);
         }
+        break;
       }
-    );
+      default:
+        console.log(
+          "Message Not handled",
+          msgs.header.msg_type,
+          "topic:",
+          topic
+        );
+        // console.log("Message body:", msgs);
+        break;
+    }
+  });
+}
 
-    socket.on("requestKernelStatus", async ({ sessionId, lang }) => {
-      console.log("requestKernelStatus", sessionId, lang);
-      let kernel = await getSessionKernel({ sessionId, lang });
-      if (kernel) {
-        kernel.requestKernelStatus();
-      } else {
-        console.log("ERROR: kernel error");
+async function handleRequestKernelStatus({ sessionId, lang }) {
+  console.log("==== requestKernelStatus", sessionId, lang);
+  let kernel = await getSessionKernel({ sessionId, lang });
+  if (kernel) {
+    kernel.requestKernelStatus();
+  } else {
+    console.log("ERROR: kernel error");
+  }
+}
+
+async function handleRunCode({
+  sessionId,
+  lang,
+  raw,
+  code,
+  podId,
+  namespace,
+  midports,
+}) {
+  console.log("runCode", sessionId, lang);
+  let kernel = await getSessionKernel({ sessionId, lang });
+  if (!kernel) {
+    console.log("kernel error");
+    return;
+  }
+  if (!code) {
+    console.log("Code is empty");
+    return;
+  }
+  if (raw) {
+    kernel.evalRaw({ code, podId });
+    return;
+  } else {
+    kernel.eval({ code, podId, namespace, midports });
+  }
+}
+
+export function listenOnMessage(socket) {
+  socket.on("message", async (msg) => {
+    // console.log("msg:", msg.toString());
+    // console.log("parsed", JSON.parse(msg.toString()));
+    // let { type, payload } = JSON.parse(msg);
+    // console.log(typeof msg);
+    // console.log(Object.keys(msg));
+    // console.log(msg.length);
+    // console.log(msg[0]);
+    // console.log(Buffer.from(msg).toString());
+    // console.log("string:", msg.toString());
+    let { type, payload } = JSON.parse(msg.toString());
+    switch (type) {
+      case "connectKernel":
+        await handleConnectKernel(socket, payload);
+        break;
+      case "runCode":
+        await handleRunCode(payload);
+        break;
+      case "requestKernelStatus":
+        handleRequestKernelStatus(payload);
+        break;
+      case "ensureImports":
+        {
+          let { lang, id, from, to, names } = payload;
+        }
+        break;
+      case "addImport":
+        {
+          let { lang, id, from, to, name } = payload;
+        }
+        break;
+      case "deleteImport":
+        {
+          let { lang, id, name, ns } = payload;
+        }
+        break;
+      case "deleteMidport": {
+        let { lang, id, ns, name } = payload;
+        if (lang !== "js") {
+          throw new Error("Only js supprot deleteMidport.");
+        }
+        let code1 = `CODEPOD.deleteNames("${ns}", ["${name}"])`;
+        console.log("js wrapper code:", code1);
+        kernels[lang].sendShellMessage(
+          constructExecuteRequest({
+            code: code1,
+            msg_id: id,
+          })
+        );
       }
-    });
-
-    socket.on("ensureImports", ({ lang, id, from, to, names }) => {});
-
-    socket.on("addImport", ({ lang, id, from, to, name }) => {
-      console.log("received addImport");
-    });
-    socket.on("deleteImport", ({ lang, id, name, ns }) => {
-      console.log("received deleteImport");
-    });
-    socket.on("deleteMidport", ({ lang, id, ns, name }) => {
-      if (lang !== "js") {
-        throw new Error("Only js supprot deleteMidport.");
-      }
-      let code1 = `CODEPOD.deleteNames("${ns}", ["${name}"])`;
-      console.log("js wrapper code:", code1);
-      kernels[lang].sendShellMessage(
-        constructExecuteRequest({
-          code: code1,
-          msg_id: id,
-        })
-      );
-    });
-  };
-})();
+      default:
+        console.log("WARNING unhandled message", { type, payload });
+    }
+  });
+}

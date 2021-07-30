@@ -1,5 +1,3 @@
-// from https://dev.to/aduranil/how-to-use-websockets-with-redux-a-step-by-step-guide-to-writing-understanding-connecting-socket-middleware-to-your-project-km3
-import { io } from "socket.io-client";
 import { Node } from "slate";
 
 import * as actions from "./wsActions";
@@ -29,42 +27,67 @@ const socketMiddleware = () => {
 
         // connect to the remote host
         // socket = new WebSocket(action.host);
-        socket = io(`http://localhost:4000`);
+        socket = new WebSocket(`ws://localhost:4000`);
         // socket.emit("spawn", state.sessionId, lang);
 
         // websocket handlers
         // socket.onmessage = onMessage(store);
         // socket.onclose = onClose(store);
         // socket.onopen = onOpen(store);
-        socket.on("output", (data) => {
-          console.log("output:", data);
-        });
-        socket.on("stdout", (data) => {
-          store.dispatch(actions.wsStdout(data));
-        });
-        socket.on("execute_result", (data) => {
-          store.dispatch(actions.wsResult(data));
-        });
-        socket.on("error", (data) => {
-          store.dispatch(actions.wsError(data));
-        });
-        socket.on("stream", (data) => {
-          store.dispatch(actions.wsStream(data));
-        });
-        socket.on("IO:execute_result", (data) => {
-          store.dispatch(actions.wsIOResult(data));
-        });
-        socket.on("IO:error", (data) => {
-          store.dispatch(actions.wsIOError(data));
-        });
-        socket.on("status", ({ lang, status }) => {
-          store.dispatch(actions.wsStatus({ lang, status }));
-        });
+        socket.onmessage = (msg) => {
+          console.log("onmessage", msg.data);
+          let { type, payload } = JSON.parse(msg.data);
+          switch (type) {
+            case "output":
+              {
+                console.log("output:", payload);
+              }
+              break;
+            case "stdout":
+              {
+                store.dispatch(actions.wsStdout(payload));
+              }
+              break;
+            case "execute_result":
+              {
+                store.dispatch(actions.wsResult(payload));
+              }
+              break;
+            case "error":
+              {
+                store.dispatch(actions.wsError(payload));
+              }
+              break;
+            case "stream":
+              {
+                store.dispatch(actions.wsStream(payload));
+              }
+              break;
+            case "IO:execute_result":
+              {
+                store.dispatch(actions.wsIOResult(payload));
+              }
+              break;
+            case "IO:error":
+              {
+                store.dispatch(actions.wsIOError(payload));
+              }
+              break;
+            case "status":
+              {
+                console.log("Received status:", payload);
+                store.dispatch(actions.wsStatus(payload));
+              }
+              break;
+            default:
+              console.log("WARNING unhandled message", { type, payload });
+          }
+        };
         // well, since it is already opened, this won't be called
         //
         // UPDATE it works, this will be called even after connection
 
-        socket.on("connect", () => {
+        socket.onopen = () => {
           console.log("connected");
           store.dispatch(actions.wsConnected());
           // call connect kernel
@@ -77,12 +100,17 @@ const socketMiddleware = () => {
             //     sessionId: store.getState().repo.sessionId,
             //   })
             // );
-            socket.emit("connectKernel", socket.id, {
-              lang: k,
-              sessionId: store.getState().repo.sessionId,
-            });
+            socket.send(
+              JSON.stringify({
+                type: "connectKernel",
+                payload: {
+                  lang: k,
+                  sessionId: store.getState().repo.sessionId,
+                },
+              })
+            );
           });
-        });
+        };
         // so I'm setting this
         // Well, I should probably not dispatch action inside another action
         // (even though it is in a middleware)
@@ -91,10 +119,10 @@ const socketMiddleware = () => {
         // this is not a dispatch. It will not modify the store.
         //
         // store.dispatch(actions.wsConnected());
-        socket.on("disconnect", () => {
+        socket.onclose = () => {
           console.log("");
           store.dispatch(actions.wsDisconnected());
-        });
+        };
         // TODO log other unhandled messages
         // socket.onMessage((msg)=>{
         //   console.log("received", msg)
@@ -124,18 +152,23 @@ const socketMiddleware = () => {
         // clear pod results
         store.dispatch(repoSlice.actions.clearResults(pod.id));
         // emit runCode command
-        socket.emit("runCode", {
-          lang: pod.lang,
-          raw: pod.raw,
-          // code: slackGetPlainText(pod.content),
-          code: pod.content,
-          namespace: pod.ns,
-          podId: pod.id,
-          sessionId: store.getState().repo.sessionId,
-          midports:
-            pod.midports &&
-            Object.keys(pod.midports).filter((k) => pod.midports[k]),
-        });
+        socket.send(
+          JSON.stringify({
+            type: "runCode",
+            payload: {
+              lang: pod.lang,
+              raw: pod.raw,
+              // code: slackGetPlainText(pod.content),
+              code: pod.content,
+              namespace: pod.ns,
+              podId: pod.id,
+              sessionId: store.getState().repo.sessionId,
+              midports:
+                pod.midports &&
+                Object.keys(pod.midports).filter((k) => pod.midports[k]),
+            },
+          })
+        );
         if (pod.exports) {
           // TODO update all parent imports
           // 1. get all active exports
@@ -150,14 +183,19 @@ const socketMiddleware = () => {
             // emit varify improt
             let pod = pods[id];
             console.log("ensureImports:", id, names);
-            socket.emit("ensureImports", {
-              names,
-              lang: pod.lang,
-              to: pod.ns,
-              // FIXME keep consistent with computeNamespace
-              from: pod.ns === "" ? `${pod.id}` : `${pod.ns}/${pod.id}`,
-              id: pod.id,
-            });
+            socket.send(
+              JSON.stringify({
+                type: "ensureImports",
+                payload: {
+                  names,
+                  lang: pod.lang,
+                  to: pod.ns,
+                  // FIXME keep consistent with computeNamespace
+                  from: pod.ns === "" ? `${pod.id}` : `${pod.ns}/${pod.id}`,
+                  id: pod.id,
+                },
+              })
+            );
             // recurse
             helper(
               pod.parent,
@@ -200,29 +238,39 @@ const socketMiddleware = () => {
                 // further exported to parent ns. As long as it is shown here,
                 // it is exported from child.
                 // console.log("addImport", k, v);
-                socket.emit("addImport", {
-                  lang: pod.lang,
-                  // this is the child's ns, actually only related to current
-                  // parent CAUTION but i'm computing it here. Should be
-                  // extracted to somewhere
-                  // from: pod.ns,
-                  from: `${pod.ns}/${pod.id}`,
-                  to: pod.ns,
-                  id: pod.id,
-                  name: k,
-                });
+                socket.send(
+                  JSON.stringify({
+                    type: "addImport",
+                    payload: {
+                      lang: pod.lang,
+                      // this is the child's ns, actually only related to current
+                      // parent CAUTION but i'm computing it here. Should be
+                      // extracted to somewhere
+                      // from: pod.ns,
+                      from: `${pod.ns}/${pod.id}`,
+                      to: pod.ns,
+                      id: pod.id,
+                      name: k,
+                    },
+                  })
+                );
               }
             }
 
             if (code) {
               store.dispatch(repoSlice.actions.clearResults(pod.id));
-              socket.emit("runCode", {
-                lang: pod.lang,
-                code: slackGetPlainText(pod.content),
-                namespace: pod.ns,
-                podId: pod.id,
-                sessionId: store.getState().repo.sessionId,
-              });
+              socket.send(
+                JSON.stringify({
+                  type: "runCode",
+                  payload: {
+                    lang: pod.lang,
+                    code: slackGetPlainText(pod.content),
+                    namespace: pod.ns,
+                    podId: pod.id,
+                    sessionId: store.getState().repo.sessionId,
+                  },
+                })
+              );
             }
           }
         }
@@ -236,7 +284,12 @@ const socketMiddleware = () => {
           store.dispatch(
             actions.wsStatus({ status: "uknown", ...action.payload })
           );
-          socket.emit("requestKernelStatus", action.payload);
+          socket.send(
+            JSON.stringify({
+              type: "requestKernelStatus",
+              payload: action.payload,
+            })
+          );
         } else {
           console.log("ERROR: not connected");
         }
@@ -256,16 +309,21 @@ const socketMiddleware = () => {
           // this name is then ready to be exported!
           store.dispatch(repoSlice.actions.addPodExport({ id, name }));
           // it is exported, then run the pod again
-          socket.emit("runCode", {
-            lang: pod.lang,
-            code: slackGetPlainText(pod.content),
-            namespace: pod.ns,
-            podId: pod.id,
-            sessionId: store.getState().repo.sessionId,
-            midports:
-              pod.midports &&
-              Object.keys(pod.midports).filter((k) => pod.midports[k]),
-          });
+          socket.send(
+            JSON.stringify({
+              type: "runCode",
+              payload: {
+                lang: pod.lang,
+                code: slackGetPlainText(pod.content),
+                namespace: pod.ns,
+                podId: pod.id,
+                sessionId: store.getState().repo.sessionId,
+                midports:
+                  pod.midports &&
+                  Object.keys(pod.midports).filter((k) => pod.midports[k]),
+              },
+            })
+          );
         } else {
           // FIXME should call removePodExport and update all parents
           // store.dispatch(actions.wsToggleExport)
@@ -273,12 +331,17 @@ const socketMiddleware = () => {
           // FIXME also, the Slate editor action should do some toggle as well
           store.dispatch(repoSlice.actions.deletePodExport({ id, name }));
           // it is deleted, run delete
-          socket.emit("deleteMidport", {
-            lang: pod.lang,
-            id: pod.id,
-            ns: pod.ns,
-            name,
-          });
+          socket.send(
+            JSON.stringify({
+              type: "deleteMidport",
+              payload: {
+                lang: pod.lang,
+                id: pod.id,
+                ns: pod.ns,
+                name,
+              },
+            })
+          );
         }
         break;
       }
@@ -297,25 +360,35 @@ const socketMiddleware = () => {
           store.dispatch(
             repoSlice.actions.addPodImport({ id: parent.id, name })
           );
-          socket.emit("addImport", {
-            lang: pod.lang,
-            from: pod.ns,
-            to: parent.ns,
-            id: parent.id,
-            name,
-          });
+          socket.send(
+            JSON.stringify({
+              type: "addImport",
+              payload: {
+                lang: pod.lang,
+                from: pod.ns,
+                to: parent.ns,
+                id: parent.id,
+                name,
+              },
+            })
+          );
         } else {
           // delete for all its parents
           while (parent && parent.imports && name in parent.imports) {
             store.dispatch(
               repoSlice.actions.deletePodImport({ id: parent.id, name })
             );
-            socket.emit("deleteImport", {
-              lang: pod.lang,
-              id: parent.id,
-              ns: parent.ns,
-              name,
-            });
+            socket.send(
+              JSON.stringify({
+                type: "deleteImport",
+                payload: {
+                  lang: pod.lang,
+                  id: parent.id,
+                  ns: parent.ns,
+                  name,
+                },
+              })
+            );
             parent = pods[parent.parent];
           }
         }
@@ -336,25 +409,35 @@ const socketMiddleware = () => {
           store.dispatch(
             repoSlice.actions.addPodImport({ id: parent.id, name })
           );
-          socket.emit("addImport", {
-            lang: pod.lang,
-            from: pod.ns,
-            to: parent.ns,
-            id: parent.id,
-            name,
-          });
+          socket.send(
+            JSON.stringify({
+              type: "addImport",
+              payload: {
+                lang: pod.lang,
+                from: pod.ns,
+                to: parent.ns,
+                id: parent.id,
+                name,
+              },
+            })
+          );
         } else {
           // delete for all its parents
           while (parent && parent.imports && name in parent.imports) {
             store.dispatch(
               repoSlice.actions.deletePodImport({ id: parent.id, name })
             );
-            socket.emit("deleteImport", {
-              lang: pod.lang,
-              ns: parent.ns,
-              id: parent.id,
-              name,
-            });
+            socket.send(
+              JSON.stringify({
+                type: "deleteImport",
+                payload: {
+                  lang: pod.lang,
+                  ns: parent.ns,
+                  id: parent.id,
+                  name,
+                },
+              })
+            );
             parent = pods[parent.parent];
           }
         }

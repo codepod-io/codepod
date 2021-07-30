@@ -5,14 +5,10 @@ import { resolvers } from "./resolvers-pg.js";
 import jwt from "jsonwebtoken";
 import express from "express";
 import http from "http";
-import { Server } from "socket.io";
+// import { Server } from "socket.io";
+import { WebSocketServer } from "ws";
 
-import {
-  listenOnKernelManagement,
-  listenOnSessionManagement,
-  listenOnRepl,
-  listenOnRunCode,
-} from "./socket.js";
+import { listenOnMessage } from "./socket.js";
 
 const typeDefs = gql`
   type Query {
@@ -131,11 +127,7 @@ async function startApolloServer() {
 
   const app = express();
   const http_server = http.createServer(app);
-  const io = new Server(http_server, {
-    cors: {
-      origin: "*",
-    },
-  });
+  const wss = new WebSocketServer({ server: http_server });
 
   apollo.applyMiddleware({ app });
 
@@ -145,17 +137,18 @@ async function startApolloServer() {
     res.end();
   });
 
-  io.on("connection", (socket) => {
+  wss.on("connection", (socket) => {
     console.log("a user connected");
     // CAUTION should listen to message on this socket instead of io
-    socket.on("disconnect", () => {
+    socket.on("close", () => {
       console.log("user disconnected");
     });
 
-    listenOnRepl(socket);
-    listenOnKernelManagement(socket);
-    listenOnSessionManagement(socket);
-    listenOnRunCode(socket);
+    // listenOnRepl(socket);
+    // listenOnKernelManagement(socket);
+    // listenOnSessionManagement(socket);
+    // listenOnRunCode(socket);
+    listenOnMessage(socket);
   });
 
   // should call http_server.listen instead of express app.listen, otherwise
