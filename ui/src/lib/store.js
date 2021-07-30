@@ -365,7 +365,7 @@ export const repoSlice = createSlice({
       python: {
         status: "NA",
       },
-      js: {
+      javascript: {
         status: "NA",
       },
       // ts: {
@@ -597,6 +597,7 @@ export const repoSlice = createSlice({
     },
     WS_STATUS: (state, action) => {
       const { lang, status } = action.payload;
+      console.log("WS_STATUS", { lang, status });
       state.kernels[lang].status = status;
     },
     WS_CONNECTED: (state, action) => {

@@ -397,8 +397,125 @@ async function createContainer(image, name) {
   });
 }
 
+function handleIOPub_status({ msgs, socket, lang }) {
+  console.log("emitting status ..", msgs.content.execution_state, "for", lang);
+  socket.send(
+    JSON.stringify({
+      type: "status",
+      payload: {
+        lang: lang,
+        status: msgs.content.execution_state,
+      },
+    })
+  );
+}
+
+function handleIOPub_execute_result({ msgs, socket }) {
+  console.log("emitting execute_result ..");
+  let [podId, name] = msgs.parent_header.msg_id.split("#");
+  let payload = {
+    podId,
+    name,
+    result: msgs.content.data["text/plain"],
+    count: msgs.content.execution_count,
+  };
+  if (name) {
+    console.log("emitting IO result");
+    socket.send(JSON.stringify({ type: "IO:execute_result", payload }));
+  } else {
+    socket.send(JSON.stringify({ type: "execute_result", payload }));
+  }
+}
+
+function handleIOPub_stdout({ msgs, socket }) {
+  console.log("emitting stdout ..");
+  if (msgs.content.text.startsWith("base64 binary data")) {
+    console.log("warning: base64 encoded stdout");
+  } else {
+    let [podId, name] = msgs.parent_header.msg_id.split("#");
+    let payload = {
+      podId,
+      name,
+      stdout: msgs.content.text,
+    };
+    if (name) {
+      // this is Import/Export cmd
+      socket.send(JSON.stringify({ type: "IO:stdout", payload }));
+    } else {
+      socket.send(JSON.stringify({ type: "stdout", payload }));
+    }
+  }
+}
+
+function handleIOPub_error({ msgs, socket }) {
+  console.log("emitting error ..");
+  let [podId, name] = msgs.parent_header.msg_id.split("#");
+  let payload = {
+    podId,
+    name,
+    stacktrace: msgs.content.traceback,
+    ename: msgs.content.ename,
+    evalue: msgs.content.evalue,
+  };
+  if (name) {
+    socket.send(JSON.stringify({ type: "IO:error", payload }));
+  } else {
+    socket.send(JSON.stringify({ type: "error", payload }));
+  }
+}
+
+function handleIOPub_stream({ msgs, socket }) {
+  if (!msgs.parent_header.msg_id) {
+    console.log("No msg_id, skipped");
+    console.log(msgs.parent_header);
+    return;
+  }
+  let [podId, name] = msgs.parent_header.msg_id.split("#");
+  // iracket use this to send stderr
+  // FIXME there are many frames
+  if (msgs.content.name === "stdout") {
+    // console.log("ignore stdout stream");
+    console.log("emitting stdout stream ..");
+    socket.send(
+      JSON.stringify({
+        type: "stream",
+        payload: {
+          podId,
+          text: msgs.content.text,
+        },
+      })
+    );
+  } else if (msgs.content.name === "stderr") {
+    console.log("emitting error stream ..");
+    if (!name) {
+      socket.send(
+        JSON.stringify({
+          type: "stream",
+          payload: {
+            podId,
+            text: msgs.content.text,
+          },
+        })
+      );
+    } else {
+      // FIXME this is stream for import/export. I should move it somewhere
+      socket.send(
+        JSON.stringify({
+          type: "stream",
+          payload: {
+            podId,
+            text: msgs.content.text,
+          },
+        })
+      );
+    }
+  } else {
+    console.log(msgs);
+    throw new Error(`Invalid stream type: ${msgs.content.name}`);
+  }
+}
 export class CodePodKernel {
-  async init(sessionId) {
+  async init({ sessionId, socket }) {
     // fname = await genConnSpec();
     this.sessionId = sessionId;
     let name = `cpkernel_${sessionId}_${this.lang}`;
@@ -407,6 +524,10 @@ export class CodePodKernel {
     // FIXME I don't want to extend Kernel, I'm using composition
     console.log("connecting to zmq ..");
     this.wire = new ZmqWire(this.fname, ip);
+    if (socket) {
+      // listen to IOPub here
+      this.addSocket(socket);
+    }
     console.log("executing startup file ..");
     let startupCode = readFileSync(this.startupFile, "utf8");
     this.wire.sendShellMessage(
@@ -428,6 +549,38 @@ export class CodePodKernel {
     // remove container
     let name = `cpkernel_${this.sessionId}_${this.lang}`;
     await removeContainer(name);
+  }
+  addSocket(socket) {
+    this.wire.listenIOPub((topic, msgs) => {
+      // console.log("-----", topic, msgs);
+      // iracket's topic seems to be an ID. I should use msg type instead
+      switch (msgs.header.msg_type) {
+        case "status":
+          handleIOPub_status({ msgs, socket, lang: this.lang });
+          break;
+        case "execute_result":
+          handleIOPub_execute_result({ msgs, socket });
+          break;
+        case "stdout":
+          handleIOPub_stdout({ msgs, socket });
+          break;
+        case "error":
+          handleIOPub_error({ msgs, socket });
+          break;
+        case "stream":
+          handleIOPub_stream({ msgs, socket });
+          break;
+        default:
+          console.log(
+            "Message Not handled",
+            msgs.header.msg_type,
+            "topic:",
+            topic
+          );
+          // console.log("Message body:", msgs);
+          break;
+      }
+    });
   }
   runCode({ code, msg_id }) {
     this.wire.sendShellMessage(
@@ -487,16 +640,16 @@ export class CodePodKernel {
   // mapEnsureImports() {}
 }
 
-export async function createKernel({ lang, sessionId }) {
+export async function createKernel({ lang, sessionId, socket }) {
   switch (lang) {
     case "julia":
-      return await new JuliaKernel().init(sessionId);
-    case "js":
-      return await new JavascriptKernel().init(sessionId);
+      return await new JuliaKernel().init({ sessionId, socket });
+    case "javascript":
+      return await new JavascriptKernel().init({ sessionId, socket });
     case "racket":
-      return await new RacketKernel().init(sessionId);
+      return await new RacketKernel().init({ sessionId, socket });
     case "python":
-      return await new PythonKernel().init(sessionId);
+      return await new PythonKernel().init({ sessionId, socket });
     default:
       console.log("ERROR: language not implemented", lang);
     // throw new Error(`Language not valid: ${lang}`);
