@@ -400,6 +400,7 @@ async function createContainer(image, name) {
 export class CodePodKernel {
   async init(sessionId) {
     // fname = await genConnSpec();
+    this.sessionId = sessionId;
     let name = `cpkernel_${sessionId}_${this.lang}`;
     await removeContainer(name);
     let ip = await createContainer(this.image, name);
@@ -414,6 +415,19 @@ export class CodePodKernel {
     console.log("kernel initialized successfully");
     // so that we can chain methods
     return this;
+  }
+  async kill() {
+    // FIXME dispose the this.wire
+    //
+    // FIXME actually I do not want to stop the connection. Instead, I want to
+    // keep the kernel without the kernel. The kernel status should show unknow
+    // on the browser. The browser wound need to reinit the kernel. So try to
+    // differentiate connect and startKernel. For now, I'll just provide a way
+    // to shutdown the kernels easily.
+    //
+    // remove container
+    let name = `cpkernel_${this.sessionId}_${this.lang}`;
+    await removeContainer(name);
   }
   runCode({ code, msg_id }) {
     this.wire.sendShellMessage(

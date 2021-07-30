@@ -24,6 +24,7 @@ const typeDefs = gql`
     pods(username: String, reponame: String): [Pod]
     pod(id: ID!): Pod
     myRepos: [Repo]
+    activeSessions: [String]
   }
 
   type AuthData {
@@ -94,6 +95,7 @@ const typeDefs = gql`
     clearUser: Boolean
     clearRepo: Boolean
     clearPod: Boolean
+    killSession(sessionId: String): Boolean
   }
 `;
 

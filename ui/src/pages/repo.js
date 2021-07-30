@@ -19,6 +19,7 @@ import {
 import { Menu, MenuButton, MenuList, MenuItem } from "@chakra-ui/react";
 import { HStack, VStack, Select } from "@chakra-ui/react";
 import { useClipboard } from "@chakra-ui/react";
+import { gql, useQuery, useMutation } from "@apollo/client";
 
 import {
   ArrowUpIcon,
@@ -274,6 +275,48 @@ function ApplyAll() {
   );
 }
 
+function ActiveSessions() {
+  const { _, loading, data } = useQuery(gql`
+    query {
+      activeSessions
+    }
+  `);
+  const [killSession, { data: _data }] = useMutation(gql`
+    mutation KillSession($sessionId: String!) {
+      killSession(sessionId: $sessionId)
+    }
+  `);
+  if (loading) {
+    return <Text>Loading</Text>;
+  }
+  return (
+    <Box>
+      {data.activeSessions && (
+        <Box>
+          <Text>Active Sessions:</Text>
+          {data.activeSessions.map((k) => (
+            <Flex key={k}>
+              <Text color="blue">{k}</Text>
+              <Button
+                size="sm"
+                onClick={() => {
+                  killSession({
+                    variables: {
+                      sessionId: k,
+                    },
+                  });
+                }}
+              >
+                Kill
+              </Button>
+            </Flex>
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
 function Sidebar() {
   return (
     <Box px="1rem">
@@ -284,6 +327,7 @@ function Sidebar() {
       <ApplyAll />
 
       <Divider my={2} />
+      <ActiveSessions />
 
       <Box>
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer luctus

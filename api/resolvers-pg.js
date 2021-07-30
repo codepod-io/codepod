@@ -6,6 +6,8 @@ const { PrismaClient } = Prisma;
 
 const prisma = new PrismaClient();
 
+import { listMySessions, killSession } from "./socket.js";
+
 // import { User, Repo, Pod } from "./db.js";
 
 function genToken(userID) {
@@ -58,6 +60,23 @@ export const resolvers = {
         },
       });
       return repos;
+    },
+    activeSessions: async (_, __, { userId }) => {
+      // I could just use userId
+      // how to connect to the socket runtime?
+      //
+      // FIXME why this could be null
+      if (userId) {
+        console.log("activeSessions", userId);
+        let user = await prisma.user.findFirst({
+          where: {
+            id: userId,
+          },
+        });
+        console.log("username:", user.username);
+        let sessions = listMySessions(user.username);
+        return sessions;
+      }
     },
     repo: async (_, { name, username }) => {
       const repo = await prisma.repo.findFirst({
@@ -282,6 +301,12 @@ export const resolvers = {
           },
         },
       });
+      return true;
+    },
+    killSession: async (_, { sessionId }) => {
+      console.log("killSession", sessionId);
+      // FIXME errors
+      await killSession(sessionId);
       return true;
     },
   },

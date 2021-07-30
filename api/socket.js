@@ -104,27 +104,69 @@ export const listenOnKernelManagement = (() => {
   };
 })();
 
-const getSessionKernel = (() => {
-  let sessions = {};
-  return async ({ sessionId, lang }) => {
-    if (!sessionId || !lang) {
-      console.log("sesisonId or lang is undefined", sessionId, lang);
-      return null;
+let sessions = {};
+
+// return a list of [(<sessionId>, <lang>)] pairs
+function listMyKernels(username) {
+  let res = [];
+  for (let sessionId of Object.keys(sessions).filter((id) =>
+    id.startsWith(username)
+  )) {
+    res = res.concat(
+      Object.keys(sessions[sessionId]).map((lang) => (sessionId, lang))
+    );
+  }
+  return res;
+}
+
+export function listMySessions(username) {
+  return Object.keys(sessions).filter((id) => id.startsWith(username));
+}
+
+export async function killSession(sessionId) {
+  let session = sessions[sessionId];
+  if (session) {
+    for (let lang of Object.keys(session)) {
+      if (session[lang]) {
+        // FIXME should have awaited here. But I want
+        // 1. parallel
+        // 2. just set the whole thing to undefined, ignoring if actually stopped
+        session[lang].kill();
+      }
+      delete session[lang];
     }
-    if (!(sessionId in sessions)) {
-      sessions[sessionId] = {};
-    }
-    let session = sessions[sessionId];
-    // so that we don't try to create the container twice and get errors
-    if (session[lang] === "spawning") return null;
-    if (session[lang]) return session[lang];
-    // FIXME what if the process never finish?
-    session[lang] = "spawning";
-    let kernel = await createKernel({ lang, sessionId });
-    session[lang] = kernel;
-    return kernel;
-  };
-})();
+    delete sessions[sessionId];
+  }
+}
+
+async function killKernel({ sessionId, lang }) {
+  // FIXME only allow to kill one's own kernel
+  let kernel = sessions[sessionId]?.[lang];
+  if (kernel) {
+    await kernel.kill();
+    // FIXME handle errors
+    sessions[sessionId][lang] = undefined;
+  }
+}
+
+async function getSessionKernel({ sessionId, lang }) {
+  if (!sessionId || !lang) {
+    console.log("sesisonId or lang is undefined", sessionId, lang);
+    return null;
+  }
+  if (!(sessionId in sessions)) {
+    sessions[sessionId] = {};
+  }
+  let session = sessions[sessionId];
+  // so that we don't try to create the container twice and get errors
+  if (session[lang] === "spawning") return null;
+  if (session[lang]) return session[lang];
+  // FIXME what if the process never finish?
+  session[lang] = "spawning";
+  let kernel = await createKernel({ lang, sessionId });
+  session[lang] = kernel;
+  return kernel;
+}
 
 export const listenOnSessionManagement = (() => {
   return (socket) => {
