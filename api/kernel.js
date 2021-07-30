@@ -371,22 +371,29 @@ async function createContainer(image, name) {
     // 1. first check if the container already there. If so, stop and delete
     // let name = "julia_kernel_X";
     console.log("spawning kernel ..");
-    docker.createContainer({ Image: image, name }, (err, container) => {
-      if (err) {
-        console.log("ERR:", err);
-        return;
-      }
-      container.start((err, data) => {
-        console.log("Container started!");
-        // console.log(container);
-        container.inspect((err, data) => {
-          // console.log("inspect");
-          console.log("IP:", data.NetworkSettings.IPAddress);
-          resolve(data.NetworkSettings.IPAddress);
+    docker.createContainer(
+      { Image: image, name, NetworkMode: "codepod" },
+      (err, container) => {
+        if (err) {
+          console.log("ERR:", err);
+          return;
+        }
+        container.start((err, data) => {
+          console.log("Container started!");
+          // console.log(container);
+          container.inspect((err, data) => {
+            // console.log("inspect");
+            // let ip = data.NetworkSettings.IPAddress
+            //
+            // If created using codepod network bridge, the IP is here:
+            let ip = data.NetworkSettings.Networks.codepod.IPAddress;
+            console.log("IP:", ip);
+            resolve(ip);
+          });
+          // console.log("IPaddress:", container.NetworkSettings.IPAddress)
         });
-        // console.log("IPaddress:", container.NetworkSettings.IPAddress)
-      });
-    });
+      }
+    );
   });
 }
 

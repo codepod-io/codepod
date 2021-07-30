@@ -1,0 +1,68 @@
+# Use postgres/example user/password credentials
+version: "3.5"
+
+services:
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  # pgadmin:
+  #   image: dpage/pgadmin4
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+
+  prisma:
+    image: node
+    restart: always
+    ports:
+      - 5555:5555
+    # command: npm config set unsafe-perm true && npx prisma studio
+    command: yarn run prisma studio
+    working_dir: /app
+    volumes:
+      - ./api:/app
+      # - ./api/node_modules:/app/node_modules
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
+
+  api:
+    build: api
+    # restart: always
+    ports:
+      - 4000:4000
+    volumes:
+      - ./api:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: yarn dev
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
+      JWT_SECRET: ${JWT_SECRET}
+
+  ui:
+    build: ui
+    restart: always
+    ports:
+      - 3000:3000
+    volumes:
+      - ./ui:/app
+    command: yarn start
+
+volumes:
+  db-data:
+
+networks:
+  default:
+    name: codepod
+    driver: bridge
