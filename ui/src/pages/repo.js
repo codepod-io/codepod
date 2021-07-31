@@ -50,6 +50,10 @@ import RefreshIcon from "@material-ui/icons/Refresh";
 import CloudUploadIcon from "@material-ui/icons/CloudUpload";
 import { Switch } from "@material-ui/core";
 import Popper from "@material-ui/core/Popper";
+import TextField from "@material-ui/core/TextField";
+import ClickAwayListener from "@material-ui/core/ClickAwayListener";
+
+import { MdImportExport, MdSwapVert, MdCallMissed } from "react-icons/md";
 
 import {
   repoSlice,
@@ -517,11 +521,66 @@ function InfoBar({ pod }) {
   );
 }
 
+function ExportButton({ id }) {
+  const anchorEl = useRef(null);
+  const [show, setShow] = useState(false);
+  const [value, setValue] = useState(null);
+  const dispatch = useDispatch();
+  return (
+    <ClickAwayListener
+      onClickAway={() => {
+        setShow(false);
+      }}
+    >
+      <Box>
+        <Button
+          ref={anchorEl}
+          variant="ghost"
+          size="xs"
+          onClick={() => {
+            // pop up a input box for entering exporrt
+            setShow(!show);
+          }}
+        >
+          <MdCallMissed />
+        </Button>
+        <Popper open={show} anchorEl={anchorEl.current} placement="top">
+          <Paper>
+            <TextField
+              label="Export"
+              variant="outlined"
+              // focused={show}
+              autoFocus
+              onChange={(e) => {
+                setValue(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                // enter
+                // keyCode is deprecated in favor of code, but chrome didn't have
+                // it ..
+                if (e.keyCode === 13 && value) {
+                  console.log("enter pressed, adding", value);
+                  dispatch(repoSlice.actions.addPodExport({ id, name: value }));
+                  // clear value
+                  setValue(null);
+                  // click away
+                  setShow(false);
+                }
+              }}
+            />
+          </Paper>
+        </Popper>
+      </Box>
+    </ClickAwayListener>
+  );
+}
+
 function ToolBar({ pod }) {
   const dispatch = useDispatch();
   const [show, setShow] = useState(false);
   return (
     <Flex>
+      <ExportButton id={pod.id} />
       <Button
         variant="ghost"
         size="xs"
@@ -962,7 +1021,7 @@ function CodePod({ id }) {
       </Box>
 
       <Flex w="100%">
-        {pod.exports && Object.keys(pod.exports).length > 0 && (
+        {/* {pod.exports && Object.keys(pod.exports).length > 0 && (
           <Box>
             Exports{" "}
             {Object.entries(pod.exports).map(([k, v]) => (
@@ -974,13 +1033,11 @@ function CodePod({ id }) {
                   }}
                 />
                 <Code>{k}</Code>
-                {/* No need IOStatus for exports */}
-                {/* <IOStatus id={pod.id} name={k} /> */}
               </Box>
             ))}
           </Box>
         )}
-        <Spacer />
+        <Spacer /> */}
         {pod.midports && Object.keys(pod.midports).length > 0 && (
           <Box>
             Midports{" "}
@@ -1128,62 +1185,83 @@ function WysiwygPod({ pod }) {
 
 function Pod({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
+  const dispatch = useDispatch();
   const [showMenu, setShowMenu] = useState(false);
   return (
-    <Box
-      position="relative"
-      ml={5}
-      mb={1}
-      onMouseEnter={() => setShowMenu(true)}
-      onMouseLeave={() => setShowMenu(false)}
-    >
-      <ThePod id={id} />
-
-      <Box
-        style={{
-          margin: "5px",
-          position: "absolute",
-          top: "0px",
-          left: "-30px",
-        }}
-      >
-        <HoveringBar pod={pod} showMenu={showMenu} />
+    <Box ml={5} mb={1}>
+      <Box>
+        {pod.exports && Object.keys(pod.exports).length > 0 && (
+          <Box>
+            {Object.entries(pod.exports).map(([k, v]) => (
+              <Box as="span" key={k} mr={1}>
+                <Code>{k}</Code>
+                <Switch
+                  size="small"
+                  checked={v}
+                  onChange={() => {
+                    dispatch(wsActions.wsToggleExport({ id: pod.id, name: k }));
+                  }}
+                />
+                {/* No need IOStatus for exports */}
+                {/* <IOStatus id={pod.id} name={k} /> */}
+              </Box>
+            ))}
+          </Box>
+        )}
       </Box>
-
       <Box
-        style={{
-          margin: "5px",
-          position: "absolute",
-          top: "0px",
-          right: "15px",
-        }}
+        position="relative"
+        onMouseEnter={() => setShowMenu(true)}
+        onMouseLeave={() => setShowMenu(false)}
       >
-        <Flex>
-          <ToolBar pod={pod} />
-          <SyncStatus pod={pod} />
+        <ThePod id={id} />
+
+        <Box
+          style={{
+            margin: "5px",
+            position: "absolute",
+            top: "0px",
+            left: "-30px",
+          }}
+        >
+          <HoveringBar pod={pod} showMenu={showMenu} />
+        </Box>
+
+        <Box
+          style={{
+            margin: "5px",
+            position: "absolute",
+            top: "0px",
+            right: "15px",
+          }}
+        >
+          <Flex>
+            <ToolBar pod={pod} />
+            <SyncStatus pod={pod} />
+          </Flex>
+        </Box>
+
+        <Flex
+          style={{
+            margin: "5px",
+            position: "absolute",
+            bottom: "0px",
+            right: "15px",
+          }}
+        >
+          {/* The lang */}
+          {pod.type === "WYSIWYG" && (
+            <Text color="gray" mr={2}>
+              {pod.type}
+            </Text>
+          )}
+          {pod.type === "CODE" && (
+            <Text mr={2} color="gray">
+              {pod.lang}
+            </Text>
+          )}
         </Flex>
       </Box>
-
-      <Flex
-        style={{
-          margin: "5px",
-          position: "absolute",
-          bottom: "0px",
-          right: "15px",
-        }}
-      >
-        {/* The lang */}
-        {pod.type === "WYSIWYG" && (
-          <Text color="gray" mr={2}>
-            {pod.type}
-          </Text>
-        )}
-        {pod.type === "CODE" && (
-          <Text mr={2} color="gray">
-            {pod.lang}
-          </Text>
-        )}
-      </Flex>
     </Box>
   );
 }
