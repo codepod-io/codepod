@@ -13,6 +13,15 @@ import { nolookalikes } from "nanoid-dictionary";
 // FIXME safety
 const nanoid = customAlphabet(nolookalikes, 10);
 
+// FIXME performance for reading this from localstorage
+const getAuthHeaders = () => {
+  let authToken = localStorage.getItem("token") || null;
+  if (!authToken) return null;
+  return {
+    authorization: `Bearer ${authToken}`,
+  };
+};
+
 export const loadPodQueue = createAsyncThunk(
   "loadPodQueue",
   async ({ username, reponame }, { dispatch, getState }) => {
@@ -54,6 +63,7 @@ export const loadPodQueue = createAsyncThunk(
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        ...getAuthHeaders(),
       },
       body: JSON.stringify({
         query: query,
@@ -62,6 +72,9 @@ export const loadPodQueue = createAsyncThunk(
           username,
         },
       }),
+    }).catch((err) => {
+      dispatch(repoSlice.actions.addError({ type: "error", msg: err.message }));
+      return null;
     });
     return res.json();
   }
@@ -210,6 +223,7 @@ async function doRemoteAddPod({ type, id, parent, index, reponame, username }) {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
+      ...getAuthHeaders(),
     },
     body: JSON.stringify({
       query: query,
@@ -239,6 +253,7 @@ async function doRemoteDeletePod({ id, toDelete }) {
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
+      ...getAuthHeaders(),
     },
     body: JSON.stringify({
       query: query,
@@ -269,12 +284,13 @@ export const remoteUpdateAllPods = createAsyncThunk(
 
 export const remoteUpdatePod = createAsyncThunk(
   "remoteUpdatePod",
-  async (pod) => {
+  async (pod, { dispatch }) => {
     const res = await fetch("http://localhost:4000/graphql", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        ...getAuthHeaders(),
       },
       body: JSON.stringify({
         query: `
@@ -297,6 +313,9 @@ export const remoteUpdatePod = createAsyncThunk(
           midports: JSON.stringify(pod.midports),
         },
       }),
+    }).catch((err) => {
+      dispatch(repoSlice.actions.addError({ type: "error", msg: err.message }));
+      return null;
     });
     return res.json();
   }
@@ -304,7 +323,7 @@ export const remoteUpdatePod = createAsyncThunk(
 
 export const loopPodQueue = createAsyncThunk(
   "loopPodQueue",
-  async (action, { getState }) => {
+  async (action, { dispatch, getState }) => {
     // process action, push to remote server
     const reponame = getState().repo.reponame;
     const username = getState().repo.username;
@@ -319,13 +338,23 @@ export const loopPodQueue = createAsyncThunk(
           index,
           reponame,
           username,
+        }).catch((err) => {
+          dispatch(
+            repoSlice.actions.addError({ type: "error", msg: err.message })
+          );
+          return null;
         });
       }
 
       case repoSlice.actions.deletePod.type: {
         const { id, toDelete } = action.payload;
         // delete pod id
-        return await doRemoteDeletePod({ id, toDelete });
+        return await doRemoteDeletePod({ id, toDelete }).catch((err) => {
+          dispatch(
+            repoSlice.actions.addError({ type: "error", msg: err.message })
+          );
+          return null;
+        });
       }
 
       default:
@@ -582,7 +611,11 @@ export const repoSlice = createSlice({
     },
     [loopPodQueue.fulfilled]: (state, action) => {
       if (action.payload.errors) {
-        throw Error("Error:" + action.payload.errors[0].message);
+        // throw Error("Error:" + action.payload.errors[0].message);
+        state.error = {
+          type: "error",
+          msg: "Error:" + action.payload.errors[0].message,
+        };
       }
       state.queue.shift();
       state.queueProcessing = false;

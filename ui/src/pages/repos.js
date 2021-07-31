@@ -31,7 +31,13 @@ function Repos() {
   const { loading, error, data } = useQuery(FETCH_REPOS);
   const { me } = useMe();
   if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error :(</p>;
+  if (error)
+    return (
+      <Alert status="error">
+        <AlertIcon />
+        {error.message}
+      </Alert>
+    );
   let repos = data.myRepos;
   return (
     <Box>

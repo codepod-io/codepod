@@ -28,7 +28,8 @@ export const resolvers = {
     hello: () => {
       return "Hello world!";
     },
-    users: async () => {
+    users: async (_, __, { userId }) => {
+      if (!userId) throw Error("Unauthenticated");
       const allUsers = await prisma.user.findMany();
       return allUsers;
     },
@@ -66,17 +67,16 @@ export const resolvers = {
       // how to connect to the socket runtime?
       //
       // FIXME why this could be null
-      if (userId) {
-        console.log("activeSessions", userId);
-        let user = await prisma.user.findFirst({
-          where: {
-            id: userId,
-          },
-        });
-        console.log("username:", user.username);
-        let sessions = listMySessions(user.username);
-        return sessions;
-      }
+      if (!userId) throw new Error("Not authenticated.");
+      console.log("activeSessions", userId);
+      let user = await prisma.user.findFirst({
+        where: {
+          id: userId,
+        },
+      });
+      console.log("username:", user.username);
+      let sessions = listMySessions(user.username);
+      return sessions;
     },
     repo: async (_, { name, username }) => {
       const repo = await prisma.repo.findFirst({
@@ -175,7 +175,21 @@ export const resolvers = {
       return repo;
     },
     clearUser: () => {},
-    addPod: async (_, { reponame, username, parent, type, id, index }) => {
+    addPod: async (
+      _,
+      { reponame, username, parent, type, id, index },
+      { userId }
+    ) => {
+      // make sure the repo is writable by this user
+      if (!userId) throw new Error("Not authenticated.");
+      let user = await prisma.user.findFirst({
+        where: {
+          username,
+        },
+      });
+      if (user.id !== userId) {
+        throw new Error("You do not have access to the repo.");
+      }
       // 1. find the repo
       const repo = await prisma.repo.findFirst({
         where: {
@@ -244,8 +258,11 @@ export const resolvers = {
         imports,
         exports,
         midports,
-      }
+      },
+      { userId }
     ) => {
+      if (!userId) throw new Error("Not authenticated.");
+      await ensurePodAccess({ id, userId });
       const pod = await prisma.pod.update({
         where: {
           id,
@@ -264,7 +281,9 @@ export const resolvers = {
       });
       return pod;
     },
-    deletePod: async (_, { id, toDelete }) => {
+    deletePod: async (_, { id, toDelete }, { userId }) => {
+      if (!userId) throw new Error("Not authenticated.");
+      await ensurePodAccess({ id, userId });
       // find all children of this ID
       // FIXME how to ensure atomic
       // 1. find the parent of this node
@@ -306,7 +325,8 @@ export const resolvers = {
       });
       return true;
     },
-    killSession: async (_, { sessionId }) => {
+    killSession: async (_, { sessionId }, { userId }) => {
+      if (!userId) throw new Error("Not authenticated.");
       console.log("killSession", sessionId);
       // FIXME errors
       await killSession(sessionId);
@@ -314,3 +334,30 @@ export const resolvers = {
     },
   },
 };
+
+async function ensurePodAccess({ id, userId }) {
+  let pod = await prisma.pod.findFirst({
+    where: { id },
+    // HEBI: select is used to select a subset of fields
+    // select: {
+    //   repo: {
+    //     select: {
+    //       owner: true,
+    //     },
+    //   },
+    // },
+    // HEBI: include is used to include additional fields
+    // Both include and select can go through relations, but they cannot be used
+    // at the same time.
+    include: {
+      repo: {
+        include: {
+          owner: true,
+        },
+      },
+    },
+  });
+  if (pod.repo.owner.id !== userId) {
+    throw new Error("You do not have write access.");
+  }
+}
