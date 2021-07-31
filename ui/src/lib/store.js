@@ -357,16 +357,16 @@ export const repoSlice = createSlice({
     runtimeConnected: false,
     kernels: {
       julia: {
-        status: "NA",
+        status: null,
       },
       racket: {
-        status: "NA",
+        status: null,
       },
       python: {
-        status: "NA",
+        status: null,
       },
       javascript: {
-        status: "NA",
+        status: null,
       },
       // ts: {
       //   status: "NA",
@@ -499,6 +499,11 @@ export const repoSlice = createSlice({
         pod.imports = {};
       }
       pod.imports[name] = false;
+    },
+    resetKernelStatus: (state, action) => {
+      Object.entries(state.kernels).forEach(([k, v]) => {
+        v.status = null;
+      });
     },
     deletePodImport: (state, action) => {
       let { id, name } = action.payload;
@@ -637,6 +642,9 @@ export const repoSlice = createSlice({
     },
     WS_STREAM: (state, action) => {
       let { podId, text } = action.payload;
+      if (!(podId in state.pods)) {
+        console.log("WARNING podId is not found:", podId);
+      }
       // append
       state.pods[podId].stdout += text;
     },

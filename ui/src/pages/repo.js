@@ -171,7 +171,7 @@ function SidebarKernel() {
             Status:{" "}
             {runtimeConnected ? (
               <Box as="span" color="blue">
-                {kernel.status}
+                {kernel.status ? kernel.status : "Unknown"}
               </Box>
             ) : (
               <Box color="red" as="span">
@@ -276,16 +276,26 @@ function ApplyAll() {
 }
 
 function ActiveSessions() {
-  const { _, loading, data } = useQuery(gql`
-    query {
+  const { loading, data, refetch } = useQuery(gql`
+    query GetActiveSessions {
       activeSessions
     }
   `);
-  const [killSession, { data: _data }] = useMutation(gql`
-    mutation KillSession($sessionId: String!) {
-      killSession(sessionId: $sessionId)
+  const runtimeConnected = useSelector((state) => state.repo.runtimeConnected);
+  useEffect(() => {
+    console.log("----- refetching active sessions ..");
+    refetch();
+  }, [runtimeConnected]);
+  const [killSession, { data: _data }] = useMutation(
+    gql`
+      mutation KillSession($sessionId: String!) {
+        killSession(sessionId: $sessionId)
+      }
+    `,
+    {
+      refetchQueries: ["GetActiveSessions"],
     }
-  `);
+  );
   if (loading) {
     return <Text>Loading</Text>;
   }

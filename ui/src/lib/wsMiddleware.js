@@ -23,6 +23,8 @@ const socketMiddleware = () => {
           console.log("closing ..");
           socket.close();
         }
+        // reset kernel status
+        store.dispatch(repoSlice.actions.resetKernelStatus());
         console.log("connecting ..");
 
         // connect to the remote host
@@ -281,9 +283,7 @@ const socketMiddleware = () => {
       case "WS_REQUEST_STATUS":
         if (socket) {
           // set to unknown
-          store.dispatch(
-            actions.wsStatus({ status: "uknown", ...action.payload })
-          );
+          store.dispatch(actions.wsStatus({ status: null, ...action.payload }));
           socket.send(
             JSON.stringify({
               type: "requestKernelStatus",

@@ -176,6 +176,12 @@ async function getSessionKernel({ sessionId, lang, socket }) {
   return kernel;
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 async function handleConnectKernel(socket, { sessionId, lang }) {
   console.log("==== connectKernel", sessionId, lang);
   let kernel = await getSessionKernel({ sessionId, lang, socket });
@@ -184,9 +190,18 @@ async function handleConnectKernel(socket, { sessionId, lang }) {
     return;
   }
   // listen on iopub and use socket to send message
+  console.log("add socket to kernel ..", lang);
   kernel.addSocket(socket);
   // send a request status query in case it is existing kernel
   console.log("requesting kernel status.. for", lang);
+  kernel.requestKernelStatus();
+  await sleep(50);
+  kernel.requestKernelStatus();
+  await sleep(50);
+  kernel.requestKernelStatus();
+  await sleep(100);
+  kernel.requestKernelStatus();
+  await sleep(500);
   kernel.requestKernelStatus();
 }
 

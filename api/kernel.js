@@ -339,26 +339,45 @@ async function removeContainer(name) {
     var docker = new Docker();
     console.log("remove if already exist");
     let old = docker.getContainer(name);
-    old.stop((err, data) => {
-      // FIXME If the container is stopped but not removed, will there be errors
-      // if I call stop?
+    old.inspect((err, data) => {
       if (err) {
-        // console.log("ERR:", err);
-        // console.log("No such container, resolving ..");
-        // reject();
-        console.log("No such container running. Returning.");
-        resolve();
+        console.log("removeContainer: container seems not exist.");
+        return resolve();
       }
-      console.log("Stopped. Removing ..");
-      old.remove((err, data) => {
-        if (err) {
-          console.log("ERR:", err);
-          reject("ERROR!!!");
-          // resolve();
-        }
-        console.log("removed successfully");
-        resolve();
-      });
+      if (data.State.Running) {
+        old.stop((err, data) => {
+          // FIXME If the container is stopped but not removed, will there be errors
+          // if I call stop?
+          if (err) {
+            // console.log("ERR:", err);
+            // console.log("No such container, resolving ..");
+            // reject();
+            console.log("No such container running. Returning.");
+            return resolve();
+          }
+          console.log("Stopped. Removing ..");
+          old.remove((err, data) => {
+            if (err) {
+              console.log("ERR during removing container:", err);
+              return reject("ERROR!!!");
+              // resolve();
+            }
+            console.log("removed successfully");
+            return resolve();
+          });
+        });
+      } else {
+        console.log("Already stopped. Removing ..");
+        old.remove((err, data) => {
+          if (err) {
+            console.log("ERR during removing container:", err);
+            return reject("ERROR!!!");
+            // resolve();
+          }
+          console.log("removed successfully");
+          return resolve();
+        });
+      }
     });
   });
 }
