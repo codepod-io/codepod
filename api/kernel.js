@@ -261,7 +261,7 @@ export function constructExecuteRequest({ code, msg_id, cp = {} }) {
         x: "3+4",
       },
       allow_stdin: false,
-      stop_on_error: true,
+      stop_on_error: false,
     },
   });
 }
