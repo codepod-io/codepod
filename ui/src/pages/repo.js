@@ -34,6 +34,7 @@ import {
   DragHandleIcon,
   DeleteIcon,
   AddIcon,
+  QuestionOutlineIcon,
 } from "@chakra-ui/icons";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -52,6 +53,8 @@ import { Switch } from "@material-ui/core";
 import Popper from "@material-ui/core/Popper";
 import TextField from "@material-ui/core/TextField";
 import ClickAwayListener from "@material-ui/core/ClickAwayListener";
+import PlayArrowIcon from "@material-ui/icons/PlayArrow";
+import { AiOutlineFunction } from "react-icons/ai";
 
 import { MdImportExport, MdSwapVert, MdCallMissed } from "react-icons/md";
 
@@ -543,7 +546,7 @@ function ExportButton({ id }) {
             setShow(!show);
           }}
         >
-          <MdCallMissed />
+          <AiOutlineFunction />
         </Button>
         <Popper open={show} anchorEl={anchorEl.current} placement="top">
           <Paper>
@@ -779,10 +782,14 @@ function IOStatus({ id, name }) {
   const [anchorEl, setAnchorEl] = React.useState(null);
   const status = useSelector((state) => state.repo.pods[id].io[name]);
   if (!status) {
-    return <Box as="span">Unknown</Box>;
+    return (
+      <Box as="span" size="xs" variant="ghost">
+        <QuestionOutlineIcon color="orange" />
+      </Box>
+    );
   } else if ("result" in status) {
     return (
-      <Button as="span">
+      <Button as="span" size="xs" variant="ghost">
         <CheckIcon color="green" />
       </Button>
     );
@@ -1056,7 +1063,7 @@ function WysiwygPod({ pod }) {
   let dispatch = useDispatch();
   return (
     <VStack align="start">
-      <Box border="1px" w="sm" p="1rem">
+      <Box border="1px" w="100%" p="1rem">
         <MySlate
           value={
             pod.content || [
@@ -1230,20 +1237,34 @@ function Pod({ id }) {
           style={{
             margin: "5px",
             position: "absolute",
-            bottom: "0px",
+            bottom: "-4px",
             right: "15px",
           }}
         >
           {/* The lang */}
           {pod.type === "WYSIWYG" && (
-            <Text color="gray" mr={2}>
+            <Text color="gray" mr={2} fontSize="xs">
               {pod.type}
             </Text>
           )}
-          {pod.type === "CODE" && (
-            <Text mr={2} color="gray">
-              {pod.lang}
-            </Text>
+          {pod.type === "CODE" && pod.lang && (
+            <Flex>
+              <Text mr={2} color="gray" fontSize="sm">
+                {pod.lang}
+              </Text>
+              <Tooltip label="Run (shift-enter)">
+                <Button
+                  variant="ghost"
+                  color="green"
+                  size="xs"
+                  onClick={() => {
+                    dispatch(wsActions.wsRun(id));
+                  }}
+                >
+                  <PlayArrowIcon fontSize="small" />
+                </Button>
+              </Tooltip>
+            </Flex>
           )}
         </Flex>
       </Box>
