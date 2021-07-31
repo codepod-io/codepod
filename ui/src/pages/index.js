@@ -6,7 +6,7 @@ export default function Home() {
       <Box my={20}>
         <Heading align="center">CodePod</Heading>
         <Text align="center" fontSize="xl">
-          Your next IDE, without a file editor
+          Your next IDE doesn't edit files
         </Text>
       </Box>
 
