@@ -983,9 +983,10 @@ function CodePod({ id }) {
     <Box
       align="start"
       // p={2}
+      w="md"
     >
       <Box>
-        <Box border="1px" w="sm" pt={2} alignContent="center">
+        <Box border="1px" pt={2} alignContent="center">
           <MyMonaco
             value={pod.content || "\n\n\n"}
             onChange={(value) => {
@@ -1085,15 +1086,15 @@ function CodePod({ id }) {
         </Flex>
       )}
       {pod.error && (
-        <Box>
+        <Box overflow="scroll" h="3xs" border="1px" bg="gray.50">
           <Text color="red">{pod.error.evalue}</Text>
           {pod.error.stacktrace && (
-            <Text>
-              StackTrace:
-              <Code maxW="lg" whiteSpace="pre-wrap">
+            <Box>
+              <Text>StackTrace</Text>
+              <Code w="100%" whiteSpace="pre-wrap" bg="gray.50">
                 {pod.error.stacktrace.join("\n")}
               </Code>
-            </Text>
+            </Box>
           )}
         </Box>
       )}
