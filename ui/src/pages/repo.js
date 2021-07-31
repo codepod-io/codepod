@@ -829,31 +829,6 @@ function IOStatus({ id, name }) {
   }
 }
 
-function ImportList({ pod }) {
-  const dispatch = useDispatch();
-  return (
-    <Box>
-      {pod.imports && Object.keys(pod.imports).length > 0 && (
-        <Box>
-          <Text>Imports</Text>
-          {Object.entries(pod.imports).map(([k, v]) => (
-            <Box key={k}>
-              <Switch
-                checked={v}
-                onChange={() => {
-                  dispatch(wsActions.wsToggleImport({ id: pod.id, name: k }));
-                }}
-              />
-              <Code>{k}</Code>
-              <IOStatus id={pod.id} name={k} />
-            </Box>
-          ))}
-        </Box>
-      )}
-    </Box>
-  );
-}
-
 function HoveringBar({ pod, showMenu }) {
   let dispatch = useDispatch();
   // const [anchorEl, setAnchorEl] = React.useState(null);
@@ -1020,84 +995,6 @@ function CodePod({ id }) {
           />
         </Box>
       </Box>
-
-      <Flex w="100%">
-        {/* {pod.exports && Object.keys(pod.exports).length > 0 && (
-          <Box>
-            Exports{" "}
-            {Object.entries(pod.exports).map(([k, v]) => (
-              <Box key={k}>
-                <Switch
-                  checked={v}
-                  onChange={() => {
-                    dispatch(wsActions.wsToggleExport({ id: pod.id, name: k }));
-                  }}
-                />
-                <Code>{k}</Code>
-              </Box>
-            ))}
-          </Box>
-        )}
-        <Spacer /> */}
-        {pod.midports && Object.keys(pod.midports).length > 0 && (
-          <Box>
-            Midports{" "}
-            {Object.entries(pod.midports).map(([k, v]) => (
-              <Box key={k}>
-                <Switch
-                  checked={v}
-                  onChange={() => {
-                    dispatch(
-                      wsActions.wsToggleMidport({ id: pod.id, name: k })
-                      // repoSlice.actions.togglePodMidport({
-                      //   id: pod.id,
-                      //   name: k,
-                      // })
-                    );
-                  }}
-                />
-                <Code>{k}</Code>
-              </Box>
-            ))}
-          </Box>
-        )}
-        <Spacer />
-        {/* TODO this should appear not only on CodePod */}
-        <ImportList pod={pod} />
-      </Flex>
-
-      {pod.stdout && (
-        <Text>
-          <Code maxW="lg" whiteSpace="pre-wrap">
-            {pod.stdout}
-          </Code>
-        </Text>
-      )}
-      {pod.result && (
-        <Flex>
-          <Text color="gray" mr="1rem">
-            [{pod.result.count}]:
-          </Text>
-          <Text>
-            <Code maxW="lg" whiteSpace="pre-wrap">
-              {pod.result.text}
-            </Code>
-          </Text>
-        </Flex>
-      )}
-      {pod.error && (
-        <Box overflow="scroll" h="3xs" border="1px" bg="gray.50">
-          <Text color="red">{pod.error.evalue}</Text>
-          {pod.error.stacktrace && (
-            <Box>
-              <Text>StackTrace</Text>
-              <Code w="100%" whiteSpace="pre-wrap" bg="gray.50">
-                {pod.error.stacktrace.join("\n")}
-              </Code>
-            </Box>
-          )}
-        </Box>
-      )}
     </Box>
   );
 }
@@ -1184,32 +1081,104 @@ function WysiwygPod({ pod }) {
   );
 }
 
+function ExportList({ pod }) {
+  const dispatch = useDispatch();
+  return (
+    <Box>
+      {pod.exports && Object.keys(pod.exports).length > 0 && (
+        <Box>
+          <Text as="span" mr={2}>
+            Exports:
+          </Text>
+          {Object.entries(pod.exports).map(([k, v]) => (
+            <Box as="span" key={k} mr={1}>
+              <Code>{k}</Code>
+              <Switch
+                size="small"
+                checked={v}
+                onChange={() => {
+                  dispatch(wsActions.wsToggleExport({ id: pod.id, name: k }));
+                }}
+              />
+              {/* No need IOStatus for exports */}
+              {/* <IOStatus id={pod.id} name={k} /> */}
+            </Box>
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+function ImportList({ pod }) {
+  const dispatch = useDispatch();
+  return (
+    <Box>
+      {pod.imports && Object.keys(pod.imports).length > 0 && (
+        <Box>
+          <Text as="span" mr={2}>
+            Imports:
+          </Text>
+          {Object.entries(pod.imports).map(([k, v]) => (
+            <Box key={k} as="span">
+              <Code>{k}</Code>
+              <Switch
+                size="small"
+                checked={v}
+                onChange={() => {
+                  dispatch(wsActions.wsToggleImport({ id: pod.id, name: k }));
+                }}
+              />
+              <IOStatus id={pod.id} name={k} />
+            </Box>
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+function MidportList({ pod }) {
+  const dispatch = useDispatch();
+  return (
+    <Box>
+      {pod.midports && Object.keys(pod.midports).length > 0 && (
+        <Box>
+          <Text as="span" mr={2}>
+            Midports:
+          </Text>
+          {Object.entries(pod.midports).map(([k, v]) => (
+            <Box key={k}>
+              <Switch
+                size="small"
+                checked={v}
+                onChange={() => {
+                  dispatch(
+                    wsActions.wsToggleMidport({ id: pod.id, name: k })
+                    // repoSlice.actions.togglePodMidport({
+                    //   id: pod.id,
+                    //   name: k,
+                    // })
+                  );
+                }}
+              />
+              <Code>{k}</Code>
+            </Box>
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
 function Pod({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
   const dispatch = useDispatch();
   const [showMenu, setShowMenu] = useState(false);
   return (
-    <Box ml={5} mb={1}>
-      <Box>
-        {pod.exports && Object.keys(pod.exports).length > 0 && (
-          <Box>
-            {Object.entries(pod.exports).map(([k, v]) => (
-              <Box as="span" key={k} mr={1}>
-                <Code>{k}</Code>
-                <Switch
-                  size="small"
-                  checked={v}
-                  onChange={() => {
-                    dispatch(wsActions.wsToggleExport({ id: pod.id, name: k }));
-                  }}
-                />
-                {/* No need IOStatus for exports */}
-                {/* <IOStatus id={pod.id} name={k} /> */}
-              </Box>
-            ))}
-          </Box>
-        )}
-      </Box>
+    <Box ml={5} mb={1} w="md">
+      <ExportList pod={pod} />
+      <ImportList pod={pod} />
       <Box
         position="relative"
         onMouseEnter={() => setShowMenu(true)}
@@ -1263,6 +1232,39 @@ function Pod({ id }) {
           )}
         </Flex>
       </Box>
+
+      {pod.stdout && (
+        <Text>
+          <Code maxW="lg" whiteSpace="pre-wrap">
+            {pod.stdout}
+          </Code>
+        </Text>
+      )}
+      {pod.result && (
+        <Flex>
+          <Text color="gray" mr="1rem">
+            [{pod.result.count}]:
+          </Text>
+          <Text>
+            <Code maxW="lg" whiteSpace="pre-wrap">
+              {pod.result.text}
+            </Code>
+          </Text>
+        </Flex>
+      )}
+      {pod.error && (
+        <Box overflow="scroll" h="3xs" border="1px" bg="gray.50">
+          <Text color="red">{pod.error.evalue}</Text>
+          {pod.error.stacktrace && (
+            <Box>
+              <Text>StackTrace</Text>
+              <Code w="100%" whiteSpace="pre-wrap" bg="gray.50">
+                {pod.error.stacktrace.join("\n")}
+              </Code>
+            </Box>
+          )}
+        </Box>
+      )}
     </Box>
   );
 }
