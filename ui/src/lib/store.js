@@ -7,6 +7,7 @@ import produce from "immer";
 import sha256 from "crypto-js/sha256";
 import { io } from "socket.io-client";
 import wsMiddleware from "./wsMiddleware";
+import { slackGetPlainText } from "../components/MySlate";
 import { customAlphabet } from "nanoid";
 import { nolookalikes } from "nanoid-dictionary";
 // FIXME safety
@@ -471,7 +472,24 @@ export const repoSlice = createSlice({
     },
     setPodType: (state, action) => {
       const { id, type } = action.payload;
-      state.pods[id].type = type;
+      let pod = state.pods[id];
+      if (type === "WYSIWYG" && typeof pod.content === "string") {
+        pod.content = [
+          {
+            type: "paragraph",
+            children: [
+              {
+                text: pod.content,
+              },
+            ],
+          },
+        ];
+      }
+      if (type === "CODE" && Array.isArray(pod.content)) {
+        console.log("Converting to code, this will lose styles");
+        pod.content = slackGetPlainText(pod.content);
+      }
+      pod.type = type;
     },
     addPodExport: (state, action) => {
       let { id, name } = action.payload;

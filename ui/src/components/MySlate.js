@@ -8,6 +8,14 @@ import { Button, Menu, Portal } from "./slate_helper";
 import { css } from "@emotion/css";
 // import {Icon}  from "@chakra-ui/react";
 import { FaBold, FaItalic, FaUnderline, FaStrikethrough } from "react-icons/fa";
+import { Node } from "slate";
+
+export function slackGetPlainText(nodes) {
+  if (!nodes) {
+    return "";
+  }
+  return nodes.map((n) => Node.string(n)).join("\n");
+}
 
 const initialValue = [
   {

@@ -1,15 +1,6 @@
-import { Node } from "slate";
-
 import * as actions from "./wsActions";
 
 import { repoSlice } from "../lib/store";
-
-const slackGetPlainText = (nodes) => {
-  if (!nodes) {
-    return "";
-  }
-  return nodes.map((n) => Node.string(n)).join("\n");
-};
 
 const socketMiddleware = () => {
   let socket = null;
@@ -160,7 +151,6 @@ const socketMiddleware = () => {
             payload: {
               lang: pod.lang,
               raw: pod.raw,
-              // code: slackGetPlainText(pod.content),
               code: pod.content,
               namespace: pod.ns,
               podId: pod.id,
@@ -227,7 +217,7 @@ const socketMiddleware = () => {
           if (id !== "ROOT") {
             // if the pod content code
             // console.log("ID:", pod.id);
-            let code = slackGetPlainText(pod.content);
+            let code = pod.content;
             // console.log("Code:", code);
             // FIXME check validity, i.e. have code, etc
             // import
@@ -266,7 +256,7 @@ const socketMiddleware = () => {
                   type: "runCode",
                   payload: {
                     lang: pod.lang,
-                    code: slackGetPlainText(pod.content),
+                    code: pod.content,
                     namespace: pod.ns,
                     podId: pod.id,
                     sessionId: store.getState().repo.sessionId,
@@ -314,7 +304,7 @@ const socketMiddleware = () => {
               type: "runCode",
               payload: {
                 lang: pod.lang,
-                code: slackGetPlainText(pod.content),
+                code: pod.content,
                 namespace: pod.ns,
                 podId: pod.id,
                 sessionId: store.getState().repo.sessionId,
