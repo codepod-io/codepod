@@ -28,9 +28,6 @@ export function MyMonaco({
       }}
       onChange={onChange}
       editorDidMount={(editor, monaco) => {
-        console.log("Did mount!");
-        console.log(editor);
-        console.log(monaco);
         // console.log(Math.min(1000, editor.getContentHeight()));
         const updateHeight = () => {
           // max height: 400
