@@ -43,6 +43,7 @@ import io from "socket.io-client";
 
 import Popover from "@material-ui/core/Popover";
 import Paper from "@material-ui/core/Paper";
+import stripAnsi from "strip-ansi";
 
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
 import { CgMenuRound } from "react-icons/cg";
@@ -55,6 +56,7 @@ import TextField from "@material-ui/core/TextField";
 import ClickAwayListener from "@material-ui/core/ClickAwayListener";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import { AiOutlineFunction } from "react-icons/ai";
+import Ansi from "ansi-to-react";
 
 import { MdImportExport, MdSwapVert, MdCallMissed } from "react-icons/md";
 
@@ -826,7 +828,7 @@ function IOStatus({ id, name }) {
               <Text>
                 StackTrace:
                 <Code whiteSpace="pre-wrap">
-                  {status.error.stacktrace.join("\n")}
+                  {stripAnsi(status.error.stacktrace.join("\n"))}
                 </Code>
               </Text>
             )}
@@ -1294,9 +1296,20 @@ function Pod({ id }) {
           {pod.error.stacktrace && (
             <Box>
               <Text>StackTrace</Text>
-              <Code w="100%" whiteSpace="pre-wrap" bg="gray.50">
-                {pod.error.stacktrace.join("\n")}
-              </Code>
+              {/* <Code w="100%" whiteSpace="pre-wrap" bg="gray.50" fontSize="sm">
+                {stripAnsi(pod.error.stacktrace.join("\n"))}
+              </Code> */}
+              <Box
+                whiteSpace="pre-wrap"
+                fontSize="sm"
+                // this inline-style also works
+                // but it cannot be applied to <Ansi/> tag
+                // style={{
+                //   whiteSpace: "pre-wrap",
+                // }}
+              >
+                <Ansi>{pod.error.stacktrace.join("\n")}</Ansi>
+              </Box>
             </Box>
           )}
         </Box>
