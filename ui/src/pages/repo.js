@@ -1100,6 +1100,20 @@ function ExportList({ pod }) {
                   dispatch(wsActions.wsToggleExport({ id: pod.id, name: k }));
                 }}
               />
+              <Button
+                size="xs"
+                color="red"
+                variant="ghost"
+                onClick={() => {
+                  // FIXME also delete all imports for it
+                  // Or just show error
+                  dispatch(
+                    repoSlice.actions.deletePodExport({ id: pod.id, name: k })
+                  );
+                }}
+              >
+                <CloseIcon />
+              </Button>
               {/* No need IOStatus for exports */}
               {/* <IOStatus id={pod.id} name={k} /> */}
             </Box>

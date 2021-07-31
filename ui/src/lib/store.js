@@ -503,7 +503,11 @@ export const repoSlice = createSlice({
     },
     deletePodExport: (state, action) => {
       let { id, name } = action.payload;
-      delete state.pods[id].exports[name];
+      if (!(name in state.pods[state.pods[id].parent].imports)) {
+        delete state.pods[id].exports[name];
+      } else {
+        state.error = `${name} is actively exported. Un-export first before removing.`;
+      }
     },
     togglePodExport: (state, action) => {
       let { id, name } = action.payload;
