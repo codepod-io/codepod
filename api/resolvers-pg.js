@@ -110,7 +110,11 @@ export const resolvers = {
     },
   },
   Mutation: {
-    signup: async (_, { username, email, password, name }) => {
+    signup: async (_, { username, email, password, invitation }) => {
+      if (invitation !== "CPFOUNDERS") {
+        console.log("Invalid signup with invalid code", invitation);
+        throw Error(`Invalid signup with invalid code: ${invitation}`);
+      }
       const salt = await bcrypt.genSalt(10);
       const hashed = await bcrypt.hash(password, salt);
       const user = await prisma.user.create({
@@ -118,7 +122,6 @@ export const resolvers = {
           username,
           email,
           hashedPassword: hashed,
-          name,
         },
       });
       return {

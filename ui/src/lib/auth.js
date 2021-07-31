@@ -84,22 +84,28 @@ function useProvideAuth() {
     }
   };
 
-  const signUp = async ({ username, email, password }) => {
+  const signUp = async ({ username, email, password, invitation }) => {
     const client = createApolloClient();
     const LoginMutation = gql`
       mutation SignupMutation(
         $username: String!
         $email: String!
         $password: String!
+        $invitation: String!
       ) {
-        signup(username: $username, email: $email, password: $password) {
+        signup(
+          username: $username
+          email: $email
+          password: $password
+          invitation: $invitation
+        ) {
           token
         }
       }
     `;
     const result = await client.mutate({
       mutation: LoginMutation,
-      variables: { username, password, email },
+      variables: { username, password, email, invitation },
     });
 
     console.log(result);

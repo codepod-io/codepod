@@ -84,7 +84,7 @@ function SignupForm(props) {
   const [error, setError] = useState(null);
   return (
     <Formik
-      initialValues={{ email: "", password: "" }}
+      initialValues={{ email: "", password: "", invitation: "" }}
       validate={(values) => {
         const errors = {};
         if (!values.email) {
@@ -102,6 +102,7 @@ function SignupForm(props) {
           email: values.email,
           username: values.username,
           password: values.password,
+          invitation: values.invitation,
         }).catch((err) => {
           // TODO use more user friendly error message
           setError(err.message);
@@ -147,6 +148,15 @@ function SignupForm(props) {
                 handleChange={handleChange}
                 handleBlur={handleBlur}
               />
+              <FormControl id="invitation">
+                <FormLabel>Invitation Code</FormLabel>
+                <Input
+                  name="invitation"
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  required
+                />
+              </FormControl>
               <Button
                 type="submit"
                 colorScheme="blue"

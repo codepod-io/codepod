@@ -64,7 +64,7 @@ const typeDefs = gql`
       username: String
       email: String
       password: String
-      name: String
+      invitation: String
     ): AuthData
     createRepo(name: String): Repo
     addPod(
