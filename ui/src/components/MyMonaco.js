@@ -18,6 +18,8 @@ export function MyMonaco({
       options={{
         selectOnLineNumbers: true,
         scrollBeyondLastLine: false,
+        folding: false,
+        lineNumbersMinChars: 3,
         wordWrap: "on",
         wrappingStrategy: "advanced",
         minimap: {
