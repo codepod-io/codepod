@@ -439,20 +439,25 @@ function SyncStatus({ pod }) {
   } else if (isDirty) {
     return (
       <Box>
-        <IconButton
+        <Button
           size="xs"
-          icon={<RepeatIcon />}
+          variant="ghost"
+          // icon={}
           // colorScheme={"yellow"}
           onClick={() => {
             dispatch(remoteUpdatePod(pod));
           }}
-        ></IconButton>
+        >
+          <RepeatIcon />
+        </Button>
       </Box>
     );
   } else {
     return (
       <Box>
-        <CheckIcon color="gray.300" />
+        <Button size="xs" variant="ghost" isDisabled>
+          <CheckIcon />
+        </Button>
       </Box>
     );
   }
@@ -518,7 +523,8 @@ function ToolBar({ pod }) {
   return (
     <Flex>
       <Button
-        size="sm"
+        variant="ghost"
+        size="xs"
         onClick={() => {
           dispatch(
             repoSlice.actions.addPod({
@@ -533,7 +539,8 @@ function ToolBar({ pod }) {
         <ArrowUpIcon />
       </Button>
       <Button
-        size="sm"
+        variant="ghost"
+        size="xs"
         onClick={() => {
           dispatch(
             repoSlice.actions.addPod({
@@ -548,7 +555,8 @@ function ToolBar({ pod }) {
         <ArrowDownIcon />
       </Button>
       <Button
-        size="sm"
+        variant="ghost"
+        size="xs"
         onClick={() => {
           dispatch(
             repoSlice.actions.addPod({
@@ -563,7 +571,8 @@ function ToolBar({ pod }) {
         <ArrowForwardIcon />
       </Button>
       <Button
-        size="sm"
+        variant="ghost"
+        size="xs"
         color="red"
         onClick={() => {
           dispatch(repoSlice.actions.deletePod({ id: pod.id }));
@@ -831,7 +840,6 @@ function HoveringBar({ pod, showMenu }) {
         >
           <HStack>
             <InfoBar pod={pod} />
-            <ToolBar pod={pod} />
           </HStack>
           <HStack my={2}>
             <TypeMenu pod={pod} />
@@ -918,7 +926,7 @@ function CodePod({ id }) {
       // p={2}
     >
       <Box>
-        <Box border="1px" w="sm" p="1rem" alignContent="center">
+        <Box border="1px" w="sm" pt={2} alignContent="center">
           <MyMonaco
             value={pod.content || "\n\n\n"}
             onChange={(value) => {
@@ -1142,12 +1150,26 @@ function Pod({ id }) {
         <HoveringBar pod={pod} showMenu={showMenu} />
       </Box>
 
-      <Flex
+      <Box
         style={{
           margin: "5px",
           position: "absolute",
           top: "0px",
-          right: "8px",
+          right: "15px",
+        }}
+      >
+        <Flex>
+          <ToolBar pod={pod} />
+          <SyncStatus pod={pod} />
+        </Flex>
+      </Box>
+
+      <Flex
+        style={{
+          margin: "5px",
+          position: "absolute",
+          bottom: "0px",
+          right: "15px",
         }}
       >
         {/* The lang */}
@@ -1161,7 +1183,6 @@ function Pod({ id }) {
             {pod.lang}
           </Text>
         )}
-        <SyncStatus pod={pod} />
       </Flex>
     </Box>
   );
@@ -1192,7 +1213,6 @@ function ThePod({ id }) {
   } else if (pod.type === "DECK") {
     return (
       <Box>
-        {/* <ToolBar pod={pod} /> */}
         {pod.children.length == 0 && (
           <Button
             size="sm"
