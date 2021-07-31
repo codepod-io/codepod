@@ -233,9 +233,6 @@ const socketMiddleware = () => {
           // evaluate child first, then parent
           if (id !== "ROOT") {
             // if the pod content code
-            // console.log("ID:", pod.id);
-            let code = pod.content;
-            // console.log("Code:", code);
             // FIXME check validity, i.e. have code, etc
             // import
             if (pod.imports) {
@@ -267,7 +264,7 @@ const socketMiddleware = () => {
               }
             }
 
-            if (code) {
+            if (pod.type === "CODE" && pod.content && pod.lang) {
               store.dispatch(repoSlice.actions.clearResults(pod.id));
               socket.send(
                 JSON.stringify({
