@@ -570,6 +570,10 @@ export class CodePodKernel {
     await removeContainer(name);
   }
   addSocket(socket) {
+    if (this.socket === socket) {
+      return;
+    }
+    this.socket = socket;
     this.wire.listenIOPub((topic, msgs) => {
       // console.log("-----", topic, msgs);
       // iracket's topic seems to be an ID. I should use msg type instead

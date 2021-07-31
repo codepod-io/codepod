@@ -176,107 +176,53 @@ async function getSessionKernel({ sessionId, lang, socket }) {
   return kernel;
 }
 
-function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
-async function handleConnectKernel(socket, { sessionId, lang }) {
-  console.log("==== connectKernel", sessionId, lang);
-  let kernel = await getSessionKernel({ sessionId, lang, socket });
-  if (!kernel) {
-    console.log("ERROR: kernel error");
-    return;
-  }
-  // listen on iopub and use socket to send message
-  console.log("add socket to kernel ..", lang);
-  kernel.addSocket(socket);
-  // send a request status query in case it is existing kernel
-  console.log("requesting kernel status.. for", lang);
-  kernel.requestKernelStatus();
-  await sleep(50);
-  kernel.requestKernelStatus();
-  await sleep(50);
-  kernel.requestKernelStatus();
-  await sleep(100);
-  kernel.requestKernelStatus();
-  await sleep(500);
-  kernel.requestKernelStatus();
-}
-
-async function handleRequestKernelStatus({ sessionId, lang }) {
-  console.log("==== requestKernelStatus", sessionId, lang);
-  let kernel = await getSessionKernel({ sessionId, lang });
-  if (kernel) {
-    kernel.requestKernelStatus();
-  } else {
-    console.log("ERROR: kernel error");
-  }
-}
-
-async function handleRunCode({
-  sessionId,
-  lang,
-  raw,
-  code,
-  podId,
-  namespace,
-  midports,
-}) {
-  console.log("runCode", sessionId, lang);
-  let kernel = await getSessionKernel({ sessionId, lang });
-  if (!kernel) {
-    console.log("kernel error");
-    return;
-  }
-  if (!code) {
-    console.log("Code is empty");
-    return;
-  }
-  if (raw) {
-    kernel.evalRaw({ code, podId });
-    return;
-  } else {
-    kernel.eval({ code, podId, namespace, midports });
-  }
-}
-
 export function listenOnMessage(socket) {
   socket.on("message", async (msg) => {
-    // console.log("msg:", msg.toString());
-    // console.log("parsed", JSON.parse(msg.toString()));
-    // let { type, payload } = JSON.parse(msg);
-    // console.log(typeof msg);
-    // console.log(Object.keys(msg));
-    // console.log(msg.length);
-    // console.log(msg[0]);
-    // console.log(Buffer.from(msg).toString());
-    // console.log("string:", msg.toString());
     let { type, payload } = JSON.parse(msg.toString());
+    let { sessionId, lang } = payload;
+    let kernel = await getSessionKernel({ sessionId, lang, socket });
+    if (!kernel) {
+      console.log("ERROR: kernel error");
+      return;
+    }
+    kernel.addSocket(socket);
     switch (type) {
-      case "connectKernel":
-        await handleConnectKernel(socket, payload);
-        break;
       case "runCode":
-        await handleRunCode(payload);
+        {
+          let { sessionId, lang, raw, code, podId, namespace, midports } =
+            payload;
+          if (!code) {
+            console.log("Code is empty");
+            return;
+          }
+          if (raw) {
+            kernel.evalRaw({ code, podId });
+            return;
+          } else {
+            kernel.eval({ code, podId, namespace, midports });
+          }
+        }
         break;
       case "requestKernelStatus":
-        handleRequestKernelStatus(payload);
+        console.log("requestKernelStatus", sessionId, lang);
+        kernel.requestKernelStatus();
         break;
       case "ensureImports":
         {
           let { lang, id, from, to, names } = payload;
+          kernel.ensureImports({ id, from, to, names });
         }
         break;
       case "addImport":
         {
           let { lang, id, from, to, name } = payload;
+          kernel.addImport({ id, from, to, name });
         }
         break;
       case "deleteImport":
         {
           let { lang, id, name, ns } = payload;
+          kernel.deleteImport({ id, ns, name });
         }
         break;
       case "deleteMidport": {

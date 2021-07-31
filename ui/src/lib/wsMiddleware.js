@@ -28,7 +28,7 @@ const socketMiddleware = () => {
         // socket.onclose = onClose(store);
         // socket.onopen = onOpen(store);
         socket.onmessage = (msg) => {
-          console.log("onmessage", msg.data);
+          // console.log("onmessage", msg.data);
           let { type, payload } = JSON.parse(msg.data);
           switch (type) {
             case "output":
@@ -68,7 +68,7 @@ const socketMiddleware = () => {
               break;
             case "status":
               {
-                console.log("Received status:", payload);
+                // console.log("Received status:", payload);
                 store.dispatch(actions.wsStatus(payload));
               }
               break;
@@ -87,21 +87,27 @@ const socketMiddleware = () => {
 
           // request kernel status after connection
           Object.keys(store.getState().repo.kernels).map((k) => {
-            // store.dispatch(
-            //   actions.wsRequestStatus({
-            //     lang: k,
-            //     sessionId: store.getState().repo.sessionId,
-            //   })
-            // );
-            socket.send(
-              JSON.stringify({
-                type: "connectKernel",
-                payload: {
-                  lang: k,
-                  sessionId: store.getState().repo.sessionId,
-                },
+            store.dispatch(
+              actions.wsRequestStatus({
+                lang: k,
+                sessionId: store.getState().repo.sessionId,
               })
             );
+            // wait 1s and resend. The kernel needs to rebind the socket to
+            // IOPub, which takes sometime and the status result might not send
+            // back. This will ensure the browser gets a fairly consistent
+            // status report upon connection.
+            [100, 1000, 5000].map((t) => {
+              setTimeout(() => {
+                console.log(`Resending after ${t} ms ..`);
+                store.dispatch(
+                  actions.wsRequestStatus({
+                    lang: k,
+                    sessionId: store.getState().repo.sessionId,
+                  })
+                );
+              }, t);
+            });
           });
         };
         // so I'm setting this
@@ -138,7 +144,12 @@ const socketMiddleware = () => {
       case "WS_RUN": {
         let id = action.payload;
         if (!socket) {
-          store.dispatch(repoSlice.actions.addError("Runtime not connected"));
+          store.dispatch(
+            repoSlice.actions.addError({
+              type: "error",
+              msg: "Runtime not connected",
+            })
+          );
           break;
         }
         let pod = store.getState().repo.pods[id];
@@ -185,6 +196,7 @@ const socketMiddleware = () => {
                   // FIXME keep consistent with computeNamespace
                   from: pod.ns === "" ? `${pod.id}` : `${pod.ns}/${pod.id}`,
                   id: pod.id,
+                  sessionId: store.getState().repo.sessionId,
                 },
               })
             );
@@ -205,7 +217,12 @@ const socketMiddleware = () => {
       }
       case "WS_RUN_ALL": {
         if (!socket) {
-          store.dispatch(repoSlice.actions.addError("Runtime not connected"));
+          store.dispatch(
+            repoSlice.actions.addError({
+              type: "error",
+              msg: "Runtime not connected",
+            })
+          );
           break;
         }
         // get all pods
@@ -243,6 +260,7 @@ const socketMiddleware = () => {
                       to: pod.ns,
                       id: pod.id,
                       name: k,
+                      sessionId: store.getState().repo.sessionId,
                     },
                   })
                 );
@@ -277,7 +295,10 @@ const socketMiddleware = () => {
           socket.send(
             JSON.stringify({
               type: "requestKernelStatus",
-              payload: action.payload,
+              payload: {
+                sessionId: store.getState().repo.sessionId,
+                ...action.payload,
+              },
             })
           );
         } else {
@@ -287,7 +308,12 @@ const socketMiddleware = () => {
       case "WS_TOGGLE_MIDPORT": {
         let { id, name } = action.payload;
         if (!socket) {
-          store.dispatch(repoSlice.actions.addError("Runtime not connected"));
+          store.dispatch(
+            repoSlice.actions.addError({
+              type: "error",
+              msg: "Runtime not connected",
+            })
+          );
           break;
         }
         store.dispatch(repoSlice.actions.togglePodMidport({ id, name }));
@@ -329,6 +355,7 @@ const socketMiddleware = () => {
                 id: pod.id,
                 ns: pod.ns,
                 name,
+                sessionId: store.getState().repo.sessionId,
               },
             })
           );
