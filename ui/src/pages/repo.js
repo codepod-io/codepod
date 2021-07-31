@@ -816,7 +816,7 @@ function HoveringBar({ pod, showMenu }) {
         ref={anchorEl}
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
-        onClick={() => setShowForce(!showForce)}
+        // onClick={() => setShowForce(!showForce)}
         visibility={showMenu || show || showForce ? "visible" : "hidden"}
       >
         <CgMenuRound size={25} />
