@@ -24,7 +24,7 @@ import {
 import { chakra } from "@chakra-ui/system";
 import { StyledLink as Link } from "../components/utils";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FaFacebook, FaGithub, FaGoogle } from "react-icons/fa";
 import { HiEye, HiEyeOff } from "react-icons/hi";
 import { Formik } from "formik";
@@ -244,9 +244,11 @@ PasswordField.displayName = "PasswordField";
 export default function Signup() {
   const { isSignedIn } = useAuth();
   let history = useHistory();
-  if (isSignedIn()) {
-    history.push("/");
-  }
+  useEffect(() => {
+    if (isSignedIn()) {
+      history.push("/");
+    }
+  }, [isSignedIn]);
   return (
     <Box
       //   bg={useColorModeValue("gray.50", "inherit")}
