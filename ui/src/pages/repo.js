@@ -199,21 +199,22 @@ function SidebarKernel() {
 
 function ToastError() {
   const toast = useToast();
-  const msg = useSelector((state) => state.repo.error);
+  const error = useSelector((state) => state.repo.error);
   const dispatch = useDispatch();
   useEffect(() => {
-    if (msg) {
+    if (error) {
       toast({
         title: `ERROR`,
-        description: msg,
-        status: "error",
+        position: "top-right",
+        description: error.msg,
+        status: error.type,
         duration: 3000,
         isClosable: true,
       });
       // I'll need to clear this msg once it is displayed
       dispatch(repoSlice.actions.clearError());
     }
-  }, [msg]);
+  }, [error]);
   return <Box></Box>;
 }
 

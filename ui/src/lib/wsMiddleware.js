@@ -338,8 +338,14 @@ const socketMiddleware = () => {
       case "WS_TOGGLE_EXPORT": {
         let { id, name } = action.payload;
         if (!socket) {
-          store.dispatch(repoSlice.actions.addError("Runtime not connected"));
-          break;
+          store.dispatch(
+            // FIXME this shoudl be warning
+            repoSlice.actions.addError({
+              type: "warning",
+              msg: "Runtime not connected. Not evaluated.",
+            })
+          );
+          // break;
         }
         store.dispatch(repoSlice.actions.togglePodExport({ id, name }));
         let pods = store.getState().repo.pods;
@@ -350,7 +356,7 @@ const socketMiddleware = () => {
           store.dispatch(
             repoSlice.actions.addPodImport({ id: parent.id, name })
           );
-          socket.send(
+          socket?.send(
             JSON.stringify({
               type: "addImport",
               payload: {
@@ -368,7 +374,7 @@ const socketMiddleware = () => {
             store.dispatch(
               repoSlice.actions.deletePodImport({ id: parent.id, name })
             );
-            socket.send(
+            socket?.send(
               JSON.stringify({
                 type: "deleteImport",
                 payload: {
@@ -387,8 +393,13 @@ const socketMiddleware = () => {
       case "WS_TOGGLE_IMPORT": {
         let { id, name } = action.payload;
         if (!socket) {
-          store.dispatch(repoSlice.actions.addError("Runtime not connected"));
-          break;
+          store.dispatch(
+            repoSlice.actions.addError({
+              type: "warning",
+              msg: "Runtime not connected. Not evaluated.",
+            })
+          );
+          // break;
         }
         store.dispatch(repoSlice.actions.togglePodImport({ id, name }));
         let pods = store.getState().repo.pods;
@@ -399,7 +410,7 @@ const socketMiddleware = () => {
           store.dispatch(
             repoSlice.actions.addPodImport({ id: parent.id, name })
           );
-          socket.send(
+          socket?.send(
             JSON.stringify({
               type: "addImport",
               payload: {
@@ -417,7 +428,7 @@ const socketMiddleware = () => {
             store.dispatch(
               repoSlice.actions.deletePodImport({ id: parent.id, name })
             );
-            socket.send(
+            socket?.send(
               JSON.stringify({
                 type: "deleteImport",
                 payload: {
