@@ -6,7 +6,8 @@ import { XTerm, DummyTerm } from "../components/MyXTerm";
 function getNewTerm(lang) {
   if (!lang) return DummyTerm();
   console.log("connecting to socket ..");
-  let socket = io(`http://localhost:4000`);
+  // FIXME /ws url
+  let socket = io(`https://${window.location.hostname}/graphql`);
   console.log("spawning ..");
   socket.emit("kernelTerminalSpawn", lang);
   let term = new Terminal();

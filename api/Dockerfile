@@ -1,9 +1,11 @@
 FROM node:16
 
 WORKDIR /app
-COPY package.json /app/package.json
+COPY package.json .
 RUN yarn
 
-# COPY . /app/
+COPY . .
+# this will modify node_modules/@prisma/client
+RUN yarn run prisma generate
 
-# CMD ["yarn", "dev"]
+CMD ["yarn", "dev"]

@@ -1,0 +1,6 @@
+*.hcl
+.terraform
+*.json
+outputs.tf
+*.tfstate*
+*.tfvars

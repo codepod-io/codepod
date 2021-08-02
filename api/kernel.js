@@ -383,7 +383,7 @@ async function removeContainer(name) {
 }
 
 // return promise of IP address
-async function createContainer(image, name) {
+async function createContainer(image, name, network) {
   return new Promise((resolve, reject) => {
     var docker = new Docker();
     // spawn("docker", ["run", "-d", "jp-julia"]);
@@ -391,7 +391,7 @@ async function createContainer(image, name) {
     // let name = "julia_kernel_X";
     console.log("spawning kernel ..");
     docker.createContainer(
-      { Image: image, name, NetworkMode: "codepod" },
+      { Image: image, name, NetworkMode: network },
       (err, container) => {
         if (err) {
           console.log("ERR:", err);
@@ -405,7 +405,7 @@ async function createContainer(image, name) {
             // let ip = data.NetworkSettings.IPAddress
             //
             // If created using codepod network bridge, the IP is here:
-            let ip = data.NetworkSettings.Networks.codepod.IPAddress;
+            let ip = data.NetworkSettings.Networks[network].IPAddress;
             console.log("IP:", ip);
             resolve(ip);
           });
@@ -537,9 +537,10 @@ export class CodePodKernel {
   async init({ sessionId, socket }) {
     // fname = await genConnSpec();
     this.sessionId = sessionId;
-    let name = `cpkernel_${sessionId}_${this.lang}`;
+    let network = process.env["KERNEL_NETWORK"] || "codepod";
+    let name = `cpkernel_${network}_${sessionId}_${this.lang}`;
     await removeContainer(name);
-    let ip = await createContainer(this.image, name);
+    let ip = await createContainer(this.image, name, network);
     // FIXME I don't want to extend Kernel, I'm using composition
     console.log("connecting to zmq ..");
     this.wire = new ZmqWire(this.fname, ip);

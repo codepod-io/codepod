@@ -1,5 +1,14 @@
 # Pebble Development Platform (PDP)
 
+# Dev notes
+
+```
+docker stop $(docker ps  -a  | grep _kernel | awk '{print $1}')
+docker rm $(docker ps  -a  | grep _kernel | awk '{print $1}')
+```
+
+# Intro
+
 The app contains the front-end (ui) and the back-end (api). To run, start both:
 
 ```

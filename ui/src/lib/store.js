@@ -58,7 +58,7 @@ export const loadPodQueue = createAsyncThunk(
     }
   `;
     // return res
-    const res = await fetch("http://localhost:4000/graphql", {
+    const res = await fetch("/graphql", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -218,7 +218,7 @@ async function doRemoteAddPod({ type, id, parent, index, reponame, username }) {
     }
   }
 `;
-  const res = await fetch("http://localhost:4000/graphql", {
+  const res = await fetch("/graphql", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -248,7 +248,7 @@ async function doRemoteDeletePod({ id, toDelete }) {
   ) {
     deletePod(id: $id, toDelete: $toDelete)
   }`;
-  const res = await fetch("http://localhost:4000/graphql", {
+  const res = await fetch("/graphql", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -285,7 +285,7 @@ export const remoteUpdateAllPods = createAsyncThunk(
 export const remoteUpdatePod = createAsyncThunk(
   "remoteUpdatePod",
   async (pod, { dispatch }) => {
-    const res = await fetch("http://localhost:4000/graphql", {
+    const res = await fetch("/graphql", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -414,7 +414,7 @@ export const repoSlice = createSlice({
     ensureSessionRuntime: (state, action) => {
       const { lang } = action.payload;
       if (!(lang in state.sessionRuntime)) {
-        let socket = io(`http://localhost:4000`);
+        let socket = io(`http://${window.location.hostname}:4000`);
         socket.emit("spawn", state.sessionId, lang);
         state.sessionRuntime[lang] = socket;
       }

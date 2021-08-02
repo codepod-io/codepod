@@ -1,0 +1,50 @@
+# Use postgres/example user/password credentials
+version: "3.5"
+
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - codepod-db-prod:/var/lib/postgresql/data
+
+  api:
+    image: codepod-api
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: yarn dev
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
+      JWT_SECRET: ${JWT_SECRET}
+      KERNEL_NETWORK: "codepod-prod"
+
+  ui:
+    image: codepod-ui
+    restart: always
+    command: yarn start
+
+  # docker-compose up -d --build --force-recreate --no-deps nginx
+  nginx:
+    image: nginx:1.15-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/lib/letsencrypt:/var/lib/letsencrypt
+    depends_on:
+      - ui
+
+volumes:
+  codepod-db-prod:
+
+networks:
+  default:
+    name: codepod-prod
+    driver: bridge

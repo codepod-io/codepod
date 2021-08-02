@@ -7,6 +7,7 @@ import express from "express";
 import http from "http";
 // import { Server } from "socket.io";
 import { WebSocketServer } from "ws";
+import { parse } from "url";
 
 import { listenOnMessage } from "./socket.js";
 
@@ -127,7 +128,21 @@ async function startApolloServer() {
 
   const app = express();
   const http_server = http.createServer(app);
+  // So actually this works, this will capture all wss://xxx/xxx/xxx no matter
+  // the path
   const wss = new WebSocketServer({ server: http_server });
+  // const wss = new WebSocketServer({ noServer: true });
+  // http_server.on("upgrade", function upgrade(request, socket, head) {
+  //   const { pathname } = parse(request.url);
+  //   if (pathname === "/ws") {
+  //     console.log(".....");
+  //     wss.handleUpgrade(request, socket, head, function done(ws) {
+  //       wss.emit("connection", ws, request);
+  //     });
+  //   } else {
+  //     socket.destroy();
+  //   }
+  // });
 
   apollo.applyMiddleware({ app });
 

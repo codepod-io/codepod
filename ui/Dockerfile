@@ -4,6 +4,6 @@ WORKDIR /app
 COPY ./package.json package.json
 RUN yarn
 
-# COPY . .
+COPY . .
 
-# CMD ["yarn", "start"]
+CMD ["yarn", "start"]

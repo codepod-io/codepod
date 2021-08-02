@@ -20,7 +20,16 @@ const socketMiddleware = () => {
 
         // connect to the remote host
         // socket = new WebSocket(action.host);
-        socket = new WebSocket(`ws://localhost:4000`);
+        //
+        // I canont use "/ws" for a WS socket. Thus I need to detect what's the
+        // protocol used here, so that it supports both dev and prod env.
+        let socket_url;
+        if (window.location.protocol === "http:") {
+          socket_url = `ws://${window.location.host}/ws`;
+        } else {
+          socket_url = `wss://${window.location.host}/ws`;
+        }
+        socket = new WebSocket(socket_url);
         // socket.emit("spawn", state.sessionId, lang);
 
         // websocket handlers
