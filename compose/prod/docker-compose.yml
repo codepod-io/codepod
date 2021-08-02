@@ -41,6 +41,14 @@ services:
     depends_on:
       - ui
 
+  # docker run -it --rm --network host -v $(pwd)/frpc.ini:/etc/frp/frpc.ini snowdreamtech/frpc
+  frpc:
+    image: snowdreamtech/frpc
+    restart: always
+    volumes:
+      - ./frpc.ini:/etc/frp/frpc.ini
+    network_mode: "host"
+
 volumes:
   codepod-db-prod:
 
