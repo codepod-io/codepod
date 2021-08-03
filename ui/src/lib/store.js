@@ -445,7 +445,7 @@ export const repoSlice = createSlice({
         result: "",
         stdout: "",
         error: null,
-        lang: lang,
+        lang: lang || "python",
         raw: false,
         exports: {},
         imports: {},
@@ -735,6 +735,7 @@ export const repoSlice = createSlice({
       let { podId, text } = action.payload;
       if (!(podId in state.pods)) {
         console.log("WARNING podId is not found:", podId);
+        return;
       }
       // append
       state.pods[podId].stdout += text;
