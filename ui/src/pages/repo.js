@@ -1277,7 +1277,7 @@ function Pod({ id }) {
       </Box>
 
       {pod.stdout && (
-        <Box overflow="scroll" h="3xs" border="1px" bg="gray.50">
+        <Box overflow="scroll" maxH="3xs" border="1px" bg="gray.50">
           {/* <Code maxW="lg" whiteSpace="pre-wrap">
             {pod.stdout}
           </Code> */}
@@ -1301,7 +1301,7 @@ function Pod({ id }) {
         </Flex>
       )}
       {pod.error && (
-        <Box overflow="scroll" h="3xs" border="1px" bg="gray.50">
+        <Box overflow="scroll" maxH="3xs" border="1px" bg="gray.50">
           <Text color="red">Error: {pod.error.evalue}</Text>
           {pod.error.stacktrace && (
             <Box>
