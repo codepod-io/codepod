@@ -726,8 +726,8 @@ function Deck({ id }) {
             dispatch(
               repoSlice.actions.addPod({
                 parent: pod.id,
-                type: "CODE",
-                index: 0,
+                type: "DECK",
+                index: pod.children.length,
               })
             );
           }}
@@ -771,7 +771,7 @@ function Deck({ id }) {
 
         {/* 2. render all children */}
         {pod.children.map((id) => {
-          return <Pod id={id}></Pod>;
+          return <Pod id={id} key={id}></Pod>;
         })}
       </Box>
       <Box>
