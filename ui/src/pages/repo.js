@@ -611,22 +611,6 @@ function ToolBar({ pod }) {
       <Button
         variant="ghost"
         size="xs"
-        onClick={() => {
-          dispatch(
-            repoSlice.actions.addPod({
-              parent: pod.id,
-              type: pod.type,
-              lang: pod.lang,
-              index: 0,
-            })
-          );
-        }}
-      >
-        <ArrowForwardIcon />
-      </Button>
-      <Button
-        variant="ghost"
-        size="xs"
         color="red"
         onClick={() => {
           dispatch(repoSlice.actions.deletePod({ id: pod.id }));
@@ -712,11 +696,15 @@ function Deck({ id }) {
   const dispatch = useDispatch();
   const pod = useSelector((state) => state.repo.pods[id]);
   // assuming the pod id itself is already rendered
+  if (pod.type !== "DECK") return <Box></Box>;
   if (pod.children.length == 0) {
-    if (pod.id === "ROOT") {
+    if (pod.id !== "ROOT") {
+      return <Box></Box>;
+    } else {
       return (
         <Button
-          size="sm"
+          size="xs"
+          variant="ghost"
           onClick={() => {
             dispatch(
               repoSlice.actions.addPod({
@@ -730,8 +718,6 @@ function Deck({ id }) {
           <AddIcon />
         </Button>
       );
-    } else {
-      return <Box></Box>;
     }
   }
   return (
@@ -745,7 +731,27 @@ function Deck({ id }) {
       p={3}
     >
       <Box>
-        <Code colorScheme="blackAlpha">{pod.id}</Code>
+        <Box>
+          <Code colorScheme="blackAlpha">{pod.id}</Code>
+          <Button
+            size="xs"
+            variant="ghost"
+            onClick={() => {
+              // 1. add a dec
+              dispatch(
+                repoSlice.actions.addPod({
+                  parent: pod.id,
+                  type: "DECK",
+                  index: pod.children.length,
+                  lang: pod.lang,
+                })
+              );
+            }}
+          >
+            <ArrowForwardIcon />
+          </Button>
+        </Box>
+
         {/* 2. render all children */}
         {pod.children.map((id) => {
           return <Pod id={id}></Pod>;
@@ -1180,6 +1186,7 @@ function Pod({ id }) {
   const pod = useSelector((state) => state.repo.pods[id]);
   const dispatch = useDispatch();
   const [showMenu, setShowMenu] = useState(false);
+  if (pod.type === "DECK") return <Box></Box>;
   return (
     <Box ml={0} mb={1} w="md">
       <ExportList pod={pod} />

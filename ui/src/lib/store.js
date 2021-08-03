@@ -769,12 +769,25 @@ function isPodQueueAction(action) {
 
 const podQueueMiddleware = (storeAPI) => (next) => (action) => {
   // modify addPod action
+  let result;
   if (action.type === repoSlice.actions.addPod.type) {
     // construct the ID here so that the client and the server got the same ID
     action = produce(action, (draft) => {
       const id = "CP" + nanoid();
       draft.payload.id = id;
     });
+    result = next(action);
+    storeAPI.dispatch(repoSlice.actions.addPodQueue(action));
+    if (action.payload.type === "DECK") {
+      let action2 = produce(action, (draft) => {
+        draft.payload.parent = draft.payload.id;
+        draft.payload.id = "CP" + nanoid();
+        draft.payload.type = "CODE";
+        draft.payload.index = 0;
+      });
+      next(action2);
+      storeAPI.dispatch(repoSlice.actions.addPodQueue(action2));
+    }
   } else if (action.type === repoSlice.actions.deletePod.type) {
     action = produce(action, (draft) => {
       const { id } = draft.payload;
@@ -784,17 +797,16 @@ const podQueueMiddleware = (storeAPI) => (next) => (action) => {
         [id].concat(...pods[id].children.map((_id) => dfs(_id)));
       draft.payload.toDelete = dfs(id);
     });
+    result = next(action);
+    storeAPI.dispatch(repoSlice.actions.addPodQueue(action));
+  } else {
+    result = next(action);
   }
 
-  let result = next(action);
-
-  if (isPodQueueAction(action)) {
-    storeAPI.dispatch(repoSlice.actions.addPodQueue(action));
-    // schedule the queue
-    const q = storeAPI.getState().repo.queue;
-    if (q.length > 0 && !storeAPI.getState().repo.queueProcessing) {
-      storeAPI.dispatch(loopPodQueue(q[0]));
-    }
+  // schedule the queue
+  const q = storeAPI.getState().repo.queue;
+  if (q.length > 0 && !storeAPI.getState().repo.queueProcessing) {
+    storeAPI.dispatch(loopPodQueue(q[0]));
   }
 
   return result;
