@@ -711,61 +711,53 @@ function getDeck(id) {
 function Deck({ id }) {
   const dispatch = useDispatch();
   const pod = useSelector((state) => state.repo.pods[id]);
+  // assuming the pod id itself is already rendered
+  if (pod.children.length == 0) {
+    if (pod.id === "ROOT") {
+      return (
+        <Button
+          size="sm"
+          onClick={() => {
+            dispatch(
+              repoSlice.actions.addPod({
+                parent: pod.id,
+                type: "CODE",
+                index: 0,
+              })
+            );
+          }}
+        >
+          <AddIcon />
+        </Button>
+      );
+    } else {
+      return <Box></Box>;
+    }
+  }
   return (
-    <VStack align="start">
+    <HStack
+      borderLeft="2px"
+      borderTop="2px"
+      my={5}
+      mx={3}
+      bg="gray.50"
+      boxShadow="xl"
+      p={3}
+    >
       <Box>
-        {/* LEFT */}
-        <Flex align="center">
-          {pod.id === "ROOT" ? (
-            <Box>
-              {pod.children.length == 0 && (
-                <Button
-                  size="sm"
-                  onClick={() => {
-                    dispatch(
-                      repoSlice.actions.addPod({
-                        parent: pod.id,
-                        type: "CODE",
-                        index: 0,
-                      })
-                    );
-                  }}
-                >
-                  <AddIcon />
-                </Button>
-              )}
-            </Box>
-          ) : (
-            <Pod id={pod.id} />
-          )}
-          {pod.children.length > 0 && (
-            <Flex>
-              {/* The brace */}
-              {pod.id !== "ROOT" && (
-                <Box ml={1}>
-                  <Image
-                    // src={require("../GullBraceLeft.svg")}
-                    src={brace}
-                    // src="../GullBraceLeft.svg"
-                    alt="brace"
-                    h="100%"
-                    maxW="none"
-                    w="20px"
-                  />
-                </Box>
-              )}
-              {/* RIGHT */}
-              <Flex direction="column">
-                <Code colorScheme="blackAlpha">{pod.id}</Code>
-                {pod.children.map((id) => {
-                  return getDeck(id);
-                })}
-              </Flex>
-            </Flex>
-          )}
-        </Flex>
+        <Code colorScheme="blackAlpha">{pod.id}</Code>
+        {/* 2. render all children */}
+        {pod.children.map((id) => {
+          return <Pod id={id}></Pod>;
+        })}
       </Box>
-    </VStack>
+      <Box>
+        {/* 3. for each child, render its children using this Deck */}
+        {pod.children.map((id) => {
+          return getDeck(id);
+        })}
+      </Box>
+    </HStack>
   );
 }
 
@@ -1189,7 +1181,7 @@ function Pod({ id }) {
   const dispatch = useDispatch();
   const [showMenu, setShowMenu] = useState(false);
   return (
-    <Box ml={5} mb={1} w="md">
+    <Box ml={0} mb={1} w="md">
       <ExportList pod={pod} />
       <ImportList pod={pod} />
       <Box
