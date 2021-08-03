@@ -174,6 +174,37 @@ export const resolvers = {
       });
       return repo;
     },
+    deleteRepo: async (_, { name }, { userId }) => {
+      if (!userId) throw Error("Unauthenticated");
+      const user = await prisma.user.findFirst({
+        where: {
+          id: userId,
+        },
+      });
+      const repo = await prisma.repo.findFirst({
+        where: {
+          name,
+          owner: {
+            id: userId,
+          },
+        },
+      });
+      if (!repo) throw new Error("Repo not found");
+      // 1. delete all pods
+      await prisma.pod.deleteMany({
+        where: {
+          repo: {
+            id: repo.id,
+          },
+        },
+      });
+      await prisma.repo.delete({
+        where: {
+          id: repo.id,
+        },
+      });
+      return true;
+    },
     clearUser: () => {},
     addPod: async (
       _,

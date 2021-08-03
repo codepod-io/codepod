@@ -29,6 +29,16 @@ const FETCH_REPOS = gql`
 
 function Repos() {
   const { loading, error, data } = useQuery(FETCH_REPOS);
+  const [deleteRepo] = useMutation(
+    gql`
+      mutation deleteRepo($name: String) {
+        deleteRepo(name: $name)
+      }
+    `,
+    {
+      refetchQueries: ["GetRepos"],
+    }
+  );
   const { me } = useMe();
   if (loading) return <p>Loading...</p>;
   if (error)
@@ -49,6 +59,18 @@ function Repos() {
           <Link
             to={`/${me?.username}/${repo.name}`}
           >{`/${me?.username}/${repo.name}`}</Link>
+          <Button
+            size="xs"
+            onClick={() => {
+              deleteRepo({
+                variables: {
+                  name: repo.name,
+                },
+              });
+            }}
+          >
+            Delete
+          </Button>
         </Text>
       ))}
     </Box>
