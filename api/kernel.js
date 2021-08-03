@@ -412,7 +412,12 @@ async function createContainer(image, name, network) {
     // let name = "julia_kernel_X";
     console.log("spawning kernel ..");
     docker.createContainer(
-      { Image: image, name, NetworkMode: network },
+      {
+        Image: image,
+        name,
+        NetworkMode: network,
+        Binds: ["dotjulia:/root/.julia"],
+      },
       (err, container) => {
         if (err) {
           console.log("ERR:", err);
