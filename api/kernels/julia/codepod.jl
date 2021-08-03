@@ -45,3 +45,6 @@ function CODEPOD_DELETE_IMPORT(ns, name)
     _, mod = ensureModuleDefined(ns)
     include_string(mod, "$name=nothing")
 end
+
+import Pkg
+Pkg.activate("CODEPOD")
