@@ -141,7 +141,7 @@ function SidebarRuntime() {
         <Button
           size="sm"
           onClick={() => {
-            dispatch(wsActions.wsConnect("host"));
+            dispatch(wsActions.wsConnect());
           }}
         >
           Connect
@@ -356,7 +356,7 @@ export default function Repo() {
   let { username, reponame } = useParams();
   const dispatch = useDispatch();
   dispatch(repoSlice.actions.setRepo({ username, reponame }));
-  const { me } = useMe();
+  const { loading, me } = useMe();
   useEffect(() => {
     if (me) {
       dispatch(
@@ -364,6 +364,7 @@ export default function Repo() {
           `${me?.username}_${username}_${reponame}`
         )
       );
+      dispatch(wsActions.wsConnect());
     }
   }, [me]);
   useEffect(() => {
@@ -378,6 +379,8 @@ export default function Repo() {
   //
   // const queueL = useSelector((state) => state.repo.queue.length);
   const repoLoaded = useSelector((state) => state.repo.repoLoaded);
+
+  if (loading) return <Text>Loading</Text>;
 
   return (
     <Box m="auto" height="100%">
@@ -1249,16 +1252,21 @@ function Pod({ id }) {
       </Box>
 
       {pod.stdout && (
-        <Text>
-          <Code maxW="lg" whiteSpace="pre-wrap">
+        <Box overflow="scroll" h="3xs" border="1px" bg="gray.50">
+          {/* <Code maxW="lg" whiteSpace="pre-wrap">
             {pod.stdout}
-          </Code>
-        </Text>
+          </Code> */}
+          <Text>Stdout:</Text>
+          <Box whiteSpace="pre-wrap" fontSize="sm">
+            <Ansi>{pod.stdout}</Ansi>
+          </Box>
+        </Box>
       )}
+      {pod.running && <Text>Running ..</Text>}
       {pod.result && (
         <Flex>
           <Text color="gray" mr="1rem">
-            [{pod.result.count}]:
+            Result: [{pod.result.count}]:
           </Text>
           <Text>
             <Code maxW="lg" whiteSpace="pre-wrap">
@@ -1269,7 +1277,7 @@ function Pod({ id }) {
       )}
       {pod.error && (
         <Box overflow="scroll" h="3xs" border="1px" bg="gray.50">
-          <Text color="red">{pod.error.evalue}</Text>
+          <Text color="red">Error: {pod.error.evalue}</Text>
           {pod.error.stacktrace && (
             <Box>
               <Text>StackTrace</Text>

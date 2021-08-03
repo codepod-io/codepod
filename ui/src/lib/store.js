@@ -604,6 +604,10 @@ export const repoSlice = createSlice({
     clearError: (state, action) => {
       state.error = null;
     },
+    setRunning: (state, action) => {
+      let id = action.payload;
+      state.pods[id].running = true;
+    },
   },
   extraReducers: {
     [loopPodQueue.pending]: (state, action) => {
@@ -677,6 +681,28 @@ export const repoSlice = createSlice({
           text: result,
           count: count,
         };
+        // state.pods[podId].running = false;
+      } else {
+        // most likely this podId is "CODEPOD", which is for startup code and
+        // should not be send to the browser
+        console.log("WARNING podId not recognized", podId);
+      }
+    },
+    WS_EXECUTE_REPLY: (state, action) => {
+      let { podId, result, count } = action.payload;
+      if (podId in state.pods) {
+        // state.pods[podId].execute_reply = {
+        //   text: result,
+        //   count: count,
+        // };
+        console.log("WS_EXECUTE_REPLY", result);
+        state.pods[podId].running = false;
+        if (!state.pods[podId].result) {
+          state.pods[podId].result = {
+            text: result,
+            count: count,
+          };
+        }
       } else {
         // most likely this podId is "CODEPOD", which is for startup code and
         // should not be send to the browser

@@ -12,7 +12,14 @@ const socketMiddleware = () => {
         console.log("WS_CONNECT");
         if (socket !== null) {
           console.log("closing ..");
-          socket.close();
+          store.dispatch(
+            repoSlice.actions.addError({
+              type: "warning",
+              msg: "Already connected.",
+            })
+          );
+          // socket.close();
+          break;
         }
         // reset kernel status
         store.dispatch(repoSlice.actions.resetKernelStatus());
@@ -53,6 +60,11 @@ const socketMiddleware = () => {
             case "execute_result":
               {
                 store.dispatch(actions.wsResult(payload));
+              }
+              break;
+            case "execute_reply":
+              {
+                store.dispatch(actions.wsExecuteReply(payload));
               }
               break;
             case "error":
@@ -106,17 +118,17 @@ const socketMiddleware = () => {
             // IOPub, which takes sometime and the status result might not send
             // back. This will ensure the browser gets a fairly consistent
             // status report upon connection.
-            [100, 1000, 5000].map((t) => {
-              setTimeout(() => {
-                console.log(`Resending after ${t} ms ..`);
-                store.dispatch(
-                  actions.wsRequestStatus({
-                    lang: k,
-                    sessionId: store.getState().repo.sessionId,
-                  })
-                );
-              }, t);
-            });
+            // [100, 1000, 5000].map((t) => {
+            //   setTimeout(() => {
+            //     console.log(`Resending after ${t} ms ..`);
+            //     store.dispatch(
+            //       actions.wsRequestStatus({
+            //         lang: k,
+            //         sessionId: store.getState().repo.sessionId,
+            //       })
+            //     );
+            //   }, t);
+            // });
           });
         };
         // so I'm setting this
@@ -128,8 +140,9 @@ const socketMiddleware = () => {
         //
         // store.dispatch(actions.wsConnected());
         socket.onclose = () => {
-          console.log("");
+          console.log("Disconnected ..");
           store.dispatch(actions.wsDisconnected());
+          socket = null;
         };
         // TODO log other unhandled messages
         // socket.onMessage((msg)=>{
@@ -164,6 +177,7 @@ const socketMiddleware = () => {
         let pod = store.getState().repo.pods[id];
         // clear pod results
         store.dispatch(repoSlice.actions.clearResults(pod.id));
+        store.dispatch(repoSlice.actions.setRunning(pod.id));
         // emit runCode command
         socket.send(
           JSON.stringify({

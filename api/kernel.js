@@ -275,6 +275,12 @@ export class ZmqWire {
       // FIXME hard-coded IP and port
       this.kernelSpec.ip = ip;
     }
+    this.onshell = (msgs) => {
+      console.log("Default OnShell:", msgs);
+    };
+    this.oniopub = (topic, msgs) => {
+      console.log("Default OnIOPub:", topic, "msgs:", msgs);
+    };
 
     // Pub/Sub Router/Dealer
     this.shell = new zmq.Dealer();
@@ -284,6 +290,14 @@ export class ZmqWire {
     // FIXME this is not actually connected. I need to check the real status
     // There does not seem to have any method to check connection status
     console.log("connected to shell port");
+    this.iopub = new zmq.Subscriber();
+    console.log("connecting IOPub");
+    this.iopub.connect(
+      `tcp://${this.kernelSpec.ip}:${this.kernelSpec.iopub_port}`
+    );
+    this.iopub.subscribe();
+    this.listenOnShell();
+    this.listenOnIOPub();
 
     this.kernelStatus = "uknown";
     this.results = {};
@@ -309,27 +323,34 @@ export class ZmqWire {
     this.shell.send(serializeMsg(msg, this.kernelSpec.key));
   }
 
-  async listenIOPub(func) {
-    if (this.iopub && !this.iopub.closed) {
-      console.log("disconnecting previous iopub ..");
-      this.iopub.close();
+  setOnShell(func) {
+    this.onshell = func;
+  }
+  setOnIOPub(func) {
+    this.oniopub = func;
+  }
+
+  async listenOnShell() {
+    for await (const [...frames] of this.shell) {
+      let msgs = deserializeMsg(frames, this.kernelSpec.key);
+      this.onshell(msgs);
     }
-    this.iopub = new zmq.Subscriber();
-    console.log("connecting IOPub");
-    this.iopub.connect(
-      `tcp://${this.kernelSpec.ip}:${this.kernelSpec.iopub_port}`
-    );
-    this.iopub.subscribe();
-    console.log("waiting for iopub");
+  }
+
+  async listenOnIOPub() {
+    // if (this.iopub && !this.iopub.closed) {
+    //   console.log("disconnecting previous iopub ..");
+    //   this.iopub.close();
+    // }
+    // console.log("waiting for iopub");
 
     //   let msgs = await pubsock.receive();
     //   console.log(msgs);
     // FIXME this socket can only be listened here once!
     for await (const [topic, ...frames] of this.iopub) {
       //   func(topic, frames);
-
       let msgs = deserializeMsg(frames, this.kernelSpec.key);
-      func(topic.toString(), msgs);
+      this.oniopub(topic.toString(), msgs);
     }
   }
 }
@@ -518,6 +539,7 @@ function handleIOPub_stream({ msgs, socket }) {
       );
     } else {
       // FIXME this is stream for import/export. I should move it somewhere
+      console.log("emitting other stream ..");
       socket.send(
         JSON.stringify({
           type: "stream",
@@ -575,7 +597,7 @@ export class CodePodKernel {
       return;
     }
     this.socket = socket;
-    this.wire.listenIOPub((topic, msgs) => {
+    this.wire.setOnIOPub((topic, msgs) => {
       // console.log("-----", topic, msgs);
       // iracket's topic seems to be an ID. I should use msg type instead
       switch (msgs.header.msg_type) {
@@ -603,6 +625,39 @@ export class CodePodKernel {
           );
           // console.log("Message body:", msgs);
           break;
+      }
+    });
+    this.wire.setOnShell((msgs) => {
+      switch (msgs.header.msg_type) {
+        case "execute_reply":
+          {
+            let [podId, name] = msgs.parent_header.msg_id.split("#");
+            let payload = {
+              podId,
+              name,
+              // content: {
+              //   status: 'ok',
+              //   payload: [],
+              //   user_expressions: { x: [Object] },
+              //   execution_count: 2
+              // },
+              result: msgs.content.status,
+              count: msgs.content.execution_count,
+            };
+            if (name) {
+              console.log("emitting IO execute_reply");
+              socket.send(
+                JSON.stringify({ type: "IO:execute_reply", payload })
+              );
+            } else {
+              console.log("emitting execute_reply");
+              socket.send(JSON.stringify({ type: "execute_reply", payload }));
+            }
+          }
+          break;
+        default: {
+          console.log("Unhandled shell message", msgs.header.msg_type);
+        }
       }
     });
   }

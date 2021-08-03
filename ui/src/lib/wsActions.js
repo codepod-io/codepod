@@ -1,6 +1,6 @@
 // modules/websocket.js
 
-export const wsConnect = (host) => ({ type: "WS_CONNECT", host });
+export const wsConnect = () => ({ type: "WS_CONNECT" });
 export const wsConnecting = (host) => ({ type: "WS_CONNECTING", host });
 export const wsConnected = () => ({ type: "WS_CONNECTED" });
 export const wsDisconnect = () => ({ type: "WS_DISCONNECT" });
@@ -23,6 +23,10 @@ export const wsRunAll = (payload) => ({
 });
 export const wsResult = (payload) => ({
   type: "WS_RESULT",
+  payload,
+});
+export const wsExecuteReply = (payload) => ({
+  type: "WS_EXECUTE_REPLY",
   payload,
 });
 export const wsStdout = (payload) => ({
