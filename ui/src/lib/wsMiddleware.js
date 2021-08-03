@@ -11,13 +11,13 @@ const socketMiddleware = () => {
       case "WS_CONNECT":
         console.log("WS_CONNECT");
         if (socket !== null) {
-          console.log("closing ..");
-          store.dispatch(
-            repoSlice.actions.addError({
-              type: "warning",
-              msg: "Already connected.",
-            })
-          );
+          console.log("already connected, skip");
+          // store.dispatch(
+          //   repoSlice.actions.addError({
+          //     type: "warning",
+          //     msg: "Already connected.",
+          //   })
+          // );
           // socket.close();
           break;
         }
