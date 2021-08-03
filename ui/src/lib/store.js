@@ -499,6 +499,13 @@ export const repoSlice = createSlice({
       state.pods[id].stdout = "";
       state.pods[id].error = null;
     },
+    clearAllResults: (state, action) => {
+      Object.keys(state.pods).forEach((id) => {
+        state.pods[id].result = "";
+        state.pods[id].stdout = "";
+        state.pods[id].error = null;
+      });
+    },
     setPodType: (state, action) => {
       const { id, type } = action.payload;
       let pod = state.pods[id];

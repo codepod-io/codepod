@@ -253,7 +253,7 @@ function ApplyAll() {
     };
   }, [numDirty]);
   return (
-    <HStack>
+    <Flex>
       <Button
         size="sm"
         onClick={() => {
@@ -261,13 +261,13 @@ function ApplyAll() {
           dispatch(wsActions.wsRunAll());
         }}
       >
-        Apply All Pods
+        Apply All
       </Button>
 
-      <Prompt
+      {/* <Prompt
         when={numDirty > 0}
         message="You have unsaved changes. Are you sure you want to leave?"
-      />
+      /> */}
 
       <Button
         size="sm"
@@ -281,7 +281,16 @@ function ApplyAll() {
           {numDirty}
         </Text>
       </Button>
-    </HStack>
+
+      <Button
+        size="sm"
+        onClick={() => {
+          dispatch(repoSlice.actions.clearAllResults());
+        }}
+      >
+        Clear All
+      </Button>
+    </Flex>
   );
 }
 
