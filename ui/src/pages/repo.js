@@ -57,6 +57,7 @@ import ClickAwayListener from "@material-ui/core/ClickAwayListener";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import { AiOutlineFunction } from "react-icons/ai";
 import Ansi from "ansi-to-react";
+import { FcAddColumn, FcDeleteColumn } from "react-icons/fc";
 
 import { MdImportExport, MdSwapVert, MdCallMissed } from "react-icons/md";
 
@@ -586,6 +587,7 @@ function ToolBar({ pod }) {
               index: pod.index,
               type: pod.type,
               lang: pod.lang,
+              column: pod.column,
             })
           );
         }}
@@ -602,6 +604,7 @@ function ToolBar({ pod }) {
               index: pod.index + 1,
               type: pod.type,
               lang: pod.lang,
+              column: pod.column,
             })
           );
         }}
@@ -712,6 +715,12 @@ function getDeck(id) {
 function Deck({ id }) {
   const dispatch = useDispatch();
   const pod = useSelector((state) => state.repo.pods[id]);
+  // get the children's column
+  // FIXME performance issue
+  const children = useSelector((state) =>
+    pod.children.map((id) => state.repo.pods[id])
+  );
+  const columns = [...new Set(children.map((c) => c.column))].sort();
   // assuming the pod id itself is already rendered
   if (pod.type !== "DECK") return <Box></Box>;
   if (pod.children.length == 0) {
@@ -770,9 +779,18 @@ function Deck({ id }) {
         </Box>
 
         {/* 2. render all children */}
-        {pod.children.map((id) => {
-          return <Pod id={id} key={id}></Pod>;
-        })}
+        <Flex>
+          {/* render in columns */}
+          {columns.map((col) => (
+            <Flex key={col} direction="column">
+              {children
+                .filter((c) => c.column === col)
+                .map(({ id }) => (
+                  <Pod id={id} key={id}></Pod>
+                ))}
+            </Flex>
+          ))}
+        </Flex>
       </Box>
       <Box>
         {/* 3. for each child, render its children using this Deck */}
@@ -888,6 +906,27 @@ function HoveringBar({ pod, showMenu }) {
         >
           <HStack>
             <InfoBar pod={pod} />
+
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                dispatch(repoSlice.actions.addColumn({ id: pod.id }));
+              }}
+            >
+              <FcAddColumn />
+            </Button>
+
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                dispatch(repoSlice.actions.deleteColumn({ id: pod.id }));
+              }}
+            >
+              <FcDeleteColumn />
+            </Button>
+            <Text as="span">col:{pod.column}</Text>
           </HStack>
           <HStack my={2}>
             <TypeMenu pod={pod} />

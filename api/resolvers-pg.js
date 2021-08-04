@@ -281,6 +281,7 @@ export const resolvers = {
       {
         id,
         content,
+        column,
         type,
         lang,
         result,
@@ -300,6 +301,7 @@ export const resolvers = {
         },
         data: {
           content,
+          column,
           type,
           lang,
           result,

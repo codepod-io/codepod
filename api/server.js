@@ -47,6 +47,7 @@ const typeDefs = gql`
     id: ID!
     type: String
     content: String
+    column: Int
     lang: String
     parent: Pod
     index: Int
@@ -81,6 +82,7 @@ const typeDefs = gql`
     updatePod(
       id: String
       content: String
+      column: Int
       type: String
       lang: String
       result: String

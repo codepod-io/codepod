@@ -40,6 +40,7 @@ export const loadPodQueue = createAsyncThunk(
           type
           lang
           content
+          column
           result
           stdout
           error
@@ -85,6 +86,7 @@ function hashPod(pod) {
     JSON.stringify({
       id: pod.id,
       content: pod.content,
+      column: pod.column,
       type: pod.type,
       lang: pod.lang,
       result: pod.result,
@@ -295,10 +297,10 @@ export const remoteUpdatePod = createAsyncThunk(
       body: JSON.stringify({
         query: `
         mutation updatePod($id: String, $content: String, $type: String, $lang: String,
-                           $result: String, $stdout: String, $error: String,
+                           $result: String, $stdout: String, $error: String, $column: Int,
                            $imports: String, $exports: String, $midports: String) {
           updatePod(id: $id, content: $content, type: $type, lang: $lang,
-                    result: $result, stdout: $stdout, error: $error,
+                    result: $result, stdout: $stdout, error: $error, column: $column
                     imports: $imports, exports: $exports, midports: $midports) {
             id
           }
@@ -425,7 +427,7 @@ export const repoSlice = createSlice({
       state.username = username;
     },
     addPod: (state, action) => {
-      let { parent, index, type, id, lang } = action.payload;
+      let { parent, index, type, id, lang, column } = action.payload;
       if (!parent) {
         parent = "ROOT";
       }
@@ -442,6 +444,7 @@ export const repoSlice = createSlice({
         index,
         parent,
         content: "",
+        column: column || 1,
         result: "",
         stdout: "",
         error: null,
@@ -492,6 +495,16 @@ export const repoSlice = createSlice({
     setPodContent: (state, action) => {
       const { id, content } = action.payload;
       state.pods[id].content = content;
+    },
+    addColumn: (state, action) => {
+      let { id } = action.payload;
+      state.pods[id].column += 1;
+    },
+    deleteColumn: (state, action) => {
+      let { id } = action.payload;
+      if (state.pods[id].column > 1) {
+        state.pods[id].column -= 1;
+      }
     },
     clearResults: (state, action) => {
       const id = action.payload;
