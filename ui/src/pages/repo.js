@@ -712,7 +712,7 @@ function getDeck(id) {
   return deckCache[id];
 }
 
-function Deck({ id }) {
+function Deck({ id, level = 0 }) {
   const dispatch = useDispatch();
   const pod = useSelector((state) => state.repo.pods[id]);
   // get the children's column
@@ -752,7 +752,7 @@ function Deck({ id }) {
       borderTop="2px"
       my={5}
       mx={3}
-      bg="gray.50"
+      bg={`rgba(0,0,0,${0.03 * level})`}
       boxShadow="xl"
       p={3}
     >
@@ -795,7 +795,7 @@ function Deck({ id }) {
       <Box>
         {/* 3. for each child, render its children using this Deck */}
         {pod.children.map((id) => {
-          return getDeck(id);
+          return <Deck id={id} key={id} level={level + 1}></Deck>;
         })}
       </Box>
     </HStack>
