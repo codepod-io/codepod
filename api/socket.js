@@ -179,6 +179,7 @@ async function getSessionKernel({ sessionId, lang, socket }) {
 export function listenOnMessage(socket) {
   socket.on("message", async (msg) => {
     let { type, payload } = JSON.parse(msg.toString());
+    if (type === "ping") return;
     let { sessionId, lang } = payload;
     let kernel = await getSessionKernel({ sessionId, lang, socket });
     if (!kernel) {

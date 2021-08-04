@@ -4,6 +4,7 @@ import { repoSlice } from "../lib/store";
 
 const socketMiddleware = () => {
   let socket = null;
+  let socket_intervalId = null;
 
   // the middleware part of this function
   return (store) => (next) => (action) => {
@@ -105,6 +106,17 @@ const socketMiddleware = () => {
           console.log("connected");
           store.dispatch(actions.wsConnected());
           // call connect kernel
+
+          if (socket_intervalId) {
+            clearInterval(socket_intervalId);
+          }
+          socket_intervalId = setInterval(() => {
+            if (socket) {
+              console.log("sending ping ..");
+              socket.send(JSON.stringify({ type: "ping" }));
+            }
+            // websocket resets after 60s of idle by most firewalls
+          }, 30000);
 
           // request kernel status after connection
           Object.keys(store.getState().repo.kernels).map((k) => {
