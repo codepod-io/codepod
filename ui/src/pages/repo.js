@@ -804,7 +804,7 @@ function Deck({ id, level = 0 }) {
         <Flex>
           {/* render in columns */}
           {columns.map((col) => (
-            <Flex key={col} direction="column">
+            <Flex key={col} direction="column" mr={2}>
               {children
                 .filter((c) => c.column === col)
                 .map(({ id }) => (
