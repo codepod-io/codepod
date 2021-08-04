@@ -60,6 +60,20 @@ const typeDefs = gql`
     midports: String
   }
 
+  input PodInput {
+    id: ID!
+    type: String
+    content: String
+    column: Int
+    lang: String
+    result: String
+    stdout: String
+    error: String
+    imports: String
+    exports: String
+    midports: String
+  }
+
   type Mutation {
     login(username: String, password: String): AuthData
     signup(
@@ -75,8 +89,7 @@ const typeDefs = gql`
       username: String
       parent: String
       index: Int
-      id: String
-      type: String
+      input: PodInput
     ): Pod
     deletePod(id: String, toDelete: [String]): Boolean
     updatePod(

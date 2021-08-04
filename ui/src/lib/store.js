@@ -198,23 +198,53 @@ function normalize(pods) {
   return res;
 }
 
-async function doRemoteAddPod({ type, id, parent, index, reponame, username }) {
+function serializePodInput(pod) {
+  // only get relevant input
+  return (({
+    id,
+    type,
+    content,
+    column,
+    lang,
+    // parent,
+    // index,
+    // children,
+    result,
+    stdout,
+    error,
+    imports,
+    exports,
+    midports,
+  }) => ({
+    id,
+    type,
+    column,
+    lang,
+    stdout,
+    content: JSON.stringify(content),
+    result: JSON.stringify(result),
+    error: JSON.stringify(error),
+    imports: JSON.stringify(imports),
+    exports: JSON.stringify(exports),
+    midports: JSON.stringify(midports),
+  }))(pod);
+}
+
+async function doRemoteAddPod({ username, reponame, parent, index, pod }) {
   const query = `
   mutation addPod(
     $reponame: String
     $username: String
-    $type: String
-    $id: String
     $parent: String
     $index: Int
+    $input: PodInput
   ) {
     addPod(
       reponame: $reponame
       username: $username
-      type: $type
-      id: $id
       parent: $parent
       index: $index
+      input: $input
     ) {
       id
     }
@@ -232,10 +262,9 @@ async function doRemoteAddPod({ type, id, parent, index, reponame, username }) {
       variables: {
         reponame,
         username,
-        type,
-        id,
-        index,
         parent,
+        index,
+        input: serializePodInput(pod),
       },
     }),
   });
@@ -332,14 +361,13 @@ export const loopPodQueue = createAsyncThunk(
     switch (action.type) {
       case repoSlice.actions.addPod.type: {
         // push to remote
-        const { type, id, parent, index } = action.payload;
+        let { parent, index } = action.payload;
         return await doRemoteAddPod({
-          type,
-          id,
-          parent,
-          index,
           reponame,
           username,
+          parent,
+          index,
+          pod: action.payload,
         }).catch((err) => {
           dispatch(
             repoSlice.actions.addError({ type: "error", msg: err.message })
@@ -427,7 +455,7 @@ export const repoSlice = createSlice({
       state.username = username;
     },
     addPod: (state, action) => {
-      let { parent, index, type, id, lang, column } = action.payload;
+      let { parent, index, id } = action.payload;
       if (!parent) {
         parent = "ROOT";
       }
@@ -439,16 +467,12 @@ export const repoSlice = createSlice({
         }
       });
       const pod = {
-        id,
-        type,
-        index,
-        parent,
         content: "",
-        column: column || 1,
+        column: 1,
         result: "",
         stdout: "",
         error: null,
-        lang: lang || "python",
+        lang: "python",
         raw: false,
         exports: {},
         imports: {},
@@ -457,6 +481,7 @@ export const repoSlice = createSlice({
         lastPosUpdate: Date.now(),
         children: [],
         io: {},
+        ...action.payload,
       };
       // compute the remotehash
       pod.remoteHash = hashPod(pod);
@@ -811,6 +836,17 @@ const podQueueMiddleware = (storeAPI) => (next) => (action) => {
     });
     result = next(action);
     storeAPI.dispatch(repoSlice.actions.addPodQueue(action));
+  } else if (action.type === "MOVE_POD") {
+    let { from, to } = action.payload;
+    let from_pod = storeAPI.getState().repo.pods[from];
+    let to_pod = storeAPI.getState().repo.pods[to];
+    let new_pod = produce(from_pod, (draft) => {
+      draft.parent = to_pod.parent;
+      draft.index = to_pod.index + 1;
+    });
+    // this will assign a new ID
+    storeAPI.dispatch(repoSlice.actions.addPod(new_pod));
+    storeAPI.dispatch(repoSlice.actions.deletePod({ id: from }));
   } else {
     result = next(action);
   }

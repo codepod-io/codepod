@@ -208,7 +208,7 @@ export const resolvers = {
     clearUser: () => {},
     addPod: async (
       _,
-      { reponame, username, parent, type, id, index },
+      { reponame, username, parent, index, input },
       { userId }
     ) => {
       // make sure the repo is writable by this user
@@ -221,6 +221,7 @@ export const resolvers = {
       if (user.id !== userId) {
         throw new Error("You do not have access to the repo.");
       }
+      let { id } = input;
       // 1. find the repo
       const repo = await prisma.repo.findFirst({
         where: {
@@ -256,8 +257,8 @@ export const resolvers = {
       const pod = await prisma.pod.create({
         data: {
           id,
+          ...input,
           index,
-          type: type,
           repo: {
             connect: {
               id: repo.id,

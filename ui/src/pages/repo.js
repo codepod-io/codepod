@@ -58,6 +58,25 @@ import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import { AiOutlineFunction } from "react-icons/ai";
 import Ansi from "ansi-to-react";
 import { FcAddColumn, FcDeleteColumn } from "react-icons/fc";
+import { v4 as uuidv4 } from "uuid";
+
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  useDroppable,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 import { MdImportExport, MdSwapVert, MdCallMissed } from "react-icons/md";
 
@@ -413,7 +432,23 @@ export default function Repo() {
         {!repoLoaded && <Text>Repo Loading ...</Text>}
         {repoLoaded && (
           <Box height="100%" border="solid 3px" p={2} overflow="auto">
-            <Deck id="ROOT" />
+            <DndContext
+              onDragEnd={(event) => {
+                const { active, over } = event;
+                if (active.id !== over.id) {
+                  // I'll just get active.id to over.id
+                  dispatch({
+                    type: "MOVE_POD",
+                    payload: {
+                      from: active.id,
+                      to: over.id,
+                    },
+                  });
+                }
+              }}
+            >
+              <Deck id="ROOT" />
+            </DndContext>
           </Box>
         )}
       </Box>
@@ -700,10 +735,10 @@ function Deck({ id, level = 0 }) {
   const pod = useSelector((state) => state.repo.pods[id]);
   // get the children's column
   // FIXME performance issue
-  const children = useSelector((state) =>
+  const thechildren = useSelector((state) =>
     pod.children.map((id) => state.repo.pods[id])
   );
-  const columns = [...new Set(children.map((c) => c.column))].sort();
+  const columns = [...new Set(thechildren.map((c) => c.column))].sort();
   // assuming the pod id itself is already rendered
   if (pod.type !== "DECK") return <Box></Box>;
   if (pod.children.length == 0) {
@@ -805,11 +840,25 @@ function Deck({ id, level = 0 }) {
           {/* render in columns */}
           {columns.map((col) => (
             <Flex key={col} direction="column" mr={2}>
-              {children
-                .filter((c) => c.column === col)
-                .map(({ id }) => (
-                  <Pod id={id} key={id}></Pod>
-                ))}
+              <SortableContext
+                items={thechildren
+                  .filter((c) => c.column === col)
+                  .map((c) => c.id)}
+              >
+                {/* Trying to solve the animation of transfering across containers, but not working. */}
+                <DroppableContainer
+                  items={thechildren
+                    .filter((c) => c.column === col)
+                    .map((c) => c.id)}
+                  id={`${pod.id}-${col}`}
+                >
+                  {thechildren
+                    .filter((c) => c.column === col)
+                    .map(({ id }) => (
+                      <SortablePod id={id} key={id}></SortablePod>
+                    ))}
+                </DroppableContainer>
+              </SortableContext>
             </Flex>
           ))}
         </Flex>
@@ -821,6 +870,41 @@ function Deck({ id, level = 0 }) {
         })}
       </Box>
     </HStack>
+  );
+}
+
+const defaultContainerStyle = ({ isOverContainer }) => ({
+  marginTop: 40,
+  backgroundColor: isOverContainer
+    ? "rgb(235,235,235,1)"
+    : "rgba(246,246,246,1)",
+});
+
+function DroppableContainer({ children, items, id }) {
+  const { over, isOver, setNodeRef } = useDroppable({
+    id: id,
+  });
+  const isOverContainer = isOver || (over ? items.includes(over.id) : false);
+
+  return (
+    <Box ref={setNodeRef} style={defaultContainerStyle({ isOverContainer })}>
+      {children}
+    </Box>
+  );
+}
+
+function SortablePod({ id }) {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+  return (
+    <Box ref={setNodeRef} style={style}>
+      <Pod id={id} draghandle={{ ...listeners, ...attributes }}></Pod>
+    </Box>
   );
 }
 
@@ -883,7 +967,7 @@ function IOStatus({ id, name }) {
   }
 }
 
-function HoveringBar({ pod, showMenu }) {
+function HoveringBar({ pod, showMenu, draghandle }) {
   let dispatch = useDispatch();
   // const [anchorEl, setAnchorEl] = React.useState(null);
   const [show, setShow] = useState(false);
@@ -906,6 +990,8 @@ function HoveringBar({ pod, showMenu }) {
         onMouseLeave={() => setShow(false)}
         // onClick={() => setShowForce(!showForce)}
         visibility={showMenu || show || showForce ? "visible" : "hidden"}
+        {...draghandle}
+        cursor="grab"
       >
         <CgMenuRound size={25} />
       </Box>
@@ -1260,7 +1346,7 @@ function MidportList({ pod }) {
   );
 }
 
-function Pod({ id }) {
+function Pod({ id, draghandle }) {
   const pod = useSelector((state) => state.repo.pods[id]);
   const dispatch = useDispatch();
   const [showMenu, setShowMenu] = useState(false);
@@ -1284,7 +1370,7 @@ function Pod({ id }) {
             left: "-30px",
           }}
         >
-          <HoveringBar pod={pod} showMenu={showMenu} />
+          <HoveringBar pod={pod} showMenu={showMenu} draghandle={draghandle} />
         </Box>
 
         <Box
