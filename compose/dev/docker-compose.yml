@@ -23,6 +23,20 @@ services:
     ports:
       - 8080:8080
 
+  prisma:
+    image: node
+    restart: always
+    ports:
+      - 5555:5555
+    # command: npm config set unsafe-perm true && npx prisma studio
+    command: yarn run prisma studio
+    working_dir: /app
+    volumes:
+      - ../../api:/app
+      # - ./api/node_modules:/app/node_modules
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
+
   api:
     build: ../../api
     # restart: always
