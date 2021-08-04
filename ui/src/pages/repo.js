@@ -614,23 +614,6 @@ function ToolBar({ pod }) {
       <Button
         variant="ghost"
         size="xs"
-        onClick={() => {
-          dispatch(
-            repoSlice.actions.addPod({
-              parent: pod.parent,
-              type: "DECK",
-              lang: pod.lang,
-              // FIXME what should be the index? I should make it to the end
-              index: pod.index,
-            })
-          );
-        }}
-      >
-        <ArrowForwardIcon />
-      </Button>
-      <Button
-        variant="ghost"
-        size="xs"
         color="red"
         onClick={() => {
           dispatch(repoSlice.actions.deletePod({ id: pod.id }));
@@ -759,6 +742,45 @@ function Deck({ id, level = 0 }) {
       <Box>
         <Box>
           <Code colorScheme="blackAlpha">{pod.id}</Code>
+
+          {pod.id !== "ROOT" && (
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => {
+                dispatch(
+                  repoSlice.actions.addPod({
+                    parent: pod.parent,
+                    type: "DECK",
+                    lang: pod.lang,
+                    index: pod.index,
+                    column: pod.column,
+                  })
+                );
+              }}
+            >
+              <ArrowUpIcon />
+            </Button>
+          )}
+          {pod.id !== "ROOT" && (
+            <Button
+              variant="ghost"
+              size="xs"
+              onClick={() => {
+                dispatch(
+                  repoSlice.actions.addPod({
+                    parent: pod.parent,
+                    type: "DECK",
+                    lang: pod.lang,
+                    index: pod.index + 1,
+                    column: pod.column,
+                  })
+                );
+              }}
+            >
+              <ArrowDownIcon />
+            </Button>
+          )}
           <Button
             size="xs"
             variant="ghost"
