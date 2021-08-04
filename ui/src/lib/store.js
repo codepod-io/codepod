@@ -502,9 +502,7 @@ export const repoSlice = createSlice({
     },
     deleteColumn: (state, action) => {
       let { id } = action.payload;
-      if (state.pods[id].column > 1) {
-        state.pods[id].column -= 1;
-      }
+      state.pods[id].column -= 1;
     },
     clearResults: (state, action) => {
       const id = action.payload;
