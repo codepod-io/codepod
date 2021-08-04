@@ -415,8 +415,17 @@ async function createContainer(image, name, network) {
       {
         Image: image,
         name,
-        NetworkMode: network,
-        Binds: ["dotjulia:/root/.julia"],
+        HostConfig: {
+          NetworkMode: network,
+          Binds: ["dotjulia:/root/.julia"],
+          DeviceRequests: [
+            {
+              Count: -1,
+              Driver: "nvidia",
+              Capabilities: [["gpu"]],
+            },
+          ],
+        },
       },
       (err, container) => {
         if (err) {
