@@ -58,6 +58,17 @@ services:
       - ../../ui:/app
     command: yarn start
 
+  # https://github.com/anyakichi/docker-git-http
+  #
+  # visit git.codepod.test:3000 to visit the gitweb interface
+  # clone using git clone http://git.codepod.test:3000/path/to/repo.git
+  git-http:
+    build: ./docker-git-http
+    ports:
+      - "2222:80"
+    volumes:
+      - git-data:/var/lib/git
+
   # I need nginx in dev build too because I don't want to add :4000 in the
   # browser code. The nginx here forwards the /graphql to :4000
   nginx:
@@ -71,6 +82,7 @@ services:
 
 volumes:
   db-data:
+  git-data:
 
 networks:
   default:
