@@ -148,6 +148,7 @@ export const resolvers = {
     // getDiff: async (_, {}) => {},
     // get the HEAD commit
     gitGetHead: async (_, { username, reponame }, { userId }) => {
+      if (!userId) throw Error("Unauthenticated");
       return await gitGetHead({ username, reponame });
     },
   },
@@ -175,6 +176,15 @@ export const resolvers = {
     // add file to git and run git add, and do commit
     gitCommit: async (_, { username, reponame, content, msg }, { userId }) => {
       // TODO commit with specific user name and email
+      if (!userId) throw Error("Unauthenticated");
+      let user = await prisma.user.findFirst({
+        where: {
+          username,
+        },
+      });
+      if (user.id !== userId) {
+        throw new Error("You do not have access to the repo.");
+      }
       return await gitCommit({ username, reponame, content, msg });
     },
     login: async (_, { username, password }) => {
