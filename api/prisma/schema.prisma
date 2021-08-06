@@ -10,6 +10,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator studio-client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
 model Post {
   id        String   @id @default(uuid())
   createdAt DateTime @default(now())
