@@ -22,6 +22,7 @@ const typeDefs = gql`
     pod(id: ID!): Pod
     myRepos: [Repo]
     activeSessions: [String]
+    gitGetHead(username: String, reponame: String): String
   }
 
   type AuthData {
@@ -109,6 +110,12 @@ const typeDefs = gql`
     clearRepo: Boolean
     clearPod: Boolean
     killSession(sessionId: String): Boolean
+    gitCommit(
+      username: String
+      reponame: String
+      content: String
+      msg: String
+    ): Boolean
   }
 `;
 

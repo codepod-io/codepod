@@ -1,4 +1,23 @@
-import MonacoEditor from "react-monaco-editor";
+import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
+
+export function MyMonacoDiff({ from, to }) {
+  return (
+    <MonacoDiffEditor
+      // width="800"
+      // height="600"
+      language="javascript"
+      original={from}
+      value={to}
+      options={{}}
+      editorDidMount={(editor, monaco) => {
+        // editor.onDidContentSizeChange(() => {
+
+        // });
+        editor.layout();
+      }}
+    />
+  );
+}
 
 export function MyMonaco({
   lang = "javascript",

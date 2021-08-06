@@ -1,5 +1,9 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import NodeGit from "nodegit";
+import * as child from "child_process";
+import fs from "fs";
+import util from "util";
 
 import Prisma from "@prisma/client";
 const { PrismaClient } = Prisma;
@@ -21,6 +25,38 @@ function genToken(userID) {
     }
   );
   return token;
+}
+
+async function gitCommit({ username, reponame, content, msg }) {
+  // 1. if repo does not exist, create it
+  let path = `/srv/git/${username}/${reponame}`;
+  if (!fs.existsSync(path)) {
+    await NodeGit.Repository.init(path, 0);
+  }
+  // 2. write file
+  await fs.promises.writeFile(`${path}/code.txt`, content);
+  // 3. git add file
+  const exec = util.promisify(child.exec);
+  await exec(`cd ${path} && git add .`);
+  // 3. run git diff HEAD
+  // FIXME error handling
+  // FIXME if no commit, this will fail
+  // let { stdout, stderr } = await exec(`cd ${path} && git diff HEAD`);
+  // return stdout;
+  // 4. do commit
+  await exec(`cd ${path} && git commit -m "${msg}"`);
+  return true;
+}
+
+async function gitGetHead({ username, reponame }) {
+  // FIXME for now I'll just get the file, because I'll always add and commit at
+  // the same time.
+  let path = `/srv/git/${username}/${reponame}`;
+  if (!fs.existsSync(`${path}/code.txt`)) {
+    return "";
+  }
+  let content = await fs.promises.readFile(`${path}/code.txt`);
+  return content.toString();
 }
 
 export const resolvers = {
@@ -108,6 +144,12 @@ export const resolvers = {
         },
       });
     },
+    // get diff from repo
+    // getDiff: async (_, {}) => {},
+    // get the HEAD commit
+    gitGetHead: async (_, { username, reponame }, { userId }) => {
+      return await gitGetHead({ username, reponame });
+    },
   },
   Mutation: {
     signup: async (_, { username, email, password, invitation }) => {
@@ -129,6 +171,11 @@ export const resolvers = {
           expiresIn: "7d",
         }),
       };
+    },
+    // add file to git and run git add, and do commit
+    gitCommit: async (_, { username, reponame, content, msg }, { userId }) => {
+      // TODO commit with specific user name and email
+      return await gitCommit({ username, reponame, content, msg });
     },
     login: async (_, { username, password }) => {
       // FIXME findUnique seems broken https://github.com/prisma/prisma/issues/5071

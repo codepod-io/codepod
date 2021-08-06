@@ -36,6 +36,16 @@ import {
   AddIcon,
   QuestionOutlineIcon,
 } from "@chakra-ui/icons";
+import {
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalFooter,
+  ModalBody,
+  ModalCloseButton,
+} from "@chakra-ui/react";
+import { useDisclosure } from "@chakra-ui/react";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import useResizeObserver from "use-resize-observer";
@@ -59,6 +69,10 @@ import { AiOutlineFunction } from "react-icons/ai";
 import Ansi from "ansi-to-react";
 import { FcAddColumn, FcDeleteColumn } from "react-icons/fc";
 import { v4 as uuidv4 } from "uuid";
+// const Diff2html = require("diff2html");
+// import { Diff2html } from "diff2html";
+import * as Diff2Html from "diff2html";
+import "diff2html/bundles/css/diff2html.min.css";
 
 import {
   DndContext,
@@ -90,7 +104,7 @@ import {
 } from "../lib/store";
 import { MySlate } from "../components/MySlate";
 import { RichCodeSlate as CodeSlate } from "../components/CodeSlate";
-import { MyMonaco } from "../components/MyMonaco";
+import { MyMonaco, MyMonacoDiff } from "../components/MyMonaco";
 import { StyledLink as Link } from "../components/utils";
 
 import { Terminal } from "xterm";
@@ -366,6 +380,227 @@ function ActiveSessions() {
   );
 }
 
+function Diff2({}) {
+  // select the content
+  // compare to ???
+  // or just create a monaco diff editor?
+  const diffJson = Diff2Html.parse(`
+diff --git a/aaa.txt b/aaa.txt
+index 3462721..bd23c03 100644
+--- a/aaa.txt
++++ b/aaa.txt
+@@ -1 +1 @@
+-hello!
+\ No newline at end of file
++hello!world
+diff --git a/bbb.txt b/bbb.txt
+new file mode 100644
+index 0000000..f761ec1
+--- /dev/null
++++ b/bbb.txt
+@@ -0,0 +1 @@
++bbb
+diff --git a/ccc.txt b/ccc.txt
+new file mode 100644
+index 0000000..b2a7546
+--- /dev/null
++++ b/ccc.txt
+@@ -0,0 +1 @@
++ccc      
+      `);
+  const diffHtml = Diff2Html.html(diffJson, { drawFileList: true });
+  return <div dangerouslySetInnerHTML={{ __html: diffHtml }} />;
+}
+
+function DiffButton({ from, to }) {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  return (
+    <>
+      <Button size="sm" onClick={onOpen}>
+        Diff
+      </Button>
+
+      <Modal isOpen={isOpen} onClose={onClose} size="6xl">
+        <ModalOverlay />
+        <ModalContent h="lg">
+          <ModalHeader>CodePod Diff</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {/* <Lorem count={2} /> */}
+            <Box w="100%" h="100%">
+              <MyMonacoDiff from={from} to={to} />
+            </Box>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button colorScheme="blue" mr={3} onClick={onClose}>
+              Close
+            </Button>
+            <CommitButton from={from} to={to} />
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
+  );
+}
+
+function CommitButton({ from, to }) {
+  let reponame = useSelector((state) => state.repo.reponame);
+  let username = useSelector((state) => state.repo.username);
+  let [gitCommit, {}] = useMutation(
+    gql`
+      mutation GitCommit(
+        $reponame: String
+        $username: String
+        $content: String
+        $msg: String
+      ) {
+        gitCommit(
+          reponame: $reponame
+          username: $username
+          content: $content
+          msg: $msg
+        )
+      }
+    `,
+    { refetchQueries: ["GitGetHead"] }
+  );
+  const anchorEl = useRef(null);
+  const [show, setShow] = useState(false);
+  const [value, setValue] = useState(null);
+  return (
+    <ClickAwayListener
+      onClickAway={() => {
+        setShow(false);
+      }}
+    >
+      <Box>
+        <Button
+          ref={anchorEl}
+          variant="ghost"
+          onClick={() => {
+            // pop up a input box for entering exporrt
+            setShow(!show);
+          }}
+          isDisabled={from === to}
+        >
+          Commit
+        </Button>
+        <Popper
+          open={show}
+          anchorEl={anchorEl.current}
+          // need this, otherwise the z-index seems to be berried under Chakra Modal
+          disablePortal
+          placement="top"
+        >
+          <Paper>
+            <TextField
+              label="Msg (enter to submit)"
+              variant="outlined"
+              // focused={show}
+              autoFocus
+              onChange={(e) => {
+                setValue(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                // enter
+                // keyCode is deprecated in favor of code, but chrome didn't have
+                // it ..
+                if (e.keyCode === 13 && value) {
+                  console.log("enter pressed, commiting with msg", value);
+                  gitCommit({
+                    variables: {
+                      reponame,
+                      username,
+                      content: to,
+                      msg: value,
+                    },
+                  });
+                  // clear value
+                  setValue(null);
+                  // click away
+                  setShow(false);
+                }
+              }}
+            />
+          </Paper>
+        </Popper>
+      </Box>
+    </ClickAwayListener>
+  );
+}
+
+function exportSingleFile(pods) {
+  // export all pods into a single file
+  function helper(id) {
+    if (!pods[id]) {
+      console.log("WARN invalid pod", id);
+      return "";
+    }
+    let code1 = `
+    # CODEPOD ${id}
+    ${pods[id].content}
+    `;
+    let code2 = pods[id].children.map(helper).join("\n");
+    return code1 + code2;
+  }
+  return helper("ROOT");
+}
+
+function RepoButton() {
+  let reponame = useSelector((state) => state.repo.reponame);
+  let username = useSelector((state) => state.repo.username);
+  let url = `http://git.codepod.test:3000/?p=${username}/${reponame}/.git`;
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  return (
+    <>
+      <Button size="sm" onClick={onOpen}>
+        Repo
+      </Button>
+
+      <Modal isOpen={isOpen} onClose={onClose} size="6xl">
+        <ModalOverlay />
+        <ModalContent h="xl">
+          <ModalHeader>The Git Repo</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            {/* <Lorem count={2} /> */}
+            <Box w="100%" h="100%">
+              <iframe src={url} width="100%" height="100%" />
+            </Box>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button colorScheme="blue" mr={3} onClick={onClose}>
+              Close
+            </Button>
+            <Button variant="ghost">Commit</Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
+  );
+}
+
+function GitBar() {
+  let reponame = useSelector((state) => state.repo.reponame);
+  let username = useSelector((state) => state.repo.username);
+  let { data, loading } = useQuery(gql`
+  query GitGetHead {
+    gitGetHead(reponame: "${reponame}", username: "${username}")
+  }`);
+  let to = useSelector((state) => exportSingleFile(state.repo.pods));
+  if (loading) return <Text>Loading</Text>;
+  let from = data.gitGetHead;
+  return (
+    <Box>
+      <Text>Git</Text>
+      <DiffButton from={from} to={to} />
+      <RepoButton />
+    </Box>
+  );
+}
+
 function Sidebar() {
   return (
     <Box px="1rem">
@@ -374,7 +609,7 @@ function Sidebar() {
       <SidebarKernel />
       <ToastError />
       <ApplyAll />
-
+      <GitBar />
       <Divider my={2} />
       <ActiveSessions />
     </Box>
