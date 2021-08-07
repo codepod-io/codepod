@@ -1111,42 +1111,84 @@ function Deck({ id, level = 0 }) {
           <Code colorScheme="blackAlpha">{pod.id}</Code>
 
           {pod.id !== "ROOT" && (
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={() => {
-                dispatch(
-                  repoSlice.actions.addPod({
-                    parent: pod.parent,
-                    type: "DECK",
-                    lang: pod.lang,
-                    index: pod.index,
-                    column: pod.column,
-                  })
-                );
-              }}
-            >
-              <ArrowUpIcon />
-            </Button>
+            <HoverButton
+              btn1={
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => {
+                    dispatch(
+                      repoSlice.actions.addPod({
+                        parent: pod.parent,
+                        type: "DECK",
+                        lang: pod.lang,
+                        index: pod.index,
+                        column: pod.column,
+                      })
+                    );
+                  }}
+                >
+                  <ArrowUpIcon />
+                </Button>
+              }
+              btn2={
+                <IconButton
+                  disabled={!clip}
+                  size="small"
+                  onClick={() => {
+                    dispatch(
+                      repoSlice.actions.pastePod({
+                        parent: pod.parent,
+                        index: pod.index,
+                        column: pod.column,
+                      })
+                    );
+                  }}
+                >
+                  <FaPaste />
+                </IconButton>
+              }
+            />
           )}
           {pod.id !== "ROOT" && (
-            <Button
-              variant="ghost"
-              size="xs"
-              onClick={() => {
-                dispatch(
-                  repoSlice.actions.addPod({
-                    parent: pod.parent,
-                    type: "DECK",
-                    lang: pod.lang,
-                    index: pod.index + 1,
-                    column: pod.column,
-                  })
-                );
-              }}
-            >
-              <ArrowDownIcon />
-            </Button>
+            <HoverButton
+              btn1={
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  onClick={() => {
+                    dispatch(
+                      repoSlice.actions.addPod({
+                        parent: pod.parent,
+                        type: "DECK",
+                        lang: pod.lang,
+                        index: pod.index + 1,
+                        column: pod.column,
+                      })
+                    );
+                  }}
+                >
+                  <ArrowDownIcon />
+                </Button>
+              }
+              btn2={
+                <IconButton
+                  size="small"
+                  disabled={!clip}
+                  onClick={() => {
+                    dispatch(
+                      repoSlice.actions.pastePod({
+                        parent: pod.parent,
+                        index: pod.index + 1,
+                        column: pod.column,
+                      })
+                    );
+                  }}
+                >
+                  <FaPaste />
+                </IconButton>
+              }
+            />
           )}
           <Button
             size="xs"
