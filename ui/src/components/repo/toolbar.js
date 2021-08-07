@@ -71,6 +71,7 @@ import {
   selectNumDirty,
 } from "../../lib/store";
 import * as wsActions from "../../lib/ws/actions";
+import * as qActions from "../../lib/queue/actions";
 
 export function SyncStatus({ pod }) {
   const dispatch = useDispatch();
@@ -233,7 +234,7 @@ export function UpButton({ pod }) {
           size="xs"
           onClick={() => {
             dispatch(
-              repoSlice.actions.addPod({
+              qActions.remoteAdd({
                 parent: pod.parent,
                 index: pod.index,
                 type: pod.type === "DECK" ? "DECK" : pod.type,
@@ -252,7 +253,7 @@ export function UpButton({ pod }) {
           size="small"
           onClick={() => {
             dispatch(
-              repoSlice.actions.pastePod({
+              qActions.remotePaste({
                 parent: pod.parent,
                 index: pod.index,
                 column: pod.column,
@@ -278,7 +279,7 @@ export function DownButton({ pod }) {
           size="xs"
           onClick={() => {
             dispatch(
-              repoSlice.actions.addPod({
+              qActions.remoteAdd({
                 parent: pod.parent,
                 index: pod.index + 1,
                 type: pod.type === "DECK" ? "DECK" : pod.type,
@@ -300,7 +301,7 @@ export function DownButton({ pod }) {
           disabled={!clip}
           onClick={() => {
             dispatch(
-              repoSlice.actions.pastePod({
+              qActions.remotePaste({
                 parent: pod.parent,
                 index: pod.index + 1,
                 column: pod.column,
@@ -325,7 +326,7 @@ export function RightButton({ pod }) {
       onClick={() => {
         // 1. add a dec
         dispatch(
-          repoSlice.actions.addPod({
+          qActions.remoteAdd({
             parent: pod.id,
             type: "DECK",
             index: pod.children.length,
@@ -346,7 +347,7 @@ export function ToolBar({ pod }) {
     <Flex>
       <ExportButton id={pod.id} />
       <UpButton pod={pod} />
-      <DownButton pd={pod} />
+      <DownButton pod={pod} />
       <DeleteButton pod={pod} />
     </Flex>
   );
@@ -362,7 +363,7 @@ export function DeleteButton({ pod }) {
           size="xs"
           color="red"
           onClick={() => {
-            dispatch(repoSlice.actions.deletePod({ id: pod.id }));
+            dispatch(qActions.remoteDelete({ id: pod.id }));
           }}
         >
           <DeleteIcon />

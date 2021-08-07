@@ -56,6 +56,7 @@ import { MyMonaco, MyMonacoDiff } from "../MyMonaco";
 
 import { XTerm, DummyTerm } from "../MyXTerm";
 import * as wsActions from "../../lib/ws/actions";
+import * as qActions from "../../lib/queue/actions";
 import useMe from "../../lib/me";
 import {
   HoverButton,
@@ -100,7 +101,7 @@ export function Deck({ id, level = 0 }) {
         variant="ghost"
         onClick={() => {
           dispatch(
-            repoSlice.actions.addPod({
+            qActions.remoteAdd({
               parent: pod.id,
               type: "DECK",
               index: pod.children.length,
@@ -491,7 +492,7 @@ function ThePod({ id }) {
             size="sm"
             onClick={() => {
               dispatch(
-                repoSlice.actions.addPod({
+                qActions.remoteAdd({
                   parent: pod.id,
                   type: "CODE",
                   index: 0,

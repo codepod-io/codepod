@@ -6,7 +6,7 @@ import { customAlphabet } from "nanoid";
 import { nolookalikes } from "nanoid-dictionary";
 
 import wsMiddleware from "./ws/middleware";
-import podQueueMiddleware from "./remote/middleware";
+import podQueueMiddleware from "./queue/middleware";
 import loadReducers from "./remote/load";
 import wsReducers from "./ws/reducers";
 import podReducers from "./reducers/pod";
@@ -16,7 +16,7 @@ import { hashPod } from "./utils";
 
 // import actions and export them
 import remoteReducers from "./remote/update";
-import queueReducers from "./remote/queue";
+import queueReducers from "./queue/queueActions";
 
 export { remoteUpdateAllPods, remoteUpdatePod } from "./remote/update";
 

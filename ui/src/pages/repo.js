@@ -15,6 +15,7 @@ import {
 
 import { repoSlice } from "../lib/store";
 import * as wsActions from "../lib/ws/actions";
+import * as qActions from "../lib/queue/actions";
 import useMe from "../lib/me";
 import { Deck } from "../components/repo/pod";
 import { Sidebar } from "../components/repo/sidebar";
@@ -37,8 +38,10 @@ export default function Repo() {
     }
   }, [me]);
   useEffect(() => {
-    // load the repo
+    // load the repo. It is actually not a queue, just an async thunk
     dispatch(loadPodQueue({ username, reponame }));
+    // this is the queue for remote update
+    dispatch(qActions.startQueue());
     // dispatch(wsActions.wsConnect());
   }, []);
 

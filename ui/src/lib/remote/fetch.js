@@ -253,3 +253,28 @@ export async function doRemoteUpdatePod(pod) {
   });
   return res.json();
 }
+
+export async function doRemotePastePod({ clip, parent, index, column }) {
+  const res = await fetch("/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({
+      // movePod(id: String, parentId: String, index: Int): Boolean
+      query: `
+        mutation PastePod($id: String, $parentId: String, $index: Int, $column: Int) {
+          pastePod(id: $id, parentId: $parentId, index: $index, column: $column)
+        }`,
+      variables: {
+        id: clip,
+        parentId: parent,
+        index,
+        column,
+      },
+    }),
+  });
+  return res.json();
+}

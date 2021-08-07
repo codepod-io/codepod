@@ -1,6 +1,10 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { repoSlice } from "../store";
-import { doRemoteAddPod, doRemoteDeletePod } from "./fetch";
+import {
+  doRemoteAddPod,
+  doRemoteDeletePod,
+  doRemotePastePod,
+} from "../remote/fetch";
 
 export const loopPodQueue = createAsyncThunk(
   "loopPodQueue",
@@ -18,24 +22,20 @@ export const loopPodQueue = createAsyncThunk(
           parent,
           index,
           pod: action.payload,
-        }).catch((err) => {
-          dispatch(
-            repoSlice.actions.addError({ type: "error", msg: err.message })
-          );
-          return null;
         });
       }
 
       case repoSlice.actions.deletePod.type: {
         const { id, toDelete } = action.payload;
         // delete pod id
-        return await doRemoteDeletePod({ id, toDelete }).catch((err) => {
-          dispatch(
-            repoSlice.actions.addError({ type: "error", msg: err.message })
-          );
-          return null;
-        });
+        return await doRemoteDeletePod({ id, toDelete });
       }
+
+      case "REMOTE_PASTE":
+        {
+          return await doRemotePastePod(action.payload);
+        }
+        break;
 
       default:
         throw new Error("Invaid action in podQueue:" + action.type);
