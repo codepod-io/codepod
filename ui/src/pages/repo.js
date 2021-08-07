@@ -976,29 +976,26 @@ function Deck({ id, level = 0 }) {
   const columns = [...new Set(thechildren.map((c) => c.column))].sort();
   // assuming the pod id itself is already rendered
   if (pod.type !== "DECK") return <Box></Box>;
-  if (pod.children.length == 0) {
-    if (pod.id !== "ROOT") {
-      return <Box></Box>;
-    } else {
-      return (
-        <Button
-          size="xs"
-          variant="ghost"
-          onClick={() => {
-            dispatch(
-              repoSlice.actions.addPod({
-                parent: pod.id,
-                type: "DECK",
-                index: pod.children.length,
-              })
-            );
-          }}
-        >
-          <AddIcon />
-        </Button>
-      );
-    }
+  if (pod.children.length == 0 && pod.id === "ROOT") {
+    return (
+      <Button
+        size="xs"
+        variant="ghost"
+        onClick={() => {
+          dispatch(
+            repoSlice.actions.addPod({
+              parent: pod.id,
+              type: "DECK",
+              index: pod.children.length,
+            })
+          );
+        }}
+      >
+        <AddIcon />
+      </Button>
+    );
   }
+
   return (
     <HStack
       borderLeft="2px"
@@ -1068,6 +1065,19 @@ function Deck({ id, level = 0 }) {
           >
             <ArrowForwardIcon />
           </Button>
+
+          {pod.id !== "ROOT" && (
+            <Button
+              variant="ghost"
+              size="xs"
+              color="red"
+              onClick={() => {
+                dispatch(repoSlice.actions.deletePod({ id: pod.id }));
+              }}
+            >
+              <DeleteIcon />
+            </Button>
+          )}
         </Box>
 
         {/* 2. render all children */}
