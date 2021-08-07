@@ -514,8 +514,57 @@ export const repoSlice = createSlice({
       // remove all
       parent.children.splice(index, 1);
       toDelete.forEach((id) => {
-        state.pods[id] = undefined;
+        delete state.pods[id];
+        if (state.clip === id) {
+          state.clip = undefined;
+        }
       });
+    },
+    markClip: (state, action) => {
+      let { id } = action.payload;
+      if (state.clip === id) {
+        state.clip = undefined;
+      } else {
+        state.clip = id;
+      }
+    },
+    pastePod: (state, action) => {
+      let { parent, index, column } = action.payload;
+      if (!state.clip) {
+        state.error = {
+          type: "error",
+          msg: "No clipped pod.",
+        };
+        return;
+      }
+      let pod = state.pods[state.clip];
+      // 1. remove current state.clip
+      let oldparent = state.pods[pod.parent];
+      oldparent.children.splice(oldparent.children.indexOf(pod.id), 1);
+      oldparent.children.forEach((id) => {
+        if (state.pods[id].index > pod.index) {
+          state.pods[id].index -= 1;
+        }
+      });
+      // 2. insert into the new position
+      let newparent = state.pods[parent];
+      if (newparent === oldparent && index > pod.index) {
+        // need special adjustment if parent is not changed.
+        index -= 1;
+      }
+      newparent.children.forEach((id) => {
+        if (state.pods[id].index >= index) {
+          state.pods[id].index += 1;
+        }
+      });
+      newparent.children.push(pod.id);
+      // 3. set the data of the pod itself
+      pod.parent = parent;
+      pod.column = column;
+      pod.index = index;
+      newparent.children.sort(
+        (a, b) => state.pods[a].index - state.pods[b].index
+      );
     },
     setPodContent: (state, action) => {
       const { id, content } = action.payload;

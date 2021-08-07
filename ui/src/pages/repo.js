@@ -8,7 +8,6 @@ import {
   Button,
   Tooltip,
   Image,
-  IconButton,
   Spinner,
   Code,
   Spacer,
@@ -54,6 +53,9 @@ import io from "socket.io-client";
 import Popover from "@material-ui/core/Popover";
 import Paper from "@material-ui/core/Paper";
 import stripAnsi from "strip-ansi";
+import IconButton from "@material-ui/core/IconButton";
+
+import { FaCut, FaPaste } from "react-icons/fa";
 
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
 import { CgMenuRound } from "react-icons/cg";
@@ -844,54 +846,150 @@ function ExportButton({ id }) {
 function ToolBar({ pod }) {
   const dispatch = useDispatch();
   const [show, setShow] = useState(false);
+  const clip = useSelector((state) => state.repo.clip);
   return (
     <Flex>
       <ExportButton id={pod.id} />
-      <Button
-        variant="ghost"
-        size="xs"
-        onClick={() => {
-          dispatch(
-            repoSlice.actions.addPod({
-              parent: pod.parent,
-              index: pod.index,
-              type: pod.type,
-              lang: pod.lang,
-              column: pod.column,
-            })
-          );
-        }}
-      >
-        <ArrowUpIcon />
-      </Button>
-      <Button
-        variant="ghost"
-        size="xs"
-        onClick={() => {
-          dispatch(
-            repoSlice.actions.addPod({
-              parent: pod.parent,
-              index: pod.index + 1,
-              type: pod.type,
-              lang: pod.lang,
-              column: pod.column,
-            })
-          );
-        }}
-      >
-        <ArrowDownIcon />
-      </Button>
-      <Button
-        variant="ghost"
-        size="xs"
-        color="red"
-        onClick={() => {
-          dispatch(repoSlice.actions.deletePod({ id: pod.id }));
-        }}
-      >
-        <DeleteIcon />
-      </Button>
+      <HoverButton
+        btn1={
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => {
+              dispatch(
+                repoSlice.actions.addPod({
+                  parent: pod.parent,
+                  index: pod.index,
+                  type: pod.type,
+                  lang: pod.lang,
+                  column: pod.column,
+                })
+              );
+            }}
+          >
+            <ArrowUpIcon />
+          </Button>
+        }
+        btn2={
+          <IconButton
+            disabled={!clip}
+            size="small"
+            onClick={() => {
+              dispatch(
+                repoSlice.actions.pastePod({
+                  parent: pod.parent,
+                  index: pod.index,
+                  column: pod.column,
+                })
+              );
+            }}
+          >
+            <FaPaste />
+          </IconButton>
+        }
+      />
+
+      <HoverButton
+        btn1={
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => {
+              dispatch(
+                repoSlice.actions.addPod({
+                  parent: pod.parent,
+                  index: pod.index + 1,
+                  type: pod.type,
+                  lang: pod.lang,
+                  column: pod.column,
+                })
+              );
+            }}
+          >
+            <ArrowDownIcon />
+          </Button>
+        }
+        btn2={
+          <IconButton
+            size="small"
+            // I have to use Buttons from material UI when I use disabled
+            // together with onMouseLeave, otherwise, when the button is
+            // disabled, the onMouseLeave is not called!
+            disabled={!clip}
+            onClick={() => {
+              dispatch(
+                repoSlice.actions.pastePod({
+                  parent: pod.parent,
+                  index: pod.index + 1,
+                  column: pod.column,
+                })
+              );
+            }}
+          >
+            <FaPaste />
+          </IconButton>
+        }
+      />
+
+      <DeleteButton id={pod.id} />
     </Flex>
+  );
+}
+
+function DeleteButton({ id }) {
+  const dispatch = useDispatch();
+  return (
+    <HoverButton
+      btn1={
+        <Button
+          variant="ghost"
+          size="xs"
+          color="red"
+          onClick={() => {
+            dispatch(repoSlice.actions.deletePod({ id }));
+          }}
+        >
+          <DeleteIcon />
+        </Button>
+      }
+      btn2={
+        <Button
+          variant="ghost"
+          size="xs"
+          color="red"
+          onClick={() => {
+            dispatch(repoSlice.actions.markClip({ id }));
+          }}
+        >
+          <FaCut />
+        </Button>
+      }
+    />
+  );
+}
+
+function HoverButton({ btn1, btn2 }) {
+  const [show, setShow] = useState(false);
+  const anchorEl = useRef(null);
+  return (
+    <Box>
+      <Box
+        ref={anchorEl}
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+      >
+        {btn1}
+      </Box>
+      <Popper
+        open={show}
+        anchorEl={anchorEl.current}
+        onMouseEnter={() => setShow(true)}
+        onMouseLeave={() => setShow(false)}
+        placement="top"
+      >
+        <Paper>{btn2}</Paper>
+      </Popper>
+    </Box>
   );
 }
 
@@ -968,6 +1066,7 @@ function getDeck(id) {
 function Deck({ id, level = 0 }) {
   const dispatch = useDispatch();
   const pod = useSelector((state) => state.repo.pods[id]);
+  const clip = useSelector((state) => state.repo.clip);
   // get the children's column
   // FIXME performance issue
   const thechildren = useSelector((state) =>
@@ -1005,9 +1104,10 @@ function Deck({ id, level = 0 }) {
       bg={`rgba(0,0,0,${0.03 * level})`}
       boxShadow="xl"
       p={3}
+      border={clip === pod.id ? "dashed orange" : undefined}
     >
       <Box>
-        <Box>
+        <Flex>
           <Code colorScheme="blackAlpha">{pod.id}</Code>
 
           {pod.id !== "ROOT" && (
@@ -1066,19 +1166,8 @@ function Deck({ id, level = 0 }) {
             <ArrowForwardIcon />
           </Button>
 
-          {pod.id !== "ROOT" && (
-            <Button
-              variant="ghost"
-              size="xs"
-              color="red"
-              onClick={() => {
-                dispatch(repoSlice.actions.deletePod({ id: pod.id }));
-              }}
-            >
-              <DeleteIcon />
-            </Button>
-          )}
-        </Box>
+          {pod.id !== "ROOT" && <DeleteButton id={pod.id} />}
+        </Flex>
 
         {/* 2. render all children */}
         <Flex>
@@ -1593,11 +1682,17 @@ function MidportList({ pod }) {
 
 function Pod({ id, draghandle }) {
   const pod = useSelector((state) => state.repo.pods[id]);
+  const clip = useSelector((state) => state.repo.clip);
   const dispatch = useDispatch();
   const [showMenu, setShowMenu] = useState(false);
   if (pod.type === "DECK") return <Box></Box>;
   return (
-    <Box ml={0} mb={1} w="md">
+    <Box
+      ml={0}
+      mb={1}
+      w="md"
+      border={clip === pod.id ? "dashed orange" : undefined}
+    >
       <ExportList pod={pod} />
       <ImportList pod={pod} />
       <Box
