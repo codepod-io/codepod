@@ -55,7 +55,7 @@ import { MySlate } from "../MySlate";
 import { MyMonaco, MyMonacoDiff } from "../MyMonaco";
 
 import { XTerm, DummyTerm } from "../MyXTerm";
-import * as wsActions from "../../lib/wsActions";
+import * as wsActions from "../../lib/ws/actions";
 import useMe from "../../lib/me";
 import {
   HoverButton,

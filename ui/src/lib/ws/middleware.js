@@ -1,6 +1,6 @@
-import * as actions from "./wsActions";
+import * as actions from "./actions";
 
-import { repoSlice } from "../lib/store";
+import { repoSlice } from "../store";
 
 const socketMiddleware = () => {
   let socket = null;

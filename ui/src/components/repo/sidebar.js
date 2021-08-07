@@ -54,7 +54,7 @@ import {
 import { MyMonaco, MyMonacoDiff } from "../MyMonaco";
 import { StyledLink as Link } from "../utils";
 
-import * as wsActions from "../../lib/wsActions";
+import * as wsActions from "../../lib/ws/actions";
 
 function SidebarSession() {
   let { username, reponame } = useParams();

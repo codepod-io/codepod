@@ -70,7 +70,7 @@ import {
   selectIsDirty,
   selectNumDirty,
 } from "../../lib/store";
-import * as wsActions from "../../lib/wsActions";
+import * as wsActions from "../../lib/ws/actions";
 
 export function SyncStatus({ pod }) {
   const dispatch = useDispatch();

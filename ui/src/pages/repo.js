@@ -13,18 +13,13 @@ import {
   useDroppable,
 } from "@dnd-kit/core";
 
-import {
-  repoSlice,
-  loadPodQueue,
-  remoteUpdatePod,
-  remoteUpdateAllPods,
-  selectIsDirty,
-  selectNumDirty,
-} from "../lib/store";
-import * as wsActions from "../lib/wsActions";
+import { repoSlice } from "../lib/store";
+import * as wsActions from "../lib/ws/actions";
 import useMe from "../lib/me";
 import { Deck } from "../components/repo/pod";
 import { Sidebar } from "../components/repo/sidebar";
+
+import { loadPodQueue } from "../lib/remote/load";
 
 export default function Repo() {
   let { username, reponame } = useParams();
