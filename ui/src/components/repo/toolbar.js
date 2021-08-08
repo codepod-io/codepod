@@ -610,42 +610,7 @@ export function HoveringBar({ pod, showMenu, draghandle }) {
             >
               {pod.raw ? "raw" : "wrapped"}
             </Button>
-            <Button
-              size="sm"
-              isDisabled={!pod.lang}
-              onClick={() => {
-                // 1. create or load runtime socket
-                // dispatch(
-                //   repoSlice.actions.ensureSessionRuntime({ lang: pod.lang })
-                // );
-                // clear previous results
-                dispatch(repoSlice.actions.clearResults(pod.id));
-                // 2. send
-                dispatch(wsActions.wsRun(pod.id));
-                // 3. the socket should have onData set to set the output
-              }}
-            >
-              Run
-            </Button>
           </HStack>
-          <Box>
-            <MyInputButton
-              placeholder="identifier"
-              onClick={(name) => {
-                dispatch(repoSlice.actions.addPodExport({ id: pod.id, name }));
-              }}
-            >
-              Add Ex-port
-            </MyInputButton>
-            <MyInputButton
-              placeholder="identifier"
-              onClick={(name) => {
-                dispatch(repoSlice.actions.addPodMidport({ id: pod.id, name }));
-              }}
-            >
-              Add Mid-port
-            </MyInputButton>
-          </Box>
         </Flex>
       </Popper>
     </Flex>
