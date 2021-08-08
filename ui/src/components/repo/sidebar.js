@@ -453,19 +453,21 @@ function CommitButton({ from, to }) {
 
 function exportSingleFile(pods) {
   // export all pods into a single file
-  function helper(id) {
+  function helper(id, level) {
     if (!pods[id]) {
       console.log("WARN invalid pod", id);
       return "";
     }
     let code1 = `
-      # CODEPOD ${id}
-      ${pods[id].content}
-      `;
-    let code2 = pods[id].children.map(helper).join("\n");
+# CODEPOD ${id} ${pods[id].type}
+${pods[id].content}
+`;
+    // add indentation
+    code1 = code1.replaceAll("\n", "\n" + "    ".repeat(level));
+    let code2 = pods[id].children.map((id) => helper(id, level + 1)).join("\n");
     return code1 + code2;
   }
-  return helper("ROOT");
+  return helper("ROOT", 0);
 }
 
 function RepoButton() {
