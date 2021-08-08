@@ -74,10 +74,10 @@ import {
 // FIXME this should be cleared if pods get deleted
 const deckCache = {};
 
-function getDeck(id) {
+function getDeck({ id, level }) {
   // avoid re-rendering
   if (!(id in deckCache)) {
-    deckCache[id] = <Deck id={id} key={id}></Deck>;
+    deckCache[id] = <Deck id={id} key={id} level={level}></Deck>;
   }
   return deckCache[id];
 }
@@ -86,14 +86,7 @@ export function Deck({ id, level = 0 }) {
   const dispatch = useDispatch();
   const pod = useSelector((state) => state.repo.pods[id]);
   const clip = useSelector((state) => state.repo.clip);
-  // get the children's column
-  // FIXME performance issue
-  const thechildren = useSelector((state) =>
-    pod.children.map((id) => state.repo.pods[id])
-  );
-  const columns = [...new Set(thechildren.map((c) => c.column))].sort();
-  // assuming the pod id itself is already rendered
-  if (pod.type !== "DECK") return <Box></Box>;
+  if (pod.type !== "DECK") return <Pod id={id}></Pod>;
   if (pod.children.length == 0 && pod.id === "ROOT") {
     return (
       <Button
@@ -113,7 +106,6 @@ export function Deck({ id, level = 0 }) {
       </Button>
     );
   }
-
   return (
     <HStack
       borderLeft="2px"
@@ -146,41 +138,28 @@ export function Deck({ id, level = 0 }) {
             <PlayArrowIcon fontSize="small" />
           </Button>
         </Flex>
-
-        {/* 2. render all children */}
-        <Flex>
-          {/* render in columns */}
-          {columns.map((col) => (
-            <Flex key={col} direction="column" mr={2}>
-              <SortableContext
-                items={thechildren
-                  .filter((c) => c.column === col)
-                  .map((c) => c.id)}
-              >
-                {/* Trying to solve the animation of transfering across containers, but not working. */}
-                <DroppableContainer
-                  items={thechildren
-                    .filter((c) => c.column === col)
-                    .map((c) => c.id)}
-                  id={`${pod.id}-${col}`}
-                >
-                  {thechildren
-                    .filter((c) => c.column === col)
-                    .map(({ id }) => (
-                      <SortablePod id={id} key={id}></SortablePod>
-                    ))}
-                </DroppableContainer>
-              </SortableContext>
-            </Flex>
-          ))}
+        <Flex
+          // FIXME column flex with maxH won't auto flow to right.
+          direction="column"
+          // border="5px solid blue"
+          // maxH="lg"
+          // maxW={2000}
+          // wrap="wrap"
+        >
+          {pod.children
+            .filter(({ type }) => type !== "DECK")
+            .map(({ id }) => (
+              <Pod id={id} />
+            ))}
         </Flex>
       </Box>
-      <Box>
-        {/* 3. for each child, render its children using this Deck */}
-        {pod.children.map((id) => {
-          return <Deck id={id} key={id} level={level + 1}></Deck>;
-        })}
-      </Box>
+      <Flex direction="column">
+        {pod.children
+          .filter(({ type }) => type === "DECK")
+          .map(({ id }) => (
+            <Deck id={id} level={level + 1} />
+          ))}
+      </Flex>
     </HStack>
   );
 }
@@ -339,6 +318,7 @@ function WysiwygPod({ pod }) {
 }
 
 function Pod({ id, draghandle }) {
+  // console.log("rendering pod", id);
   const pod = useSelector((state) => state.repo.pods[id]);
   const clip = useSelector((state) => state.repo.clip);
   const dispatch = useDispatch();

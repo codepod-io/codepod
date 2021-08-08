@@ -76,7 +76,7 @@ export default (storeAPI) => (next) => (action) => {
           const pods = storeAPI.getState().repo.pods;
           // get all ids to delete. Gathering them here is easier than on the server
           const dfs = (id) =>
-            [id].concat(...pods[id].children.map((_id) => dfs(_id)));
+            [id].concat(...pods[id].children.map(({ id }) => dfs(id)));
           // pop in toDelete
           draft.toDelete = dfs(id);
         });

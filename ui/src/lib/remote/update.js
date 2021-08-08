@@ -8,7 +8,7 @@ export const remoteUpdateAllPods = createAsyncThunk(
   (action, { dispatch, getState }) => {
     function helper(id) {
       let pod = getState().repo.pods[id];
-      pod.children.map(helper);
+      pod.children.map(({ id }) => helper(id));
       if (id !== "ROOT") {
         if (pod.remoteHash !== hashPod(pod)) {
           dispatch(remoteUpdatePod(pod));

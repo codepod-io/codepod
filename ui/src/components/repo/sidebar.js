@@ -464,7 +464,9 @@ ${pods[id].content}
 `;
     // add indentation
     code1 = code1.replaceAll("\n", "\n" + "    ".repeat(level));
-    let code2 = pods[id].children.map((id) => helper(id, level + 1)).join("\n");
+    let code2 = pods[id].children
+      .map(({ id }) => helper(id, level + 1))
+      .join("\n");
     return code1 + code2;
   }
   return helper("ROOT", 0);

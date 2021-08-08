@@ -42,7 +42,7 @@ function mapPods(pods, func) {
     if (id !== "ROOT") {
       func(pod);
     }
-    pod.children.map(helper);
+    pod.children.map(({ id }) => helper(id));
   }
   helper("ROOT");
 }

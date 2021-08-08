@@ -9,7 +9,7 @@ function handleRunTree({ id, storeAPI, socket }) {
   function helper(id) {
     let pod = pods[id];
     console.log(pod);
-    pod.children.map(helper);
+    pod.children.map(({ id }) => helper(id));
     // evaluate child first, then parent
     if (id !== "ROOT") {
       if (pod.type === "CODE" && pod.content && pod.lang) {
@@ -309,7 +309,7 @@ const socketMiddleware = () => {
         let pods = store.getState().repo.pods;
         function helper(id) {
           let pod = pods[id];
-          pod.children.map(helper);
+          pod.children.map(({ id }) => helper(id));
           // evaluate child first, then parent
           if (id !== "ROOT") {
             // if the pod content code

@@ -32,6 +32,7 @@ export async function doRemoteLoadRepo({ username, reponame }) {
           }
           children {
             id
+            type
           }
         }
       }
@@ -78,16 +79,19 @@ export function normalize(pods) {
   pods.forEach((pod) => {
     if (!pod.parent) {
       // add root
-      res["ROOT"].children.push(pod.id);
+      res["ROOT"].children.push({ id: pod.id, type: pod.type });
       pod.parent = "ROOT";
     } else {
       // change parent.id format
       pod.parent = pod.parent.id;
     }
     // change children.id format
-    pod.children = pod.children.map(({ id }) => id);
+    // UDPATE Or, I just put {id,type} in the children array
+    //
+    // pod.children = pod.children.map(({ id }) => id);
+    //
     // sort according to index
-    pod.children.sort((a, b) => res[a].index - res[b].index);
+    pod.children.sort((a, b) => res[a.id].index - res[b.id].index);
     if (pod.type === "WYSIWYG" || pod.type === "CODE") {
       pod.content = JSON.parse(pod.content);
     }

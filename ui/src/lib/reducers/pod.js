@@ -8,7 +8,7 @@ export function addPod(state, action) {
   }
   // update all other siblings' index
   // FIXME this might cause other pods to be re-rendered
-  state.pods[parent].children.forEach((id) => {
+  state.pods[parent].children.forEach(({ id }) => {
     if (state.pods[id].index >= index) {
       state.pods[id].index += 1;
     }
@@ -37,12 +37,12 @@ export function addPod(state, action) {
   // TODO the children no longer need to be ordered
   // TODO the frontend should handle differently for the children
   // state.pods[parent].children.splice(index, 0, id);
-  state.pods[parent].children.push(id);
+  state.pods[parent].children.push({ id, type: pod.type });
   // DEBUG sort-in-place
   // TODO I can probably insert
   // CAUTION the sort expects -1,0,1, not true/false
   state.pods[parent].children.sort(
-    (a, b) => state.pods[a].index - state.pods[b].index
+    (a, b) => state.pods[a.id].index - state.pods[b.id].index
   );
   pod.ns = computeNamespace(state.pods, id);
 }
@@ -51,10 +51,10 @@ export function deletePod(state, action) {
   const { id, toDelete } = action.payload;
   // delete the link to parent
   const parent = state.pods[state.pods[id].parent];
-  const index = parent.children.indexOf(id);
+  const index = parent.children.map(({ id }) => id).indexOf(id);
 
   // update all other siblings' index
-  parent.children.forEach((id) => {
+  parent.children.forEach(({ id }) => {
     if (state.pods[id].index >= index) {
       state.pods[id].index -= 1;
     }
@@ -81,8 +81,11 @@ export function pastePod(state, action) {
   let pod = state.pods[state.clip];
   // 1. remove current state.clip
   let oldparent = state.pods[pod.parent];
-  oldparent.children.splice(oldparent.children.indexOf(pod.id), 1);
-  oldparent.children.forEach((id) => {
+  oldparent.children.splice(
+    oldparent.children.map(({ id }) => id).indexOf(pod.id),
+    1
+  );
+  oldparent.children.forEach(({ id }) => {
     if (state.pods[id].index > pod.index) {
       state.pods[id].index -= 1;
     }
@@ -93,17 +96,19 @@ export function pastePod(state, action) {
     // need special adjustment if parent is not changed.
     index -= 1;
   }
-  newparent.children.forEach((id) => {
+  newparent.children.forEach(({ id }) => {
     if (state.pods[id].index >= index) {
       state.pods[id].index += 1;
     }
   });
-  newparent.children.push(pod.id);
+  newparent.children.push({ id: pod.id, type: pod.type });
   // 3. set the data of the pod itself
   pod.parent = parent;
   pod.column = column;
   pod.index = index;
-  newparent.children.sort((a, b) => state.pods[a].index - state.pods[b].index);
+  newparent.children.sort(
+    (a, b) => state.pods[a.id].index - state.pods[b.id].index
+  );
 }
 
 function setPodType(state, action) {
