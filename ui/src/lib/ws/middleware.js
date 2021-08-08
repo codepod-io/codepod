@@ -2,6 +2,37 @@ import * as actions from "./actions";
 
 import { repoSlice } from "../store";
 
+function handleRunTree({ id, storeAPI, socket }) {
+  // get all pods
+  console.log("handleRunTree", { id, storeAPI, socket });
+  let pods = storeAPI.getState().repo.pods;
+  function helper(id) {
+    let pod = pods[id];
+    console.log(pod);
+    pod.children.map(helper);
+    // evaluate child first, then parent
+    if (id !== "ROOT") {
+      if (pod.type === "CODE" && pod.content && pod.lang) {
+        storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
+        storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
+        socket.send(
+          JSON.stringify({
+            type: "runCode",
+            payload: {
+              lang: pod.lang,
+              code: pod.content,
+              namespace: pod.ns,
+              podId: pod.id,
+              sessionId: storeAPI.getState().repo.sessionId,
+            },
+          })
+        );
+      }
+    }
+  }
+  helper(id);
+}
+
 const socketMiddleware = () => {
   let socket = null;
   let socket_intervalId = null;
@@ -250,6 +281,20 @@ const socketMiddleware = () => {
         }
         break;
       }
+      case "WS_RUN_TREE":
+        {
+          if (!socket) {
+            store.dispatch(
+              repoSlice.actions.addError({
+                type: "error",
+                msg: "Runtime not connected",
+              })
+            );
+            break;
+          }
+          handleRunTree({ id: action.payload, storeAPI: store, socket });
+        }
+        break;
       case "WS_RUN_ALL": {
         if (!socket) {
           store.dispatch(

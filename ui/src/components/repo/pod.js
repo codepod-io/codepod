@@ -134,6 +134,17 @@ export function Deck({ id, level = 0 }) {
           <RightButton pod={pod} />
 
           {pod.id !== "ROOT" && <DeleteButton pod={pod} />}
+
+          <Button
+            variant="ghost"
+            color="green"
+            size="xs"
+            onClick={() => {
+              dispatch(wsActions.wsRunTree(id));
+            }}
+          >
+            <PlayArrowIcon fontSize="small" />
+          </Button>
         </Flex>
 
         {/* 2. render all children */}
