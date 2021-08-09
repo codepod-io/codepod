@@ -756,7 +756,7 @@ export class JuliaKernel extends CodePodKernel {
   lang = "julia";
   image = "julia_kernel";
   mapEval({ code, namespace }) {
-    return `CODEPOD_EVAL("""${code}""", "${namespace}")`;
+    return `CODEPOD_EVAL("""${code.replaceAll("$", "\\$")}""", "${namespace}")`;
   }
   mapAddImport({ from, to, name }) {
     return `CODEPOD_ADD_IMPORT("${from}", "${to}", "${name}")`;
