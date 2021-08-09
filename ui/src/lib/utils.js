@@ -23,6 +23,7 @@ export function hashPod(pod) {
       imports: pod.imports,
       exports: pod.exports,
       midports: pod.midports,
+      fold: pod.fold,
     })
   ).toString();
 }

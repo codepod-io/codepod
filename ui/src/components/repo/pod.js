@@ -338,7 +338,13 @@ function Pod({ id, draghandle }) {
         onMouseEnter={() => setShowMenu(true)}
         onMouseLeave={() => setShowMenu(false)}
       >
-        <ThePod id={id} />
+        {pod.fold ? (
+          <Box h={10} border="dashed 1px">
+            <Text>Folded</Text>
+          </Box>
+        ) : (
+          <ThePod id={id} />
+        )}
 
         <Box
           style={{
@@ -365,40 +371,42 @@ function Pod({ id, draghandle }) {
           </Flex>
         </Box>
 
-        <Flex
-          style={{
-            margin: "5px",
-            position: "absolute",
-            bottom: "-4px",
-            right: "15px",
-          }}
-        >
-          {/* The lang */}
-          {pod.type === "WYSIWYG" && (
-            <Text color="gray" mr={2} fontSize="xs">
-              {pod.type}
-            </Text>
-          )}
-          {pod.type === "CODE" && pod.lang && (
-            <Flex>
-              <Text mr={2} color="gray" fontSize="sm">
-                {pod.lang}
+        {!pod.fold && (
+          <Flex
+            style={{
+              margin: "5px",
+              position: "absolute",
+              bottom: "-4px",
+              right: "15px",
+            }}
+          >
+            {/* The lang */}
+            {pod.type === "WYSIWYG" && (
+              <Text color="gray" mr={2} fontSize="xs">
+                {pod.type}
               </Text>
-              <Tooltip label="Run (shift-enter)">
-                <Button
-                  variant="ghost"
-                  color="green"
-                  size="xs"
-                  onClick={() => {
-                    dispatch(wsActions.wsRun(id));
-                  }}
-                >
-                  <PlayArrowIcon fontSize="small" />
-                </Button>
-              </Tooltip>
-            </Flex>
-          )}
-        </Flex>
+            )}
+            {pod.type === "CODE" && pod.lang && (
+              <Flex>
+                <Text mr={2} color="gray" fontSize="sm">
+                  {pod.lang}
+                </Text>
+                <Tooltip label="Run (shift-enter)">
+                  <Button
+                    variant="ghost"
+                    color="green"
+                    size="xs"
+                    onClick={() => {
+                      dispatch(wsActions.wsRun(id));
+                    }}
+                  >
+                    <PlayArrowIcon fontSize="small" />
+                  </Button>
+                </Tooltip>
+              </Flex>
+            )}
+          </Flex>
+        )}
       </Box>
 
       {pod.stdout && (

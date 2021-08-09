@@ -404,6 +404,7 @@ export const resolvers = {
         imports,
         exports,
         midports,
+        fold,
       },
       { userId }
     ) => {
@@ -420,6 +421,7 @@ export const resolvers = {
           lang,
           result,
           stdout,
+          fold,
           error,
           imports,
           exports,

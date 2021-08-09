@@ -22,6 +22,7 @@ export async function doRemoteLoadRepo({ username, reponame }) {
           column
           result
           stdout
+          fold
           error
           imports
           exports
@@ -133,6 +134,7 @@ function serializePodInput(pod) {
     // children,
     result,
     stdout,
+    fold,
     error,
     imports,
     exports,
@@ -143,6 +145,7 @@ function serializePodInput(pod) {
     column,
     lang,
     stdout,
+    fold,
     content: JSON.stringify(content),
     result: JSON.stringify(result),
     error: JSON.stringify(error),
@@ -237,10 +240,12 @@ export async function doRemoteUpdatePod(pod) {
       query: `
         mutation updatePod($id: String, $content: String, $type: String, $lang: String,
                            $result: String, $stdout: String, $error: String, $column: Int,
-                           $imports: String, $exports: String, $midports: String) {
+                           $imports: String, $exports: String, $midports: String,
+                           $fold: Boolean) {
           updatePod(id: $id, content: $content, type: $type, lang: $lang,
                     result: $result, stdout: $stdout, error: $error, column: $column
-                    imports: $imports, exports: $exports, midports: $midports) {
+                    imports: $imports, exports: $exports, midports: $midports,
+                    fold: $fold) {
             id
           }
         }`,

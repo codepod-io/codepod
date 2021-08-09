@@ -43,6 +43,9 @@ import IconButton from "@material-ui/core/IconButton";
 
 import { FaCut, FaPaste } from "react-icons/fa";
 
+import UnfoldLessIcon from "@material-ui/icons/UnfoldLess";
+import UnfoldMoreIcon from "@material-ui/icons/UnfoldMore";
+
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
 import { CgMenuRound } from "react-icons/cg";
 // import { CheckIcon } from "@material-ui/icons";
@@ -340,6 +343,25 @@ export function RightButton({ pod }) {
   );
 }
 
+function FoldButton({ pod }) {
+  const dispatch = useDispatch();
+  return (
+    <Button
+      size="xs"
+      variant="ghost"
+      onClick={() => {
+        dispatch(repoSlice.actions.toggleFold(pod.id));
+      }}
+    >
+      {pod.fold ? (
+        <UnfoldMoreIcon fontSize="small" />
+      ) : (
+        <UnfoldLessIcon fontSize="small" />
+      )}
+    </Button>
+  );
+}
+
 export function ToolBar({ pod }) {
   const dispatch = useDispatch();
   const [show, setShow] = useState(false);
@@ -349,6 +371,7 @@ export function ToolBar({ pod }) {
       <UpButton pod={pod} />
       <DownButton pod={pod} />
       <DeleteButton pod={pod} />
+      <FoldButton pod={pod} />
     </Flex>
   );
 }

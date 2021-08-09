@@ -59,6 +59,7 @@ const typeDefs = gql`
     imports: String
     exports: String
     midports: String
+    fold: Boolean
   }
 
   input PodInput {
@@ -73,6 +74,7 @@ const typeDefs = gql`
     imports: String
     exports: String
     midports: String
+    fold: Boolean
   }
 
   type Mutation {
@@ -106,6 +108,7 @@ const typeDefs = gql`
       imports: String
       exports: String
       midports: String
+      fold: Boolean
     ): Pod
     clearUser: Boolean
     clearRepo: Boolean

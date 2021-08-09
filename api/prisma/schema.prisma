@@ -89,6 +89,7 @@ model Pod {
   children Pod[]   @relation("PARENT")
   content  String?
   column   Int @default(1)
+  fold     Boolean @default(false)
   lang     String?
   type     PodType
   result   String?

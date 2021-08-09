@@ -21,6 +21,7 @@ export function addPod(state, action) {
     error: null,
     lang: "python",
     raw: false,
+    fold: false,
     exports: {},
     imports: {},
     midports: {},
@@ -138,6 +139,15 @@ export default {
   deletePod,
   pastePod,
   setPodType,
+  toggleFold: (state, action) => {
+    let id = action.payload;
+    if (!state.pods[id].fold) {
+      // adapter for adding fold field
+      state.pods[id].fold = true;
+    } else {
+      state.pods[id].fold = !state.pods[id].fold;
+    }
+  },
 
   setPodLang: (state, action) => {
     const { id, lang } = action.payload;
