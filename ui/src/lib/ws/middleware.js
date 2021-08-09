@@ -244,40 +244,21 @@ const socketMiddleware = () => {
           let names = Object.entries(pod.exports)
             .filter(([k, v]) => v)
             .map(([k, v]) => k);
-          // 2. get to ancestors and update
-          let pods = store.getState().repo.pods;
-          // verify imports for id, and propagate
-          function helper(id, names) {
-            if (names.length == 0) return;
-            // emit varify improt
-            let pod = pods[id];
-            console.log("ensureImports:", id, names);
-            socket.send(
-              JSON.stringify({
-                type: "ensureImports",
-                payload: {
-                  names,
-                  lang: pod.lang,
-                  to: pod.ns,
-                  // FIXME keep consistent with computeNamespace
-                  from: pod.ns === "" ? `${pod.id}` : `${pod.ns}/${pod.id}`,
-                  id: pod.id,
-                  sessionId: store.getState().repo.sessionId,
-                },
-              })
-            );
-            // recurse
-            helper(
-              pod.parent,
-              // update names
-              Object.entries(pod.imports)
-                // CAUTION k in names won't work and always return false for list of
-                // strings
-                .filter(([k, v]) => v && names.includes(k))
-                .map(([k, v]) => k)
-            );
-          }
-          helper(pod.parent, names);
+          console.log("ensureImports:", id, names);
+          socket.send(
+            JSON.stringify({
+              type: "ensureImports",
+              payload: {
+                names,
+                lang: pod.lang,
+                to: store.getState().repo.pods[pod.parent].ns,
+                // FIXME keep consistent with computeNamespace
+                from: pod.ns,
+                id: pod.id,
+                sessionId: store.getState().repo.sessionId,
+              },
+            })
+          );
         }
         break;
       }
@@ -452,45 +433,38 @@ const socketMiddleware = () => {
           // break;
         }
         store.dispatch(repoSlice.actions.togglePodExport({ id, name }));
+        store.dispatch(repoSlice.actions.clearIO({ id, name }));
         let pods = store.getState().repo.pods;
         let pod = pods[id];
-        let parent = pods[pod.parent];
         // toggle for its parent
         if (pod.exports[name]) {
-          store.dispatch(
-            repoSlice.actions.addPodImport({ id: parent.id, name })
-          );
-          socket?.send(
+          console.log("sending addImport ..");
+          socket.send(
             JSON.stringify({
               type: "addImport",
               payload: {
                 lang: pod.lang,
                 from: pod.ns,
-                to: parent.ns,
-                id: parent.id,
+                to: pods[pod.parent].ns,
+                id: id,
+                sessionId: store.getState().repo.sessionId,
                 name,
               },
             })
           );
         } else {
-          // delete for all its parents
-          while (parent && parent.imports && name in parent.imports) {
-            store.dispatch(
-              repoSlice.actions.deletePodImport({ id: parent.id, name })
-            );
-            socket?.send(
-              JSON.stringify({
-                type: "deleteImport",
-                payload: {
-                  lang: pod.lang,
-                  id: parent.id,
-                  ns: parent.ns,
-                  name,
-                },
-              })
-            );
-            parent = pods[parent.parent];
-          }
+          socket?.send(
+            JSON.stringify({
+              type: "deleteImport",
+              payload: {
+                lang: pod.lang,
+                id,
+                ns: pods[pod.parent].ns,
+                sessionId: store.getState().repo.sessionId,
+                name,
+              },
+            })
+          );
         }
         break;
       }

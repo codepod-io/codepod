@@ -693,7 +693,7 @@ export function ExportList({ pod }) {
                 <CloseIcon />
               </Button>
               {/* No need IOStatus for exports */}
-              {/* <IOStatus id={pod.id} name={k} /> */}
+              <IOStatus id={pod.id} name={k} />
             </Box>
           ))}
         </Box>

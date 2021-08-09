@@ -9,6 +9,10 @@ export default {
     }
     pod.exports[name] = false;
   },
+  clearIO: (state, action) => {
+    let { id, name } = action.payload;
+    delete state.pods[id].io[name];
+  },
   deletePodExport: (state, action) => {
     let { id, name } = action.payload;
     if (!(name in state.pods[state.pods[id].parent].imports)) {
