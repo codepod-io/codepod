@@ -13,10 +13,11 @@ services:
       - codepod-db-prod:/var/lib/postgresql/data
 
   api:
-    image: codepod-api
+    image: codepod-api:v0.0.1
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+      - git-data-prod:/srv/git
     command: yarn dev
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
@@ -24,9 +25,14 @@ services:
       KERNEL_NETWORK: "codepod-prod"
 
   ui:
-    image: codepod-ui
+    image: codepod-ui:v0.0.1
     restart: always
     command: yarn start
+
+  git-http:
+    build: ../dev/docker-git-http
+    volumes:
+      - git-data-prod:/var/lib/git
 
   # docker-compose up -d --build --force-recreate --no-deps nginx
   nginx:
@@ -38,6 +44,14 @@ services:
       - ./nginx:/etc/nginx/conf.d
       - /etc/letsencrypt:/etc/letsencrypt
       - /var/lib/letsencrypt:/var/lib/letsencrypt
+      # I'm mounting this so that I can use webroot method for letsencrypt on
+      # the host
+      #
+      # sudo certbot certonly --webroot /var/www/html
+      #
+      # only enable when I do the renew
+      #
+      # - /var/www/html:/var/www/html
     depends_on:
       - ui
 
@@ -51,6 +65,7 @@ services:
 
 volumes:
   codepod-db-prod:
+  git-data-prod:
 
 networks:
   default:

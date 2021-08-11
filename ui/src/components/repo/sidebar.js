@@ -475,7 +475,12 @@ ${pods[id].content}
 function RepoButton() {
   let reponame = useSelector((state) => state.repo.reponame);
   let username = useSelector((state) => state.repo.username);
-  let url = `http://git.codepod.test:3000/?p=${username}/${reponame}/.git`;
+  let url;
+  if (window.location.protocol === "http:") {
+    url = `http://git.${window.location.host}/?p=${username}/${reponame}/.git`;
+  } else {
+    url = `https://git.${window.location.host}/?p=${username}/${reponame}/.git`;
+  }
   const { isOpen, onOpen, onClose } = useDisclosure();
   return (
     <>
