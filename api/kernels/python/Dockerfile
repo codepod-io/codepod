@@ -1,4 +1,4 @@
-FROM python:3.10.0b4-buster
+FROM python:3.9-buster
 
 RUN pip install ipykernel
 
