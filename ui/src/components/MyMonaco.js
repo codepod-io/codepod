@@ -44,6 +44,10 @@ export function MyMonaco({
         minimap: {
           enabled: false,
         },
+        formatOnPaste: true,
+        scrollbar: {
+          alwaysConsumeMouseWheel: false,
+        },
       }}
       onChange={onChange}
       editorDidMount={(editor, monaco) => {
