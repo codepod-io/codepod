@@ -149,7 +149,9 @@ export function Deck({ id, level = 0 }) {
           {pod.children
             .filter(({ type }) => type !== "DECK")
             .map(({ id }) => (
-              <Pod id={id} />
+              <Box key={id}>
+                <Pod id={id} />
+              </Box>
             ))}
         </Flex>
       </Box>
@@ -157,7 +159,9 @@ export function Deck({ id, level = 0 }) {
         {pod.children
           .filter(({ type }) => type === "DECK")
           .map(({ id }) => (
-            <Deck id={id} level={level + 1} />
+            <Box key={id}>
+              <Deck id={id} level={level + 1} />
+            </Box>
           ))}
       </Flex>
     </HStack>
