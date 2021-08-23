@@ -8,11 +8,10 @@ function handleRunTree({ id, storeAPI, socket }) {
   let pods = storeAPI.getState().repo.pods;
   function helper(id) {
     let pod = pods[id];
-    console.log(pod);
     pod.children.map(({ id }) => helper(id));
     // evaluate child first, then parent
     if (id !== "ROOT") {
-      if (pod.type === "CODE" && pod.content && pod.lang) {
+      if (pod.type === "CODE" && pod.content && pod.lang && !pod.thundar) {
         storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
         storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
         socket.send(
