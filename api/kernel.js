@@ -646,7 +646,9 @@ export class CodePodKernel {
     // to shutdown the kernels easily.
     //
     // remove container
-    let name = `cpkernel_${this.sessionId}_${this.lang}`;
+    let network = process.env["KERNEL_NETWORK"] || "codepod";
+    let name = `cpkernel_${network}_${this.sessionId}_${this.lang}`;
+    console.log("Kill session received. Removing container", name);
     await removeContainer(name);
   }
   addSocket(socket) {
