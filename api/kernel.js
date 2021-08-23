@@ -403,6 +403,48 @@ async function removeContainer(name) {
   });
 }
 
+async function loadOrCreateContainer(image, name, network) {
+  console.log("loading container", name);
+  let ip = await loadContainer(name, network);
+  if (ip) return ip;
+  console.log("beforing creating container, removing just in case ..");
+  await removeContainer(name);
+  console.log("creating container ..");
+  return await createContainer(image, name, network);
+}
+
+async function loadContainer(name, network) {
+  // if already exists, just return the IP
+  // else, create and return the IP
+  return new Promise((resolve, reject) => {
+    var docker = new Docker();
+    console.log("remove if already exist");
+    let old = docker.getContainer(name);
+    old.inspect((err, data) => {
+      if (err) {
+        console.log("removeContainer: container seems not exist.");
+        return resolve(null);
+      }
+      if (data.State.Running) {
+        let ip = data.NetworkSettings.Networks[network].IPAddress;
+        console.log("IP:", ip);
+        resolve(ip);
+      } else {
+        console.log("Already stopped. Removing ..");
+        old.remove((err, data) => {
+          if (err) {
+            console.log("ERR during removing container:", err);
+            return reject("ERROR!!!");
+            // resolve();
+          }
+          console.log("removed successfully");
+          return resolve(null);
+        });
+      }
+    });
+  });
+}
+
 // return promise of IP address
 async function createContainer(image, name, network) {
   return new Promise((resolve, reject) => {
@@ -569,14 +611,15 @@ function handleIOPub_stream({ msgs, socket }) {
     throw new Error(`Invalid stream type: ${msgs.content.name}`);
   }
 }
+
 export class CodePodKernel {
   async init({ sessionId, socket }) {
     // fname = await genConnSpec();
     this.sessionId = sessionId;
     let network = process.env["KERNEL_NETWORK"] || "codepod";
     let name = `cpkernel_${network}_${sessionId}_${this.lang}`;
-    await removeContainer(name);
-    let ip = await createContainer(this.image, name, network);
+    // await removeContainer(name);
+    let ip = await loadOrCreateContainer(this.image, name, network);
     // FIXME I don't want to extend Kernel, I'm using composition
     console.log("connecting to zmq ..");
     this.wire = new ZmqWire(this.fname, ip);
