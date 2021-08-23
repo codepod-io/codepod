@@ -459,7 +459,7 @@ async function createContainer(image, name, network) {
         name,
         HostConfig: {
           NetworkMode: network,
-          Binds: ["dotjulia:/root/.julia"],
+          Binds: ["dotjulia:/root/.julia", "pipcache:/root/.cache/pip"],
           DeviceRequests: [
             {
               Count: -1,

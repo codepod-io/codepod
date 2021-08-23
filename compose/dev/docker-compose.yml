@@ -86,6 +86,8 @@ services:
 volumes:
   db-data:
   git-data:
+  dotjulia:
+  pipcache:
 
 networks:
   default:
