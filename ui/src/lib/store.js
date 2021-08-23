@@ -62,39 +62,42 @@ export function selectNumDirty() {
   };
 }
 
+const initialState = {
+  reponame: null,
+  username: null,
+  repoLoaded: false,
+  pods: {},
+  queue: [],
+  // sessionId: nanoid(),
+  sessionId: null,
+  sessionRuntime: {},
+  runtimeConnected: false,
+  kernels: {
+    julia: {
+      status: null,
+    },
+    racket: {
+      status: null,
+    },
+    python: {
+      status: null,
+    },
+    javascript: {
+      status: null,
+    },
+    // ts: {
+    //   status: "NA",
+    // },
+  },
+  queueProcessing: false,
+};
+
 export const repoSlice = createSlice({
   name: "repo",
   // TODO load from server
-  initialState: {
-    reponame: null,
-    username: null,
-    repoLoaded: false,
-    pods: {},
-    queue: [],
-    // sessionId: nanoid(),
-    sessionId: null,
-    sessionRuntime: {},
-    runtimeConnected: false,
-    kernels: {
-      julia: {
-        status: null,
-      },
-      racket: {
-        status: null,
-      },
-      python: {
-        status: null,
-      },
-      javascript: {
-        status: null,
-      },
-      // ts: {
-      //   status: "NA",
-      // },
-    },
-    queueProcessing: false,
-  },
+  initialState,
   reducers: {
+    resetState: () => initialState,
     resetSessionId: (state, action) => {
       state.sessionId = nanoid();
     },

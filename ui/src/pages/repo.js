@@ -38,6 +38,7 @@ export default function Repo() {
     }
   }, [me]);
   useEffect(() => {
+    dispatch(repoSlice.actions.resetState());
     // load the repo. It is actually not a queue, just an async thunk
     dispatch(loadPodQueue({ username, reponame }));
     // this is the queue for remote update
