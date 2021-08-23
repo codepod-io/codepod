@@ -45,6 +45,7 @@ import { FaCut, FaPaste } from "react-icons/fa";
 
 import UnfoldLessIcon from "@material-ui/icons/UnfoldLess";
 import UnfoldMoreIcon from "@material-ui/icons/UnfoldMore";
+import { AiOutlineSafetyCertificate, AiFillThunderbolt } from "react-icons/ai";
 
 import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
 import { CgMenuRound } from "react-icons/cg";
@@ -362,6 +363,23 @@ function FoldButton({ pod }) {
   );
 }
 
+function ThundarButton({ pod }) {
+  // this button is used for indicating side-effect. Side-effect pods are not
+  // executed by run all button or run deck.
+  const dispatch = useDispatch();
+  return (
+    <Button
+      size="xs"
+      variant="ghost"
+      onClick={() => {
+        dispatch(repoSlice.actions.toggleThundar(pod.id));
+      }}
+    >
+      {pod.thundar ? <AiFillThunderbolt /> : <AiOutlineSafetyCertificate />}
+    </Button>
+  );
+}
+
 export function ToolBar({ pod }) {
   const dispatch = useDispatch();
   const [show, setShow] = useState(false);
@@ -372,6 +390,7 @@ export function ToolBar({ pod }) {
       <DownButton pod={pod} />
       <DeleteButton pod={pod} />
       <FoldButton pod={pod} />
+      <ThundarButton pod={pod} />
     </Flex>
   );
 }

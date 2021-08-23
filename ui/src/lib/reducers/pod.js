@@ -22,6 +22,7 @@ export function addPod(state, action) {
     lang: "python",
     raw: false,
     fold: false,
+    thundar: false,
     exports: {},
     imports: {},
     midports: {},
@@ -148,7 +149,14 @@ export default {
       state.pods[id].fold = !state.pods[id].fold;
     }
   },
-
+  toggleThundar: (state, action) => {
+    let id = action.payload;
+    if (!state.pods[id].thundar) {
+      state.pods[id].thundar = true;
+    } else {
+      state.pods[id].thundar = !state.pods[id].thundar;
+    }
+  },
   setPodLang: (state, action) => {
     const { id, lang } = action.payload;
     state.pods[id].lang = lang;

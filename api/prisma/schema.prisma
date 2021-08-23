@@ -90,6 +90,7 @@ model Pod {
   content  String?
   column   Int @default(1)
   fold     Boolean @default(false)
+  thundar  Boolean @default(false)
   lang     String?
   type     PodType
   result   String?
