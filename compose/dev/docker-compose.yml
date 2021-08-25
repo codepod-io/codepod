@@ -61,6 +61,23 @@ services:
       - ../../ui:/app
     command: yarn start
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    volumes:
+      # This will allow the enabled plugins to persist on restart
+      # In production, I need to use /etc/rabbitmq/enabled_plugins to enable plugins
+      - rabbitmq-etc:/etc/rabbitmq/
+      - rabbitmq-data:/var/lib/rabbitmq/
+      - rabbitmq-logs/:/var/log/rabbitmq/
+    ports:
+      # The AMQP port
+      - 5672:5672
+      # the management UI
+      - 15672:15672
+      # STOMP-over-WebSockets
+      - 15674:15674
+      # 61613 STOMP clients, internally used by kernel.js
+
   # https://github.com/anyakichi/docker-git-http
   #
   # visit git.codepod.test:3000 to visit the gitweb interface
@@ -88,6 +105,9 @@ volumes:
   git-data:
   dotjulia:
   pipcache:
+  rabbitmq-data:
+  rabbitmq-logs:
+  rabbitmq-etc:
 
 networks:
   default:

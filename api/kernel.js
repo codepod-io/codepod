@@ -12,6 +12,8 @@ import { v4 as uuidv4 } from "uuid";
 import crypto from "crypto";
 import Docker from "dockerode";
 
+import Stomp from "stompjs";
+
 function getFreePort() {
   return new Promise((resolve) => {
     // get one free pod
@@ -493,6 +495,41 @@ async function createContainer(image, name, network) {
   });
 }
 
+var mq_client = Stomp.overTCP("rabbitmq", 61613);
+
+mq_client.connect(
+  "guest",
+  "guest",
+  function () {
+    console.log("connected");
+    // mq_client.send("/queue/test", { priority: 9 }, "Hello from server");
+    // var subscription = client.subscribe("/queue/test", function (message) {
+    //   // called when the client receives a STOMP message from the server
+    //   if (message.body) {
+    //     console.log("got message with body " + message.body);
+    //   } else {
+    //     console.log("got empty message");
+    //   }
+    // });
+    // subscription.unsubscribe()
+  },
+  function () {
+    console.log("error");
+    throw new Error("Cannot connect to RabbitMQ server");
+  },
+  "/"
+);
+
+class MyMqSocket {
+  constructor(queue) {
+    this.queue = queue;
+  }
+  send(obj) {
+    // FIXME need to make sure it is connected
+    mq_client.send(this.queue, {}, obj);
+  }
+}
+
 function handleIOPub_status({ msgs, socket, lang }) {
   console.log("emitting status ..", msgs.content.execution_state, "for", lang);
   socket.send(
@@ -623,6 +660,7 @@ export class CodePodKernel {
     // FIXME I don't want to extend Kernel, I'm using composition
     console.log("connecting to zmq ..");
     this.wire = new ZmqWire(this.fname, ip);
+    this.mq_socket = new MyMqSocket(sessionId);
     if (socket) {
       // listen to IOPub here
       this.addSocket(socket);
@@ -656,6 +694,8 @@ export class CodePodKernel {
       return;
     }
     this.socket = socket;
+    // DEBUG
+    socket = this.mq_socket;
     this.wire.setOnIOPub((topic, msgs) => {
       // console.log("-----", topic, msgs);
       // iracket's topic seems to be an ID. I should use msg type instead
@@ -687,6 +727,8 @@ export class CodePodKernel {
       }
     });
     this.wire.setOnShell((msgs) => {
+      // DEBUG
+      socket = this.mq_socket;
       switch (msgs.header.msg_type) {
         case "execute_reply":
           {

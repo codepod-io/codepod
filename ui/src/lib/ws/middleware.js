@@ -1,6 +1,7 @@
 import * as actions from "./actions";
 
 import { repoSlice } from "../store";
+import Stomp from "stompjs";
 
 function handleRunTree({ id, storeAPI, socket }) {
   // get all pods
@@ -35,6 +36,7 @@ function handleRunTree({ id, storeAPI, socket }) {
 const socketMiddleware = () => {
   let socket = null;
   let socket_intervalId = null;
+  let mq_client = null;
 
   // the middleware part of this function
   return (store) => (next) => (action) => {
@@ -70,64 +72,82 @@ const socketMiddleware = () => {
         socket = new WebSocket(socket_url);
         // socket.emit("spawn", state.sessionId, lang);
 
+        // if (mq_client) {
+        //   mq_client.disconnect()
+        // }
+        console.log("connecting to stomp ..");
+        mq_client = Stomp.over(new WebSocket("ws://codepod.test:15674/ws"));
+        mq_client.connect(
+          "guest",
+          "guest",
+          function () {
+            console.log("connected");
+            mq_client.subscribe(store.getState().repo.sessionId, (msg) => {
+              let { type, payload } = JSON.parse(msg.body);
+              console.log("got message", type, payload);
+              switch (type) {
+                case "output":
+                  {
+                    console.log("output:", payload);
+                  }
+                  break;
+                case "stdout":
+                  {
+                    store.dispatch(actions.wsStdout(payload));
+                  }
+                  break;
+                case "execute_result":
+                  {
+                    store.dispatch(actions.wsResult(payload));
+                  }
+                  break;
+                case "execute_reply":
+                  {
+                    store.dispatch(actions.wsExecuteReply(payload));
+                  }
+                  break;
+                case "error":
+                  {
+                    store.dispatch(actions.wsError(payload));
+                  }
+                  break;
+                case "stream":
+                  {
+                    store.dispatch(actions.wsStream(payload));
+                  }
+                  break;
+                case "IO:execute_result":
+                  {
+                    store.dispatch(actions.wsIOResult(payload));
+                  }
+                  break;
+                case "IO:error":
+                  {
+                    store.dispatch(actions.wsIOError(payload));
+                  }
+                  break;
+                case "status":
+                  {
+                    // console.log("Received status:", payload);
+                    store.dispatch(actions.wsStatus(payload));
+                  }
+                  break;
+                default:
+                  console.log("WARNING unhandled message", { type, payload });
+              }
+            });
+          },
+          function () {
+            console.log("error connecting RabbitMQ");
+          },
+          "/"
+        );
+
         // websocket handlers
         // socket.onmessage = onMessage(store);
         // socket.onclose = onClose(store);
         // socket.onopen = onOpen(store);
-        socket.onmessage = (msg) => {
-          // console.log("onmessage", msg.data);
-          let { type, payload } = JSON.parse(msg.data);
-          switch (type) {
-            case "output":
-              {
-                console.log("output:", payload);
-              }
-              break;
-            case "stdout":
-              {
-                store.dispatch(actions.wsStdout(payload));
-              }
-              break;
-            case "execute_result":
-              {
-                store.dispatch(actions.wsResult(payload));
-              }
-              break;
-            case "execute_reply":
-              {
-                store.dispatch(actions.wsExecuteReply(payload));
-              }
-              break;
-            case "error":
-              {
-                store.dispatch(actions.wsError(payload));
-              }
-              break;
-            case "stream":
-              {
-                store.dispatch(actions.wsStream(payload));
-              }
-              break;
-            case "IO:execute_result":
-              {
-                store.dispatch(actions.wsIOResult(payload));
-              }
-              break;
-            case "IO:error":
-              {
-                store.dispatch(actions.wsIOError(payload));
-              }
-              break;
-            case "status":
-              {
-                // console.log("Received status:", payload);
-                store.dispatch(actions.wsStatus(payload));
-              }
-              break;
-            default:
-              console.log("WARNING unhandled message", { type, payload });
-          }
-        };
+
         // well, since it is already opened, this won't be called
         //
         // UPDATE it works, this will be called even after connection

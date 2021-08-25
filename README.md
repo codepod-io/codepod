@@ -59,3 +59,9 @@ Show constraints:
 ```
 SHOW CONSTRAINTS
 ```
+
+## RabbitMQ
+
+- over websocket https://www.rabbitmq.com/web-stomp.html
+- the client document http://jmesnil.net/stomp-websocket/doc/
+- docker image: https://registry.hub.docker.com/_/rabbitmq/

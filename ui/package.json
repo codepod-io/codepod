@@ -42,6 +42,7 @@
     "slate-history": "^0.62.0",
     "slate-react": "^0.65.2",
     "socket.io-client": "^4.1.3",
+    "stompjs": "^2.3.3",
     "strip-ansi": "^7.0.0",
     "use-resize-observer": "^7.0.0",
     "web-vitals": "^1.0.1",
