@@ -68,3 +68,8 @@ export const wsToggleMidport = (payload) => ({
   type: "WS_TOGGLE_MIDPORT",
   payload,
 });
+
+export const wsInterruptKernel = (payload) => ({
+  type: "WS_INTERRUPT_KERNEL",
+  payload,
+});

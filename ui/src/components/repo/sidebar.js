@@ -27,6 +27,7 @@ import {
   ModalBody,
   ModalCloseButton,
 } from "@chakra-ui/react";
+import StopIcon from "@material-ui/icons/Stop";
 import { useDisclosure } from "@chakra-ui/react";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -146,32 +147,40 @@ function SidebarKernel() {
       {/* CAUTION Object.entries is very tricky. Must use for .. of, and the destructure must be [k,v] LIST */}
       {Object.entries(kernels).map(([lang, kernel]) => (
         <Box key={`lang-${lang}`}>
-          <Text>
-            kernel name:{" "}
+          <Box>
             <Box as="span" color="blue">
               {lang}
-            </Box>
-          </Text>
-          <Text>
-            Status:{" "}
+            </Box>{" "}
             {runtimeConnected ? (
-              <Box as="span" color="blue">
+              <Box as="span" color="green">
                 {kernel.status ? kernel.status : "Unknown"}
               </Box>
             ) : (
               <Box color="red" as="span">
-                disconnected
+                NA
               </Box>
             )}
-            <Button
-              size="xs"
-              onClick={() => {
-                dispatch(wsActions.wsRequestStatus({ sessionId, lang }));
-              }}
-            >
-              <RefreshIcon />
-            </Button>
-          </Text>
+            <Tooltip label="refresh status">
+              <Button
+                size="xs"
+                onClick={() => {
+                  dispatch(wsActions.wsRequestStatus({ lang }));
+                }}
+              >
+                <RefreshIcon />
+              </Button>
+            </Tooltip>
+            <Tooltip label="interrupt">
+              <Button
+                size="xs"
+                onClick={() => {
+                  dispatch(wsActions.wsInterruptKernel({ lang }));
+                }}
+              >
+                <StopIcon />
+              </Button>
+            </Tooltip>
+          </Box>
         </Box>
       ))}
     </Box>

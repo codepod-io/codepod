@@ -132,6 +132,14 @@ const socketMiddleware = () => {
                     store.dispatch(actions.wsStatus(payload));
                   }
                   break;
+                case "interrupt_reply":
+                  {
+                    // console.log("got interrupt_reply", payload);
+                    store.dispatch(
+                      actions.wsRequestStatus({ lang: payload.lang })
+                    );
+                  }
+                  break;
                 default:
                   console.log("WARNING unhandled message", { type, payload });
               }
@@ -382,6 +390,29 @@ const socketMiddleware = () => {
           console.log("ERROR: not connected");
         }
         break;
+      case "WS_INTERRUPT_KERNEL":
+        {
+          if (!socket) {
+            store.dispatch(
+              repoSlice.actions.addError({
+                type: "error",
+                msg: "Runtime not connected",
+              })
+            );
+            break;
+          }
+          socket.send(
+            JSON.stringify({
+              type: "interruptKernel",
+              payload: {
+                sessionId: store.getState().repo.sessionId,
+                ...action.payload,
+              },
+            })
+          );
+        }
+        break;
+
       case "WS_TOGGLE_MIDPORT": {
         let { id, name } = action.payload;
         if (!socket) {

@@ -8,5 +8,6 @@
   "key": "412d24d7-baca5d46b674d910851edd2f",
   "transport": "tcp",
   "signature_scheme": "hmac-sha256",
-  "kernel_name": "racket"
+  "kernel_name": "racket",
+  "interrupt_mode": "message"
 }

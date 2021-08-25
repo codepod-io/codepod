@@ -208,6 +208,11 @@ export function listenOnMessage(socket) {
         console.log("requestKernelStatus", sessionId, lang);
         kernel.requestKernelStatus();
         break;
+      case "interruptKernel":
+        {
+          kernel.interrupt();
+        }
+        break;
       case "ensureImports":
         {
           let { lang, id, from, to, names } = payload;

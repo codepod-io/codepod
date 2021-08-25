@@ -292,6 +292,12 @@ export class ZmqWire {
     // FIXME this is not actually connected. I need to check the real status
     // There does not seem to have any method to check connection status
     console.log("connected to shell port");
+
+    console.log("connecting to control port ");
+    this.control = new zmq.Dealer();
+    this.control.connect(
+      `tcp://${this.kernelSpec.ip}:${this.kernelSpec.control_port}`
+    );
     this.iopub = new zmq.Subscriber();
     console.log("connecting IOPub");
     this.iopub.connect(
@@ -299,6 +305,7 @@ export class ZmqWire {
     );
     this.iopub.subscribe();
     this.listenOnShell();
+    this.listenOnControl();
     this.listenOnIOPub();
 
     this.kernelStatus = "uknown";
@@ -324,6 +331,9 @@ export class ZmqWire {
     // sock.send(msg);
     this.shell.send(serializeMsg(msg, this.kernelSpec.key));
   }
+  sendControlMessage(msg) {
+    this.control.send(serializeMsg(msg, this.kernelSpec.key));
+  }
 
   setOnShell(func) {
     this.onshell = func;
@@ -335,6 +345,13 @@ export class ZmqWire {
   async listenOnShell() {
     for await (const [...frames] of this.shell) {
       let msgs = deserializeMsg(frames, this.kernelSpec.key);
+      this.onshell(msgs);
+    }
+  }
+  async listenOnControl() {
+    for await (const [...frames] of this.control) {
+      let msgs = deserializeMsg(frames, this.kernelSpec.key);
+      // FIXME for now, just use the onshell callback
       this.onshell(msgs);
     }
   }
@@ -756,6 +773,19 @@ export class CodePodKernel {
             }
           }
           break;
+        case "interrupt_reply":
+          {
+            socket.send(
+              JSON.stringify({
+                type: "interrupt_reply",
+                payload: {
+                  status: msgs.content,
+                  lang: this.lang,
+                },
+              })
+            );
+          }
+          break;
         default: {
           console.log("Unhandled shell message", msgs.header.msg_type);
         }
@@ -773,6 +803,11 @@ export class CodePodKernel {
   requestKernelStatus() {
     this.wire.sendShellMessage(
       constructMessage({ msg_type: "kernel_info_request" })
+    );
+  }
+  interrupt() {
+    this.wire.sendControlMessage(
+      constructMessage({ msg_type: "interrupt_request" })
     );
   }
   // 2. runCode
