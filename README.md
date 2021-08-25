@@ -3,8 +3,8 @@
 # Dev notes
 
 ```
-docker stop $(docker ps  -a  | grep _kernel | awk '{print $1}')
-docker rm $(docker ps  -a  | grep _kernel | awk '{print $1}')
+docker stop $(docker ps  -a  | grep cpkernel_ | awk '{print $1}')
+docker rm $(docker ps  -a  | grep cpkernel_ | awk '{print $1}')
 ```
 
 # Intro
