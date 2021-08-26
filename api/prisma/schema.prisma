@@ -92,6 +92,7 @@ model Pod {
   fold     Boolean @default(false)
   thundar  Boolean @default(false)
   utility  Boolean @default(false)
+  name     String?
   lang     String?
   type     PodType
   result   String?

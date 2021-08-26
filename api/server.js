@@ -62,6 +62,7 @@ const typeDefs = gql`
     fold: Boolean
     thundar: Boolean
     utility: Boolean
+    name: String
   }
 
   input PodInput {
@@ -79,6 +80,7 @@ const typeDefs = gql`
     fold: Boolean
     thundar: Boolean
     utility: Boolean
+    name: String
   }
 
   type Mutation {
@@ -115,6 +117,7 @@ const typeDefs = gql`
       fold: Boolean
       thundar: Boolean
       utility: Boolean
+      name: String
     ): Pod
     clearUser: Boolean
     clearRepo: Boolean

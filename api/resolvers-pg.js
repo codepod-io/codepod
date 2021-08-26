@@ -407,6 +407,7 @@ export const resolvers = {
         fold,
         thundar,
         utility,
+        name,
       },
       { userId }
     ) => {
@@ -426,6 +427,7 @@ export const resolvers = {
           fold,
           thundar,
           utility,
+          name,
           error,
           imports,
           exports,

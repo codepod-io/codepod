@@ -26,6 +26,7 @@ export function hashPod(pod) {
       fold: pod.fold,
       thundar: pod.thundar,
       utility: pod.utility,
+      name: pod.name,
     })
   ).toString();
 }

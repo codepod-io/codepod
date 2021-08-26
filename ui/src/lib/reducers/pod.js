@@ -24,6 +24,7 @@ export function addPod(state, action) {
     fold: false,
     thundar: false,
     utility: false,
+    name: "",
     exports: {},
     imports: {},
     midports: {},
@@ -165,6 +166,10 @@ export default {
     } else {
       state.pods[id].utility = !state.pods[id].utility;
     }
+  },
+  setName: (state, action) => {
+    let { id, name } = action.payload;
+    state.pods[id].name = name;
   },
   setPodLang: (state, action) => {
     const { id, lang } = action.payload;

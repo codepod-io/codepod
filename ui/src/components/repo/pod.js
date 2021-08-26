@@ -71,6 +71,7 @@ import {
   RightButton,
   ThundarButton,
   UtilityButton,
+  ClickInputButton,
 } from "./toolbar";
 
 // FIXME this should be cleared if pods get deleted
@@ -121,7 +122,12 @@ export function Deck({ id, level = 0 }) {
     >
       <Box>
         <Flex>
-          <Code colorScheme="blackAlpha">{pod.id}</Code>
+          <Code colorScheme="blackAlpha">{pod.name ? pod.name : pod.id}</Code>
+          <ClickInputButton
+            callback={(value) => {
+              dispatch(repoSlice.actions.setName({ id: pod.id, name: value }));
+            }}
+          />
 
           {pod.id !== "ROOT" && <UpButton pod={pod} />}
           {pod.id !== "ROOT" && <DownButton pod={pod} />}

@@ -173,6 +173,60 @@ export function InfoBar({ pod }) {
   );
 }
 
+export function ClickInputButton({ callback }) {
+  const anchorEl = useRef(null);
+  const [show, setShow] = useState(false);
+  const [value, setValue] = useState(null);
+  return (
+    <ClickAwayListener
+      onClickAway={() => {
+        setShow(false);
+      }}
+    >
+      <Box>
+        <Button
+          ref={anchorEl}
+          variant="ghost"
+          size="xs"
+          onClick={() => {
+            // pop up a input box for entering exporrt
+            setShow(!show);
+          }}
+        >
+          Edit
+        </Button>
+        <Popper open={show} anchorEl={anchorEl.current} placement="top">
+          <Paper>
+            <TextField
+              label="Name"
+              variant="outlined"
+              // focused={show}
+              autoFocus
+              onChange={(e) => {
+                setValue(e.target.value);
+              }}
+              onKeyDown={(e) => {
+                // enter
+                // keyCode is deprecated in favor of code, but chrome didn't have
+                // it ..
+                if (e.keyCode === 13 && value) {
+                  console.log("enter pressed, adding", value);
+                  // dispatch(repoSlice.actions.setName({ id, name: value }));
+                  callback(value);
+                  // clear value
+                  setValue(null);
+                  // click away
+                  setShow(false);
+                }
+              }}
+            />
+          </Paper>
+        </Popper>
+      </Box>
+    </ClickAwayListener>
+  );
+}
+
 export function ExportButton({ id }) {
   const anchorEl = useRef(null);
   const [show, setShow] = useState(false);
