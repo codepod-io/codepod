@@ -363,7 +363,7 @@ function FoldButton({ pod }) {
   );
 }
 
-function ThundarButton({ pod }) {
+export function ThundarButton({ pod }) {
   // this button is used for indicating side-effect. Side-effect pods are not
   // executed by run all button or run deck.
   const dispatch = useDispatch();
@@ -380,7 +380,7 @@ function ThundarButton({ pod }) {
   );
 }
 
-function UtilityButton({ pod }) {
+export function UtilityButton({ pod }) {
   const dispatch = useDispatch();
   return (
     <Button

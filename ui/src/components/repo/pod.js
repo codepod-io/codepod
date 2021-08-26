@@ -69,6 +69,8 @@ import {
   UpButton,
   DownButton,
   RightButton,
+  ThundarButton,
+  UtilityButton,
 } from "./toolbar";
 
 // FIXME this should be cleared if pods get deleted
@@ -126,6 +128,12 @@ export function Deck({ id, level = 0 }) {
           <RightButton pod={pod} />
 
           {pod.id !== "ROOT" && <DeleteButton pod={pod} />}
+          {pod.id !== "ROOT" && (
+            <Box>
+              <ThundarButton pod={pod} />
+              <UtilityButton pod={pod} />
+            </Box>
+          )}
 
           <Button
             variant="ghost"
