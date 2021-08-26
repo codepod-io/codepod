@@ -25,6 +25,7 @@ export function hashPod(pod) {
       midports: pod.midports,
       fold: pod.fold,
       thundar: pod.thundar,
+      utility: pod.utility,
     })
   ).toString();
 }

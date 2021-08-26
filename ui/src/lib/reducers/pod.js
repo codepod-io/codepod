@@ -23,6 +23,7 @@ export function addPod(state, action) {
     raw: false,
     fold: false,
     thundar: false,
+    utility: false,
     exports: {},
     imports: {},
     midports: {},
@@ -155,6 +156,14 @@ export default {
       state.pods[id].thundar = true;
     } else {
       state.pods[id].thundar = !state.pods[id].thundar;
+    }
+  },
+  toggleUtility: (state, action) => {
+    let id = action.payload;
+    if (!state.pods[id].utility) {
+      state.pods[id].utility = true;
+    } else {
+      state.pods[id].utility = !state.pods[id].utility;
     }
   },
   setPodLang: (state, action) => {

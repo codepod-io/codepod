@@ -406,6 +406,7 @@ export const resolvers = {
         midports,
         fold,
         thundar,
+        utility,
       },
       { userId }
     ) => {
@@ -424,6 +425,7 @@ export const resolvers = {
           stdout,
           fold,
           thundar,
+          utility,
           error,
           imports,
           exports,

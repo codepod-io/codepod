@@ -40,7 +40,7 @@ import Popover from "@material-ui/core/Popover";
 import Paper from "@material-ui/core/Paper";
 import stripAnsi from "strip-ansi";
 import IconButton from "@material-ui/core/IconButton";
-
+import BuildIcon from "@material-ui/icons/Build";
 import { FaCut, FaPaste } from "react-icons/fa";
 
 import UnfoldLessIcon from "@material-ui/icons/UnfoldLess";
@@ -380,6 +380,25 @@ function ThundarButton({ pod }) {
   );
 }
 
+function UtilityButton({ pod }) {
+  const dispatch = useDispatch();
+  return (
+    <Button
+      size="xs"
+      variant="ghost"
+      onClick={() => {
+        dispatch(repoSlice.actions.toggleUtility(pod.id));
+      }}
+    >
+      {pod.utility ? (
+        <BuildIcon style={{ fontSize: 15 }} />
+      ) : (
+        <BuildIcon color="disabled" style={{ fontSize: 15 }} />
+      )}
+    </Button>
+  );
+}
+
 export function ToolBar({ pod }) {
   const dispatch = useDispatch();
   const [show, setShow] = useState(false);
@@ -391,6 +410,7 @@ export function ToolBar({ pod }) {
       <DeleteButton pod={pod} />
       <FoldButton pod={pod} />
       <ThundarButton pod={pod} />
+      <UtilityButton pod={pod} />
     </Flex>
   );
 }
