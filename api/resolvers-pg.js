@@ -362,7 +362,7 @@ export const resolvers = {
       // 3. increase for new parent's children's index
       await prisma.pod.updateMany({
         where: {
-          parentId: parentId,
+          parentId: parentId === "ROOT" ? null : parentId,
           index: {
             gte: index,
           },
@@ -379,11 +379,14 @@ export const resolvers = {
           id,
         },
         data: {
-          parent: {
-            connect: {
-              id: parentId,
-            },
-          },
+          parent:
+            parentId === "ROOT"
+              ? { disconnect: true }
+              : {
+                  connect: {
+                    id: parentId,
+                  },
+                },
           index,
           column,
         },
