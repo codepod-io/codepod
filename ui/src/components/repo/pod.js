@@ -64,6 +64,8 @@ import {
   ExportList,
   ImportList,
   HoveringBar,
+  ExportButton,
+  FoldButton,
   ToolBar,
   SyncStatus,
   UpButton,
@@ -72,6 +74,9 @@ import {
   ThundarButton,
   UtilityButton,
   ClickInputButton,
+  ThundarMark,
+  UtilityMark,
+  RunButton,
 } from "./toolbar";
 
 // FIXME this should be cleared if pods get deleted
@@ -89,6 +94,7 @@ export function Deck({ id, level = 0 }) {
   const dispatch = useDispatch();
   const pod = useSelector((state) => state.repo.pods[id]);
   const clip = useSelector((state) => state.repo.clip);
+  const [showMenu, setShowMenu] = useState(false);
   if (pod.type !== "DECK") return <Pod id={id}></Pod>;
   if (pod.children.length == 0 && pod.id === "ROOT") {
     return (
@@ -111,47 +117,75 @@ export function Deck({ id, level = 0 }) {
   }
   return (
     <HStack
-      borderLeft="2px"
-      borderTop="2px"
-      my={5}
-      mx={3}
+      // borderLeft="2px"
+      // borderTop="2px"
+      // border="2px"
+      my={2}
+      mx={2}
       bg={`rgba(0,0,0,${0.03 * level})`}
       boxShadow="xl"
       p={3}
       border={clip === pod.id ? "dashed orange" : undefined}
     >
       <Box>
-        <Flex>
-          <Code colorScheme="blackAlpha">{pod.name ? pod.name : pod.id}</Code>
-          <ClickInputButton
-            callback={(value) => {
-              dispatch(repoSlice.actions.setName({ id: pod.id, name: value }));
-            }}
-          />
-
-          {pod.id !== "ROOT" && <UpButton pod={pod} />}
-          {pod.id !== "ROOT" && <DownButton pod={pod} />}
-          <RightButton pod={pod} />
-
-          {pod.id !== "ROOT" && <DeleteButton pod={pod} />}
-          {pod.id !== "ROOT" && (
-            <Box>
-              <ThundarButton pod={pod} />
-              <UtilityButton pod={pod} />
-            </Box>
-          )}
-
-          <Button
-            variant="ghost"
-            color="green"
-            size="xs"
-            onClick={() => {
-              dispatch(wsActions.wsRunTree(id));
+        <Box
+          position="relative"
+          onMouseEnter={() => setShowMenu(true)}
+          onMouseLeave={() => setShowMenu(false)}
+        >
+          <Box
+            style={{
+              margin: "5px",
+              position: "absolute",
+              top: "0px",
+              left: "-30px",
             }}
           >
-            <PlayArrowIcon fontSize="small" />
-          </Button>
-        </Flex>
+            <HoveringBar pod={pod} showMenu={showMenu}>
+              {pod.id !== "ROOT" && <UpButton pod={pod} />}
+              {pod.id !== "ROOT" && <DownButton pod={pod} />}
+              <RightButton pod={pod} />
+
+              {pod.id !== "ROOT" && <DeleteButton pod={pod} />}
+              {pod.id !== "ROOT" && (
+                <Box>
+                  <ThundarButton pod={pod} />
+                  <UtilityButton pod={pod} />
+                </Box>
+              )}
+              <Button
+                variant="ghost"
+                color="green"
+                size="xs"
+                onClick={() => {
+                  dispatch(wsActions.wsRunTree(id));
+                }}
+              >
+                <PlayArrowIcon fontSize="small" />
+              </Button>
+            </HoveringBar>
+          </Box>
+          <Flex>
+            <ClickInputButton
+              callback={(value) => {
+                dispatch(
+                  repoSlice.actions.setName({ id: pod.id, name: value })
+                );
+              }}
+            >
+              <Code colorScheme="blackAlpha" bg="blue.200">
+                {pod.name ? pod.name : pod.id}
+              </Code>
+            </ClickInputButton>
+
+            {pod.id !== "ROOT" && (
+              <Box>
+                <ThundarMark pod={pod} />
+                <UtilityMark pod={pod} />
+              </Box>
+            )}
+          </Flex>
+        </Box>
         <Flex
           // FIXME column flex with maxH won't auto flow to right.
           direction="column"
@@ -226,10 +260,10 @@ function CodePod({ id }) {
     <Box
       align="start"
       // p={2}
-      w="md"
+      // w="xs"
     >
       <Box>
-        <Box border="1px" pt={2} alignContent="center">
+        <Box alignContent="center">
           <MyMonaco
             value={pod.content || "\n\n\n"}
             onChange={(value) => {
@@ -345,8 +379,8 @@ function Pod({ id, draghandle }) {
   return (
     <Box
       ml={0}
-      mb={1}
-      w="md"
+      my={1}
+      w="2xs"
       border={clip === pod.id ? "dashed orange" : undefined}
     >
       <ExportList pod={pod} />
@@ -372,7 +406,15 @@ function Pod({ id, draghandle }) {
             left: "-30px",
           }}
         >
-          <HoveringBar pod={pod} showMenu={showMenu} draghandle={draghandle} />
+          <HoveringBar pod={pod} showMenu={showMenu} draghandle={draghandle}>
+            <ExportButton id={pod.id} />
+            <UpButton pod={pod} />
+            <DownButton pod={pod} />
+            <DeleteButton pod={pod} />
+            <FoldButton pod={pod} />
+            <ThundarButton pod={pod} />
+            <UtilityButton pod={pod} />
+          </HoveringBar>
         </Box>
 
         <Box
@@ -385,7 +427,7 @@ function Pod({ id, draghandle }) {
         >
           <Flex>
             <ToolBar pod={pod} />
-            <SyncStatus pod={pod} />
+            {/* <SyncStatus pod={pod} /> */}
           </Flex>
         </Box>
 
@@ -404,31 +446,13 @@ function Pod({ id, draghandle }) {
                 {pod.type}
               </Text>
             )}
-            {pod.type === "CODE" && pod.lang && (
-              <Flex>
-                <Text mr={2} color="gray" fontSize="sm">
-                  {pod.lang}
-                </Text>
-                <Tooltip label="Run (shift-enter)">
-                  <Button
-                    variant="ghost"
-                    color="green"
-                    size="xs"
-                    onClick={() => {
-                      dispatch(wsActions.wsRun(id));
-                    }}
-                  >
-                    <PlayArrowIcon fontSize="small" />
-                  </Button>
-                </Tooltip>
-              </Flex>
-            )}
+            {/* {pod.type === "CODE" && pod.lang && <RunButton id={id} />} */}
           </Flex>
         )}
       </Box>
 
       {pod.stdout && (
-        <Box overflow="scroll" maxH="3xs" border="1px" bg="gray.50">
+        <Box overflow="scroll" maxH="3xs" border="1px">
           {/* <Code maxW="lg" whiteSpace="pre-wrap">
               {pod.stdout}
             </Code> */}

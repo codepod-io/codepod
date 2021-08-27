@@ -173,7 +173,7 @@ export function InfoBar({ pod }) {
   );
 }
 
-export function ClickInputButton({ callback }) {
+export function ClickInputButton({ callback, children }) {
   const anchorEl = useRef(null);
   const [show, setShow] = useState(false);
   const [value, setValue] = useState(null);
@@ -193,7 +193,7 @@ export function ClickInputButton({ callback }) {
             setShow(!show);
           }}
         >
-          Edit
+          {children || "Edit"}
         </Button>
         <Popper open={show} anchorEl={anchorEl.current} placement="top">
           <Paper>
@@ -209,7 +209,7 @@ export function ClickInputButton({ callback }) {
                 // enter
                 // keyCode is deprecated in favor of code, but chrome didn't have
                 // it ..
-                if (e.keyCode === 13 && value) {
+                if (e.keyCode === 13) {
                   console.log("enter pressed, adding", value);
                   // dispatch(repoSlice.actions.setName({ id, name: value }));
                   callback(value);
@@ -228,56 +228,17 @@ export function ClickInputButton({ callback }) {
 }
 
 export function ExportButton({ id }) {
-  const anchorEl = useRef(null);
-  const [show, setShow] = useState(false);
-  const [value, setValue] = useState(null);
   const dispatch = useDispatch();
   return (
-    <ClickAwayListener
-      onClickAway={() => {
-        setShow(false);
+    <ClickInputButton
+      callback={(value) => {
+        if (value)
+          // dispatch(repoSlice.actions.addPodExport({ id, name: value }));
+          dispatch(repoSlice.actions.setPodExport({ id, name: value }));
       }}
     >
-      <Box>
-        <Button
-          ref={anchorEl}
-          variant="ghost"
-          size="xs"
-          onClick={() => {
-            // pop up a input box for entering exporrt
-            setShow(!show);
-          }}
-        >
-          <AiOutlineFunction />
-        </Button>
-        <Popper open={show} anchorEl={anchorEl.current} placement="top">
-          <Paper>
-            <TextField
-              label="Export"
-              variant="outlined"
-              // focused={show}
-              autoFocus
-              onChange={(e) => {
-                setValue(e.target.value);
-              }}
-              onKeyDown={(e) => {
-                // enter
-                // keyCode is deprecated in favor of code, but chrome didn't have
-                // it ..
-                if (e.keyCode === 13 && value) {
-                  console.log("enter pressed, adding", value);
-                  dispatch(repoSlice.actions.addPodExport({ id, name: value }));
-                  // clear value
-                  setValue(null);
-                  // click away
-                  setShow(false);
-                }
-              }}
-            />
-          </Paper>
-        </Popper>
-      </Box>
-    </ClickAwayListener>
+      <AiOutlineFunction />
+    </ClickInputButton>
   );
 }
 
@@ -398,7 +359,7 @@ export function RightButton({ pod }) {
   );
 }
 
-function FoldButton({ pod }) {
+export function FoldButton({ pod }) {
   const dispatch = useDispatch();
   return (
     <Button
@@ -417,6 +378,41 @@ function FoldButton({ pod }) {
   );
 }
 
+export function ThundarMark({ pod }) {
+  return (
+    <Box>
+      {pod.thundar && (
+        <Button size="xs" variant="ghost" bg="teal.300">
+          <AiFillThunderbolt /> Test{" "}
+        </Button>
+      )}
+    </Box>
+  );
+}
+
+export function RunButton({ id }) {
+  const dispatch = useDispatch();
+  return (
+    <Flex>
+      <Text mr={2} color="gray" fontSize="sm">
+        {/* {pod.lang} */}
+      </Text>
+      <Tooltip label="Run (shift-enter)">
+        <Button
+          variant="ghost"
+          color="green"
+          size="xs"
+          onClick={() => {
+            dispatch(wsActions.wsRun(id));
+          }}
+        >
+          <PlayArrowIcon fontSize="small" />
+        </Button>
+      </Tooltip>
+    </Flex>
+  );
+}
+
 export function ThundarButton({ pod }) {
   // this button is used for indicating side-effect. Side-effect pods are not
   // executed by run all button or run deck.
@@ -425,27 +421,54 @@ export function ThundarButton({ pod }) {
     <Button
       size="xs"
       variant="ghost"
+      bg={pod.thundar ? "teal.300" : "default"}
       onClick={() => {
         dispatch(repoSlice.actions.toggleThundar(pod.id));
       }}
     >
-      {pod.thundar ? <AiFillThunderbolt /> : <AiOutlineSafetyCertificate />}
+      {pod.thundar ? (
+        <Box>
+          <AiFillThunderbolt /> Test{" "}
+        </Box>
+      ) : (
+        <AiOutlineSafetyCertificate />
+      )}
     </Button>
   );
 }
 
+export function UtilityMark({ pod }) {
+  return (
+    <Box>
+      {pod.utility && (
+        <Button size="xs" variant="ghost" bg="green.200">
+          <Box>
+            <BuildIcon style={{ fontSize: 15 }} />
+          </Box>
+          Utility
+        </Button>
+      )}
+    </Box>
+  );
+}
 export function UtilityButton({ pod }) {
   const dispatch = useDispatch();
   return (
     <Button
       size="xs"
       variant="ghost"
+      bg={pod.utility ? "green.200" : "default"}
       onClick={() => {
         dispatch(repoSlice.actions.toggleUtility(pod.id));
       }}
     >
       {pod.utility ? (
-        <BuildIcon style={{ fontSize: 15 }} />
+        <Text>
+          <Box>
+            <BuildIcon style={{ fontSize: 15 }} />
+          </Box>
+          Utility
+        </Text>
       ) : (
         <BuildIcon color="disabled" style={{ fontSize: 15 }} />
       )}
@@ -454,17 +477,20 @@ export function UtilityButton({ pod }) {
 }
 
 export function ToolBar({ pod }) {
-  const dispatch = useDispatch();
-  const [show, setShow] = useState(false);
   return (
     <Flex>
-      <ExportButton id={pod.id} />
+      {/* <ExportButton id={pod.id} />
       <UpButton pod={pod} />
       <DownButton pod={pod} />
       <DeleteButton pod={pod} />
-      <FoldButton pod={pod} />
-      <ThundarButton pod={pod} />
-      <UtilityButton pod={pod} />
+      <FoldButton pod={pod} /> */}
+      {/* <ThundarButton pod={pod} />
+      <UtilityButton pod={pod} /> */}
+      {pod.thundar && (
+        <Box>
+          <AiFillThunderbolt /> Test{" "}
+        </Box>
+      )}
     </Flex>
   );
 }
@@ -644,7 +670,7 @@ function IOStatus({ id, name }) {
   }
 }
 
-export function HoveringBar({ pod, showMenu, draghandle }) {
+export function HoveringBar({ pod, showMenu, draghandle, children }) {
   let dispatch = useDispatch();
   // const [anchorEl, setAnchorEl] = React.useState(null);
   const [show, setShow] = useState(false);
@@ -727,6 +753,7 @@ export function HoveringBar({ pod, showMenu, draghandle }) {
               {pod.raw ? "raw" : "wrapped"}
             </Button>
           </HStack>
+          <HStack>{children}</HStack>
         </Flex>
       </Popper>
     </Flex>
@@ -758,20 +785,30 @@ export function ExportList({ pod }) {
     <Box>
       {pod.exports && Object.keys(pod.exports).length > 0 && (
         <Box>
-          <Text as="span" mr={2}>
+          {/* <Text as="span" mr={2}>
             Exports:
-          </Text>
+          </Text> */}
           {Object.entries(pod.exports).map(([k, v]) => (
             <Box as="span" key={k} mr={1}>
-              <Code>{k}</Code>
-              <Switch
+              <Button
+                size="xs"
+                variant="ghost"
+                onClick={() => {
+                  dispatch(
+                    repoSlice.actions.togglePodExport({ id: pod.id, name: k })
+                  );
+                }}
+              >
+                <Code bg={v ? "yellow.300" : "default"}>{k}</Code>
+              </Button>
+              {/* <Switch
                 size="small"
                 checked={v}
                 onChange={() => {
                   dispatch(wsActions.wsToggleExport({ id: pod.id, name: k }));
                 }}
-              />
-              <Button
+              /> */}
+              {/* <Button
                 size="xs"
                 color="red"
                 variant="ghost"
@@ -784,9 +821,9 @@ export function ExportList({ pod }) {
                 }}
               >
                 <CloseIcon />
-              </Button>
+              </Button> */}
               {/* No need IOStatus for exports */}
-              <IOStatus id={pod.id} name={k} />
+              {/* <IOStatus id={pod.id} name={k} /> */}
             </Box>
           ))}
         </Box>

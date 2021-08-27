@@ -9,6 +9,15 @@ export default {
     }
     pod.exports[name] = false;
   },
+  setPodExport: (state, action) => {
+    // This is to support adjust export solely based on the input field. No more
+    // close button.
+    // TODO support add multiple exports by entering "aaa,bbb"
+    let { id, name } = action.payload;
+    let pod = state.pods[id];
+    pod.exports = {};
+    pod.exports[name] = false;
+  },
   clearIO: (state, action) => {
     let { id, name } = action.payload;
     delete state.pods[id].io[name];
