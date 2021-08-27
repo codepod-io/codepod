@@ -162,7 +162,7 @@ export function InfoBar({ pod }) {
               <Text>
                 Parent:{" "}
                 <Code colorScheme="blackAlpha">
-                  {pod.parent.substring(0, 8)}
+                  {pod.parent?.substring(0, 8)}
                 </Code>
               </Text>
             </Box>
