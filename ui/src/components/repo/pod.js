@@ -120,11 +120,12 @@ export function Deck({ id, level = 0 }) {
       // borderLeft="2px"
       // borderTop="2px"
       // border="2px"
-      my={2}
-      mx={2}
+      my={1}
+      // mx={2}
       bg={`rgba(0,0,0,${0.03 * level})`}
-      boxShadow="xl"
-      p={3}
+      // ROOT's shadow apears as a vertical line in the right
+      boxShadow={id == "ROOT" ? undefined : "xl"}
+      p={2}
       border={clip === pod.id ? "dashed orange" : undefined}
     >
       <Box>
@@ -381,6 +382,7 @@ function Pod({ id, draghandle }) {
       ml={0}
       my={1}
       w="2xs"
+      // w={150}
       border={clip === pod.id ? "dashed orange" : undefined}
     >
       <ExportList pod={pod} />

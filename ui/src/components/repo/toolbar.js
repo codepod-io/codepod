@@ -486,11 +486,8 @@ export function ToolBar({ pod }) {
       <FoldButton pod={pod} /> */}
       {/* <ThundarButton pod={pod} />
       <UtilityButton pod={pod} /> */}
-      {pod.thundar && (
-        <Box>
-          <AiFillThunderbolt /> Test{" "}
-        </Box>
-      )}
+      <ThundarMark pod={pod} />
+      <UtilityMark pod={pod} />
     </Flex>
   );
 }
