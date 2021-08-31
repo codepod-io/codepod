@@ -791,9 +791,7 @@ export function ExportList({ pod }) {
                 size="xs"
                 variant="ghost"
                 onClick={() => {
-                  dispatch(
-                    repoSlice.actions.togglePodExport({ id: pod.id, name: k })
-                  );
+                  dispatch(wsActions.wsToggleExport({ id: pod.id, name: k }));
                 }}
               >
                 <Code bg={v ? "yellow.300" : "default"}>{k}</Code>
