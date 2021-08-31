@@ -116,7 +116,7 @@ export function pastePod(state, action) {
   // 4. update namespace
   function helper(node) {
     node.ns = computeNamespace(state.pods, node.id);
-    node.children.forEach((id) => {
+    node.children.forEach(({ id }) => {
       helper(state.pods[id]);
     });
   }
