@@ -77,6 +77,8 @@ const socketMiddleware = () => {
         // }
         console.log("connecting to stomp ..");
         mq_client = Stomp.over(new WebSocket("ws://codepod.test:15674/ws"));
+        // remove debug messages
+        mq_client.debug = () => {};
         mq_client.connect(
           "guest",
           "guest",
@@ -84,7 +86,7 @@ const socketMiddleware = () => {
             console.log("connected");
             mq_client.subscribe(store.getState().repo.sessionId, (msg) => {
               let { type, payload } = JSON.parse(msg.body);
-              console.log("got message", type, payload);
+              // console.log("got message", type, payload);
               switch (type) {
                 case "output":
                   {
