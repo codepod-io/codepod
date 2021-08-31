@@ -79,6 +79,7 @@ export default {
   },
   WS_IO_ERROR: (state, action) => {
     let { podId, name, ename, evalue, stacktrace } = action.payload;
+    console.log("IOERROR", { podId, name, ename, evalue, stacktrace });
     state.pods[podId].io[name] = {
       error: {
         ename,

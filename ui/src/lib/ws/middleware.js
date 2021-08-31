@@ -28,6 +28,27 @@ function handleRunTree({ id, storeAPI, socket }) {
           })
         );
       }
+      // FIXME now each run only exports one level up. I need to run it multiple
+      // times to export to parent successfully
+      if (pod.exports) {
+        for (const [k, v] of Object.entries(pod.exports)) {
+          if (v) {
+            socket.send(
+              JSON.stringify({
+                type: "addImport",
+                payload: {
+                  lang: pod.lang,
+                  from: pod.ns,
+                  to: storeAPI.getState().repo.pods[pod.parent].ns,
+                  id: pod.id,
+                  name: k,
+                  sessionId: storeAPI.getState().repo.sessionId,
+                },
+              })
+            );
+          }
+        }
+      }
     }
   }
   helper(id);
