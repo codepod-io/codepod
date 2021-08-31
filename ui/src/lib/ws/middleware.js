@@ -144,6 +144,11 @@ const socketMiddleware = () => {
                     store.dispatch(actions.wsIOResult(payload));
                   }
                   break;
+                case "IO:execute_reply":
+                  {
+                    // CAUTION ignore
+                  }
+                  break;
                 case "IO:error":
                   {
                     store.dispatch(actions.wsIOError(payload));
