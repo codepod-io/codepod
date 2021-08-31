@@ -2,16 +2,92 @@ import * as actions from "./actions";
 
 import { repoSlice } from "../store";
 import Stomp from "stompjs";
+function getAllUtils({ id, pods }) {
+  // get all utils for id
+  // get children utils nodes
+  if (id === "ROOT") return {};
+  const res = Object.assign(
+    {},
+    ...pods[id].children
+      .filter(({ id }) => pods[id].utility)
+      .map(({ id, type }) => {
+        if (type === "DECK") {
+          // if this is a deck, use its children's exports
+          return {
+            [`${pods[id].ns}/${id}`]: Object.assign(
+              {},
+              ...pods[id].children.map(({ id }) => pods[id].exports)
+            ),
+          };
+        } else {
+          // if this is a pod, just use its export
+          return { [`${pods[id].ns}/${id}`]: pods[id].exports };
+        }
+      })
+  );
+  // keep to go to parents
+  return Object.assign(res, getAllUtils({ id: pods[id].parent, pods }));
+}
+
+function getDeckExports({ id, pods }) {
+  if (pods[id].type !== "DECK") return {};
+  // console.log("EXP", id, pods[id].exports);
+  // pods[id].children.forEach(({ id }) => {
+  //   console.log("ch", id, pods[id].exports);
+  // });
+  return {
+    [`${pods[id].ns}/${id}`]: Object.assign(
+      {},
+      ...pods[id].children.map(({ id }) => pods[id].exports)
+    ),
+  };
+}
 
 function handleRunTree({ id, storeAPI, socket }) {
   // get all pods
   console.log("handleRunTree", { id, storeAPI, socket });
-  let pods = storeAPI.getState().repo.pods;
   function helper(id) {
+    let pods = storeAPI.getState().repo.pods;
     let pod = pods[id];
-    pod.children.map(({ id }) => helper(id));
-    // evaluate child first, then parent
+    // - if it is test deck, it should be evaluated after the parent
+    // - if it is a utility deck, it should be evaluated first and import to
+    // parent's subtree
+    //
+    // 1. get all the utility decks/pods, and evaluate
+    const util_pods = pod.children.filter(({ id }) => pods[id].utility);
+    util_pods.map(({ id }) => helper(id));
+    // 2. get all the non-test children and evaluate
+    pod.children
+      .filter(({ id }) => !pods[id].utility && !pods[id].thundar)
+      .map(({ id }) => helper(id));
+    // 3. evaluate this current node
     if (id !== "ROOT") {
+      const utils = getAllUtils({ id, pods });
+      // if (Object.keys(utils).length > 0) {
+      //   console.log("All utils", utils);
+      // }
+      // add imports
+      // FIXME performance. Should really just import once
+      for (const [ns, exports] of Object.entries(utils)) {
+        for (const [k, v] of Object.entries(exports)) {
+          if (v) {
+            socket.send(
+              JSON.stringify({
+                type: "addImport",
+                payload: {
+                  lang: pod.lang,
+                  from: ns,
+                  to: pod.ns,
+                  id: pod.id,
+                  name: k,
+                  sessionId: storeAPI.getState().repo.sessionId,
+                },
+              })
+            );
+          }
+        }
+      }
+      // actually run the code
       if (pod.type === "CODE" && pod.content && pod.lang && !pod.thundar) {
         storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
         storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
@@ -50,6 +126,44 @@ function handleRunTree({ id, storeAPI, socket }) {
         }
       }
     }
+    // 4. get all the test decks and evaluate with imports
+    const deck_exports = getDeckExports({ id: pod.id, pods });
+    // if (Object.keys(deck_exports).length > 0) {
+    //   console.log("deck exports:", deck_exports);
+    // }
+    pod.children
+      .filter(({ id }) => pods[id].thundar)
+      .map(({ id }) => {
+        // console.log("thundar", id);
+        // just evaluate here
+        // get all exports of this pod and add import to these testing pods
+        for (const [ns, exports] of Object.entries(deck_exports)) {
+          if (exports) {
+            for (const [k, v] of Object.entries(exports)) {
+              if (v) {
+                const payload = {
+                  // FIXME pod.lang is null for DECK
+                  lang: pod.lang,
+                  from: ns,
+                  // FIXME the pod.ns for DECK and POD needs rework
+                  to: `${pod.ns}/${pod.id}/${id}`,
+                  id: id,
+                  name: k,
+                  sessionId: storeAPI.getState().repo.sessionId,
+                };
+                // console.log("Import", payload);
+                socket.send(
+                  JSON.stringify({
+                    type: "addImport",
+                    payload,
+                  })
+                );
+              }
+            }
+          }
+        }
+        helper(id);
+      });
   }
   helper(id);
 }
