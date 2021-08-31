@@ -40,7 +40,7 @@ services:
   api:
     image: node:16
     working_dir: /app
-    # restart: always
+    restart: always
     ports:
       - 4000:4000
     volumes:
@@ -63,6 +63,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
+    restart: always
     volumes:
       # This will allow the enabled plugins to persist on restart
       # In production, I need to use /etc/rabbitmq/enabled_plugins to enable plugins
@@ -83,6 +84,7 @@ services:
   # visit git.codepod.test:3000 to visit the gitweb interface
   # clone using git clone http://git.codepod.test:3000/path/to/repo.git
   git-http:
+    restart: always
     build: ./docker-git-http
     ports:
       - "2222:80"
@@ -93,6 +95,7 @@ services:
   # browser code. The nginx here forwards the /graphql to :4000
   nginx:
     image: nginx:1.15-alpine
+    restart: always
     ports:
       - "3000:80"
     volumes:

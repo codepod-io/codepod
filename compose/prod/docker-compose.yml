@@ -30,6 +30,7 @@ services:
     command: yarn start
 
   git-http:
+    restart: always
     build: ../dev/docker-git-http
     volumes:
       - git-data-prod:/var/lib/git
@@ -37,6 +38,7 @@ services:
   # docker-compose up -d --build --force-recreate --no-deps nginx
   nginx:
     image: nginx:1.15-alpine
+    restart: always
     ports:
       - "80:80"
       - "443:443"
