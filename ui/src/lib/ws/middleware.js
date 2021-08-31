@@ -257,7 +257,6 @@ const socketMiddleware = () => {
         );
         break;
       case "WS_RUN": {
-        let id = action.payload;
         if (!socket) {
           store.dispatch(
             repoSlice.actions.addError({
@@ -267,49 +266,7 @@ const socketMiddleware = () => {
           );
           break;
         }
-        let pod = store.getState().repo.pods[id];
-        // clear pod results
-        store.dispatch(repoSlice.actions.clearResults(pod.id));
-        store.dispatch(repoSlice.actions.setRunning(pod.id));
-        // emit runCode command
-        socket.send(
-          JSON.stringify({
-            type: "runCode",
-            payload: {
-              lang: pod.lang,
-              raw: pod.raw,
-              code: pod.content,
-              namespace: pod.ns,
-              podId: pod.id,
-              sessionId: store.getState().repo.sessionId,
-              midports:
-                pod.midports &&
-                Object.keys(pod.midports).filter((k) => pod.midports[k]),
-            },
-          })
-        );
-        if (pod.exports) {
-          // TODO update all parent imports
-          // 1. get all active exports
-          let names = Object.entries(pod.exports)
-            .filter(([k, v]) => v)
-            .map(([k, v]) => k);
-          console.log("ensureImports:", id, names);
-          socket.send(
-            JSON.stringify({
-              type: "ensureImports",
-              payload: {
-                names,
-                lang: pod.lang,
-                to: store.getState().repo.pods[pod.parent].ns,
-                // FIXME keep consistent with computeNamespace
-                from: pod.ns,
-                id: pod.id,
-                sessionId: store.getState().repo.sessionId,
-              },
-            })
-          );
-        }
+        handleRunTree({ id: action.payload, storeAPI: store, socket });
         break;
       }
       case "WS_RUN_TREE":
