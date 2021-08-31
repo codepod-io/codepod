@@ -32,7 +32,7 @@ export default {
       //   text: result,
       //   count: count,
       // };
-      console.log("WS_EXECUTE_REPLY", result);
+      // console.log("WS_EXECUTE_REPLY", result);
       state.pods[podId].running = false;
       if (!state.pods[podId].result) {
         state.pods[podId].result = {
