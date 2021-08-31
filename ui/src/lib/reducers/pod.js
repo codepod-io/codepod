@@ -113,6 +113,14 @@ export function pastePod(state, action) {
   newparent.children.sort(
     (a, b) => state.pods[a.id].index - state.pods[b.id].index
   );
+  // 4. update namespace
+  function helper(node) {
+    node.ns = computeNamespace(state.pods, node.id);
+    node.children.forEach((id) => {
+      helper(state.pods[id]);
+    });
+  }
+  helper(pod);
 }
 
 function setPodType(state, action) {
