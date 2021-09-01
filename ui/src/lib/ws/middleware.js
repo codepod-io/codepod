@@ -98,6 +98,7 @@ function handleRunTree({ id, storeAPI, socket }) {
               lang: pod.lang,
               code: pod.content,
               namespace: pod.ns,
+              raw: pod.raw,
               podId: pod.id,
               sessionId: storeAPI.getState().repo.sessionId,
             },
