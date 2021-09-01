@@ -560,6 +560,27 @@ function handleIOPub_status({ msgs, socket, lang }) {
   );
 }
 
+function handleIOPub_display_data({ msgs, socket }) {
+  console.log("emitting display data ..");
+  let [podId, name] = msgs.parent_header.msg_id.split("#");
+  let payload = {
+    podId,
+    name,
+    // content is a dict of
+    // {
+    //   data: {'text/plain': ..., 'image/png': ...},
+    //   metadata: {needs_background: 'light'},
+    //   transient: ...
+    // }
+    content: msgs.content,
+    // There's no exe_count in display_data
+    // FIXME I should use execute_reply for count
+    //
+    // count: msgs.content.execution_count,
+  };
+  socket.send(JSON.stringify({ type: "display_data", payload }));
+}
+
 function handleIOPub_execute_result({ msgs, socket }) {
   console.log("emitting execute_result ..");
   let [podId, name] = msgs.parent_header.msg_id.split("#");
@@ -731,6 +752,9 @@ export class CodePodKernel {
           break;
         case "stream":
           handleIOPub_stream({ msgs, socket });
+          break;
+        case "display_data":
+          handleIOPub_display_data({ msgs, socket });
           break;
         default:
           console.log(

@@ -239,6 +239,11 @@ const socketMiddleware = () => {
                     store.dispatch(actions.wsResult(payload));
                   }
                   break;
+                case "display_data":
+                  {
+                    store.dispatch(actions.wsDisplayData(payload));
+                  }
+                  break;
                 case "execute_reply":
                   {
                     store.dispatch(actions.wsExecuteReply(payload));

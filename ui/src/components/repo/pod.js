@@ -466,15 +466,18 @@ function Pod({ id, draghandle }) {
       )}
       {pod.running && <Text>Running ..</Text>}
       {pod.result && (
-        <Flex>
-          <Text color="gray" mr="1rem">
-            Result: [{pod.result.count}]:
-          </Text>
-          <Text>
-            <Code maxW="lg" whiteSpace="pre-wrap">
-              {pod.result.text}
-            </Code>
-          </Text>
+        <Flex direction="column">
+          <Flex>
+            <Text color="gray" mr="1rem">
+              Result: [{pod.result.count}]:
+            </Text>
+            <Text>
+              <Code whiteSpace="pre-wrap">{pod.result.text}</Code>
+            </Text>
+          </Flex>
+          {pod.result.image && (
+            <img src={`data:image/png;base64,${pod.result.image}`} />
+          )}
         </Flex>
       )}
       {pod.error && (

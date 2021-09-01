@@ -29,6 +29,10 @@ export const wsResult = (payload) => ({
   type: "WS_RESULT",
   payload,
 });
+export const wsDisplayData = (payload) => ({
+  type: "WS_DISPLAY_DATA",
+  payload,
+});
 export const wsExecuteReply = (payload) => ({
   type: "WS_EXECUTE_REPLY",
   payload,

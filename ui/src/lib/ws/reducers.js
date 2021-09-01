@@ -25,6 +25,17 @@ export default {
       console.log("WARNING podId not recognized", podId);
     }
   },
+  WS_DISPLAY_DATA: (state, action) => {
+    let { podId, content, count } = action.payload;
+    // console.log("WS_DISPLAY_DATA", content);
+    state.pods[podId].result = {
+      text: content.data["text/plain"],
+      // FIXME hard coded MIME
+      // TODO render MIME
+      image: content.data["image/png"],
+      count: count,
+    };
+  },
   WS_EXECUTE_REPLY: (state, action) => {
     let { podId, result, count } = action.payload;
     if (podId in state.pods) {
