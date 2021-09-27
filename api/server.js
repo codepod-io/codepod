@@ -12,21 +12,6 @@ import { parse } from "url";
 import { listenOnMessage } from "./socket.js";
 
 const typeDefs = gql`
-  type Query {
-    hello: String
-    users: [User]
-    me: User
-    repos: [Repo]
-    repo(name: String!, username: String!): Repo
-    pods(username: String, reponame: String): [Pod]
-    pod(id: ID!): Pod
-    myRepos: [Repo]
-    activeSessions: [String]
-    gitGetHead(username: String, reponame: String): String
-    gitDiff(username: String, reponame: String): String
-    gitGetPods(username: String, reponame: String, version: String): [Pod]
-  }
-
   type AuthData {
     token: String
   }
@@ -85,6 +70,21 @@ const typeDefs = gql`
     thundar: Boolean
     utility: Boolean
     name: String
+  }
+
+  type Query {
+    hello: String
+    users: [User]
+    me: User
+    repos: [Repo]
+    repo(name: String!, username: String!): Repo
+    pods(username: String, reponame: String): [Pod]
+    pod(id: ID!): Pod
+    myRepos: [Repo]
+    activeSessions: [String]
+    gitGetHead(username: String, reponame: String): String
+    gitDiff(username: String, reponame: String): String
+    gitGetPods(username: String, reponame: String, version: String): [Pod]
   }
 
   type Mutation {
