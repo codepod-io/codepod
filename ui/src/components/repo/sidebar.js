@@ -310,6 +310,12 @@ function ActiveSessions() {
   );
 }
 
+function HtmlDiff({ diffstring }) {
+  const diffJson = Diff2Html.parse(diffstring);
+  const diffHtml = Diff2Html.html(diffJson, { drawFileList: true });
+  return <div dangerouslySetInnerHTML={{ __html: diffHtml }} />;
+}
+
 function Diff2({}) {
   // select the content
   // compare to ???
@@ -366,7 +372,7 @@ function DiffButton({ from, to }) {
             <Button colorScheme="blue" mr={3} onClick={onClose}>
               Close
             </Button>
-            <CommitButton from={from} to={to} />
+            <CommitButton disabled={from === to} />
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -374,23 +380,13 @@ function DiffButton({ from, to }) {
   );
 }
 
-function CommitButton({ from, to }) {
+function CommitButton({ disabled }) {
   let reponame = useSelector((state) => state.repo.reponame);
   let username = useSelector((state) => state.repo.username);
   let [gitCommit, {}] = useMutation(
     gql`
-      mutation GitCommit(
-        $reponame: String
-        $username: String
-        $content: String
-        $msg: String
-      ) {
-        gitCommit(
-          reponame: $reponame
-          username: $username
-          content: $content
-          msg: $msg
-        )
+      mutation GitCommit($reponame: String, $username: String, $msg: String) {
+        gitCommit(reponame: $reponame, username: $username, msg: $msg)
       }
     `,
     { refetchQueries: ["GitGetHead"] }
@@ -412,7 +408,7 @@ function CommitButton({ from, to }) {
             // pop up a input box for entering exporrt
             setShow(!show);
           }}
-          isDisabled={from === to}
+          isDisabled={disabled}
         >
           Commit
         </Button>
@@ -442,7 +438,6 @@ function CommitButton({ from, to }) {
                     variables: {
                       reponame,
                       username,
-                      content: to,
                       msg: value,
                     },
                   });
@@ -521,9 +516,145 @@ function RepoButton() {
   );
 }
 
+function genRelJson(pods) {
+  function helper(id) {
+    if (pods[id].type !== "DECK") {
+      return id;
+    }
+    const decks = pods[id].children
+      .filter((x) => x.type === "DECK")
+      .map((x) => x.id);
+    const childPods = pods[id].children
+      .filter((x) => x.type !== "DECK")
+      .map((x) => x.id);
+    return {
+      id: id,
+      pods: childPods.map(helper),
+      decks: decks.map(helper),
+    };
+  }
+  return helper("ROOT");
+}
+
+function RelButton() {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const pods = useSelector((state) => state.repo.pods);
+  return (
+    <>
+      <Button size="sm" onClick={onOpen}>
+        Rel.json
+      </Button>
+
+      <Modal isOpen={isOpen} onClose={onClose} size="6xl">
+        <ModalOverlay />
+        <ModalContent h="lg">
+          <ModalHeader>CodePod Diff</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <Box w="100%" h="100%">
+              <MyMonaco
+                value={JSON.stringify(genRelJson(pods), null, 2)}
+                lang="json"
+              />
+            </Box>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button colorScheme="blue" mr={3} onClick={onClose}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
+  );
+}
+
+function GitExportButton() {
+  let reponame = useSelector((state) => state.repo.reponame);
+  let username = useSelector((state) => state.repo.username);
+  let [gitExport, {}] = useMutation(
+    gql`
+      mutation GitExport($reponame: String, $username: String) {
+        gitExport(reponame: $reponame, username: $username)
+      }
+    `
+  );
+  return (
+    <Button
+      onClick={() => {
+        gitExport({
+          variables: {
+            reponame,
+            username,
+          },
+        });
+      }}
+    >
+      GitExport
+    </Button>
+  );
+}
+
+function GitDiffButton() {
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  let reponame = useSelector((state) => state.repo.reponame);
+  let username = useSelector((state) => state.repo.username);
+  let { data, loading, error } = useQuery(
+    gql`
+      query GitDiff {
+        gitDiff(reponame: "${reponame}", username: "${username}")
+      }
+    `
+  );
+  return (
+    <>
+      <Button size="sm" onClick={onOpen}>
+        git diff
+      </Button>
+
+      <Modal isOpen={isOpen} onClose={onClose} size="6xl">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>CodePod Diff</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody h={50} overflow="scroll">
+            <Box>
+              {loading && <Box>Loading ..</Box>}
+              {/* FIXME diff2html cannot be wrapped in a fixed height div
+              with overflow scroll, otherwise the line numbers are floating
+               outside. see https://github.com/rtfpessoa/diff2html/issues/381
+
+               Thus, I'm using Monaco instead.
+                */}
+              {data && <HtmlDiff diffstring={data.gitDiff} />}
+
+              {error && (
+                <Box>
+                  Error{" "}
+                  <Code whiteSpace="pre-wrap">
+                    {JSON.stringify(error, null, 2)}
+                  </Code>
+                </Box>
+              )}
+            </Box>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button colorScheme="blue" mr={3} onClick={onClose}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
+  );
+}
+
 function GitBar() {
   let reponame = useSelector((state) => state.repo.reponame);
   let username = useSelector((state) => state.repo.username);
+  let dispatch = useDispatch();
   let { data, loading } = useQuery(gql`
     query GitGetHead {
       gitGetHead(reponame: "${reponame}", username: "${username}")
@@ -534,8 +665,21 @@ function GitBar() {
   return (
     <Box>
       <Text>Git</Text>
-      <DiffButton from={from} to={to} />
+      {/* <DiffButton from={from} to={to} /> */}
       <RepoButton />
+      {/* <RelButton /> */}
+      <GitExportButton />
+      <GitDiffButton />
+      <CommitButton disabled={false} />
+      <Button
+        onClick={() => {
+          dispatch(repoSlice.actions.toggleDiff());
+        }}
+        size="xs"
+        variant="ghost"
+      >
+        Toggle Diff
+      </Button>
     </Box>
   );
 }

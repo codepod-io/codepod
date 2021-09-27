@@ -20,7 +20,7 @@ import useMe from "../lib/me";
 import { Deck } from "../components/repo/pod";
 import { Sidebar } from "../components/repo/sidebar";
 
-import { loadPodQueue } from "../lib/remote/load";
+import { loadPodQueue, loadGit } from "../lib/remote/load";
 
 export default function Repo() {
   let { username, reponame } = useParams();
@@ -41,6 +41,7 @@ export default function Repo() {
     dispatch(repoSlice.actions.resetState());
     // load the repo. It is actually not a queue, just an async thunk
     dispatch(loadPodQueue({ username, reponame }));
+    // dispatch(loadGit({ username, reponame }));
     // this is the queue for remote update
     dispatch(qActions.startQueue());
     // dispatch(wsActions.wsConnect());
@@ -62,6 +63,7 @@ export default function Repo() {
         verticalAlign="top"
         height="100%"
         w="18%"
+        // w={0}
         overflow="auto"
       >
         <Sidebar />
@@ -71,11 +73,17 @@ export default function Repo() {
         verticalAlign="top"
         height="100%"
         w="80%"
+        // w="100%"
         overflow="scroll"
       >
         {!repoLoaded && <Text>Repo Loading ...</Text>}
         {repoLoaded && (
-          <Box height="100%" border="solid 3px" p={2} overflow="auto">
+          <Box
+            height="100%"
+            //  border="solid 3px"
+            p={2}
+            overflow="auto"
+          >
             <DndContext
               onDragEnd={(event) => {
                 const { active, over } = event;

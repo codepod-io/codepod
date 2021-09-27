@@ -23,6 +23,8 @@ const typeDefs = gql`
     myRepos: [Repo]
     activeSessions: [String]
     gitGetHead(username: String, reponame: String): String
+    gitDiff(username: String, reponame: String): String
+    gitGetPods(username: String, reponame: String, version: String): [Pod]
   }
 
   type AuthData {
@@ -48,6 +50,8 @@ const typeDefs = gql`
     id: ID!
     type: String
     content: String
+    githead: String
+    staged: String
     column: Int
     lang: String
     parent: Pod
@@ -123,12 +127,10 @@ const typeDefs = gql`
     clearRepo: Boolean
     clearPod: Boolean
     killSession(sessionId: String): Boolean
-    gitCommit(
-      username: String
-      reponame: String
-      content: String
-      msg: String
-    ): Boolean
+    gitExport(username: String, reponame: String): Boolean
+    gitStage(username: String, reponame: String, podId: ID): Boolean
+    gitUnstage(username: String, reponame: String, podId: ID): Boolean
+    gitCommit(username: String, reponame: String, msg: String): Boolean
   }
 `;
 

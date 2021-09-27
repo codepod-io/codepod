@@ -88,6 +88,9 @@ model Pod {
   // pods after it.
   children Pod[]   @relation("PARENT")
   content  String?
+  // the HEAD version and STAGED version of pod content
+  githead  String?
+  staged   String?
   column   Int @default(1)
   fold     Boolean @default(false)
   thundar  Boolean @default(false)

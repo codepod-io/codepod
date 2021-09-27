@@ -12,6 +12,7 @@ export default {
   },
   WS_RESULT: (state, action) => {
     let { podId, result, count } = action.payload;
+    // console.log("WS_RESULT", action.payload);
     // console.log("podId", podId)
     if (podId in state.pods) {
       state.pods[podId].result = {
@@ -31,13 +32,13 @@ export default {
     state.pods[podId].result = {
       text: content.data["text/plain"],
       // FIXME hard coded MIME
-      // TODO render MIME
       image: content.data["image/png"],
       count: count,
     };
   },
   WS_EXECUTE_REPLY: (state, action) => {
     let { podId, result, count } = action.payload;
+    // console.log("WS_EXECUTE_REPLY", action.payload);
     if (podId in state.pods) {
       // state.pods[podId].execute_reply = {
       //   text: result,

@@ -15,6 +15,7 @@ import {
 } from "@chakra-ui/react";
 import { HStack, VStack, Select } from "@chakra-ui/react";
 
+import { gql, useQuery, useMutation } from "@apollo/client";
 import {
   ArrowUpIcon,
   ArrowForwardIcon,
@@ -90,11 +91,76 @@ function getDeck({ id, level }) {
   return deckCache[id];
 }
 
-export function Deck({ id, level = 0 }) {
+export function DeckTitle({ id }) {
+  const [showMenu, setShowMenu] = useState(false);
+  const pod = useSelector((state) => state.repo.pods[id]);
+  const dispatch = useDispatch();
+  return (
+    <Box
+      position="relative"
+      onMouseEnter={() => setShowMenu(true)}
+      onMouseLeave={() => setShowMenu(false)}
+    >
+      <Box
+        style={{
+          margin: "5px",
+          position: "absolute",
+          top: "0px",
+          left: "-30px",
+        }}
+      >
+        <HoveringBar pod={pod} showMenu={showMenu}>
+          {pod.id !== "ROOT" && <UpButton pod={pod} />}
+          {pod.id !== "ROOT" && <DownButton pod={pod} />}
+          <RightButton pod={pod} />
+
+          {pod.id !== "ROOT" && <DeleteButton pod={pod} />}
+          {pod.id !== "ROOT" && (
+            <Box>
+              <ThundarButton pod={pod} />
+              <UtilityButton pod={pod} />
+            </Box>
+          )}
+          <Button
+            variant="ghost"
+            color="green"
+            size="xs"
+            onClick={() => {
+              dispatch(wsActions.wsRunTree(id));
+            }}
+          >
+            <PlayArrowIcon fontSize="small" />
+          </Button>
+        </HoveringBar>
+      </Box>
+      <Flex>
+        <ClickInputButton
+          callback={(value) => {
+            dispatch(repoSlice.actions.setName({ id: pod.id, name: value }));
+          }}
+        >
+          <Code colorScheme="blackAlpha" bg="blue.200">
+            {pod.name ? pod.name : pod.id}
+          </Code>
+        </ClickInputButton>
+
+        {pod.id !== "ROOT" && (
+          <Box>
+            <ThundarMark pod={pod} />
+            <UtilityMark pod={pod} />
+          </Box>
+        )}
+      </Flex>
+    </Box>
+  );
+}
+
+export function Deck(props) {
+  const { id, level = 0 } = props;
+  // console.log("rendering deck", id);
   const dispatch = useDispatch();
   const pod = useSelector((state) => state.repo.pods[id]);
   const clip = useSelector((state) => state.repo.clip);
-  const [showMenu, setShowMenu] = useState(false);
   if (pod.type !== "DECK") return <Pod id={id}></Pod>;
   if (pod.children.length == 0 && pod.id === "ROOT") {
     return (
@@ -129,64 +195,7 @@ export function Deck({ id, level = 0 }) {
       border={clip === pod.id ? "dashed orange" : undefined}
     >
       <Box>
-        <Box
-          position="relative"
-          onMouseEnter={() => setShowMenu(true)}
-          onMouseLeave={() => setShowMenu(false)}
-        >
-          <Box
-            style={{
-              margin: "5px",
-              position: "absolute",
-              top: "0px",
-              left: "-30px",
-            }}
-          >
-            <HoveringBar pod={pod} showMenu={showMenu}>
-              {pod.id !== "ROOT" && <UpButton pod={pod} />}
-              {pod.id !== "ROOT" && <DownButton pod={pod} />}
-              <RightButton pod={pod} />
-
-              {pod.id !== "ROOT" && <DeleteButton pod={pod} />}
-              {pod.id !== "ROOT" && (
-                <Box>
-                  <ThundarButton pod={pod} />
-                  <UtilityButton pod={pod} />
-                </Box>
-              )}
-              <Button
-                variant="ghost"
-                color="green"
-                size="xs"
-                onClick={() => {
-                  dispatch(wsActions.wsRunTree(id));
-                }}
-              >
-                <PlayArrowIcon fontSize="small" />
-              </Button>
-            </HoveringBar>
-          </Box>
-          <Flex>
-            <ClickInputButton
-              callback={(value) => {
-                dispatch(
-                  repoSlice.actions.setName({ id: pod.id, name: value })
-                );
-              }}
-            >
-              <Code colorScheme="blackAlpha" bg="blue.200">
-                {pod.name ? pod.name : pod.id}
-              </Code>
-            </ClickInputButton>
-
-            {pod.id !== "ROOT" && (
-              <Box>
-                <ThundarMark pod={pod} />
-                <UtilityMark pod={pod} />
-              </Box>
-            )}
-          </Flex>
-        </Box>
+        <DeckTitle id={id} />
         <Flex
           // FIXME column flex with maxH won't auto flow to right.
           direction="column"
@@ -252,7 +261,9 @@ function SortablePod({ id }) {
   );
 }
 
-function CodePod({ id }) {
+function CodePod(props) {
+  // FIXME performance
+  const { id } = props;
   let pod = useSelector((state) => state.repo.pods[id]);
   let dispatch = useDispatch();
 
@@ -266,7 +277,9 @@ function CodePod({ id }) {
       <Box>
         <Box alignContent="center">
           <MyMonaco
-            value={pod.content || "\n\n\n"}
+            value={pod.content || ""}
+            gitvalue={pod.staged}
+            // pod={pod}
             onChange={(value) => {
               dispatch(
                 repoSlice.actions.setPodContent({ id: pod.id, content: value })
@@ -369,13 +382,98 @@ function WysiwygPod({ pod }) {
     </VStack>
   );
 }
-
 function Pod({ id, draghandle }) {
-  // console.log("rendering pod", id);
+  return (
+    <PodWrapper id={id} draghandle={draghandle}>
+      <ThePod id={id} />
+    </PodWrapper>
+  );
+}
+
+function PodDiff({ id, setShowDiff }) {
+  let reponame = useSelector((state) => state.repo.reponame);
+  let username = useSelector((state) => state.repo.username);
+  // 1. a button
+  // 2. when the button is clicked, show the modal
+  let pod = useSelector((state) => state.repo.pods[id]);
+  // useMutation
+  let [gitStage, {}] = useMutation(gql`
+    mutation GitStage($reponame: String, $username: String, $podId: ID) {
+      gitStage(reponame: $reponame, username: $username, podId: $podId)
+    }
+  `);
+  let [gitUnstage, {}] = useMutation(gql`
+    mutation GitUnstage($reponame: String, $username: String, $podId: ID) {
+      gitUnstage(reponame: $reponame, username: $username, podId: $podId)
+    }
+  `);
+  let dispatch = useDispatch();
+  let theset = new Set([
+    pod.content || "",
+    pod.staged || "",
+    pod.githead || "",
+  ]);
+  if (theset.size == 1) {
+    return <Box></Box>;
+  }
+  return (
+    <>
+      <Box>
+        <Flex>
+          <Button
+            onClick={() => {
+              setShowDiff(false);
+            }}
+          >
+            close
+          </Button>
+          <Button
+            onClick={() => {
+              gitStage({
+                variables: {
+                  podId: id,
+                  username,
+                  reponame,
+                },
+              });
+              dispatch(repoSlice.actions.gitStage(id));
+            }}
+          >
+            Stage
+          </Button>
+          <Button
+            onClick={() => {
+              gitUnstage({
+                variables: {
+                  podId: id,
+                },
+              });
+              // FIXME this is not trigering an update
+              dispatch(repoSlice.actions.gitUnstage(id));
+            }}
+          >
+            UnStage
+          </Button>
+        </Flex>
+        <Box>
+          <Box>Diff</Box>
+          {/* I have to use || "" otherwise it is not updated */}
+          <MyMonacoDiff from={pod.staged} to={pod.content} />
+          <Box>Staged</Box>
+          <MyMonacoDiff from={pod.githead} to={pod.staged} />
+        </Box>
+      </Box>
+    </>
+  );
+}
+
+function PodWrapper({ id, draghandle, children }) {
   const pod = useSelector((state) => state.repo.pods[id]);
   const clip = useSelector((state) => state.repo.clip);
   const dispatch = useDispatch();
   const [showMenu, setShowMenu] = useState(false);
+  const [showDiff, setShowDiff] = useState(false);
+  const repo_showdiff = useSelector((state) => state.repo.showdiff);
   if (pod.type === "DECK") return <Box></Box>;
   return (
     <Box
@@ -397,7 +495,13 @@ function Pod({ id, draghandle }) {
             <Text>Folded</Text>
           </Box>
         ) : (
-          <ThePod id={id} />
+          // <ThePod id={id} />
+          <Box>
+            {children}
+            {(showDiff || repo_showdiff) && (
+              <PodDiff id={id} setShowDiff={setShowDiff} />
+            )}
+          </Box>
         )}
 
         <Box
@@ -416,6 +520,13 @@ function Pod({ id, draghandle }) {
             <FoldButton pod={pod} />
             <ThundarButton pod={pod} />
             <UtilityButton pod={pod} />
+            <Button
+              onClick={() => {
+                setShowDiff(!showDiff);
+              }}
+            >
+              toggle diff
+            </Button>
           </HoveringBar>
         </Box>
 
@@ -509,6 +620,7 @@ function Pod({ id, draghandle }) {
 }
 
 function ThePod({ id }) {
+  // console.log("rendinering thepod", id);
   const pod = useSelector((state) => state.repo.pods[id]);
   const dispatch = useDispatch();
   if (pod.type === "WYSIWYG") {

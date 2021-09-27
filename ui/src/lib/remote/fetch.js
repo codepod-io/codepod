@@ -3,6 +3,30 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { getAuthHeaders, hashPod, computeNamespace } from "../utils";
 import { repoSlice } from "../store";
 
+export async function doRemoteLoadGit({ username, reponame }) {
+  // get the pods of the git HEAD
+  const query = `
+  query GitPods{
+    gitGetPods(reponame: "${reponame}", username: "${username}", version:"HEAD") {
+      id
+      content
+    }
+  }
+  `;
+  const res = await fetch("/graphql", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      ...getAuthHeaders(),
+    },
+    body: JSON.stringify({
+      query: query,
+    }),
+  });
+  return res.json();
+}
+
 export async function doRemoteLoadRepo({ username, reponame }) {
   // load from remote
   // const reponame = getState().repo.reponame;
@@ -19,6 +43,8 @@ export async function doRemoteLoadRepo({ username, reponame }) {
           type
           lang
           content
+          githead
+          staged
           column
           result
           stdout
@@ -99,6 +125,8 @@ export function normalize(pods) {
     if (pod.type === "WYSIWYG" || pod.type === "CODE") {
       pod.content = JSON.parse(pod.content);
     }
+    pod.staged = JSON.parse(pod.staged);
+    pod.githead = JSON.parse(pod.githead);
     if (pod.result) {
       pod.result = JSON.parse(pod.result);
     }

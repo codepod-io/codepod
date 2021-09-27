@@ -12,6 +12,7 @@ import wsReducers from "./ws/reducers";
 import podReducers from "./reducers/pod";
 import exportReducers from "./reducers/export";
 import runtimeReducers from "./reducers/runtime";
+import gitReducers from "./reducers/git";
 import { hashPod } from "./utils";
 
 // import actions and export them
@@ -68,6 +69,7 @@ const initialState = {
   repoLoaded: false,
   pods: {},
   queue: [],
+  showdiff: false,
   // sessionId: nanoid(),
   sessionId: null,
   sessionRuntime: {},
@@ -128,6 +130,7 @@ export const repoSlice = createSlice({
     ...podReducers,
     ...exportReducers,
     ...runtimeReducers,
+    ...gitReducers,
     resetKernelStatus: (state, action) => {
       Object.entries(state.kernels).forEach(([k, v]) => {
         v.status = null;
