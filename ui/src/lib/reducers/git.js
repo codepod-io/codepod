@@ -7,6 +7,12 @@ export default {
     let id = action.payload;
     state.pods[id].staged = state.pods[id].githead;
   },
+  gitCommit: (state, action) => {
+    // set for all pods
+    for (const id of Object.keys(state.pods)) {
+      state.pods[id].githead = state.pods[id].staged;
+    }
+  },
   toggleDiff: (state, action) => {
     state.showdiff = !state.showdiff;
   },

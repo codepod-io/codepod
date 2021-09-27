@@ -389,8 +389,9 @@ function CommitButton({ disabled }) {
         gitCommit(reponame: $reponame, username: $username, msg: $msg)
       }
     `,
-    { refetchQueries: ["GitGetHead"] }
+    { refetchQueries: ["GitGetHead", "GitDiff"] }
   );
+  const dispatch = useDispatch();
   const anchorEl = useRef(null);
   const [show, setShow] = useState(false);
   const [value, setValue] = useState(null);
@@ -403,14 +404,14 @@ function CommitButton({ disabled }) {
       <Box>
         <Button
           ref={anchorEl}
-          variant="ghost"
           onClick={() => {
             // pop up a input box for entering exporrt
             setShow(!show);
           }}
           isDisabled={disabled}
+          size="xs"
         >
-          Commit
+          4. Commit
         </Button>
         <Popper
           open={show}
@@ -441,6 +442,8 @@ function CommitButton({ disabled }) {
                       msg: value,
                     },
                   });
+                  // also set the current
+                  dispatch(repoSlice.actions.gitCommit());
                   // clear value
                   setValue(null);
                   // click away
@@ -488,8 +491,8 @@ function RepoButton() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   return (
     <>
-      <Button size="sm" onClick={onOpen}>
-        Repo
+      <Button size="xs" onClick={onOpen}>
+        5. Repo
       </Button>
 
       <Modal isOpen={isOpen} onClose={onClose} size="6xl">
@@ -578,7 +581,8 @@ function GitExportButton() {
       mutation GitExport($reponame: String, $username: String) {
         gitExport(reponame: $reponame, username: $username)
       }
-    `
+    `,
+    { refetchQueries: ["GitDiff"] }
   );
   return (
     <Button
@@ -590,8 +594,9 @@ function GitExportButton() {
           },
         });
       }}
+      size="xs"
     >
-      GitExport
+      2. GitExport
     </Button>
   );
 }
@@ -609,8 +614,8 @@ function GitDiffButton() {
   );
   return (
     <>
-      <Button size="sm" onClick={onOpen}>
-        git diff
+      <Button size="xs" onClick={onOpen}>
+        3. git diff
       </Button>
 
       <Modal isOpen={isOpen} onClose={onClose} size="6xl">
@@ -664,22 +669,22 @@ function GitBar() {
   let from = data.gitGetHead;
   return (
     <Box>
-      <Text>Git</Text>
+      <Text>Git Operations</Text>
       {/* <DiffButton from={from} to={to} /> */}
-      <RepoButton />
+
       {/* <RelButton /> */}
-      <GitExportButton />
-      <GitDiffButton />
-      <CommitButton disabled={false} />
       <Button
         onClick={() => {
           dispatch(repoSlice.actions.toggleDiff());
         }}
         size="xs"
-        variant="ghost"
       >
-        Toggle Diff
+        1. Toggle Diff
       </Button>
+      <GitExportButton />
+      <GitDiffButton />
+      <CommitButton disabled={false} />
+      <RepoButton />
     </Box>
   );
 }
@@ -709,11 +714,13 @@ export function Sidebar() {
   return (
     <Box px="1rem">
       <SidebarSession />
+      <Divider my={2} />
+      <GitBar />
+      <Divider my={2} />
       <SidebarRuntime />
       <SidebarKernel />
       <ToastError />
       <ApplyAll />
-      <GitBar />
       <Divider my={2} />
       <ActiveSessions />
     </Box>
