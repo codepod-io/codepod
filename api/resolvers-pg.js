@@ -72,7 +72,7 @@ async function gitDiff({ username, reponame }) {
   if (!fs.existsSync(path)) {
     return null;
   }
-  const diff = await exec(`cd ${path} && git diff HEAD`);
+  const diff = await exec(`cd ${path} && git diff --cached`);
   // console.log(typeof diff);
   // console.log(JSON.stringify(diff));
   return diff.stdout;
