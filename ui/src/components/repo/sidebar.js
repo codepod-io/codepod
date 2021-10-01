@@ -205,6 +205,8 @@ function ApplyAll() {
     });
   }
 
+  let update_intervalId = null;
+
   useEffect(() => {
     if (numDirty > 0) {
       // window.onbeforeunload = () => true;
@@ -216,6 +218,18 @@ function ApplyAll() {
       window.removeEventListener("beforeunload", alertUser);
     };
   }, [numDirty]);
+
+  useEffect(() => {
+    if (!update_intervalId) {
+      // clearInterval(update_intervalId);
+      update_intervalId = setInterval(() => {
+        // websocket resets after 60s of idle by most firewalls
+        console.log("periodically saving ..");
+        dispatch(remoteUpdateAllPods());
+      }, 1000);
+    }
+  }, []);
+
   return (
     <Flex>
       <Button
