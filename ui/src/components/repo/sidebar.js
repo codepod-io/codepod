@@ -51,6 +51,8 @@ import {
   remoteUpdateAllPods,
   selectIsDirty,
   selectNumDirty,
+  selectNumStaged,
+  selectNumChanged,
 } from "../../lib/store";
 import { MyMonaco, MyMonacoDiff } from "../MyMonaco";
 import { StyledLink as Link } from "../utils";
@@ -678,12 +680,24 @@ function GitBar() {
     query GitGetHead {
       gitGetHead(reponame: "${reponame}", username: "${username}")
     }`);
+  const numChanged = useSelector(selectNumChanged());
+  const numStaged = useSelector(selectNumStaged());
   let to = useSelector((state) => exportSingleFile(state.repo.pods));
   if (loading) return <Text>Loading</Text>;
   let from = data.gitGetHead;
   return (
     <Box>
-      <Text>Git Operations</Text>
+      <Text>
+        Git{" "}
+        <Box as="span" color="green">
+          {numStaged}
+        </Box>{" "}
+        staged{" "}
+        <Box as="span" color="red">
+          {numChanged}
+        </Box>{" "}
+        changed
+      </Text>
       {/* <DiffButton from={from} to={to} /> */}
 
       {/* <RelButton /> */}

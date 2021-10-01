@@ -63,6 +63,34 @@ export function selectNumDirty() {
   };
 }
 
+export function selectNumStaged() {
+  return (state) => {
+    let res = 0;
+    if (state.repo.repoLoaded) {
+      mapPods(state.repo.pods, (pod) => {
+        if ((pod.staged || "") !== (pod.githead || "")) {
+          res += 1;
+        }
+      });
+    }
+    return res;
+  };
+}
+
+export function selectNumChanged() {
+  return (state) => {
+    let res = 0;
+    if (state.repo.repoLoaded) {
+      mapPods(state.repo.pods, (pod) => {
+        if ((pod.staged || "") !== (pod.content || "")) {
+          res += 1;
+        }
+      });
+    }
+    return res;
+  };
+}
+
 const initialState = {
   reponame: null,
   username: null,
