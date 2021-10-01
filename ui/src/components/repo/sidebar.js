@@ -396,7 +396,7 @@ function DiffButton({ from, to }) {
   );
 }
 
-function CommitButton({ disabled }) {
+function CommitButton({ disabled, number }) {
   let reponame = useSelector((state) => state.repo.reponame);
   let username = useSelector((state) => state.repo.username);
   let [gitCommit, {}] = useMutation(
@@ -427,7 +427,7 @@ function CommitButton({ disabled }) {
           isDisabled={disabled}
           size="xs"
         >
-          4. Commit
+          {number}. Commit
         </Button>
         <Popper
           open={show}
@@ -495,7 +495,7 @@ ${pods[id].content}
   return helper("ROOT", 0);
 }
 
-function RepoButton() {
+function RepoButton({ number }) {
   let reponame = useSelector((state) => state.repo.reponame);
   let username = useSelector((state) => state.repo.username);
   let url;
@@ -508,7 +508,7 @@ function RepoButton() {
   return (
     <>
       <Button size="xs" onClick={onOpen}>
-        5. Repo
+        {number}. Repo
       </Button>
 
       <Modal isOpen={isOpen} onClose={onClose} size="6xl">
@@ -589,7 +589,7 @@ function RelButton() {
   );
 }
 
-function GitExportButton() {
+function GitExportButton({ number }) {
   let reponame = useSelector((state) => state.repo.reponame);
   let username = useSelector((state) => state.repo.username);
   let [gitExport, {}] = useMutation(
@@ -612,12 +612,12 @@ function GitExportButton() {
       }}
       size="xs"
     >
-      2. GitExport
+      {number}. GitExport
     </Button>
   );
 }
 
-function GitDiffButton() {
+function GitDiffButton({ number }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   let reponame = useSelector((state) => state.repo.reponame);
   let username = useSelector((state) => state.repo.username);
@@ -631,7 +631,7 @@ function GitDiffButton() {
   return (
     <>
       <Button size="xs" onClick={onOpen}>
-        3. git diff
+        {number}. git diff
       </Button>
 
       <Modal isOpen={isOpen} onClose={onClose} size="6xl">
@@ -648,7 +648,7 @@ function GitDiffButton() {
 
                Thus, I'm using Monaco instead.
                 */}
-              {data && <HtmlDiff diffstring={data.gitDiff} />}
+              {data && data.gitDiff && <HtmlDiff diffstring={data.gitDiff} />}
 
               {error && (
                 <Box>
@@ -701,18 +701,12 @@ function GitBar() {
       {/* <DiffButton from={from} to={to} /> */}
 
       {/* <RelButton /> */}
-      <Button
-        onClick={() => {
-          dispatch(repoSlice.actions.toggleDiff());
-        }}
-        size="xs"
-      >
-        1. Toggle Diff
-      </Button>
-      <GitExportButton />
-      <GitDiffButton />
-      <CommitButton disabled={false} />
-      <RepoButton />
+      <Flex wrap="wrap">
+        <GitExportButton number={1} />
+        <GitDiffButton number={2} />
+        <CommitButton disabled={false} number={3} />
+        <RepoButton number={4} />
+      </Flex>
     </Box>
   );
 }

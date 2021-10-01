@@ -13,7 +13,4 @@ export default {
       state.pods[id].githead = state.pods[id].staged;
     }
   },
-  toggleDiff: (state, action) => {
-    state.showdiff = !state.showdiff;
-  },
 };

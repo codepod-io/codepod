@@ -23,6 +23,8 @@ import {
   AddIcon,
   QuestionOutlineIcon,
 } from "@chakra-ui/icons";
+import { GoDiff } from "react-icons/go";
+
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import IconButton from "@material-ui/core/IconButton";
@@ -50,10 +52,13 @@ import {
 } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import Popper from "@material-ui/core/Popper";
+import Paper from "@material-ui/core/Paper";
 
 import { repoSlice } from "../../lib/store";
 import { MySlate } from "../MySlate";
 import { MyMonaco, MyMonacoDiff } from "../MyMonaco";
+import { hashPod } from "../../lib/utils";
 
 import { XTerm, DummyTerm } from "../MyXTerm";
 import * as wsActions from "../../lib/ws/actions";
@@ -67,7 +72,6 @@ import {
   HoveringMenu,
   ExportButton,
   FoldButton,
-  ToolBar,
   SyncStatus,
   UpButton,
   DownButton,
@@ -145,11 +149,26 @@ export function DeckTitle({ id }) {
         </ClickInputButton>
 
         {pod.id !== "ROOT" && (
-          <Box>
+          <Flex>
             <ThundarMark pod={pod} />
             <UtilityMark pod={pod} />
-          </Box>
+          </Flex>
         )}
+
+        <Flex
+          visibility={showMenu ? "visible" : "hidden"}
+          background="gray.50"
+          rounded="md"
+          boxShadow="2xl"
+        >
+          {/* <Button>Diff</Button>
+              <Button>+</Button> */}
+          {pod.id !== "ROOT" && <UpButton pod={pod} />}
+          {pod.id !== "ROOT" && <DownButton pod={pod} />}
+          <RightButton pod={pod} />
+
+          {pod.id !== "ROOT" && <DeleteButton pod={pod} />}
+        </Flex>
       </Flex>
     </Box>
   );
@@ -438,6 +457,7 @@ function PodDiff({ id, setShowDiff }) {
               });
               dispatch(repoSlice.actions.gitStage(id));
             }}
+            disabled={pod.remoteHash !== hashPod(pod)}
           >
             Stage
           </Button>
@@ -451,17 +471,22 @@ function PodDiff({ id, setShowDiff }) {
               // FIXME this is not trigering an update
               dispatch(repoSlice.actions.gitUnstage(id));
             }}
+            disabled={pod.remoteHash !== hashPod(pod)}
           >
             UnStage
           </Button>
         </Flex>
-        <Box>
-          <Box>Diff</Box>
-          {/* I have to use || "" otherwise it is not updated */}
-          <MyMonacoDiff from={pod.staged} to={pod.content} />
-          <Box>Staged</Box>
-          <MyMonacoDiff from={pod.githead} to={pod.staged} />
-        </Box>
+        <Flex>
+          <Box w="xs" border="solid 1px" mx={2}>
+            <Box>Diff</Box>
+            {/* I have to use || "" otherwise it is not updated */}
+            <MyMonacoDiff from={pod.staged} to={pod.content} />
+          </Box>
+          <Box w="xs" border="solid 1px" mx={2}>
+            <Box>Staged</Box>
+            <MyMonacoDiff from={pod.githead} to={pod.staged} />
+          </Box>
+        </Flex>
       </Box>
     </>
   );
@@ -473,7 +498,14 @@ function PodWrapper({ id, draghandle, children }) {
   const dispatch = useDispatch();
   const [showMenu, setShowMenu] = useState(false);
   const [showDiff, setShowDiff] = useState(false);
-  const repo_showdiff = useSelector((state) => state.repo.showdiff);
+  const anchorEl = useRef(null);
+  // whether the pod is diff
+  let theset = new Set([
+    pod.content || "",
+    pod.staged || "",
+    pod.githead || "",
+  ]);
+  let hasgitdiff = theset.size > 1;
   if (pod.type === "DECK") return <Box></Box>;
   return (
     <Box
@@ -483,8 +515,25 @@ function PodWrapper({ id, draghandle, children }) {
       // w={150}
       border={clip === pod.id ? "dashed orange" : undefined}
     >
-      <ExportList pod={pod} />
-      <ImportList pod={pod} />
+      <Flex>
+        <ExportList pod={pod} />
+        <ImportList pod={pod} />
+        <ThundarMark pod={pod} />
+        <UtilityMark pod={pod} />
+        {hasgitdiff && (
+          <Button
+            onClick={() => {
+              setShowDiff(!showDiff);
+            }}
+            size="xs"
+            variant="ghost"
+            color="orange.600"
+          >
+            <GoDiff />
+          </Button>
+        )}
+      </Flex>
+
       <Box
         position="relative"
         onMouseEnter={() => setShowMenu(true)}
@@ -497,10 +546,29 @@ function PodWrapper({ id, draghandle, children }) {
         ) : (
           // <ThePod id={id} />
           <Box>
-            {children}
-            {(showDiff || repo_showdiff) && (
-              <PodDiff id={id} setShowDiff={setShowDiff} />
-            )}
+            <Box ref={anchorEl}>{children}</Box>
+            <Box>
+              <Popper
+                open={showDiff}
+                anchorEl={anchorEl.current}
+                // need this, otherwise the z-index seems to be berried under Chakra Modal
+                disablePortal={false}
+                placement="right-start"
+                modifiers={{
+                  hide: { enabled: false },
+                  flip: { enabled: false },
+                  preventOverflow: {
+                    enabled: false,
+                  },
+                }}
+              >
+                <Box bg="gray" w="2xl">
+                  <PodDiff id={id} setShowDiff={setShowDiff} />
+                  {/* Hello */}
+                  {/* <MyMonaco value="hello"></MyMonaco> */}
+                </Box>
+              </Popper>
+            </Box>
           </Box>
         )}
 
@@ -539,7 +607,20 @@ function PodWrapper({ id, draghandle, children }) {
           }}
         >
           <Flex>
-            <ToolBar pod={pod} />
+            <Flex
+              visibility={showMenu ? "visible" : "hidden"}
+              background="gray.50"
+              rounded="md"
+              boxShadow="2xl"
+            >
+              {/* <Button>Diff</Button>
+              <Button>+</Button> */}
+              <ExportButton id={pod.id} />
+              <UpButton pod={pod} />
+              <DownButton pod={pod} />
+              <DeleteButton pod={pod} />
+              <FoldButton pod={pod} />
+            </Flex>
             {/* <SyncStatus pod={pod} /> */}
           </Flex>
         </Box>

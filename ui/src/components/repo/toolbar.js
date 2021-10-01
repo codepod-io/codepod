@@ -476,22 +476,6 @@ export function UtilityButton({ pod }) {
   );
 }
 
-export function ToolBar({ pod }) {
-  return (
-    <Flex>
-      {/* <ExportButton id={pod.id} />
-      <UpButton pod={pod} />
-      <DownButton pod={pod} />
-      <DeleteButton pod={pod} />
-      <FoldButton pod={pod} /> */}
-      {/* <ThundarButton pod={pod} />
-      <UtilityButton pod={pod} /> */}
-      <ThundarMark pod={pod} />
-      <UtilityMark pod={pod} />
-    </Flex>
-  );
-}
-
 export function DeleteButton({ pod }) {
   const dispatch = useDispatch();
   return (
