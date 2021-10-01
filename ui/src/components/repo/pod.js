@@ -64,7 +64,7 @@ import {
   DeleteButton,
   ExportList,
   ImportList,
-  HoveringBar,
+  HoveringMenu,
   ExportButton,
   FoldButton,
   ToolBar,
@@ -109,7 +109,7 @@ export function DeckTitle({ id }) {
           left: "-30px",
         }}
       >
-        <HoveringBar pod={pod} showMenu={showMenu}>
+        <HoveringMenu pod={pod} showMenu={showMenu}>
           {pod.id !== "ROOT" && <UpButton pod={pod} />}
           {pod.id !== "ROOT" && <DownButton pod={pod} />}
           <RightButton pod={pod} />
@@ -131,7 +131,7 @@ export function DeckTitle({ id }) {
           >
             <PlayArrowIcon fontSize="small" />
           </Button>
-        </HoveringBar>
+        </HoveringMenu>
       </Box>
       <Flex>
         <ClickInputButton
@@ -512,7 +512,7 @@ function PodWrapper({ id, draghandle, children }) {
             left: "-30px",
           }}
         >
-          <HoveringBar pod={pod} showMenu={showMenu} draghandle={draghandle}>
+          <HoveringMenu pod={pod} showMenu={showMenu} draghandle={draghandle}>
             <ExportButton id={pod.id} />
             <UpButton pod={pod} />
             <DownButton pod={pod} />
@@ -527,7 +527,7 @@ function PodWrapper({ id, draghandle, children }) {
             >
               toggle diff
             </Button>
-          </HoveringBar>
+          </HoveringMenu>
         </Box>
 
         <Box

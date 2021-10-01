@@ -667,7 +667,7 @@ function IOStatus({ id, name }) {
   }
 }
 
-export function HoveringBar({ pod, showMenu, draghandle, children }) {
+export function HoveringMenu({ pod, showMenu, draghandle, children }) {
   let dispatch = useDispatch();
   // const [anchorEl, setAnchorEl] = React.useState(null);
   const [show, setShow] = useState(false);
