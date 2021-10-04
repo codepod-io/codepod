@@ -1,6 +1,100 @@
+import { Position } from "monaco-editor";
 import { useState } from "react";
 import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
 import { monaco } from "react-monaco-editor";
+
+monaco.languages.setLanguageConfiguration("julia", {
+  indentationRules: {
+    increaseIndentPattern:
+      /^(\s*|.*=\s*|.*@\w*\s*)[\w\s]*(?:["'`][^"'`]*["'`])*[\w\s]*\b(if|while|for|function|macro|(mutable\s+)?struct|abstract\s+type|primitive\s+type|let|quote|try|begin|.*\)\s*do|else|elseif|catch|finally)\b(?!(?:.*\bend\b[^\]]*)|(?:[^\[]*\].*)$).*$/,
+    decreaseIndentPattern: /^\s*(end|else|elseif|catch|finally)\b.*$/,
+  },
+});
+
+function construct_indent(pos, indent) {
+  return [
+    {
+      range: {
+        startLineNumber: pos.lineNumber,
+        startColumn: 1,
+        endLineNumber: pos.lineNumber,
+        endColumn: pos.column,
+      },
+      text: " ".repeat(indent),
+    },
+  ];
+}
+
+monaco.languages.registerOnTypeFormattingEditProvider("scheme", {
+  provideOnTypeFormattingEdits: function (model, position, ch, options, token) {
+    // get the first non-empty line
+    let line = "";
+    let linum = position.lineNumber - 1;
+    while (line.trim().length == 0 && linum >= 0) {
+      line = model.getLineContent(linum);
+      linum -= 1;
+    }
+    if (line.trim().length == 0) return [];
+    /* 
+
+    (aaa (bbb (ccc
+                xxx
+                yyy)
+              (xxx)
+              yyy (zzz xxx
+                       iii))
+
+
+           xxx)
+      xxx)
+    (define)    
+    */
+    let n_open = (line.match(/\(/g) || []).length;
+    let n_close = (line.match(/\)/g) || []).length;
+    if (n_open == n_close) {
+      // 1. If previous line has equal number of open and close, use that indentation
+      return construct_indent(position, line.length - line.trimLeft().length);
+    } else if (n_open > n_close) {
+      // 2. If previous line has more ), find the last )'s matching (, and
+      //   - if there's "(aaa bbb", use bbb's indentation
+      //   - else, use ('s indentation + 2
+      let ct = 0;
+      for (let i = line.length - 1; i >= 0; i--) {
+        if (line[i] == ")") {
+          ct += 1;
+        } else if (line[i] == "(") {
+          ct -= 1;
+        }
+        if (ct == -1) {
+          // check the pattern
+          if (line.substring(i).startsWith("(define ")) {
+            return construct_indent(position, i + 2);
+          }
+          // trim right, and find " "
+          let match = line.substring(i).trimRight().match(/\s/);
+          if (match) {
+            // if it is (define (fdsf), I want to index 2
+            return construct_indent(position, i + match.index + 1);
+          } else {
+            return construct_indent(position, i + 2);
+          }
+        }
+      }
+    } else {
+      // 3. If previous line has more (
+      //   - If there's "(aaa bbb", use bbb's indentation
+      //   - else, use ('s indentation + 2
+      let range = model.findPreviousMatch(")", position, false).range;
+      let pos = new Position(range.endLineNumber, range.endColumn);
+      let match = model.matchBracket(pos);
+      // this is actually a unmatched parenthesis
+      if (!match) return [];
+      let openPos = match[1];
+      return construct_indent(position, openPos.startColumn - 1);
+    }
+  },
+  autoFormatTriggerCharacters: ["\n"],
+});
 
 export function MyMonacoDiff({ from, to }) {
   return (
@@ -199,6 +293,9 @@ export function MyMonaco({
           enabled: false,
         },
         formatOnPaste: true,
+        formatOnType: true,
+        autoIndent: "full",
+        // autoIndent: true,
         scrollbar: {
           alwaysConsumeMouseWheel: false,
         },
