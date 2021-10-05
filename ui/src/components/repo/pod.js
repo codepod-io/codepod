@@ -602,7 +602,7 @@ function PodWrapper({ id, draghandle, children }) {
           style={{
             margin: "5px",
             position: "absolute",
-            top: "0px",
+            top: "-30px",
             right: "15px",
           }}
         >
