@@ -1,6 +1,6 @@
 import { useParams, Link as ReactLink, Prompt } from "react-router-dom";
 
-import { Box, Text } from "@chakra-ui/react";
+import { Box, Text, Button } from "@chakra-ui/react";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -21,6 +21,53 @@ import { Deck } from "../components/repo/pod";
 import { Sidebar } from "../components/repo/sidebar";
 
 import { loadPodQueue, loadGit } from "../lib/remote/load";
+
+function RepoWrapper({ children }) {
+  // this component is used to provide foldable sidebar
+  const [show, setShow] = useState(true);
+  return (
+    <Box m="auto" height="100%">
+      <Box
+        style={{
+          position: "absolute",
+          margin: "5px",
+          top: "50px",
+          left: "5px",
+        }}
+        zIndex={100}
+        // visibility={show ? "hidden" : "inherit"}
+      >
+        <Button
+          onClick={() => {
+            setShow(!show);
+          }}
+          size="xs"
+          // variant="ghost"
+        >
+          {show ? "Hide" : "Show"}
+        </Button>
+      </Box>
+      <Box
+        display="inline-block"
+        verticalAlign="top"
+        height="100%"
+        w={show ? "18%" : 0}
+        overflow="auto"
+      >
+        <Sidebar />
+      </Box>
+      <Box
+        display="inline-block"
+        verticalAlign="top"
+        height="100%"
+        w={show ? "80%" : "100%"}
+        overflow="scroll"
+      >
+        {children}
+      </Box>
+    </Box>
+  );
+}
 
 export default function Repo() {
   let { username, reponame } = useParams();
@@ -57,53 +104,34 @@ export default function Repo() {
   if (loading) return <Text>Loading</Text>;
 
   return (
-    <Box m="auto" height="100%">
-      <Box
-        display="inline-block"
-        verticalAlign="top"
-        height="100%"
-        w="18%"
-        // w={0}
-        overflow="auto"
-      >
-        <Sidebar />
-      </Box>
-      <Box
-        display="inline-block"
-        verticalAlign="top"
-        height="100%"
-        w="80%"
-        // w="100%"
-        overflow="scroll"
-      >
-        {!repoLoaded && <Text>Repo Loading ...</Text>}
-        {repoLoaded && (
-          <Box
-            height="100%"
-            //  border="solid 3px"
-            p={2}
-            overflow="auto"
+    <RepoWrapper>
+      {!repoLoaded && <Text>Repo Loading ...</Text>}
+      {repoLoaded && (
+        <Box
+          height="100%"
+          //  border="solid 3px"
+          p={2}
+          overflow="auto"
+        >
+          <DndContext
+            onDragEnd={(event) => {
+              const { active, over } = event;
+              if (active.id !== over.id) {
+                // I'll just get active.id to over.id
+                dispatch({
+                  type: "MOVE_POD",
+                  payload: {
+                    from: active.id,
+                    to: over.id,
+                  },
+                });
+              }
+            }}
           >
-            <DndContext
-              onDragEnd={(event) => {
-                const { active, over } = event;
-                if (active.id !== over.id) {
-                  // I'll just get active.id to over.id
-                  dispatch({
-                    type: "MOVE_POD",
-                    payload: {
-                      from: active.id,
-                      to: over.id,
-                    },
-                  });
-                }
-              }}
-            >
-              <Deck id="ROOT" />
-            </DndContext>
-          </Box>
-        )}
-      </Box>
-    </Box>
+            <Deck id="ROOT" />
+          </DndContext>
+        </Box>
+      )}
+    </RepoWrapper>
   );
 }
