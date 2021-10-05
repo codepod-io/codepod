@@ -30,7 +30,7 @@ monaco.languages.registerOnTypeFormattingEditProvider("scheme", {
     // get the first non-empty line
     let line = "";
     let linum = position.lineNumber - 1;
-    while (line.trim().length == 0 && linum >= 0) {
+    while (line.trim().length == 0 && linum > 0) {
       line = model.getLineContent(linum);
       linum -= 1;
     }
