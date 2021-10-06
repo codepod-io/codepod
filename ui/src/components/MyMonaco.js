@@ -67,7 +67,7 @@ monaco.languages.registerOnTypeFormattingEditProvider("scheme", {
         }
         if (ct == -1) {
           // check the pattern
-          if (line.substring(i).startsWith("(define ")) {
+          if (line.substring(i).startsWith("(define")) {
             return construct_indent(position, i + 2);
           }
           // trim right, and find " "
@@ -94,6 +94,100 @@ monaco.languages.registerOnTypeFormattingEditProvider("scheme", {
     }
   },
   autoFormatTriggerCharacters: ["\n"],
+});
+
+function decide_indent_open(line) {
+  // Assume line has more (. Decide the indent
+  let ct = 0;
+  for (let i = line.length - 1; i >= 0; i--) {
+    if (line[i] == ")") {
+      ct += 1;
+    } else if (line[i] == "(") {
+      ct -= 1;
+    }
+    if (ct == -1) {
+      // check the pattern
+      if (line.substring(i).startsWith("(define")) {
+        return i + 2;
+      }
+      // trim right, and find " "
+      let match = line.substring(i).trimRight().match(/\s/);
+      if (match) {
+        return i + match.index + 1;
+      } else {
+        return i + 2;
+      }
+    }
+  }
+}
+
+function racket_format(model) {
+  // console.log("executing formatting");
+  // 1. scan from pos 1,1
+  // record current indent, from 0
+  // for each line, see how many () are there in this line
+  // - if n_open = n_close: next_indent = currnet_indent
+  // - if n_open > n_close: from right, find the first unpaired open (
+  // - if n_open < n_close: find the last close, and find the match brackets
+  let indent = 0;
+  let shifts = {};
+  for (let linum = 1; linum <= model.getLineCount(); linum += 1) {
+    let line = model.getLineContent(linum);
+    if (line.trim().length == 0) {
+      // console.log("line empty");
+      continue;
+    }
+    // console.log("indent:", linum, indent);
+    let old_indent = line.length - line.trimLeft().length;
+    if (indent != old_indent) {
+      shifts[linum] = indent - old_indent;
+    }
+    let n_open = (line.match(/\(/g) || []).length;
+    let n_close = (line.match(/\)/g) || []).length;
+    if (n_open == n_close) {
+      // console.log("equal open/close parens");
+      continue;
+    } else if (n_open > n_close) {
+      indent = decide_indent_open(line) + (shifts[linum] || 0);
+    } else {
+      // find the last close
+      // CAUTION I have to have the "new" keyword here, otherwise Error
+      let end_pos = new Position(linum, model.getLineMaxColumn(linum));
+      let range = model.findPreviousMatch(")", end_pos, false).range;
+      let pos = new Position(range.endLineNumber, range.endColumn);
+      let match = model.matchBracket(pos);
+      // this is actually a unmatched parenthesis
+      if (!match) {
+        console.log("warning: unmatched parens");
+        return [];
+      }
+      let openPos = match[1];
+      let shift = shifts[openPos.startLineNumber] || 0;
+      indent = openPos.startColumn - 1 + shift;
+    }
+  }
+  // console.log("shifts:", shifts);
+  // console.log("computing edits ..");
+  let res = [];
+  for (const [linum, shift] of Object.entries(shifts)) {
+    let edit = {
+      range: {
+        startLineNumber: parseInt(linum),
+        startColumn: 1,
+        endLineNumber: parseInt(linum),
+        endColumn: Math.max(1 - shift, 1),
+      },
+      text: " ".repeat(Math.max(0, shift)),
+    };
+    res.push(edit);
+  }
+  // console.log("edits:", res);
+  return res;
+}
+
+monaco.languages.registerDocumentFormattingEditProvider("scheme", {
+  // CAUTION this won't give error feedback
+  provideDocumentFormattingEdits: racket_format,
 });
 
 export function MyMonacoDiff({ from, to }) {
