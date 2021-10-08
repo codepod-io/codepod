@@ -1,6 +1,6 @@
 import { useParams, Link as ReactLink, Prompt } from "react-router-dom";
 
-import { Box, Text, Button } from "@chakra-ui/react";
+import { Box, Text, Button, Flex, Spacer } from "@chakra-ui/react";
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -28,34 +28,27 @@ function RepoWrapper({ children }) {
   return (
     <Box m="auto" height="100%">
       <Box
-        style={{
-          position: "absolute",
-          margin: "5px",
-          top: "50px",
-          left: "5px",
-        }}
-        zIndex={100}
-        // visibility={show ? "hidden" : "inherit"}
-      >
-        <Button
-          onClick={() => {
-            setShow(!show);
-          }}
-          size="xs"
-          // variant="ghost"
-        >
-          {show ? "Hide" : "Show"}
-        </Button>
-      </Box>
-      <Box
         display="inline-block"
         verticalAlign="top"
         height="100%"
         w={show ? "18%" : 0}
         overflow="auto"
       >
+        <Flex>
+          <Spacer />
+          <Button
+            onClick={() => {
+              setShow(!show);
+            }}
+            size="xs"
+            // variant="ghost"
+          >
+            {show ? "Hide" : "Show"}
+          </Button>
+        </Flex>
         <Sidebar />
       </Box>
+
       <Box
         display="inline-block"
         verticalAlign="top"
@@ -63,6 +56,26 @@ function RepoWrapper({ children }) {
         w={show ? "80%" : "100%"}
         overflow="scroll"
       >
+        <Box
+          style={{
+            position: "absolute",
+            margin: "5px",
+            top: "50px",
+            left: "5px",
+          }}
+          zIndex={100}
+          visibility={show ? "hidden" : "inherit"}
+        >
+          <Button
+            onClick={() => {
+              setShow(!show);
+            }}
+            size="xs"
+            // variant="ghost"
+          >
+            {show ? "Hide" : "Show"}
+          </Button>
+        </Box>
         {children}
       </Box>
     </Box>

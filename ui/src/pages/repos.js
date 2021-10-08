@@ -48,7 +48,7 @@ function Repos() {
         {error.message}
       </Alert>
     );
-  let repos = data.myRepos;
+  let repos = data.myRepos.slice().reverse();
   return (
     <Box>
       <CreateRepoForm />

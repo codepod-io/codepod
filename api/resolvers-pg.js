@@ -91,6 +91,8 @@ async function gitExport({ username, reponame, pods }) {
     );
   }
   // 2. write file
+  // remove
+  await fs.promises.rm(`${path}/pods`, { recursive: true });
   if (!fs.existsSync(`${path}/pods`)) {
     await fs.promises.mkdir(`${path}/pods`);
   }
@@ -139,6 +141,29 @@ async function gitGetPods({ username, reponame, version }) {
     pods.push(pod);
   }
   return pods;
+}
+
+async function prismaGitExport({ username, reponame }) {
+  // put everything into the folder
+  const repo = await prisma.repo.findFirst({
+    where: {
+      name: reponame,
+      owner: {
+        username: username,
+      },
+    },
+  });
+  // console.log("=== repo", JSON.stringify(repo, null, 2));
+  const pods = await prisma.pod.findMany({
+    where: {
+      repo: {
+        id: repo.id,
+      },
+    },
+  });
+  // console.log("=== pods", pods);
+  // 1. write all pods into /path/to/folder/pods/[uuid].json
+  await gitExport({ reponame, username, pods });
 }
 
 export const resolvers = {
@@ -255,6 +280,9 @@ export const resolvers = {
       if (user.id !== userId) {
         throw new Error("You do not have access to the repo.");
       }
+      // this mutates file system
+      // DEBUG I'm trying to export unpon diff request
+      // await prismaGitExport({ username, reponame });
       return await gitDiff({ reponame, username });
     },
   },
@@ -355,26 +383,7 @@ export const resolvers = {
       if (user.id !== userId) {
         throw new Error("You do not have access to the repo.");
       }
-      // put everything into the folder
-      const repo = await prisma.repo.findFirst({
-        where: {
-          name: reponame,
-          owner: {
-            username: username,
-          },
-        },
-      });
-      // console.log("=== repo", JSON.stringify(repo, null, 2));
-      const pods = await prisma.pod.findMany({
-        where: {
-          repo: {
-            id: repo.id,
-          },
-        },
-      });
-      // console.log("=== pods", pods);
-      // 1. write all pods into /path/to/folder/pods/[uuid].json
-      await gitExport({ reponame, username, pods });
+      await prismaGitExport({ username, reponame });
       return true;
     },
     gitStage: async (_, { username, reponame, podId }) => {
@@ -393,6 +402,7 @@ export const resolvers = {
           staged: pod.content,
         },
       });
+      await prismaGitExport({ username, reponame });
       return true;
     },
     gitUnstage: async (_, { username, reponame, podId }) => {
@@ -411,6 +421,7 @@ export const resolvers = {
           staged: pod.githead,
         },
       });
+      await prismaGitExport({ username, reponame });
       return true;
     },
     login: async (_, { username, password }) => {
@@ -558,6 +569,7 @@ export const resolvers = {
         },
       });
 
+      await prismaGitExport({ username, reponame });
       return pod;
     },
     pastePod: async (_, { id, parentId, index, column }) => {

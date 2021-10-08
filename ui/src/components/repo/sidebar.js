@@ -396,7 +396,7 @@ function DiffButton({ from, to }) {
   );
 }
 
-function CommitButton({ disabled, number }) {
+function CommitButton({ disabled }) {
   let reponame = useSelector((state) => state.repo.reponame);
   let username = useSelector((state) => state.repo.username);
   let [gitCommit, {}] = useMutation(
@@ -425,9 +425,9 @@ function CommitButton({ disabled, number }) {
             setShow(!show);
           }}
           isDisabled={disabled}
-          size="xs"
+          // size="xs"
         >
-          {number}. Commit
+          Commit
         </Button>
         <Popper
           open={show}
@@ -495,7 +495,7 @@ ${pods[id].content}
   return helper("ROOT", 0);
 }
 
-function RepoButton({ number }) {
+function RepoButton({}) {
   let reponame = useSelector((state) => state.repo.reponame);
   let username = useSelector((state) => state.repo.username);
   let url;
@@ -508,7 +508,7 @@ function RepoButton({ number }) {
   return (
     <>
       <Button size="xs" onClick={onOpen}>
-        {number}. Repo
+        Repo
       </Button>
 
       <Modal isOpen={isOpen} onClose={onClose} size="6xl">
@@ -612,12 +612,12 @@ function GitExportButton({ number }) {
       }}
       size="xs"
     >
-      {number}. GitExport
+      GitExport
     </Button>
   );
 }
 
-function GitDiffButton({ number }) {
+function GitDiffButton({}) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   let reponame = useSelector((state) => state.repo.reponame);
   let username = useSelector((state) => state.repo.username);
@@ -628,14 +628,35 @@ function GitDiffButton({ number }) {
       }
     `
   );
+  let [gitExport, {}] = useMutation(
+    gql`
+      mutation GitExport($reponame: String, $username: String) {
+        gitExport(reponame: $reponame, username: $username)
+      }
+    `,
+    { refetchQueries: ["GitDiff"] }
+  );
   return (
     <>
-      <Button size="xs" onClick={onOpen}>
-        {number}. git diff
+      <Button
+        size="xs"
+        onClick={() => {
+          // first export
+          gitExport({
+            variables: {
+              reponame,
+              username,
+            },
+          });
+          onOpen();
+        }}
+      >
+        Diff
       </Button>
 
       <Modal isOpen={isOpen} onClose={onClose} size="6xl">
         <ModalOverlay />
+
         <ModalContent>
           <ModalHeader>CodePod Diff</ModalHeader>
           <ModalCloseButton />
@@ -662,6 +683,7 @@ function GitDiffButton({ number }) {
           </ModalBody>
 
           <ModalFooter>
+            <CommitButton disabled={!(data && data.gitDiff)} />
             <Button colorScheme="blue" mr={3} onClick={onClose}>
               Close
             </Button>
@@ -702,10 +724,8 @@ function GitBar() {
 
       {/* <RelButton /> */}
       <Flex wrap="wrap">
-        <GitExportButton number={1} />
-        <GitDiffButton number={2} />
-        <CommitButton disabled={false} number={3} />
-        <RepoButton number={4} />
+        <GitDiffButton />
+        <RepoButton />
       </Flex>
     </Box>
   );
@@ -734,17 +754,25 @@ function ToastError() {
 
 export function Sidebar() {
   return (
-    <Box px="1rem">
-      <SidebarSession />
+    <Box mx={2} px="1rem" boxShadow="xl" rounded="md" bg="gray.200">
+      <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
+        <SidebarSession />
+      </Box>
       <Divider my={2} />
-      <GitBar />
+      <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
+        <GitBar />
+      </Box>
       <Divider my={2} />
-      <SidebarRuntime />
-      <SidebarKernel />
-      <ToastError />
-      <ApplyAll />
+      <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
+        <SidebarRuntime />
+        <SidebarKernel />
+        <ActiveSessions />
+      </Box>
+      <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
+        <ToastError />
+        <ApplyAll />
+      </Box>
       <Divider my={2} />
-      <ActiveSessions />
     </Box>
   );
 }

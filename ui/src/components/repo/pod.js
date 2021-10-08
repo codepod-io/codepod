@@ -416,16 +416,22 @@ function PodDiff({ id, setShowDiff }) {
   // 2. when the button is clicked, show the modal
   let pod = useSelector((state) => state.repo.pods[id]);
   // useMutation
-  let [gitStage, {}] = useMutation(gql`
-    mutation GitStage($reponame: String, $username: String, $podId: ID) {
-      gitStage(reponame: $reponame, username: $username, podId: $podId)
-    }
-  `);
-  let [gitUnstage, {}] = useMutation(gql`
-    mutation GitUnstage($reponame: String, $username: String, $podId: ID) {
-      gitUnstage(reponame: $reponame, username: $username, podId: $podId)
-    }
-  `);
+  let [gitStage, {}] = useMutation(
+    gql`
+      mutation GitStage($reponame: String, $username: String, $podId: ID) {
+        gitStage(reponame: $reponame, username: $username, podId: $podId)
+      }
+    `,
+    { refetchQueries: ["GitDiff"] }
+  );
+  let [gitUnstage, {}] = useMutation(
+    gql`
+      mutation GitUnstage($reponame: String, $username: String, $podId: ID) {
+        gitUnstage(reponame: $reponame, username: $username, podId: $podId)
+      }
+    `,
+    { refetchQueries: ["GitDiff"] }
+  );
   let dispatch = useDispatch();
   let theset = new Set([
     pod.content || "",
@@ -457,7 +463,7 @@ function PodDiff({ id, setShowDiff }) {
               });
               dispatch(repoSlice.actions.gitStage(id));
             }}
-            disabled={pod.remoteHash !== hashPod(pod)}
+            // disabled={pod.remoteHash !== hashPod(pod)}
           >
             Stage
           </Button>
@@ -466,12 +472,14 @@ function PodDiff({ id, setShowDiff }) {
               gitUnstage({
                 variables: {
                   podId: id,
+                  username,
+                  reponame,
                 },
               });
               // FIXME this is not trigering an update
               dispatch(repoSlice.actions.gitUnstage(id));
             }}
-            disabled={pod.remoteHash !== hashPod(pod)}
+            // disabled={pod.remoteHash !== hashPod(pod)}
           >
             UnStage
           </Button>
@@ -511,7 +519,7 @@ function PodWrapper({ id, draghandle, children }) {
     <Box
       ml={0}
       my={1}
-      w="2xs"
+      w="md"
       // w={150}
       border={clip === pod.id ? "dashed orange" : undefined}
     >
