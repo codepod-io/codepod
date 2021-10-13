@@ -92,7 +92,9 @@ async function gitExport({ username, reponame, pods }) {
   }
   // 2. write file
   // remove
-  await fs.promises.rm(`${path}/pods`, { recursive: true });
+  if (fs.existsSync(`${path}/pods`)) {
+    await fs.promises.rm(`${path}/pods`, { recursive: true });
+  }
   if (!fs.existsSync(`${path}/pods`)) {
     await fs.promises.mkdir(`${path}/pods`);
   }
