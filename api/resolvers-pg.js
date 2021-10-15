@@ -407,6 +407,27 @@ export const resolvers = {
       await prismaGitExport({ username, reponame });
       return true;
     },
+    gitStageMulti: async (_, { username, reponame, podIds }) => {
+      // 1. set pod.staged = pod.content
+      // 2. TODO export to FS
+      for (const podId of podIds) {
+        const pod = await prisma.pod.findUnique({
+          where: {
+            id: podId,
+          },
+        });
+        await prisma.pod.update({
+          where: {
+            id: podId,
+          },
+          data: {
+            staged: pod.content,
+          },
+        });
+      }
+      await prismaGitExport({ username, reponame });
+      return true;
+    },
     gitUnstage: async (_, { username, reponame, podId }) => {
       // 1. set pod.staged = pod.content
       // 2. TODO export to FS
@@ -423,6 +444,27 @@ export const resolvers = {
           staged: pod.githead,
         },
       });
+      await prismaGitExport({ username, reponame });
+      return true;
+    },
+    gitUnstageMulti: async (_, { username, reponame, podIds }) => {
+      // 1. set pod.staged = pod.content
+      // 2. TODO export to FS
+      for (const podId of podIds) {
+        const pod = await prisma.pod.findUnique({
+          where: {
+            id: podId,
+          },
+        });
+        await prisma.pod.update({
+          where: {
+            id: podId,
+          },
+          data: {
+            staged: pod.githead,
+          },
+        });
+      }
       await prismaGitExport({ username, reponame });
       return true;
     },

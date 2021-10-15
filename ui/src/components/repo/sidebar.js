@@ -53,6 +53,8 @@ import {
   selectNumDirty,
   selectNumStaged,
   selectNumChanged,
+  selectChangedIds,
+  selectStagedIds,
 } from "../../lib/store";
 import { MyMonaco, MyMonacoDiff } from "../MyMonaco";
 import { StyledLink as Link } from "../utils";
@@ -694,6 +696,83 @@ function GitDiffButton({}) {
   );
 }
 
+function StageAllButton() {
+  // FIXME this is re-rendering all the time
+  let reponame = useSelector((state) => state.repo.reponame);
+  let username = useSelector((state) => state.repo.username);
+  let changed_ids = useSelector(selectChangedIds());
+  let staged_ids = useSelector(selectStagedIds());
+  let dispatch = useDispatch();
+  // let ids = useSelector(selectNumChanged());
+  // console.log("changed ids", ids);
+  let [gitStageMulti, {}] = useMutation(
+    gql`
+      mutation GitStageMulti(
+        $reponame: String
+        $username: String
+        $podIds: [ID]
+      ) {
+        gitStageMulti(reponame: $reponame, username: $username, podIds: $podIds)
+      }
+    `,
+    { refetchQueries: ["GitDiff"] }
+  );
+  let [gitUnstageMulti, {}] = useMutation(
+    gql`
+      mutation GitUnstageMulti(
+        $reponame: String
+        $username: String
+        $podIds: [ID]
+      ) {
+        gitUnstageMulti(
+          reponame: $reponame
+          username: $username
+          podIds: $podIds
+        )
+      }
+    `,
+    { refetchQueries: ["GitDiff"] }
+  );
+  return (
+    <Box>
+      <Button
+        size="xs"
+        onClick={() => {
+          gitStageMulti({
+            variables: {
+              podIds: changed_ids,
+              username,
+              reponame,
+            },
+          });
+          for (const id of changed_ids) {
+            dispatch(repoSlice.actions.gitStage(id));
+          }
+        }}
+      >
+        Stage All
+      </Button>
+      <Button
+        size="xs"
+        onClick={() => {
+          gitUnstageMulti({
+            variables: {
+              podIds: staged_ids,
+              username,
+              reponame,
+            },
+          });
+          for (const id of staged_ids) {
+            dispatch(repoSlice.actions.gitUnstage(id));
+          }
+        }}
+      >
+        Unstage All
+      </Button>
+    </Box>
+  );
+}
+
 function GitBar() {
   let reponame = useSelector((state) => state.repo.reponame);
   let username = useSelector((state) => state.repo.username);
@@ -724,6 +803,7 @@ function GitBar() {
 
       {/* <RelButton /> */}
       <Flex wrap="wrap">
+        <StageAllButton />
         <GitDiffButton />
         <RepoButton />
       </Flex>

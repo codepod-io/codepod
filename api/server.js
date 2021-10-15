@@ -129,7 +129,9 @@ const typeDefs = gql`
     killSession(sessionId: String): Boolean
     gitExport(username: String, reponame: String): Boolean
     gitStage(username: String, reponame: String, podId: ID): Boolean
+    gitStageMulti(username: String, reponame: String, podIds: [ID]): Boolean
     gitUnstage(username: String, reponame: String, podId: ID): Boolean
+    gitUnstageMulti(username: String, reponame: String, podIds: [ID]): Boolean
     gitCommit(username: String, reponame: String, msg: String): Boolean
   }
 `;
