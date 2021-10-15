@@ -648,7 +648,17 @@ function PodWrapper({ id, draghandle, children }) {
                 {pod.type}
               </Text>
             )}
-            {/* {pod.type === "CODE" && pod.lang && <RunButton id={id} />} */}
+            {pod.type === "CODE" && pod.lang && (
+              <Flex>
+                {pod.raw && (
+                  <Box pr={2} color="gray">
+                    raw
+                  </Box>
+                )}
+                <Box color="gray">{pod.lang}</Box>
+                <RunButton id={id} />
+              </Flex>
+            )}
           </Flex>
         )}
       </Box>
