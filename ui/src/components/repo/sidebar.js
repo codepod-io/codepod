@@ -13,6 +13,7 @@ import {
   Spacer,
   Divider,
   useToast,
+  useClipboard,
   Input,
 } from "@chakra-ui/react";
 import { HStack, VStack, Select } from "@chakra-ui/react";
@@ -506,7 +507,9 @@ function RepoButton({}) {
   } else {
     url = `https://git.${window.location.host}/?p=${username}/${reponame}/.git`;
   }
+  let clonecmd = `git clone ${window.location.protocol}//git.${window.location.host}/${username}/${reponame}/.git`;
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { hasCopied, onCopy } = useClipboard(clonecmd);
   return (
     <>
       <Button size="xs" onClick={onOpen}>
@@ -520,6 +523,10 @@ function RepoButton({}) {
           <ModalCloseButton />
           <ModalBody>
             {/* <Lorem count={2} /> */}
+            <Box>
+              Clone: <Code>{clonecmd}</Code>
+              <Button onClick={onCopy}>{hasCopied ? "Copied" : "Copy"}</Button>
+            </Box>
             <Box w="100%" h="100%">
               <iframe src={url} width="100%" height="100%" />
             </Box>
