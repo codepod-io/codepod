@@ -940,7 +940,10 @@ export class RacketKernel extends CodePodKernel {
   lang = "racket";
   image = "racket_kernel";
   mapEval({ code, namespace }) {
-    return `(enter! #f) (CODEPOD-EVAL "${code}" "${namespace}")`;
+    return `(enter! #f) (CODEPOD-EVAL "${code.replaceAll(
+      '"',
+      '\\"'
+    )}" "${namespace}")`;
   }
   mapAddImport({ from, to, name }) {
     return `(enter! #f) (CODEPOD-ADD-IMPORT "${from}" "${to}" "${name}")`;
