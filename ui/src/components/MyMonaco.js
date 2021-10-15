@@ -67,7 +67,7 @@ monaco.languages.registerOnTypeFormattingEditProvider("scheme", {
         }
         if (ct == -1) {
           // check the pattern
-          if (line.substring(i).startsWith("(define")) {
+          if (line.substring(i).match(/^\([define|lambda|let].*/)) {
             return construct_indent(position, i + 2);
           }
           // trim right, and find " "
@@ -107,7 +107,7 @@ function decide_indent_open(line) {
     }
     if (ct == -1) {
       // check the pattern
-      if (line.substring(i).startsWith("(define")) {
+      if (line.substring(i).match(/^\([define|lambda|let].*/)) {
         return i + 2;
       }
       // trim right, and find " "
