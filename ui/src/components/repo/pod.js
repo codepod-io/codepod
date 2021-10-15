@@ -627,6 +627,14 @@ function PodWrapper({ id, draghandle, children }) {
               <UpButton pod={pod} />
               <DownButton pod={pod} />
               <DeleteButton pod={pod} />
+              <Button
+                size="sm"
+                onClick={() => {
+                  dispatch(repoSlice.actions.toggleRaw(pod.id));
+                }}
+              >
+                raw
+              </Button>
               <FoldButton pod={pod} />
             </Flex>
             {/* <SyncStatus pod={pod} /> */}
