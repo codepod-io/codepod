@@ -168,6 +168,7 @@ export function DeckTitle({ id }) {
           <RightButton pod={pod} />
 
           {pod.id !== "ROOT" && <DeleteButton pod={pod} />}
+          {pod.id !== "ROOT" && <FoldButton pod={pod} />}
         </Flex>
       </Flex>
     </Box>
@@ -215,22 +216,26 @@ export function Deck(props) {
     >
       <Box>
         <DeckTitle id={id} />
-        <Flex
-          // FIXME column flex with maxH won't auto flow to right.
-          direction="column"
-          // border="5px solid blue"
-          // maxH="lg"
-          // maxW={2000}
-          // wrap="wrap"
-        >
-          {pod.children
-            .filter(({ type }) => type !== "DECK")
-            .map(({ id }) => (
-              <Box key={id}>
-                <Pod id={id} />
-              </Box>
-            ))}
-        </Flex>
+        {pod.fold ? (
+          <Box>Folded</Box>
+        ) : (
+          <Flex
+            // FIXME column flex with maxH won't auto flow to right.
+            direction="column"
+            // border="5px solid blue"
+            // maxH="lg"
+            // maxW={2000}
+            // wrap="wrap"
+          >
+            {pod.children
+              .filter(({ type }) => type !== "DECK")
+              .map(({ id }) => (
+                <Box key={id}>
+                  <Pod id={id} />
+                </Box>
+              ))}
+          </Flex>
+        )}
       </Box>
       <Flex direction="column">
         {pod.children
