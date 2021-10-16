@@ -641,6 +641,7 @@ function PodWrapper({ id, draghandle, children }) {
                 raw
               </Button>
               <FoldButton pod={pod} />
+              <RunButton id={id} />
             </Flex>
             {/* <SyncStatus pod={pod} /> */}
           </Flex>
@@ -669,7 +670,6 @@ function PodWrapper({ id, draghandle, children }) {
                   </Box>
                 )}
                 <Box color="gray">{pod.lang}</Box>
-                <RunButton id={id} />
               </Flex>
             )}
           </Flex>
