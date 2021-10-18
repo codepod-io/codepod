@@ -212,14 +212,24 @@ const socketMiddleware = () => {
         //   mq_client.disconnect()
         // }
         console.log("connecting to stomp ..");
-        mq_client = Stomp.over(new WebSocket("ws://codepod.test:15674/ws"));
+        // TODO for production
+        let mq_url;
+        if (window.location.protocol === "http:") {
+          // "ws://codepod.test/ws"
+          // "ws://mq.codepod.test/ws"
+          // FIXME why have to use /ws suffix?
+          mq_url = `ws://mq.${window.location.host}/ws`;
+        } else {
+          mq_url = `wss://mq.${window.location.host}/ws`;
+        }
+        mq_client = Stomp.over(new WebSocket(mq_url));
         // remove debug messages
         mq_client.debug = () => {};
         mq_client.connect(
           "guest",
           "guest",
           function () {
-            console.log("connected");
+            console.log("connected to rabbitmq");
             mq_client.subscribe(store.getState().repo.sessionId, (msg) => {
               let { type, payload } = JSON.parse(msg.body);
               // console.log("got message", type, payload);
