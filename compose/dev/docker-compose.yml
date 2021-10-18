@@ -39,6 +39,9 @@ services:
 
   api:
     image: node:16
+    depends_on:
+      # FIXME rabbitmq stomp server does not start immediately
+      - rabbitmq
     working_dir: /app
     restart: always
     ports:
@@ -69,20 +72,20 @@ services:
       # In production, I need to use /etc/rabbitmq/enabled_plugins to enable plugins
       - rabbitmq-etc:/etc/rabbitmq/
       - rabbitmq-data:/var/lib/rabbitmq/
-      - rabbitmq-logs/:/var/log/rabbitmq/
+      - rabbitmq-logs:/var/log/rabbitmq/
     ports:
       # The AMQP port
-      - 5672:5672
+      # - 5672:5672
       # the management UI
       - 15672:15672
       # STOMP-over-WebSockets
-      - 15674:15674
+      # - 15674:15674
       # 61613 STOMP clients, internally used by kernel.js
 
   # https://github.com/anyakichi/docker-git-http
   #
   # visit git.codepod.test:3000 to visit the gitweb interface
-  # clone using git clone http://git.codepod.test:3000/path/to/repo.git
+  # clone using git clone http://git.codepod.test:3000/path/to/repo/.git
   git-http:
     restart: always
     build: ./docker-git-http
