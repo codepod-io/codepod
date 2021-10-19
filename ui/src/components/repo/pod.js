@@ -157,6 +157,7 @@ export function DeckTitle({ id }) {
 
         <Flex
           visibility={showMenu ? "visible" : "hidden"}
+          display={showMenu ? "inherit" : "none"}
           background="gray.50"
           rounded="md"
           boxShadow="2xl"
@@ -622,6 +623,7 @@ function PodWrapper({ id, draghandle, children }) {
           <Flex>
             <Flex
               visibility={showMenu ? "visible" : "hidden"}
+              display={showMenu ? "inherit" : "none"}
               background="gray.50"
               rounded="md"
               boxShadow="2xl"
