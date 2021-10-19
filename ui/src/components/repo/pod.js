@@ -82,6 +82,7 @@ import {
   ThundarMark,
   UtilityMark,
   RunButton,
+  DeckRunButton,
 } from "./toolbar";
 
 // FIXME this should be cleared if pods get deleted
@@ -130,7 +131,7 @@ export function DeckTitle({ id }) {
             color="green"
             size="xs"
             onClick={() => {
-              dispatch(wsActions.wsRunTree(id));
+              dispatch(wsActions.wsRun(id));
             }}
           >
             <PlayArrowIcon fontSize="small" />
@@ -170,8 +171,24 @@ export function DeckTitle({ id }) {
 
           {pod.id !== "ROOT" && <DeleteButton pod={pod} />}
           {pod.id !== "ROOT" && <FoldButton pod={pod} />}
+          {/* Run button, with hovering support */}
+          <DeckRunButton id={id} />
         </Flex>
       </Flex>
+      {pod.stdout && (
+        <Box overflow="scroll" maxH="3xs" border="1px">
+          {/* <Code maxW="lg" whiteSpace="pre-wrap">
+              {pod.stdout}
+            </Code> */}
+          {/* TODO separate stdout and stderr */}
+          <Text>Stdout/Stderr:</Text>
+          <Box whiteSpace="pre-wrap" fontSize="sm">
+            <Ansi>{pod.stdout}</Ansi>
+          </Box>
+          <Divider />
+        </Box>
+      )}
+      {pod.running && <Text>Running ..</Text>}
     </Box>
   );
 }

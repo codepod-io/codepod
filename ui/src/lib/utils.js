@@ -6,6 +6,8 @@ export function computeNamespace(pods, id) {
     res.push(id);
     id = pods[id].parent;
   }
+  // Add root
+  res.push("ROOT");
   return res.slice(1).reverse().join("/");
 }
 

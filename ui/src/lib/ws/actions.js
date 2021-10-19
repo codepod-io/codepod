@@ -17,12 +17,12 @@ export const wsRun = (payload) => ({
   type: "WS_RUN",
   payload,
 });
-export const wsRunAll = (payload) => ({
-  type: "WS_RUN_ALL",
+export const wsPowerRun = (payload) => ({
+  type: "WS_POWER_RUN",
   payload,
 });
-export const wsRunTree = (payload) => ({
-  type: "WS_RUN_TREE",
+export const wsRunAll = (payload) => ({
+  type: "WS_RUN_ALL",
   payload,
 });
 export const wsResult = (payload) => ({

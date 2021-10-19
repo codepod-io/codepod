@@ -43,6 +43,52 @@ function getDeckExports({ id, pods }) {
   };
 }
 
+function handlePowerRun({ id, storeAPI, socket }) {
+  // assume id is a deck
+  // this is used to init or reset the deck with all exported names
+  let pods = storeAPI.getState().repo.pods;
+  let pod = pods[id];
+  if (pod.lang === "racket") {
+    const ns = [pod.ns, id].filter((s) => s.length > 0).join("/");
+    let exports = Object.assign(
+      {},
+      ...pods[id].children.map(({ id }) => pods[id].exports)
+    );
+    console.log(exports);
+    let names = Object.entries(exports)
+      .filter(([k, v]) => v)
+      .map(([k, v]) => k);
+    // let names = exports.filter(({ k, v }) => v).map(({ k, v }) => k);
+    console.log(ns, names);
+    // FIXME reset-module is problematic! it is equivalanet to the following expansion. Why??
+    // let code = `(enter! #f) (reset-module ${ns} ${names.join(" ")})`;
+    let code = `
+(enter! #f)
+(module ${ns} racket 
+  (require rackunit)
+  (provide ${names.join(" ")})
+  ${names.map((name) => `(define ${name} "PLACEHOLDER")`).join(" ")})
+    `;
+
+    storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
+    storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
+    socket.send(
+      JSON.stringify({
+        type: "runCode",
+        payload: {
+          lang: pod.lang,
+          code,
+          namespace: ns,
+          raw: true,
+          // FIXME this is deck's ID
+          podId: pod.id,
+          sessionId: storeAPI.getState().repo.sessionId,
+        },
+      })
+    );
+  }
+}
+
 function handleRunTree({ id, storeAPI, socket }) {
   // get all pods
   console.log("handleRunTree", { id, storeAPI, socket });
@@ -404,20 +450,20 @@ const socketMiddleware = () => {
         handleRunTree({ id: action.payload, storeAPI: store, socket });
         break;
       }
-      case "WS_RUN_TREE":
-        {
-          if (!socket) {
-            store.dispatch(
-              repoSlice.actions.addError({
-                type: "error",
-                msg: "Runtime not connected",
-              })
-            );
-            break;
-          }
-          handleRunTree({ id: action.payload, storeAPI: store, socket });
+      case "WS_POWER_RUN": {
+        if (!socket) {
+          store.dispatch(
+            repoSlice.actions.addError({
+              type: "error",
+              msg: "Runtime not connected",
+            })
+          );
+          break;
         }
+        // This is used to evaluate the current deck and init the namespace
+        handlePowerRun({ id: action.payload, storeAPI: store, socket });
         break;
+      }
       case "WS_RUN_ALL": {
         if (!socket) {
           store.dispatch(

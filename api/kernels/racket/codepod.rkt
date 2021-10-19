@@ -1,4 +1,5 @@
-(require racket/enter
+(require (for-syntax syntax/parse racket rackunit)
+         racket/enter
          rackunit
          racket/string
          racket/list
@@ -25,6 +26,7 @@
 ;; (ns->enter "hello/world/aaa")
 ;; => '(dynamic-enter! '(submod 'hello world aaa))
 
+;; FIXME this will declare new modules every time. Instead, I should go into the module and declare a submodule
 (define (ns->ensure-module ns)
   (let loop ([names (string-split ns "/")])
     (if (empty? names) '(void)
@@ -33,18 +35,53 @@
 ;; (ns->ensure-module "hello/world/aaa")
 ;; (ns->ensure-module "")
 
+;; FIXME not working, but the expanded code works, weird
+(define-syntax (reset-module stx)
+  (syntax-parse
+    stx
+    [(_ ns names ...)
+    #`(module ns racket
+        (require rackunit)
+        (provide names ...)
+        (define names "PLACEHOLDER") ...)]))
+
+(define (my-ns-enter! ns)
+  (with-handlers 
+    ([exn:fail:contract? 
+      (lambda (exn)
+        (eval 
+          `(module ,(string->symbol ns) racket/base
+             ;; some basic packages
+             (require rackunit)
+             (void)))
+        (eval 
+          `(enter! (submod ',(string->symbol ns))))
+        "OK2")])
+    (eval 
+      `(enter! (submod ',(string->symbol ns))))
+    "OK1"))
+
 (define (CODEPOD-ADD-IMPORT from to name)
   (let ([name (string->symbol name)])
     ;; this must not be in a begin form together with (define ...)s
-    (eval (ns->enter to))
+    ; (eval (ns->enter to))
+    (my-ns-enter! to)
     ;; FIXME I cannot require it here, otherwise this file is not loaded
     ;; (eval (require rackunit))
-    (eval `(define ,name (dynamic-require/expose ',(ns->submod from) ',name)))
+
+    ;; OPTION 1: will not update if the def changes!
+    ; (eval `(define ,name (dynamic-require/expose '',(string->symbol from) ',name)))
+    ;; OPTION 2: will update, but not work on macros
+    ; (eval `(require/expose ',(string->symbol from) (,name)))
+    ;; OPTION 3: seems to work, but only for provided names
+    ;; UDPATE seems not updating either
+    (eval `(require ',(string->symbol from)))
     ;; if no return expression, iracket will not send anything back
     "OK"))
 
 (define (CODEPOD-DELETE-IMPORT ns name)
-  (eval (ns->enter ns))
+  ; (eval (ns->enter ns))
+  (my-ns-enter! ns)
   (namespace-undefine-variable! (string->symbol name))
   "OK")
 
@@ -61,8 +98,9 @@
   ;; would be undefined. I will call (enter! #f) before CODEPOD-XXX
   ;;
   ;; (enter! #f)
-  (eval (ns->ensure-module ns))
-  (eval (ns->enter ns))
+  ; (eval (ns->ensure-module ns))
+  ; (eval (ns->enter ns))
+  (my-ns-enter! ns)
   (begin0
       (eval (string->sexp
              ;; support multiple s-exps in code

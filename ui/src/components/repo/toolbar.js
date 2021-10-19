@@ -57,6 +57,7 @@ import Popper from "@material-ui/core/Popper";
 import TextField from "@material-ui/core/TextField";
 import ClickAwayListener from "@material-ui/core/ClickAwayListener";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
+import FastForwardIcon from "@material-ui/icons/FastForward";
 import { AiOutlineFunction } from "react-icons/ai";
 import Ansi from "ansi-to-react";
 import { FcAddColumn, FcDeleteColumn } from "react-icons/fc";
@@ -410,6 +411,38 @@ export function RunButton({ id }) {
         </Button>
       </Tooltip>
     </Flex>
+  );
+}
+
+export function DeckRunButton({ id }) {
+  const dispatch = useDispatch();
+  return (
+    <HoverButton
+      btn1={
+        <Button
+          variant="ghost"
+          color="green"
+          size="xs"
+          onClick={() => {
+            dispatch(wsActions.wsRun(id));
+          }}
+        >
+          <PlayArrowIcon fontSize="small" />
+        </Button>
+      }
+      btn2={
+        <Button
+          variant="ghost"
+          color="green"
+          size="xs"
+          onClick={() => {
+            dispatch(wsActions.wsPowerRun(id));
+          }}
+        >
+          <FastForwardIcon fontSize="small" />
+        </Button>
+      }
+    />
   );
 }
 
