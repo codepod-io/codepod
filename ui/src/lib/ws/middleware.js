@@ -50,6 +50,7 @@ function handlePowerRun({ id, storeAPI, socket }) {
   let pod = pods[id];
   if (pod.lang === "racket") {
     let names = pod.children
+      .filter(({ id }) => pods[id].type !== "DECK")
       .filter(({ id }) => pods[id].exports)
       .map(({ id }) =>
         Object.entries(pods[id].exports)
@@ -124,15 +125,15 @@ function handlePowerRun({ id, storeAPI, socket }) {
   }
 }
 
-function getUtilNs({ id, pods }) {
+function getUtilNs({ id, pods, exclude }) {
   // get all utils for id
   // get children utils nodes
   if (id === "ROOT") return [];
   let res = pods[id].children
-    .filter(({ id }) => pods[id].utility)
+    .filter(({ id }) => id !== exclude && pods[id].utility)
     .map(({ id, type }) => pods[id].ns);
   // keep to go to parents
-  return res.concat(getUtilNs({ id: pods[id].parent, pods }));
+  return res.concat(getUtilNs({ id: pods[id].parent, pods, exclude: id }));
 }
 
 function handleRunTree({ id, storeAPI, socket }) {
