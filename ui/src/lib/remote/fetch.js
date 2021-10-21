@@ -122,9 +122,10 @@ export function normalize(pods) {
     //
     // sort according to index
     pod.children.sort((a, b) => res[a.id].index - res[b.id].index);
-    if (pod.type === "WYSIWYG" || pod.type === "CODE") {
-      pod.content = JSON.parse(pod.content);
-    }
+    // if (pod.type === "WYSIWYG" || pod.type === "CODE") {
+    //   pod.content = JSON.parse(pod.content);
+    // }
+    pod.content = JSON.parse(pod.content);
     pod.staged = JSON.parse(pod.staged);
     pod.githead = JSON.parse(pod.githead);
     if (pod.result) {
@@ -143,6 +144,14 @@ export function normalize(pods) {
       pod.midports = JSON.parse(pod.midports);
     }
     pod.remoteHash = hashPod(pod);
+    // DEBUG the deck's content seems to be a long string of escaped \
+    if (pod.type === "DECK" && pod.content) {
+      console.log(
+        `warning: deck ${pod.id} content is not null, setting to null:`,
+        pod.content
+      );
+      pod.content = null;
+    }
   });
   pods.forEach((pod) => {
     pod.ns = computeNamespace(res, pod.id);
