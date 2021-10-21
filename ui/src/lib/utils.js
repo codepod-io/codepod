@@ -2,13 +2,15 @@ import sha256 from "crypto-js/sha256";
 
 export function computeNamespace(pods, id) {
   let res = [];
-  while (id !== "ROOT") {
+  // if the pod is a pod, do not include its id
+  if (pods[id].type !== "DECK") {
+    id = pods[id].parent;
+  }
+  while (id) {
     res.push(id);
     id = pods[id].parent;
   }
-  // Add root
-  res.push("ROOT");
-  return res.slice(1).reverse().join("/");
+  return res.reverse().join("/");
 }
 
 export function hashPod(pod) {

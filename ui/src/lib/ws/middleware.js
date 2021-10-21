@@ -14,7 +14,7 @@ function getAllUtils({ id, pods }) {
         if (type === "DECK") {
           // if this is a deck, use its children's exports
           return {
-            [`${pods[id].ns}/${id}`]: Object.assign(
+            [pods[id].ns]: Object.assign(
               {},
               ...pods[id].children.map(({ id }) => pods[id].exports)
             ),
@@ -36,7 +36,7 @@ function getDeckExports({ id, pods }) {
   //   console.log("ch", id, pods[id].exports);
   // });
   return {
-    [`${pods[id].ns}/${id}`]: Object.assign(
+    [pods[id].ns]: Object.assign(
       {},
       ...pods[id].children.map(({ id }) => pods[id].exports)
     ),
@@ -49,26 +49,54 @@ function handlePowerRun({ id, storeAPI, socket }) {
   let pods = storeAPI.getState().repo.pods;
   let pod = pods[id];
   if (pod.lang === "racket") {
-    const ns = [pod.ns, id].filter((s) => s.length > 0).join("/");
-    let exports = Object.assign(
-      {},
-      ...pods[id].children.map(({ id }) => pods[id].exports)
-    );
-    console.log(exports);
-    let names = Object.entries(exports)
-      .filter(([k, v]) => v)
-      .map(([k, v]) => k);
-    // let names = exports.filter(({ k, v }) => v).map(({ k, v }) => k);
-    console.log(ns, names);
+    let names = pod.children
+      .filter(({ id }) => pods[id].exports)
+      .map(({ id }) =>
+        Object.entries(pods[id].exports)
+          .filter(([k, v]) => v)
+          .map(([k, v]) => k)
+      );
+    names = [].concat(...names);
+    let struct_codes = pod.children
+      .filter(({ id }) => pods[id].exports)
+      .filter(
+        ({ id }) =>
+          Object.entries(pods[id].exports)
+            .filter(([k, v]) => v)
+            .map(([k, v]) => k)
+            .filter((k) => k.startsWith("struct ")).length > 0
+      )
+      .map(({ id }) => pods[id].content);
     // FIXME reset-module is problematic! it is equivalanet to the following expansion. Why??
     // let code = `(enter! #f) (reset-module ${ns} ${names.join(" ")})`;
+    let struct_names = names
+      .filter((s) => s.startsWith("struct "))
+      .map((s) => s.split(" ")[1]);
+    // FIXME will the struct-out support update?
+    //
+    // UPDATE this does not work. Instead, I could insert the real content for
+    // all exported names maybe?
+    names = names.filter((s) => !s.startsWith("struct "));
+
+    // also I need to require for struct:parent
+    let nses = getUtilNs({ id, pods });
+    // child deck's
+    const child_deck_nses = pods[id].children
+      .filter(({ id }) => pods[id].type === "DECK")
+      .map(({ id, type }) => pods[id].ns);
+    nses = nses.concat(child_deck_nses);
+
     let code = `
 (enter! #f)
-(module ${ns} racket 
-  (require rackunit)
-  (provide ${names.join(" ")})
-  ${names.map((name) => `(define ${name} "PLACEHOLDER")`).join(" ")})
+(module ${pod.ns} racket 
+  (require rackunit ${nses.map((s) => "'" + s).join(" ")})
+  (provide ${names.join(" ")}
+    ${struct_names.map((s) => `(struct-out ${s})`).join("\n")})
+    ${names.map((name) => `(define ${name} "PLACEHOLDER")`).join("\n")}
+    ${struct_codes.join("\n")}
+  )
     `;
+    // ${struct_names.map((name) => `(struct ${name} ())`)}
 
     storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
     storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
@@ -78,7 +106,7 @@ function handlePowerRun({ id, storeAPI, socket }) {
         payload: {
           lang: pod.lang,
           code,
-          namespace: ns,
+          namespace: pod.ns,
           raw: true,
           // FIXME this is deck's ID
           podId: pod.id,
@@ -87,6 +115,17 @@ function handlePowerRun({ id, storeAPI, socket }) {
       })
     );
   }
+}
+
+function getUtilNs({ id, pods }) {
+  // get all utils for id
+  // get children utils nodes
+  if (id === "ROOT") return [];
+  let res = pods[id].children
+    .filter(({ id }) => pods[id].utility)
+    .map(({ id, type }) => pods[id].ns);
+  // keep to go to parents
+  return res.concat(getUtilNs({ id: pods[id].parent, pods }));
 }
 
 function handleRunTree({ id, storeAPI, socket }) {
@@ -99,6 +138,34 @@ function handleRunTree({ id, storeAPI, socket }) {
     // - if it is a utility deck, it should be evaluated first and import to
     // parent's subtree
     //
+    // 0. when run on deck, do the imports
+    if (pod.type === "DECK") {
+      // utils
+      let nses = getUtilNs({ id, pods });
+      // child deck's
+      const child_deck_nses = pods[id].children
+        .filter(({ id }) => pods[id].type === "DECK")
+        .map(({ id, type }) => pods[id].ns);
+      nses = nses.concat(child_deck_nses);
+      console.log("utils", nses);
+      // const nses = [];
+      if (nses.length > 0) {
+        storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
+        storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
+        socket.send(
+          JSON.stringify({
+            type: "addImportNS",
+            payload: {
+              lang: pod.lang,
+              nses: nses,
+              to: pod.ns,
+              id: pod.id,
+              sessionId: storeAPI.getState().repo.sessionId,
+            },
+          })
+        );
+      }
+    }
     // 1. get all the utility decks/pods, and evaluate
     const util_pods = pod.children.filter(({ id }) => pods[id].utility);
     util_pods.map(({ id }) => helper(id));
@@ -108,31 +175,6 @@ function handleRunTree({ id, storeAPI, socket }) {
       .map(({ id }) => helper(id));
     // 3. evaluate this current node
     if (id !== "ROOT") {
-      const utils = getAllUtils({ id, pods });
-      // if (Object.keys(utils).length > 0) {
-      //   console.log("All utils", utils);
-      // }
-      // add imports
-      // FIXME performance. Should really just import once
-      for (const [ns, exports] of Object.entries(utils)) {
-        for (const [k, v] of Object.entries(exports)) {
-          if (v) {
-            socket.send(
-              JSON.stringify({
-                type: "addImport",
-                payload: {
-                  lang: pod.lang,
-                  from: ns,
-                  to: pod.ns,
-                  id: pod.id,
-                  name: k,
-                  sessionId: storeAPI.getState().repo.sessionId,
-                },
-              })
-            );
-          }
-        }
-      }
       // actually run the code
       if (pod.type === "CODE" && pod.content && pod.lang && !pod.thundar) {
         storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
@@ -151,66 +193,7 @@ function handleRunTree({ id, storeAPI, socket }) {
           })
         );
       }
-      // FIXME now each run only exports one level up. I need to run it multiple
-      // times to export to parent successfully
-      if (pod.exports) {
-        for (const [k, v] of Object.entries(pod.exports)) {
-          if (v) {
-            socket.send(
-              JSON.stringify({
-                type: "addImport",
-                payload: {
-                  lang: pod.lang,
-                  from: pod.ns,
-                  to: storeAPI.getState().repo.pods[pod.parent].ns,
-                  id: pod.id,
-                  name: k,
-                  sessionId: storeAPI.getState().repo.sessionId,
-                },
-              })
-            );
-          }
-        }
-      }
     }
-    // 4. get all the test decks and evaluate with imports
-    const deck_exports = getDeckExports({ id: pod.id, pods });
-    // if (Object.keys(deck_exports).length > 0) {
-    //   console.log("deck exports:", deck_exports);
-    // }
-    pod.children
-      .filter(({ id }) => pods[id].thundar)
-      .map(({ id }) => {
-        // console.log("thundar", id);
-        // just evaluate here
-        // get all exports of this pod and add import to these testing pods
-        for (const [ns, exports] of Object.entries(deck_exports)) {
-          if (exports) {
-            for (const [k, v] of Object.entries(exports)) {
-              if (v) {
-                const payload = {
-                  // FIXME pod.lang is null for DECK
-                  lang: pod.lang,
-                  from: ns,
-                  // FIXME the pod.ns for DECK and POD needs rework
-                  to: `${pod.ns}/${pod.id}/${id}`,
-                  id: id,
-                  name: k,
-                  sessionId: storeAPI.getState().repo.sessionId,
-                };
-                // console.log("Import", payload);
-                socket.send(
-                  JSON.stringify({
-                    type: "addImport",
-                    payload,
-                  })
-                );
-              }
-            }
-          }
-        }
-        helper(id);
-      });
   }
   helper(id);
 }
@@ -447,7 +430,16 @@ const socketMiddleware = () => {
           );
           break;
         }
-        handleRunTree({ id: action.payload, storeAPI: store, socket });
+        handleRunTree({
+          id: action.payload,
+          storeAPI: store,
+          socket: {
+            send: (payload) => {
+              console.log("sending", payload);
+              socket.send(payload);
+            },
+          },
+        });
         break;
       }
       case "WS_POWER_RUN": {
@@ -465,6 +457,7 @@ const socketMiddleware = () => {
         break;
       }
       case "WS_RUN_ALL": {
+        throw new Error("WS_RUN_ALL deprecated");
         if (!socket) {
           store.dispatch(
             repoSlice.actions.addError({

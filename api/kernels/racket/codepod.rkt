@@ -79,6 +79,12 @@
     ;; if no return expression, iracket will not send anything back
     "OK"))
 
+(define (CODEPOD-ADD-IMPORT-NS to nses)
+  (my-ns-enter! to)
+  (for ([ns (string-split nses)])
+    (eval `(require ',(string->symbol ns))))
+  "OK")
+
 (define (CODEPOD-DELETE-IMPORT ns name)
   ; (eval (ns->enter ns))
   (my-ns-enter! ns)

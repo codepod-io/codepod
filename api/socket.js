@@ -215,14 +215,20 @@ export function listenOnMessage(socket) {
         break;
       case "ensureImports":
         {
-          let { lang, id, from, to, names } = payload;
+          let { id, from, to, names } = payload;
           kernel.ensureImports({ id, from, to, names });
         }
         break;
       case "addImport":
         {
-          let { lang, id, from, to, name } = payload;
+          let { id, from, to, name } = payload;
           kernel.addImport({ id, from, to, name });
+        }
+        break;
+      case "addImportNS":
+        {
+          let { id, nses, to } = payload;
+          kernel.addImportNS({ id, nses, to });
         }
         break;
       case "deleteImport":

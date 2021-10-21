@@ -854,6 +854,13 @@ export class CodePodKernel {
       msg_id: id + "#" + name,
     });
   }
+  addImportNS({ id, nses, to }) {
+    this.runCode({
+      code: this.mapAddImportNS({ nses, to }),
+      // FIXME this id is the deck
+      msg_id: id,
+    });
+  }
   // 5. deleteImport
   deleteImport({ id, ns, name }) {
     this.runCode({
@@ -946,6 +953,9 @@ export class RacketKernel extends CodePodKernel {
   }
   mapAddImport({ from, to, name }) {
     return `(enter! #f) (CODEPOD-ADD-IMPORT "${from}" "${to}" "${name}")`;
+  }
+  mapAddImportNS({ nses, to }) {
+    return `(enter! #f) (CODEPOD-ADD-IMPORT-NS "${to}" "${nses.join(" ")}")`;
   }
   mapDeleteImport({ ns, name }) {
     return `(enter! #f) (CODEPOD-DELETE-IMPORT "${ns}" "${name}")`;
