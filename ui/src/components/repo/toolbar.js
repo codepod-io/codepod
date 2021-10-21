@@ -122,8 +122,8 @@ export function SyncStatus({ pod }) {
 
 export function InfoBar({ pod }) {
   /* eslint-disable no-unused-vars */
-  const [value, setValue] = useState(pod.id);
-  const { hasCopied, onCopy } = useClipboard(value);
+  const { hasCopied, onCopy } = useClipboard(pod.id);
+  const { hasCopied: hasCopied_ns, onCopy: onCopy_ns } = useClipboard(pod.ns);
   const [show, setShow] = useState(false);
   const anchorEl = useRef(null);
   return (
@@ -143,7 +143,7 @@ export function InfoBar({ pod }) {
           <Box p={5}>
             The content of the Popover.
             <Box>
-              <Text>
+              <Box>
                 ID:{" "}
                 <Code colorScheme="blackAlpha">
                   {
@@ -154,18 +154,21 @@ export function InfoBar({ pod }) {
                 <Button onClick={onCopy}>
                   {hasCopied ? "Copied" : "Copy"}
                 </Button>
-              </Text>
-              <Text>
+              </Box>
+              <Box>
                 Namespace:
                 <Code colorScheme="blackAlpha">{pod.ns}</Code>
-              </Text>
+                <Button onClick={onCopy_ns}>
+                  {hasCopied_ns ? "Copied" : "Copy"}
+                </Button>
+              </Box>
               <Text mr={5}>Index: {pod.index}</Text>
-              <Text>
+              <Box>
                 Parent:{" "}
                 <Code colorScheme="blackAlpha">
                   {pod.parent?.substring(0, 8)}
                 </Code>
-              </Text>
+              </Box>
             </Box>
           </Box>
         </Paper>
@@ -496,12 +499,12 @@ export function UtilityButton({ pod }) {
       }}
     >
       {pod.utility ? (
-        <Text>
+        <Box>
           <Box>
             <BuildIcon style={{ fontSize: 15 }} />
           </Box>
           Utility
-        </Text>
+        </Box>
       ) : (
         <BuildIcon color="disabled" style={{ fontSize: 15 }} />
       )}
