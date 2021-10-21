@@ -149,7 +149,7 @@ export function DeckTitle({ id }) {
         >
           <Code
             colorScheme="blackAlpha"
-            bg={pod.exports["self"] ? "yellow.300" : "blue.200"}
+            bg={pod.exports && pod.exports["self"] ? "yellow.200" : "blue.200"}
           >
             {pod.name ? pod.name : pod.id}
           </Code>
@@ -210,6 +210,56 @@ export function DeckTitle({ id }) {
   );
 }
 
+function PodSummary({ id }) {
+  let pod = useSelector((state) => state.repo.pods[id]);
+  return (
+    <Box>
+      {pod.exports && Object.keys(pod.exports).length > 0 && (
+        <Box>
+          {/* <Text as="span" mr={2}>
+        Exports:
+      </Text> */}
+          {Object.entries(pod.exports)
+            .filter(([k, v]) => v)
+            .map(([k, v]) => (
+              <Box as="span" key={k} mr={1}>
+                <Code>{k}</Code>
+              </Box>
+            ))}
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+function DeckSummary({ id }) {
+  // recursively go down and get pod sum
+  const pod = useSelector((state) => state.repo.pods[id]);
+  if (pod.exports && pod.exports["self"]) {
+    return (
+      <Box>
+        Deck {id}
+        {pod.children
+          .filter(({ type }) => type !== "DECK")
+          .map(({ id }) => (
+            <Box key={id}>
+              <PodSummary id={id} />
+            </Box>
+          ))}
+        {pod.children
+          .filter(({ type }) => type === "DECK")
+          .map(({ id }) => (
+            <Box key={id}>
+              <DeckSummary id={id} />
+            </Box>
+          ))}
+      </Box>
+    );
+  } else {
+    return <Box></Box>;
+  }
+}
+
 export function Deck(props) {
   const { id, level = 0 } = props;
   // console.log("rendering deck", id);
@@ -252,7 +302,25 @@ export function Deck(props) {
       <Box>
         <DeckTitle id={id} />
         {pod.fold ? (
-          <Box>Folded</Box>
+          // <Box>
+          // <Box>Folded</Box>
+          // get some info
+          <Flex maxW="md" flexWrap="wrap">
+            {pod.children
+              .filter(({ type }) => type !== "DECK")
+              .map(({ id }) => (
+                <Box key={id}>
+                  <PodSummary id={id} />
+                </Box>
+              ))}
+            {/* {pod.children
+              .filter(({ type }) => type === "DECK")
+              .map(({ id }) => (
+                <Box key={id}>
+                  <DeckSummary id={id} level={level + 1} />
+                </Box>
+              ))} */}
+          </Flex>
         ) : (
           <Flex
             // FIXME column flex with maxH won't auto flow to right.
