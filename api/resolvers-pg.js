@@ -797,6 +797,11 @@ async function ensurePodAccess({ id, userId }) {
       },
     },
   });
+  if (!pod) {
+    // this might be caused by creating a pod and update it too soon before it
+    // is created on server, which is a time sequence bug
+    throw new Error("Pod not exists.");
+  }
   if (pod.repo.owner.id !== userId) {
     throw new Error("You do not have write access.");
   }
