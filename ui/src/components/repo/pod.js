@@ -628,6 +628,7 @@ function PodWrapper({ id, draghandle, children }) {
             left: "-30px",
           }}
         >
+          {/* ==== The hovering menu */}
           <HoveringMenu pod={pod} showMenu={showMenu} draghandle={draghandle}>
             <ExportButton id={pod.id} />
             <UpButton pod={pod} />
@@ -655,6 +656,7 @@ function PodWrapper({ id, draghandle, children }) {
           }}
         >
           <Flex>
+            {/* ===== The hovering bar */}
             <Flex
               visibility={showMenu ? "visible" : "hidden"}
               display={showMenu ? "inherit" : "none"}
@@ -717,7 +719,8 @@ function PodWrapper({ id, draghandle, children }) {
           {/* <Code maxW="lg" whiteSpace="pre-wrap">
               {pod.stdout}
             </Code> */}
-          <Text>Stdout:</Text>
+          {/* TODO separate stdout and stderr */}
+          <Text>Stdout/Stderr:</Text>
           <Box whiteSpace="pre-wrap" fontSize="sm">
             <Ansi>{pod.stdout}</Ansi>
           </Box>

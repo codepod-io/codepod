@@ -329,6 +329,7 @@ export class ZmqWire {
     //   });
     // FIXME I probably need to wait until the server is started
     // sock.send(msg);
+    // FIXME Error: Socket temporarily unavailable
     this.shell.send(serializeMsg(msg, this.kernelSpec.key));
   }
   sendControlMessage(msg) {
@@ -514,6 +515,8 @@ async function createContainer(image, name, network) {
 
 var mq_client = Stomp.overTCP("rabbitmq", 61613);
 
+// the rabbitmq server does not seem to start immediately. FIXME so probably I
+// need to keep trying?
 mq_client.connect(
   "guest",
   "guest",
