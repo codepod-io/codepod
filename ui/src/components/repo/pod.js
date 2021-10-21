@@ -720,6 +720,10 @@ function PodWrapper({ id, draghandle, children }) {
           {pod.result.image && (
             <img src={`data:image/png;base64,${pod.result.image}`} />
           )}
+          {/* {pod.result.html && <code>{pod.result.html}</code>} */}
+          {pod.result.html && (
+            <div dangerouslySetInnerHTML={{ __html: pod.result.html }}></div>
+          )}
         </Flex>
       )}
       {pod.error && (

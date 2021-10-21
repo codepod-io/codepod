@@ -587,7 +587,9 @@ function handleIOPub_execute_result({ msgs, socket }) {
   let payload = {
     podId,
     name,
-    result: msgs.content.data["text/plain"],
+    // result: msgs.content.data["text/plain"],
+    // This might contina text/plain, or text/html that contains image
+    content: msgs.content,
     count: msgs.content.execution_count,
   };
   if (name) {

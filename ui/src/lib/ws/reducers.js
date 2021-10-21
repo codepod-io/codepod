@@ -11,12 +11,13 @@ export default {
     state.runtimeConnected = false;
   },
   WS_RESULT: (state, action) => {
-    let { podId, result, count } = action.payload;
+    let { podId, content, count } = action.payload;
     // console.log("WS_RESULT", action.payload);
     // console.log("podId", podId)
     if (podId in state.pods) {
       state.pods[podId].result = {
-        text: result,
+        text: content.data["text/plain"],
+        html: content.data["text/html"],
         count: count,
       };
       // state.pods[podId].running = false;
