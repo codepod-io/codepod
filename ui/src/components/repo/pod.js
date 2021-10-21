@@ -139,15 +139,21 @@ export function DeckTitle({ id }) {
         </HoveringMenu>
       </Box>
       <Flex>
-        <ClickInputButton
-          callback={(value) => {
-            dispatch(repoSlice.actions.setName({ id: pod.id, name: value }));
+        <Button
+          variant="ghost"
+          size="xs"
+          onClick={() => {
+            // dispatch
+            dispatch(repoSlice.actions.toggleDeckExport({ id: pod.id }));
           }}
         >
-          <Code colorScheme="blackAlpha" bg="blue.200">
+          <Code
+            colorScheme="blackAlpha"
+            bg={pod.exports["self"] ? "yellow.300" : "blue.200"}
+          >
             {pod.name ? pod.name : pod.id}
           </Code>
-        </ClickInputButton>
+        </Button>
 
         {pod.id !== "ROOT" && (
           <Flex>
@@ -165,6 +171,17 @@ export function DeckTitle({ id }) {
         >
           {/* <Button>Diff</Button>
               <Button>+</Button> */}
+          {pod.id !== "ROOT" && (
+            <ClickInputButton
+              callback={(value) => {
+                dispatch(
+                  repoSlice.actions.setName({ id: pod.id, name: value })
+                );
+              }}
+            >
+              <AiOutlineFunction />
+            </ClickInputButton>
+          )}
           {pod.id !== "ROOT" && <UpButton pod={pod} />}
           {pod.id !== "ROOT" && <DownButton pod={pod} />}
           <RightButton pod={pod} />

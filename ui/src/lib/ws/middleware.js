@@ -86,14 +86,21 @@ function handlePowerRun({ id, storeAPI, socket }) {
       .map(({ id, type }) => pods[id].ns);
     nses = nses.concat(child_deck_nses);
 
+    // exported subdecks
+    let exported_decks = pods[id].children
+      .filter(({ id }) => pods[id].type === "DECK" && pods[id].exports["self"])
+      .map(({ id, type }) => pods[id].ns);
+
     let code = `
 (enter! #f)
 (module ${pod.ns} racket 
   (require rackunit ${nses.map((s) => "'" + s).join(" ")})
   (provide ${names.join(" ")}
-    ${struct_names.map((s) => `(struct-out ${s})`).join("\n")})
-    ${names.map((name) => `(define ${name} "PLACEHOLDER")`).join("\n")}
-    ${struct_codes.join("\n")}
+    ${struct_names.map((s) => `(struct-out ${s})`).join("\n")}
+    ${exported_decks.map((s) => `(all-from-out '${s})`).join("\n")}
+    )
+  ${names.map((name) => `(define ${name} "PLACEHOLDER")`).join("\n")}
+  ${struct_codes.join("\n")}
   )
     `;
     // ${struct_names.map((name) => `(struct ${name} ())`)}

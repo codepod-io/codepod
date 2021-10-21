@@ -33,10 +33,24 @@ export default {
       };
     }
   },
+  clearPodExport: (state, action) => {
+    let { id } = action.payload;
+    state.pods[id].exports = null;
+  },
   togglePodExport: (state, action) => {
     let { id, name } = action.payload;
     let pod = state.pods[id];
     pod.exports[name] = !pod.exports[name];
+  },
+  toggleDeckExport: (state, action) => {
+    let { id } = action.payload;
+    // this is only for deck
+    // state.pods[id].exports = {};
+    if (!state.pods[id].exports["self"]) {
+      state.pods[id].exports["self"] = true;
+    } else {
+      state.pods[id].exports["self"] = false;
+    }
   },
   addPodImport: (state, action) => {
     let { id, name } = action.payload;

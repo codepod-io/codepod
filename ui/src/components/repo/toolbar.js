@@ -236,9 +236,11 @@ export function ExportButton({ id }) {
   return (
     <ClickInputButton
       callback={(value) => {
-        if (value)
-          // dispatch(repoSlice.actions.addPodExport({ id, name: value }));
+        if (value) {
           dispatch(repoSlice.actions.setPodExport({ id, name: value }));
+        } else {
+          dispatch(repoSlice.actions.clearPodExport({ id }));
+        }
       }}
     >
       <AiOutlineFunction />
