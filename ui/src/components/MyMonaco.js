@@ -70,6 +70,11 @@ monaco.languages.registerOnTypeFormattingEditProvider("scheme", {
           if (line.substring(i).match(/^\([define|lambda|let].*/)) {
             return construct_indent(position, i + 2);
           }
+          if (line.substring(i).match(/^\([\(\[]/)) {
+            // this is (let ([xxx]
+            //               []))
+            return construct_indent(position, i + 1);
+          }
           // trim right, and find " "
           let match = line.substring(i).trimRight().match(/\s/);
           if (match) {
@@ -109,6 +114,9 @@ function decide_indent_open(line) {
       // check the pattern
       if (line.substring(i).match(/^\([define|lambda|let].*/)) {
         return i + 2;
+      }
+      if (line.substring(i).match(/^\([\(\[]/)) {
+        return i + 1;
       }
       // trim right, and find " "
       let match = line.substring(i).trimRight().match(/\s/);
