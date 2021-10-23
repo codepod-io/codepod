@@ -177,10 +177,10 @@ export function InfoBar({ pod }) {
   );
 }
 
-export function ClickInputButton({ callback, children }) {
+export function ClickInputButton({ callback, children, defvalue }) {
   const anchorEl = useRef(null);
   const [show, setShow] = useState(false);
-  const [value, setValue] = useState(null);
+  const [value, setValue] = useState(defvalue);
   return (
     <ClickAwayListener
       onClickAway={() => {
@@ -202,6 +202,7 @@ export function ClickInputButton({ callback, children }) {
         <Popper open={show} anchorEl={anchorEl.current} placement="top">
           <Paper>
             <TextField
+              defaultValue={value}
               label="Name"
               variant="outlined"
               // focused={show}
@@ -237,9 +238,7 @@ export function ExportButton({ id }) {
     <ClickInputButton
       callback={(value) => {
         if (value) {
-          dispatch(repoSlice.actions.setPodExport({ id, name: value }));
-        } else {
-          dispatch(repoSlice.actions.clearPodExport({ id }));
+          dispatch(repoSlice.actions.addPodExport({ id, name: value }));
         }
       }}
     >
@@ -550,8 +549,10 @@ export function HoverButton({ btn1, btn2 }) {
   const [show, setShow] = useState(false);
   const anchorEl = useRef(null);
   return (
-    <Box>
+    <Box as="span">
       <Box
+        as="span"
+        pt={2}
         ref={anchorEl}
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
@@ -809,15 +810,77 @@ export function ExportList({ pod }) {
           </Text> */}
           {Object.entries(pod.exports).map(([k, v]) => (
             <Box as="span" key={k} mr={1}>
-              <Button
-                size="xs"
-                variant="ghost"
-                onClick={() => {
-                  dispatch(wsActions.wsToggleExport({ id: pod.id, name: k }));
-                }}
-              >
-                <Code bg={v ? "yellow.300" : "default"}>{k}</Code>
-              </Button>
+              <HoverButton
+                btn1={
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    onClick={() => {
+                      dispatch(
+                        wsActions.wsToggleExport({ id: pod.id, name: k })
+                      );
+                    }}
+                  >
+                    <Code bg={v ? "yellow.300" : "default"}>{k}</Code>
+                  </Button>
+                }
+                btn2={
+                  <Flex>
+                    <ClickInputButton
+                      defvalue={k}
+                      callback={(value) => {
+                        if (value) {
+                          dispatch(
+                            repoSlice.actions.addPodExport({
+                              id: pod.id,
+                              name: value,
+                            })
+                          );
+                          if (v) {
+                            dispatch(
+                              wsActions.wsToggleExport({ id: pod.id, name: k })
+                            );
+                          }
+                        }
+                        dispatch(
+                          repoSlice.actions.deletePodExport({
+                            id: pod.id,
+                            name: k,
+                          })
+                        );
+                      }}
+                    >
+                      Rename
+                    </ClickInputButton>
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      onClick={() => {
+                        dispatch(
+                          repoSlice.actions.deletePodExport({
+                            id: pod.id,
+                            name: k,
+                          })
+                        );
+                      }}
+                    >
+                      Delete
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      onClick={() => {
+                        dispatch(
+                          wsActions.wsToggleExport({ id: pod.id, name: k })
+                        );
+                      }}
+                    >
+                      Toggle
+                    </Button>
+                  </Flex>
+                }
+              />
+
               {/* <Switch
                 size="small"
                 checked={v}
