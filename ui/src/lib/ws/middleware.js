@@ -89,7 +89,12 @@ function handlePowerRun({ id, storeAPI, socket }) {
 
     // exported subdecks
     let exported_decks = pods[id].children
-      .filter(({ id }) => pods[id].type === "DECK" && pods[id].exports["self"])
+      .filter(
+        ({ id }) =>
+          pods[id].type === "DECK" &&
+          pods[id].exports &&
+          pods[id].exports["self"]
+      )
       .map(({ id, type }) => pods[id].ns);
 
     let code = `
