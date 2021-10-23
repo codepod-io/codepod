@@ -161,13 +161,38 @@ export function DeckTitle({ id }) {
             <UtilityMark pod={pod} />
           </Flex>
         )}
-
+      </Flex>
+      {pod.stdout && (
+        <Box overflow="scroll" maxH="3xs" border="1px">
+          {/* <Code maxW="lg" whiteSpace="pre-wrap">
+              {pod.stdout}
+            </Code> */}
+          {/* TODO separate stdout and stderr */}
+          <Text>Stdout/Stderr:</Text>
+          <Box whiteSpace="pre-wrap" fontSize="sm">
+            <Ansi>{pod.stdout}</Ansi>
+          </Box>
+          <Divider />
+        </Box>
+      )}
+      {pod.running && <Text>Running ..</Text>}
+      <Box
+        style={{
+          margin: "5px",
+          position: "absolute",
+          top: "-30px",
+          left: "15px",
+          zIndex: 100,
+        }}
+      >
         <Flex
           visibility={showMenu ? "visible" : "hidden"}
-          display={showMenu ? "inherit" : "none"}
+          // visibility="visible"
+          display={showMenu ? "flex" : "none"}
           background="gray.50"
           rounded="md"
           boxShadow="2xl"
+          flexDir="row"
         >
           {/* <Button>Diff</Button>
               <Button>+</Button> */}
@@ -191,21 +216,7 @@ export function DeckTitle({ id }) {
           {/* Run button, with hovering support */}
           <DeckRunButton id={id} />
         </Flex>
-      </Flex>
-      {pod.stdout && (
-        <Box overflow="scroll" maxH="3xs" border="1px">
-          {/* <Code maxW="lg" whiteSpace="pre-wrap">
-              {pod.stdout}
-            </Code> */}
-          {/* TODO separate stdout and stderr */}
-          <Text>Stdout/Stderr:</Text>
-          <Box whiteSpace="pre-wrap" fontSize="sm">
-            <Ansi>{pod.stdout}</Ansi>
-          </Box>
-          <Divider />
-        </Box>
-      )}
-      {pod.running && <Text>Running ..</Text>}
+      </Box>
     </Box>
   );
 }
@@ -228,6 +239,11 @@ function PodSummary({ id }) {
             ))}
         </Box>
       )}
+
+      {/* the execute results */}
+      {/* {pod.running ? "running" : "not"}
+      {pod.result ? "OK" : "not"}
+      {pod.stdout ? "stdout" : } */}
     </Box>
   );
 }
@@ -719,7 +735,7 @@ function PodWrapper({ id, draghandle, children }) {
           style={{
             margin: "5px",
             position: "absolute",
-            top: "-30px",
+            top: "-38px",
             right: "15px",
           }}
         >
