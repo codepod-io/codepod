@@ -105,7 +105,7 @@ function handlePowerRun({ id, storeAPI, socket }) {
     ${struct_names.map((s) => `(struct-out ${s})`).join("\n")}
     ${exported_decks.map((s) => `(all-from-out '${s})`).join("\n")}
     )
-  ${names.map((name) => `(define ${name} "PLACEHOLDER")`).join("\n")}
+  ${names.map((name) => `(define ${name} "PLACEHOLDER-${name}")`).join("\n")}
   ${struct_codes.join("\n")}
   )
     `;
