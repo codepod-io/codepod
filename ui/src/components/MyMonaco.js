@@ -67,7 +67,7 @@ monaco.languages.registerOnTypeFormattingEditProvider("scheme", {
         }
         if (ct == -1) {
           // check the pattern
-          if (line.substring(i).match(/^\([define|lambda|let].*/)) {
+          if (line.substring(i).match(/^\((define|lambda|let).*/)) {
             return construct_indent(position, i + 2);
           }
           if (line.substring(i).match(/^\([\(\[]/)) {
@@ -95,7 +95,17 @@ monaco.languages.registerOnTypeFormattingEditProvider("scheme", {
       // this is actually a unmatched parenthesis
       if (!match) return [];
       let openPos = match[1];
-      return construct_indent(position, openPos.startColumn - 1);
+
+      let line2 = model.getLineContent(openPos.startLineNumber);
+      let match2 = line2
+        .substring(0, openPos.startColumn)
+        .match(/\((define|lambda|let)\s*\($/);
+      if (match2) {
+        return construct_indent(position, match2.index + 2);
+      } else {
+        indent = openPos.startColumn - 1 + shift;
+        return construct_indent(position, openPos.startColumn - 1);
+      }
     }
   },
   autoFormatTriggerCharacters: ["\n"],
@@ -112,7 +122,7 @@ function decide_indent_open(line) {
     }
     if (ct == -1) {
       // check the pattern
-      if (line.substring(i).match(/^\([define|lambda|let].*/)) {
+      if (line.substring(i).match(/^\((define|lambda|let).*/)) {
         return i + 2;
       }
       if (line.substring(i).match(/^\([\(\[]/)) {
@@ -171,7 +181,17 @@ function racket_format(model) {
       }
       let openPos = match[1];
       let shift = shifts[openPos.startLineNumber] || 0;
-      indent = openPos.startColumn - 1 + shift;
+
+      // detect (define (XXX)
+      let line2 = model.getLineContent(openPos.startLineNumber);
+      let match2 = line2
+        .substring(0, openPos.startColumn)
+        .match(/\((define|lambda|let)\s*\($/);
+      if (match2) {
+        indent = match2.index + 2 + shift;
+      } else {
+        indent = openPos.startColumn - 1 + shift;
+      }
     }
   }
   // console.log("shifts:", shifts);
