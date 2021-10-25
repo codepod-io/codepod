@@ -155,6 +155,10 @@ export function DeckTitle({ id }) {
           </Code>
         </Button>
 
+        <Text>
+          ({pod.children.filter(({ type }) => type !== "DECK").length})
+        </Text>
+
         {pod.id !== "ROOT" && (
           <Flex>
             <ThundarMark pod={pod} />
