@@ -217,7 +217,28 @@ export function DeckTitle({ id }) {
           )}
           {pod.id !== "ROOT" && <UpButton pod={pod} />}
           {pod.id !== "ROOT" && <DownButton pod={pod} />}
-          <RightButton pod={pod} />
+          <HoverButton
+            btn1={<RightButton pod={pod} />}
+            btn2={
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => {
+                  dispatch(
+                    qActions.remoteAdd({
+                      parent: pod.id,
+                      index: 0,
+                      type: "CODE",
+                      lang: pod.lang,
+                      column: pod.column,
+                    })
+                  );
+                }}
+              >
+                +
+              </Button>
+            }
+          />
 
           {pod.id !== "ROOT" && <DeleteButton pod={pod} />}
           {pod.id !== "ROOT" && <FoldButton pod={pod} />}
