@@ -169,6 +169,7 @@ export function InfoBar({ pod }) {
                   {pod.parent?.substring(0, 8)}
                 </Code>
               </Box>
+              <Code whiteSpace="pre-wrap">{JSON.stringify(pod, null, 2)}</Code>
             </Box>
           </Box>
         </Paper>
