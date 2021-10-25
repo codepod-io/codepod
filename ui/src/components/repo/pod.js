@@ -254,6 +254,7 @@ function PodSummary({ id }) {
   let pod = useSelector((state) => state.repo.pods[id]);
   return (
     <Box>
+      {pod.running && <Spinner />}
       {pod.error && <Code color="red">X</Code>}
       {pod.exports && Object.keys(pod.exports).length > 0 && (
         <Box>
