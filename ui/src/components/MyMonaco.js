@@ -67,7 +67,7 @@ monaco.languages.registerOnTypeFormattingEditProvider("scheme", {
         }
         if (ct == -1) {
           // check the pattern
-          if (line.substring(i).match(/^\((define|lambda|let).*/)) {
+          if (line.substring(i).match(/^\((define|lambda|let|for[^*]).*/)) {
             return construct_indent(position, i + 2);
           }
           if (line.substring(i).match(/^\([\(\[]/)) {
@@ -115,17 +115,19 @@ function decide_indent_open(line) {
   // Assume line has more (. Decide the indent
   let ct = 0;
   for (let i = line.length - 1; i >= 0; i--) {
-    if (line[i] == ")") {
+    if (line[i] == ")" || line[i] == "]") {
       ct += 1;
-    } else if (line[i] == "(") {
+    } else if (line[i] == "(" || line[i] == "[") {
       ct -= 1;
     }
     if (ct == -1) {
       // check the pattern
-      if (line.substring(i).match(/^\((define|lambda|let).*/)) {
+      if (
+        line.substring(i).match(/^\((define|lambda|let|for|match|case|when).*/)
+      ) {
         return i + 2;
       }
-      if (line.substring(i).match(/^\([\(\[]/)) {
+      if (line.substring(i).match(/^[\(\[]{2}/)) {
         return i + 1;
       }
       // trim right, and find " "
@@ -160,8 +162,8 @@ function racket_format(model) {
     if (indent != old_indent) {
       shifts[linum] = indent - old_indent;
     }
-    let n_open = (line.match(/\(/g) || []).length;
-    let n_close = (line.match(/\)/g) || []).length;
+    let n_open = (line.match(/\(|\[/g) || []).length;
+    let n_close = (line.match(/\)|\]/g) || []).length;
     if (n_open == n_close) {
       // console.log("equal open/close parens");
       continue;
@@ -186,7 +188,7 @@ function racket_format(model) {
       let line2 = model.getLineContent(openPos.startLineNumber);
       let match2 = line2
         .substring(0, openPos.startColumn)
-        .match(/\((define|lambda|let)\s*\($/);
+        .match(/\((define|lambda|let\*?|for|for\/list)\s*\($/);
       if (match2) {
         indent = match2.index + 2 + shift;
       } else {
