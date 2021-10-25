@@ -33,6 +33,7 @@ import { FaCut, FaPaste } from "react-icons/fa";
 
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import { AiOutlineFunction } from "react-icons/ai";
+import { GiPlatform } from "react-icons/gi";
 import Ansi from "ansi-to-react";
 
 import {
@@ -139,6 +140,9 @@ export function DeckTitle({ id }) {
         </HoveringMenu>
       </Box>
       <Flex>
+        <Flex alignItems="center">
+          <GiPlatform />
+        </Flex>
         <Button
           variant="ghost"
           size="xs"
