@@ -133,7 +133,7 @@ function handlePowerRun({ id, storeAPI, socket }) {
 function getUtilNs({ id, pods, exclude }) {
   // get all utils for id
   // get children utils nodes
-  if (id === "ROOT") return [];
+  if (!id) return [];
   let res = pods[id].children
     .filter(({ id }) => id !== exclude && pods[id].utility)
     .map(({ id, type }) => pods[id].ns);
@@ -151,42 +151,30 @@ function handleRunTree({ id, storeAPI, socket }) {
     // - if it is a utility deck, it should be evaluated first and import to
     // parent's subtree
     //
-    // 0. when run on deck, do the imports
-    if (pod.type === "DECK") {
-      // utils
-      let nses = getUtilNs({ id, pods });
-      // child deck's
-      const child_deck_nses = pods[id].children
-        .filter(({ id }) => pods[id].type === "DECK")
-        .map(({ id, type }) => pods[id].ns);
-      nses = nses.concat(child_deck_nses);
-      console.log("utils", nses);
-      // const nses = [];
-      if (nses.length > 0) {
-        storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
-        storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
-        socket.send(
-          JSON.stringify({
-            type: "addImportNS",
-            payload: {
-              lang: pod.lang,
-              nses: nses,
-              to: pod.ns,
-              id: pod.id,
-              sessionId: storeAPI.getState().repo.sessionId,
-            },
-          })
-        );
-      }
-    }
-    // 1. get all the utility decks/pods, and evaluate
-    const util_pods = pod.children.filter(({ id }) => pods[id].utility);
+
+    // UPDATE NEW PROCEDURE
+    // TODO all testing pods and utility pods
+    // 0. get all utility pods that this deck has access to and evaluate?
+    // monitor whether the utility pods are evaluated?
+    // 1. get all the utility child decks
+    const util_pods = pod.children
+      .filter(({ id }) => pods[id].type === "DECK")
+      .filter(({ id }) => pods[id].utility);
     util_pods.map(({ id }) => helper(id));
-    // 2. get all the non-test children and evaluate
+    // 2. evaluate all non-utility child decks
     pod.children
-      .filter(({ id }) => !pods[id].utility && !pods[id].thundar)
+      .filter(({ id }) => pods[id].type === "DECK")
+      .filter(({ id }) => !pods[id].utility)
       .map(({ id }) => helper(id));
-    // 3. evaluate this current node
+    // 3. init this deck
+    if (pod.type === "DECK") {
+      handlePowerRun({ id, storeAPI, socket });
+    }
+    // 4. evaluate all child pods
+    pod.children
+      .filter(({ id }) => pods[id].type !== "DECK")
+      .map(({ id }) => helper(id));
+    // 5. evaluate this current node
     if (id !== "ROOT") {
       // actually run the code
       if (pod.type === "CODE" && pod.content && pod.lang && !pod.thundar) {
