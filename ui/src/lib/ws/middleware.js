@@ -81,11 +81,17 @@ function handlePowerRun({ id, storeAPI, socket }) {
 
     // also I need to require for struct:parent
     let nses = getUtilNs({ id, pods });
+    // console.log("nses", nses);
     // child deck's
     const child_deck_nses = pods[id].children
-      .filter(({ id }) => pods[id].type === "DECK")
+      .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
       .map(({ id, type }) => pods[id].ns);
+    // console.log("child_deck_nses", child_deck_nses);
     nses = nses.concat(child_deck_nses);
+    // if it is a test desk, get parent
+    if (pod.thundar) {
+      nses.push(pods[pod.parent].ns);
+    }
 
     // exported subdecks
     let exported_decks = pods[id].children
@@ -161,14 +167,17 @@ function handleRunTree({ id, storeAPI, socket }) {
       .filter(({ id }) => pods[id].type === "DECK")
       .filter(({ id }) => pods[id].utility);
     util_pods.map(({ id }) => helper(id));
-    // 2. evaluate all non-utility child decks
+    // 2. evaluate all non-utility and non-test child decks
+    // TODO if this deck is a test desk, evaluate child
+    // FIXME what if this test desk has some non-test desks?
     pod.children
       .filter(({ id }) => pods[id].type === "DECK")
-      .filter(({ id }) => !pods[id].utility)
+      .filter(({ id }) => !pods[id].utility && !pods[id].thundar)
       .map(({ id }) => helper(id));
     // 3. init this deck
     if (pod.type === "DECK") {
       handlePowerRun({ id, storeAPI, socket });
+      // require parent
     }
     // 4. evaluate all child pods
     pod.children
