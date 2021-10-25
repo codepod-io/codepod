@@ -43,7 +43,7 @@ function getDeckExports({ id, pods }) {
   };
 }
 
-function handlePowerRun({ id, storeAPI, socket }) {
+function handlePowerRun({ id, doEval, storeAPI, socket }) {
   // assume id is a deck
   // this is used to init or reset the deck with all exported names
   let pods = storeAPI.getState().repo.pods;
@@ -133,6 +133,32 @@ function handlePowerRun({ id, storeAPI, socket }) {
         },
       })
     );
+
+    if (doEval) {
+      // run all children pods
+      pod.children
+        .filter(({ id }) => pods[id].type !== "DECK")
+        .map(({ id }) => {
+          let pod = pods[id];
+          if (pod.type === "CODE" && pod.content && pod.lang && !pod.thundar) {
+            storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
+            storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
+            socket.send(
+              JSON.stringify({
+                type: "runCode",
+                payload: {
+                  lang: pod.lang,
+                  code: pod.content,
+                  namespace: pod.ns,
+                  raw: pod.raw,
+                  podId: pod.id,
+                  sessionId: storeAPI.getState().repo.sessionId,
+                },
+              })
+            );
+          }
+        });
+    }
   }
 }
 
@@ -462,8 +488,10 @@ const socketMiddleware = () => {
           );
           break;
         }
+        let { id, doEval } = action.payload;
+
         // This is used to evaluate the current deck and init the namespace
-        handlePowerRun({ id: action.payload, storeAPI: store, socket });
+        handlePowerRun({ id, doEval, storeAPI: store, socket });
         break;
       }
       case "WS_RUN_ALL": {

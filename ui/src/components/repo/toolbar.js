@@ -58,6 +58,7 @@ import TextField from "@material-ui/core/TextField";
 import ClickAwayListener from "@material-ui/core/ClickAwayListener";
 import PlayArrowIcon from "@material-ui/icons/PlayArrow";
 import FastForwardIcon from "@material-ui/icons/FastForward";
+import PlaylistPlayIcon from "@material-ui/icons/PlaylistPlay";
 import { AiOutlineFunction } from "react-icons/ai";
 import Ansi from "ansi-to-react";
 import { FcAddColumn, FcDeleteColumn } from "react-icons/fc";
@@ -436,16 +437,28 @@ export function DeckRunButton({ id }) {
         </Button>
       }
       btn2={
-        <Button
-          variant="ghost"
-          color="green"
-          size="xs"
-          onClick={() => {
-            dispatch(wsActions.wsPowerRun(id));
-          }}
-        >
-          <FastForwardIcon fontSize="small" />
-        </Button>
+        <Flex>
+          <Button
+            variant="ghost"
+            color="green"
+            size="xs"
+            onClick={() => {
+              dispatch(wsActions.wsPowerRun({ id }));
+            }}
+          >
+            <FastForwardIcon fontSize="small" />
+          </Button>
+          <Button
+            variant="ghost"
+            color="green"
+            size="xs"
+            onClick={() => {
+              dispatch(wsActions.wsPowerRun({ id, doEval: true }));
+            }}
+          >
+            <PlaylistPlayIcon fontSize="small" />
+          </Button>
+        </Flex>
       }
     />
   );
