@@ -552,12 +552,15 @@ class MyMqSocket {
 
 function handleIOPub_status({ msgs, socket, lang }) {
   console.log("emitting status ..", msgs.content.execution_state, "for", lang);
+  // console.log("msg", msgs);
   socket.send(
     JSON.stringify({
       type: "status",
       payload: {
         lang: lang,
         status: msgs.content.execution_state,
+        // This is for use with racket kernel to check the finish of running
+        id: msgs.parent_header.msg_id,
       },
     })
   );
@@ -651,13 +654,15 @@ function handleIOPub_stream({ msgs, socket }) {
   // FIXME there are many frames
   if (msgs.content.name === "stdout") {
     // console.log("ignore stdout stream");
-    console.log("emitting stdout stream ..");
+    console.log("emitting stdout stream ..", msgs);
     socket.send(
       JSON.stringify({
         type: "stream",
         payload: {
           podId,
-          text: msgs.content.text,
+          // name: stdout or stderr
+          // text:
+          content: msgs.content,
         },
       })
     );
@@ -669,7 +674,7 @@ function handleIOPub_stream({ msgs, socket }) {
           type: "stream",
           payload: {
             podId,
-            text: msgs.content.text,
+            content: msgs.content,
           },
         })
       );

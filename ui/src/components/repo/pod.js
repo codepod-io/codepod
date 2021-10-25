@@ -225,6 +225,7 @@ function PodSummary({ id }) {
   let pod = useSelector((state) => state.repo.pods[id]);
   return (
     <Box>
+      {pod.error && <Code color="red">X</Code>}
       {pod.exports && Object.keys(pod.exports).length > 0 && (
         <Box>
           {/* <Text as="span" mr={2}>
@@ -813,20 +814,22 @@ function PodWrapper({ id, draghandle, children }) {
       {pod.running && <Text>Running ..</Text>}
       {pod.result && (
         <Flex direction="column">
-          <Flex>
-            <Text color="gray" mr="1rem">
-              Result: [{pod.result.count}]:
-            </Text>
-            <Text>
-              <Code whiteSpace="pre-wrap">{pod.result.text}</Code>
-            </Text>
-          </Flex>
+          {pod.result.html ? (
+            <div dangerouslySetInnerHTML={{ __html: pod.result.html }}></div>
+          ) : (
+            pod.result.text && (
+              <Flex>
+                <Text color="gray" mr="1rem">
+                  Result: [{pod.result.count}]:
+                </Text>
+                <Text>
+                  <Code whiteSpace="pre-wrap">{pod.result.text}</Code>
+                </Text>
+              </Flex>
+            )
+          )}
           {pod.result.image && (
             <img src={`data:image/png;base64,${pod.result.image}`} />
-          )}
-          {/* {pod.result.html && <code>{pod.result.html}</code>} */}
-          {pod.result.html && (
-            <div dangerouslySetInnerHTML={{ __html: pod.result.html }}></div>
           )}
         </Flex>
       )}

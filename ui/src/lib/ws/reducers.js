@@ -1,8 +1,12 @@
 export default {
   WS_STATUS: (state, action) => {
-    const { lang, status } = action.payload;
+    const { lang, status, id } = action.payload;
     // console.log("WS_STATUS", { lang, status });
     state.kernels[lang].status = status;
+    // this is for racket kernel, which does not have a execute_reply
+    if (lang === "racket" && status === "idle" && state.pods[id]) {
+      state.pods[id].running = false;
+    }
   },
   WS_CONNECTED: (state, action) => {
     state.runtimeConnected = true;
@@ -75,13 +79,25 @@ export default {
     };
   },
   WS_STREAM: (state, action) => {
-    let { podId, text } = action.payload;
+    let { podId, content } = action.payload;
     if (!(podId in state.pods)) {
       console.log("WARNING podId is not found:", podId);
       return;
     }
     // append
-    state.pods[podId].stdout += text;
+    let pod = state.pods[podId];
+    if (content.name === "stderr") {
+      // if (!pod.result) {
+      //   pod.result = {};
+      // }
+      // pod.result.stderr = true;
+      pod.error = {
+        ename: "stderr",
+        evalue: "stderr",
+        stacktrace: "",
+      };
+    }
+    pod.stdout += content.text;
   },
   WS_IO_RESULT: (state, action) => {
     let { podId, result, name } = action.payload;
