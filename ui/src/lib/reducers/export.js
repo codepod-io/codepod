@@ -44,12 +44,16 @@ export default {
   },
   toggleDeckExport: (state, action) => {
     let { id } = action.payload;
+    let pod = state.pods[id];
     // this is only for deck
     // state.pods[id].exports = {};
+    if (!pod.exports) {
+      pod.exports = {};
+    }
     if (!state.pods[id].exports["self"]) {
-      state.pods[id].exports["self"] = true;
+      pod.exports["self"] = true;
     } else {
-      state.pods[id].exports["self"] = false;
+      pod.exports["self"] = false;
     }
   },
   addPodImport: (state, action) => {
