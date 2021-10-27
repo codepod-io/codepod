@@ -253,11 +253,18 @@ export function DeckTitle({ id }) {
 function PodSummary({ id }) {
   let pod = useSelector((state) => state.repo.pods[id]);
   return (
-    <Box>
+    <Box as="span">
       {pod.running && <Spinner />}
-      {pod.error && <Code color="red">X</Code>}
+      {pod.error && (
+        <Code
+          color="red"
+          mr={pod.exports && Object.keys(pod.exports).length > 0 ? 0 : 1}
+        >
+          X
+        </Code>
+      )}
       {pod.exports && Object.keys(pod.exports).length > 0 && (
-        <Box>
+        <Box as="span">
           {/* <Text as="span" mr={2}>
         Exports:
       </Text> */}
