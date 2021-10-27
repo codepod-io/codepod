@@ -847,7 +847,7 @@ function PodWrapper({ id, draghandle, children }) {
           </Box>
         </Box>
       )}
-      {pod.running && <Text>Running ..</Text>}
+      {pod.running && <Spinner />}
       {pod.result && (
         <Flex direction="column">
           {pod.result.html ? (
