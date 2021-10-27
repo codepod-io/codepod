@@ -107,7 +107,7 @@ export default {
     }
     // append
     let pod = state.pods[podId];
-    if (content.name === "stderr") {
+    if (content.name === "stderr" && pod.lang === "racket") {
       // if (!pod.result) {
       //   pod.result = {};
       // }
