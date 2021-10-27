@@ -352,29 +352,28 @@ export function Deck(props) {
       boxShadow={id == "ROOT" ? undefined : "xl"}
       p={2}
       border={clip === pod.id ? "dashed orange" : undefined}
+      minW="md"
     >
       <Box>
         <DeckTitle id={id} />
-        {pod.fold ? (
-          // <Box>
-          // <Box>Folded</Box>
-          // get some info
-          <Flex maxW="md" flexWrap="wrap">
-            {pod.children
-              .filter(({ type }) => type !== "DECK")
-              .map(({ id }) => (
-                <Box key={id}>
-                  <PodSummary id={id} />
-                </Box>
-              ))}
-            {/* {pod.children
+        <Flex maxW="md" flexWrap="wrap">
+          {pod.children
+            .filter(({ type }) => type !== "DECK")
+            .map(({ id }) => (
+              <Box key={id}>
+                <PodSummary id={id} />
+              </Box>
+            ))}
+          {/* {pod.children
               .filter(({ type }) => type === "DECK")
               .map(({ id }) => (
                 <Box key={id}>
                   <DeckSummary id={id} level={level + 1} />
                 </Box>
               ))} */}
-          </Flex>
+        </Flex>
+        {pod.fold ? (
+          <Box>Folded</Box>
         ) : (
           <Flex
             // FIXME column flex with maxH won't auto flow to right.
