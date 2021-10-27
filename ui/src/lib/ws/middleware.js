@@ -133,32 +133,31 @@ function handlePowerRun({ id, doEval, storeAPI, socket }) {
         },
       })
     );
-
-    if (doEval) {
-      // run all children pods
-      pod.children
-        .filter(({ id }) => pods[id].type !== "DECK")
-        .map(({ id }) => {
-          let pod = pods[id];
-          if (pod.type === "CODE" && pod.content && pod.lang && !pod.thundar) {
-            storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
-            storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
-            socket.send(
-              JSON.stringify({
-                type: "runCode",
-                payload: {
-                  lang: pod.lang,
-                  code: pod.content,
-                  namespace: pod.ns,
-                  raw: pod.raw,
-                  podId: pod.id,
-                  sessionId: storeAPI.getState().repo.sessionId,
-                },
-              })
-            );
-          }
-        });
-    }
+  }
+  if (doEval) {
+    // run all children pods
+    pod.children
+      .filter(({ id }) => pods[id].type !== "DECK")
+      .map(({ id }) => {
+        let pod = pods[id];
+        if (pod.type === "CODE" && pod.content && pod.lang && !pod.thundar) {
+          storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
+          storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
+          socket.send(
+            JSON.stringify({
+              type: "runCode",
+              payload: {
+                lang: pod.lang,
+                code: pod.content,
+                namespace: pod.ns,
+                raw: pod.raw,
+                podId: pod.id,
+                sessionId: storeAPI.getState().repo.sessionId,
+              },
+            })
+          );
+        }
+      });
   }
 }
 
