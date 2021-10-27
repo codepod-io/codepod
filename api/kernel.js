@@ -691,7 +691,7 @@ function handleIOPub_stream({ msgs, socket }) {
           type: "stream",
           payload: {
             podId,
-            text: msgs.content.text,
+            content: msgs.content,
           },
         })
       );
