@@ -103,7 +103,6 @@ monaco.languages.registerOnTypeFormattingEditProvider("scheme", {
       if (match2) {
         return construct_indent(position, match2.index + 2);
       } else {
-        indent = openPos.startColumn - 1 + shift;
         return construct_indent(position, openPos.startColumn - 1);
       }
     }
