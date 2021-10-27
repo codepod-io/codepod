@@ -186,12 +186,7 @@ async function startApolloServer() {
 
   apollo.applyMiddleware({ app });
 
-  app.use((req, res) => {
-    res.status(200);
-    res.send("Hello!");
-    res.end();
-  });
-
+  app.use("/static", express.static("/static/static"));
   wss.on("connection", (socket) => {
     console.log("a user connected");
     // CAUTION should listen to message on this socket instead of io

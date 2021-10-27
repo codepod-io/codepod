@@ -19,10 +19,31 @@ export default {
     // console.log("WS_RESULT", action.payload);
     // console.log("podId", podId)
     if (podId in state.pods) {
+      // let match = content.data["text/plain"].match(/^"CODEPOD-link\s+(.*)/)
+      // if (match) {
+      //   match[1]
+      // }
+      // if (content.data["text/plain"])
+      let text = content.data["text/plain"];
+      let html = content.data["text/html"];
+      let file;
+      if (text) {
+        let match = text.match(/CODEPOD-link\s+(.*)"/);
+        if (match) {
+          let fname = match[1].substring(match[1].lastIndexOf("/") + 1);
+          let url = `${window.location.protocol}//api.${window.location.host}/static/${match[1]}`;
+          console.log("url", url);
+          html = `<a target="_blank" style="color:blue" href="${url}" download>${fname}</a>`;
+          file = url;
+        }
+        // http:://api.codepod.test:3000/static/30eea3b1-e767-4fa8-8e3f-a23774eef6c6/ccc.txt
+        // http:://api.codepod.test:3000/static/30eea3b1-e767-4fa8-8e3f-a23774eef6c6/ccc.txt
+      }
       state.pods[podId].result = {
-        text: content.data["text/plain"],
-        html: content.data["text/html"],
-        count: count,
+        text,
+        html,
+        file,
+        count,
       };
       // state.pods[podId].running = false;
     } else {

@@ -1,10 +1,23 @@
+(require racket/enter)
+
+(module CODEPOD racket
+
 (require (for-syntax syntax/parse racket rackunit)
          racket/enter
          rackunit
          racket/string
          racket/list
          racket/port
-         racket/format)
+         racket/format
+         uuid)
+
+(provide
+  my-ns-enter!
+  CODEPOD-ADD-IMPORT
+  CODEPOD-ADD-IMPORT-NS
+  CODEPOD-DELETE-IMPORT
+  CODEPOD-EVAL
+  CODEPOD-link)
 
 ;; (enter! #f)
 
@@ -41,7 +54,7 @@
     stx
     [(_ ns names ...)
     #`(module ns racket
-        (require rackunit)
+        (require rackunit 'CODEPOD)
         (provide names ...)
         (define names "PLACEHOLDER") ...)]))
 
@@ -52,7 +65,7 @@
         (eval 
           `(module ,(string->symbol ns) racket/base
              ;; some basic packages
-             (require rackunit)
+             (require rackunit 'CODEPOD)
              (void)))
         (eval 
           `(enter! (submod ',(string->symbol ns))))
@@ -113,3 +126,19 @@
              (~a "(begin " code ")")))
     (enter! #f)))
 
+
+(define (CODEPOD-link src)
+  (let-values ([(_ fname __) (split-path src)])
+    (let* ([id (uuid-string)]
+           [dir (build-path "/mount/shared/static/" id)]
+           [dst (build-path dir fname)]
+           [url (build-path 
+                  ; "http://api.codepod.test:4000/static/" 
+                  id fname)])
+      (make-directory* dir)
+      (copy-file src dst)
+      (~a "CODEPOD-link " (path->string url)))))
+
+)
+
+(require 'CODEPOD)

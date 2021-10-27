@@ -106,7 +106,7 @@ function handlePowerRun({ id, doEval, storeAPI, socket }) {
     let code = `
 (enter! #f)
 (module ${pod.ns} racket 
-  (require rackunit ${nses.map((s) => "'" + s).join(" ")})
+  (require rackunit 'CODEPOD ${nses.map((s) => "'" + s).join(" ")})
   (provide ${names.join(" ")}
     ${struct_names.map((s) => `(struct-out ${s})`).join("\n")}
     ${exported_decks.map((s) => `(all-from-out '${s})`).join("\n")}
