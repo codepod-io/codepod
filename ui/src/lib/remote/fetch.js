@@ -327,11 +327,11 @@ export async function doRemotePastePod({ clip, parent, index, column }) {
     body: JSON.stringify({
       // movePod(id: String, parentId: String, index: Int): Boolean
       query: `
-        mutation PastePod($id: String, $parentId: String, $index: Int, $column: Int) {
-          pastePod(id: $id, parentId: $parentId, index: $index, column: $column)
+        mutation PastePods($ids: [String], $parentId: String, $index: Int, $column: Int) {
+          pastePods(ids: $ids, parentId: $parentId, index: $index, column: $column)
         }`,
       variables: {
-        id: clip,
+        ids: clip,
         parentId: parent,
         index,
         column,

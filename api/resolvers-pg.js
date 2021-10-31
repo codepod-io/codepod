@@ -168,6 +168,65 @@ async function prismaGitExport({ username, reponame }) {
   await gitExport({ reponame, username, pods });
 }
 
+async function pastePod({ id, parentId, index, column }) {
+  // 1. just update the pod's parent to the new parent
+  let pod = await prisma.pod.findFirst({
+    where: {
+      id,
+    },
+  });
+  // 2. decrease current index
+  await prisma.pod.updateMany({
+    where: {
+      // FIXME root?
+      parentId: pod.parentId,
+      index: {
+        gt: pod.index,
+      },
+    },
+    data: {
+      index: {
+        decrement: 1,
+      },
+    },
+  });
+  if (pod.parentId === parentId) {
+    index -= 1;
+  }
+  // 3. increase for new parent's children's index
+  await prisma.pod.updateMany({
+    where: {
+      parentId: parentId === "ROOT" ? null : parentId,
+      index: {
+        gte: index,
+      },
+    },
+    data: {
+      index: {
+        increment: 1,
+      },
+    },
+  });
+  // update itself: parent, index
+  await prisma.pod.update({
+    where: {
+      id,
+    },
+    data: {
+      parent:
+        parentId === "ROOT"
+          ? { disconnect: true }
+          : {
+              connect: {
+                id: parentId,
+              },
+            },
+      index,
+      column,
+    },
+  });
+}
+
 export const resolvers = {
   Query: {
     hello: () => {
@@ -617,62 +676,14 @@ export const resolvers = {
       return pod;
     },
     pastePod: async (_, { id, parentId, index, column }) => {
-      // 1. just update the pod's parent to the new parent
-      let pod = await prisma.pod.findFirst({
-        where: {
-          id,
-        },
-      });
-      // 2. decrease current index
-      await prisma.pod.updateMany({
-        where: {
-          // FIXME root?
-          parentId: pod.parentId,
-          index: {
-            gt: pod.index,
-          },
-        },
-        data: {
-          index: {
-            decrement: 1,
-          },
-        },
-      });
-      if (pod.parentId === parentId) {
-        index -= 1;
+      await pastePod({ id, parentId, index, column });
+      return true;
+    },
+    pastePods: async (_, { ids, parentId, index, column }) => {
+      for (let id of ids) {
+        await pastePod({ id, parentId, index, column });
+        index += 1;
       }
-      // 3. increase for new parent's children's index
-      await prisma.pod.updateMany({
-        where: {
-          parentId: parentId === "ROOT" ? null : parentId,
-          index: {
-            gte: index,
-          },
-        },
-        data: {
-          index: {
-            increment: 1,
-          },
-        },
-      });
-      // update itself: parent, index
-      await prisma.pod.update({
-        where: {
-          id,
-        },
-        data: {
-          parent:
-            parentId === "ROOT"
-              ? { disconnect: true }
-              : {
-                  connect: {
-                    id: parentId,
-                  },
-                },
-          index,
-          column,
-        },
-      });
       return true;
     },
     updatePod: async (

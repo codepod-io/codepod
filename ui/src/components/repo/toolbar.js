@@ -251,7 +251,6 @@ export function ExportButton({ id }) {
 
 export function UpButton({ pod }) {
   const dispatch = useDispatch();
-  const clip = useSelector((state) => state.repo.clip);
   return (
     <HoverButton
       btn1={
@@ -275,7 +274,6 @@ export function UpButton({ pod }) {
       }
       btn2={
         <IconButton
-          disabled={!clip}
           size="small"
           onClick={() => {
             dispatch(
@@ -296,7 +294,6 @@ export function UpButton({ pod }) {
 
 export function DownButton({ pod }) {
   const dispatch = useDispatch();
-  const clip = useSelector((state) => state.repo.clip);
   return (
     <HoverButton
       btn1={
@@ -324,7 +321,7 @@ export function DownButton({ pod }) {
           // I have to use Buttons from material UI when I use disabled
           // together with onMouseLeave, otherwise, when the button is
           // disabled, the onMouseLeave is not called!
-          disabled={!clip}
+          // disabled={clip.length == 0}
           onClick={() => {
             dispatch(
               qActions.remotePaste({
@@ -544,16 +541,28 @@ export function DeleteButton({ pod }) {
         </Button>
       }
       btn2={
-        <Button
-          variant="ghost"
-          size="xs"
-          color="red"
-          onClick={() => {
-            dispatch(repoSlice.actions.markClip({ id: pod.id }));
-          }}
-        >
-          <FaCut />
-        </Button>
+        <Flex direction="column">
+          <Button
+            variant="ghost"
+            size="xs"
+            color="red"
+            onClick={() => {
+              dispatch(repoSlice.actions.clearClip());
+            }}
+          >
+            CLR
+          </Button>
+          <Button
+            variant="ghost"
+            size="xs"
+            color="red"
+            onClick={() => {
+              dispatch(repoSlice.actions.markClip({ id: pod.id }));
+            }}
+          >
+            <FaCut />
+          </Button>
+        </Flex>
       }
     />
   );

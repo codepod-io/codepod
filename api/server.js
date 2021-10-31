@@ -106,6 +106,7 @@ const typeDefs = gql`
     ): Pod
     deletePod(id: String, toDelete: [String]): Boolean
     pastePod(id: String, parentId: String, index: Int, column: Int): Boolean
+    pastePods(ids: [String], parentId: String, index: Int, column: Int): Boolean
     updatePod(
       id: String
       content: String

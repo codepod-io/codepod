@@ -177,10 +177,17 @@ export const repoSlice = createSlice({
     },
     markClip: (state, action) => {
       let { id } = action.payload;
-      if (state.clip === id) {
-        state.clip = undefined;
-      } else {
-        state.clip = id;
+      let pod = state.pods[id];
+      pod.clipped = pod.clipped ? false : true;
+    },
+    clearClip: (state, action) => {
+      for (let [id, pod] of Object.entries(state.pods)) {
+        pod.clipped = false;
+      }
+    },
+    clearLastClip: (state, action) => {
+      for (let [id, pod] of Object.entries(state.pods)) {
+        pod.lastclip = false;
       }
     },
     ...podReducers,

@@ -108,14 +108,23 @@ export default (storeAPI) => (next) => (action) => {
     case "REMOTE_PASTE":
       {
         let { parent, index, column } = action.payload;
-        let clip = store.getState().repo.clip;
-        if (!clip) {
-          console.log("!clip");
+        let pods = store.getState().repo.pods;
+        // get all clipped pods
+        let clip = Object.entries(pods)
+          .filter(([id, pod]) => pod.clipped)
+          .map(([id, pod]) => id);
+        if (clip.length == 0) {
+          console.log("No clipped");
           return;
         }
-        storeAPI.dispatch(
-          repoSlice.actions.pastePod({ parent, index, column })
-        );
+        // clear last clip
+        storeAPI.dispatch(repoSlice.actions.clearLastClip());
+        for (let id of clip) {
+          storeAPI.dispatch(
+            repoSlice.actions.pastePod({ parent, index, column, id })
+          );
+          index += 1;
+        }
         storeAPI.dispatch(
           repoSlice.actions.addPodQueue({
             type: "REMOTE_PASTE",

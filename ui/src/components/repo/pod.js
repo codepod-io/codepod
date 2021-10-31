@@ -333,7 +333,6 @@ export function Deck(props) {
   // console.log("rendering deck", id);
   const dispatch = useDispatch();
   const pod = useSelector((state) => state.repo.pods[id]);
-  const clip = useSelector((state) => state.repo.clip);
   if (pod.type !== "DECK") return <Pod id={id}></Pod>;
   if (pod.children.length == 0 && pod.id === "ROOT") {
     return (
@@ -365,7 +364,9 @@ export function Deck(props) {
       // ROOT's shadow apears as a vertical line in the right
       boxShadow={id == "ROOT" ? undefined : "xl"}
       p={2}
-      border={clip === pod.id ? "dashed orange" : undefined}
+      border={
+        pod.clipped ? "dashed red" : pod.lastclip ? "dashed orange" : undefined
+      }
       minW="md"
     >
       <Box>
@@ -677,7 +678,6 @@ function PodDiff({ id, setShowDiff }) {
 
 function PodWrapper({ id, draghandle, children }) {
   const pod = useSelector((state) => state.repo.pods[id]);
-  const clip = useSelector((state) => state.repo.clip);
   const dispatch = useDispatch();
   const [showMenu, setShowMenu] = useState(false);
   const [showDiff, setShowDiff] = useState(false);
@@ -696,7 +696,9 @@ function PodWrapper({ id, draghandle, children }) {
       my={1}
       w="md"
       // w={150}
-      border={clip === pod.id ? "dashed orange" : undefined}
+      border={
+        pod.clipped ? "dashed red" : pod.lastclip ? "dashed orange" : undefined
+      }
     >
       <Flex>
         <ExportList pod={pod} />

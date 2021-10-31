@@ -67,23 +67,13 @@ export function deletePod(state, action) {
   parent.children.splice(index, 1);
   toDelete.forEach((id) => {
     delete state.pods[id];
-    if (state.clip === id) {
-      state.clip = undefined;
-    }
   });
 }
 
 export function pastePod(state, action) {
-  let { parent, index, column } = action.payload;
-  if (!state.clip) {
-    state.error = {
-      type: "error",
-      msg: "No clipped pod.",
-    };
-    return;
-  }
-  let pod = state.pods[state.clip];
-  // 1. remove current state.clip
+  let { parent, index, column, id } = action.payload;
+  let pod = state.pods[id];
+  // 1. remove the clipped pod
   let oldparent = state.pods[pod.parent];
   oldparent.children.splice(
     oldparent.children.map(({ id }) => id).indexOf(pod.id),
@@ -121,6 +111,9 @@ export function pastePod(state, action) {
     });
   }
   helper(pod);
+  // remove it from clipboard
+  pod.clipped = false;
+  pod.lastclip = true;
 }
 
 function setPodType(state, action) {
