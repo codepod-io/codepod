@@ -151,12 +151,26 @@ export function DeckTitle({ id }) {
             dispatch(repoSlice.actions.toggleDeckExport({ id: pod.id }));
           }}
         >
-          <Code
-            colorScheme="blackAlpha"
-            bg={pod.exports && pod.exports["self"] ? "yellow.200" : "blue.200"}
-          >
-            {pod.name ? pod.name : pod.id}
-          </Code>
+          <Box colorScheme="blackAlpha">
+            {pod.name ? (
+              <Flex direction="column">
+                <Code>({pod.id})</Code>
+                <Code
+                  bg={
+                    pod.exports && pod.exports["self"] ? "blue.200" : "inherit"
+                  }
+                >
+                  {pod.name}
+                </Code>
+              </Flex>
+            ) : (
+              <Code
+                bg={pod.exports && pod.exports["self"] ? "blue.200" : "inherit"}
+              >
+                {pod.id}
+              </Code>
+            )}
+          </Box>
         </Button>
 
         <Text>
