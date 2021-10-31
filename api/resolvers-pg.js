@@ -102,6 +102,9 @@ async function gitExport({ username, reponame, pods }) {
     pod.content = pod.staged;
     delete pod.githead;
     delete pod.staged;
+    delete pod.result;
+    delete pod.stdout;
+    delete pod.error;
     await fs.promises.writeFile(
       `${path}/pods/${pod.id}.json`,
       // FIXME this will put string into quoted
