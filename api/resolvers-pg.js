@@ -82,14 +82,21 @@ async function gitDiff({ username, reponame }) {
 async function gitExport({ username, reponame, pods }) {
   // 1. if repo does not exist, create it
   let path = `/srv/git/${username}/${reponame}`;
+  // find the user name
+  // FIXME this should be done at some level up
+  let user = await prisma.user.findUnique({
+    where: { username },
+  });
+
   const exec = util.promisify(child.exec);
   if (!fs.existsSync(path)) {
     await NodeGit.Repository.init(path, 0);
-    // config user name
-    await exec(
-      `cd ${path} && git config user.name ${username} && git config user.email ${username}@codepod.io`
-    );
   }
+  // I actually want to update it every time so that people can change their name and email
+  // config user name
+  await exec(
+    `cd ${path} && git config user.name "${user.name}" && git config user.email "${user.email}"`
+  );
   // 2. write file
   // remove
   if (fs.existsSync(`${path}/pods`)) {
@@ -607,6 +614,28 @@ export const resolvers = {
           expiresIn: "7d",
         }),
       };
+    },
+    updateUser: async (_, { username, email, name }, { userId }) => {
+      if (!userId) throw Error("Unauthenticated");
+      let user = await prisma.user.findFirst({
+        where: {
+          username,
+        },
+      });
+      if (user.id !== userId) {
+        throw new Error("You do not have access to the user.");
+      }
+      // do the udpate
+      await prisma.user.update({
+        where: {
+          username,
+        },
+        data: {
+          name,
+          email,
+        },
+      });
+      return true;
     },
     // add file to git and run git add, and do commit
     // gitCommit: async (_, { username, reponame, content, msg }, { userId }) => {

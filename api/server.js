@@ -95,6 +95,7 @@ const typeDefs = gql`
       password: String
       invitation: String
     ): AuthData
+    updateUser(username: String, email: String, name: String): Boolean
     createRepo(name: String): Repo
     deleteRepo(name: String): Boolean
     addPod(
