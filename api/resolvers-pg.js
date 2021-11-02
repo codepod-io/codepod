@@ -41,31 +41,6 @@ async function gitJustCommit({ username, reponame, msg }) {
   return true;
 }
 
-async function gitCommit({ username, reponame, content, msg }) {
-  // 1. if repo does not exist, create it
-  let path = `/srv/git/${username}/${reponame}`;
-  const exec = util.promisify(child.exec);
-  if (!fs.existsSync(path)) {
-    await NodeGit.Repository.init(path, 0);
-    // config user name
-    await exec(
-      `cd ${path} && git config user.name ${username} && git config user.email ${username}@codepod.io`
-    );
-  }
-  // 2. write file
-  await fs.promises.writeFile(`${path}/code.txt`, content);
-  // 3. git add file
-  await exec(`cd ${path} && git add .`);
-  // 3. run git diff HEAD
-  // FIXME error handling
-  // FIXME if no commit, this will fail
-  // let { stdout, stderr } = await exec(`cd ${path} && git diff HEAD`);
-  // return stdout;
-  // 4. do commit
-  await exec(`cd ${path} && git commit -m "${msg}"`);
-  return true;
-}
-
 async function gitDiff({ username, reponame }) {
   let path = `/srv/git/${username}/${reponame}`;
   const exec = util.promisify(child.exec);
