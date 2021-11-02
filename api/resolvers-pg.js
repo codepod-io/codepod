@@ -74,11 +74,11 @@ async function gitExport({ username, reponame, pods }) {
   );
   // 2. write file
   // remove
-  if (fs.existsSync(`${path}/pods`)) {
-    await fs.promises.rm(`${path}/pods`, { recursive: true });
+  if (fs.existsSync(`${path}/.pods`)) {
+    await fs.promises.rm(`${path}/.pods`, { recursive: true });
   }
-  if (!fs.existsSync(`${path}/pods`)) {
-    await fs.promises.mkdir(`${path}/pods`);
+  if (!fs.existsSync(`${path}/.pods`)) {
+    await fs.promises.mkdir(`${path}/.pods`);
   }
   for (const pod of pods) {
     pod.content = pod.staged;
@@ -88,7 +88,7 @@ async function gitExport({ username, reponame, pods }) {
     delete pod.stdout;
     delete pod.error;
     await fs.promises.writeFile(
-      `${path}/pods/${pod.id}.json`,
+      `${path}/.pods/${pod.id}.json`,
       // FIXME this will put string into quoted
       JSON.stringify(pod, null, 2)
     );
