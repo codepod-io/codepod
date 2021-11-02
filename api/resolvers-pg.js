@@ -111,8 +111,245 @@ async function gitExport({ username, reponame, pods }) {
       JSON.stringify(pod, null, 2)
     );
   }
+
+  await exportFS({ username, reponame, pods });
   await exec(`cd ${path} && git add .`);
   return true;
+}
+
+async function exportFS({ username, reponame, pods }) {
+  let path = `/srv/git/${username}/${reponame}`;
+  if (fs.existsSync(`${path}/src`)) {
+    await fs.promises.rm(`${path}/src`, { recursive: true });
+  }
+  await fs.promises.mkdir(`${path}/src`);
+  let d = normalize(pods);
+
+  // export
+  // start from ROOT, do dfs
+  async function dfs(id, parentDir) {
+    let deck = d[id];
+    // let dir = deck.id === "ROOT" ? parentDir : `${parentDir}/${deck.id}`;
+    let dir = `${parentDir}/${deck.id}`;
+    console.log("mkdir", dir);
+    // if (!fs.existsSync(dir)) {
+    await fs.promises.mkdir(dir);
+    // }
+    // console.log("deck", deck);
+    for (const [name, suffix, gen] of [
+      ["racket", "rkt", gen_racket],
+      ["julia", "jl", gen_default("julia")],
+      ["javascript", "js", gen_default("javascript")],
+      ["python", "py", gen_default("python")],
+    ]) {
+      // TODO for each language, generate import and exports
+      // For racket, generate (module xxx)
+
+      // gen with different generators
+      // DEBUG use the deck's lang
+      // if (deck.lang === name) {
+      let content = gen(deck, d);
+      if (content) {
+        console.log("writing to", `${dir}/main.${suffix}`);
+        // console.log(name, "content", content);
+        await fs.promises.writeFile(`${dir}/main.${suffix}`, content);
+      }
+      // }
+    }
+    for (const { id } of deck.children.filter(({ type }) => type === "DECK")) {
+      console.log("DFS on ", id);
+      await dfs(id, dir);
+    }
+  }
+  // let decks = pods.filter((pod) => pod.type === "DECK");
+  await dfs("ROOT", `${path}/src`);
+  // export info.rkt
+  let inforkt = `
+#lang info
+(define collection "bhdl")
+(define deps '("base" "graph" "rebellion" "uuid"))
+(define build-deps '("rackunit-lib"))
+(define pkg-desc "CodePod export")
+(define pkg-authors '(codepod))
+(define version "0.1")
+  `;
+  console.log("writing to", `${path}/info.rkt`);
+  await fs.promises.writeFile(`${path}/src/info.rkt`, inforkt);
+  await fs.promises.writeFile(
+    `${path}/src/main.rkt`,
+    `#lang racket
+(require "ROOT/main.rkt")
+(provide (all-from-out "ROOT/main.rkt"))`
+  );
+  // write codepod.rkt
+  await fs.promises.copyFile(
+    "./kernels/racket/codepod.rkt",
+    `${path}/src/codepod.rkt`
+  );
+}
+
+function normalize(pods) {
+  // build a id=>pod map
+  let d = {};
+  for (const pod of pods) {
+    d[pod.id] = pod;
+    pod.children = [];
+    pod.content = JSON.parse(pod.content);
+    pod.imports = JSON.parse(pod.imports);
+    pod.exports = JSON.parse(pod.exports);
+    pod.midports = JSON.parse(pod.midports);
+  }
+  d["ROOT"] = {
+    id: "ROOT",
+    type: "DECK",
+    ns: "ROOT",
+    children: [],
+  };
+  // construct .children
+  for (const pod of pods) {
+    pod.parentId = pod.parentId || "ROOT";
+    d[pod.parentId].children.push({
+      id: pod.id,
+      type: pod.type,
+      lang: pod.lang,
+    });
+  }
+  // sort
+  for (const [id, pod] of Object.entries(d)) {
+    // console.log("---", id, pod);
+    pod.children.sort((a, b) => d[a.id].index - d[b.id].index);
+  }
+  pods.forEach((pod) => {
+    pod.ns = computeNamespace(d, pod.id);
+  });
+  return d;
+}
+
+export function computeNamespace(pods, id) {
+  let res = [];
+  // if the pod is a pod, do not include its id
+  if (pods[id].type !== "DECK") {
+    id = pods[id].parentId;
+  }
+  while (id) {
+    res.push(id);
+    id = pods[id].parentId;
+  }
+  return res.reverse().join("/");
+}
+
+function gen_default(name) {
+  return (pod, pods) => {
+    // default gen from a list of pods to content
+    let ids = pod.children
+      .filter(({ type }) => type !== "DECK")
+      .filter(({ lang }) => lang === name)
+      .map(({ id }) => id);
+    if (ids.length == 0) return null;
+    return ids.map((id) => pods[id].content).join("\n\n");
+  };
+}
+
+function getUtilNs({ id, pods, exclude }) {
+  // get all utils for id
+  // get children utils nodes
+  if (!id) return [];
+  let res = pods[id].children
+    .filter(({ id }) => id !== exclude && pods[id].utility)
+    .map(({ id, type }) => pods[id].ns);
+  // keep to go to parents
+  return res.concat(getUtilNs({ id: pods[id].parentId, pods, exclude: id }));
+}
+
+function gen_racket(pod, pods) {
+  // console.log("pods", pods);
+  let ids = pod.children
+    .filter(({ type }) => type !== "DECK")
+    .filter(({ lang }) => lang === "racket")
+    .map(({ id }) => id);
+
+  // DEBUG even if there's no racket pod, we still need a main.rkt to export everything out
+  // if (ids.length == 0) {
+  //   return null;
+  // }
+  // generate racket code
+  let names = pod.children
+    .filter(({ lang, type }) => type !== "DECK" && lang === "racket")
+    .filter(({ id }) => pods[id].exports)
+    .map(({ id }) =>
+      Object.entries(pods[id].exports)
+        .filter(([k, v]) => v)
+        .map(([k, v]) => k)
+    );
+  names = [].concat(...names);
+  let struct_names = names
+    .filter((s) => s.startsWith("struct "))
+    .map((s) => s.split(" ")[1]);
+  names = names.filter((s) => !s.startsWith("struct "));
+  console.log("names", names);
+  // also I need to require for struct:parent
+  let nses = getUtilNs({ id: pod.id, pods });
+  console.log("utils nses", nses);
+  // child deck's
+  // console.log("111");
+  const child_deck_nses = pod.children
+    .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
+    .map(({ id, type }) => pods[id].ns);
+  // console.log("222");
+  // console.log("child_deck_nses", child_deck_nses);
+  nses = nses.concat(child_deck_nses);
+  console.log("nses", nses);
+  // if it is a test desk, get parent
+  if (pod.thundar) {
+    nses.push(pods[pod.parentId].ns);
+  }
+
+  // exported subdecks
+  let exported_decks = pod.children
+    .filter(
+      ({ id }) =>
+        pods[id].type === "DECK" && pods[id].exports && pods[id].exports["self"]
+    )
+    .map(({ id, type }) => pods[id].ns);
+
+  console.log("exported_decks", exported_decks);
+
+  let content = ids
+    .map((id) =>
+      pods[id].thundar
+        ? `(module+ test
+     ${pods[id].content}
+    )`
+        : pods[id].content
+    )
+    .join("\n\n");
+
+  let level = pod.ns.split("/").length;
+
+  let code = `
+(module ${pod.ns} racket 
+  (require rackunit 
+    "${"../".repeat(level)}codepod.rkt"
+    ${nses.map((s) => `"${"../".repeat(level)}${s}/main.rkt"`).join(" ")})
+  (provide ${names.join(" ")}
+    ${struct_names.map((s) => `(struct-out ${s})`).join("\n")}
+    ${exported_decks
+      .map((s) => `(all-from-out "${"../".repeat(level)}${s}/main.rkt")`)
+      .join("\n")}
+    )
+
+    ${
+      pod.thundar
+        ? `(module+ test
+
+      ${content}
+
+      )`
+        : content
+    }
+  )
+    `;
+  return code;
 }
 
 async function gitGetHead({ username, reponame }) {

@@ -1,5 +1,3 @@
-(require racket/enter)
-
 (module CODEPOD racket
 
 (require (for-syntax syntax/parse racket rackunit)
@@ -140,5 +138,3 @@
       (~a "CODEPOD-link " (path->string url)))))
 
 )
-
-(require 'CODEPOD)

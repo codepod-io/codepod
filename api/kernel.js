@@ -719,9 +719,8 @@ export class CodePodKernel {
       this.addSocket(socket);
     }
     console.log("executing startup file ..");
-    let startupCode = readFileSync(this.startupFile, "utf8");
     this.wire.sendShellMessage(
-      constructExecuteRequest({ code: startupCode, msg_id: "CODEPOD" })
+      constructExecuteRequest({ code: this.startupCode, msg_id: "CODEPOD" })
     );
     console.log("kernel initialized successfully");
     // so that we can chain methods
@@ -919,6 +918,7 @@ export async function createKernel({ lang, sessionId, socket }) {
 
 export class JuliaKernel extends CodePodKernel {
   startupFile = "./kernels/julia/codepod.jl";
+  startupCode = readFileSync(this.startupFile, "utf8");
   // TODO fname is not necessary, I just need a fixed port.
   fname = "./kernels/julia/conn.json";
   lang = "julia";
@@ -938,6 +938,7 @@ export class JuliaKernel extends CodePodKernel {
 
 export class PythonKernel extends CodePodKernel {
   startupFile = "./kernels/python/codepod.py";
+  startupCode = readFileSync(this.startupFile, "utf8");
   fname = "./kernels/python/conn.json";
   lang = "python";
   image = "python_kernel";
@@ -962,6 +963,10 @@ export class PythonKernel extends CodePodKernel {
 
 export class RacketKernel extends CodePodKernel {
   startupFile = "./kernels/racket/codepod.rkt";
+  startupCode = `
+    ${readFileSync(this.startupFile, "utf8")}
+    
+    (require racket/enter) (require 'CODEPOD)`;
   fname = "./kernels/racket/conn.json";
   lang = "racket";
   image = "racket_kernel";
@@ -987,6 +992,7 @@ export class RacketKernel extends CodePodKernel {
 
 export class JavascriptKernel extends CodePodKernel {
   startupFile = "./kernels/javascript/codepod.js";
+  startupCode = readFileSync(this.startupFile, "utf8");
   fname = "./kernels/javascript/conn.json";
   lang = "javascript";
   image = "javascript_kernel";
