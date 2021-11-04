@@ -301,6 +301,7 @@ function PodSummary({ id }) {
           X
         </Code>
       )}
+      {pod.stdout && <Code color="blue">O</Code>}
       {pod.exports && Object.keys(pod.exports).length > 0 && (
         <Box as="span">
           {/* <Text as="span" mr={2}>
