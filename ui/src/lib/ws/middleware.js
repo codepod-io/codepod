@@ -133,6 +133,81 @@ function handlePowerRun({ id, doEval, storeAPI, socket }) {
         },
       })
     );
+  } else if (pod.lang === "julia") {
+    let names = pod.children
+      .filter(({ id }) => pods[id].type !== "DECK")
+      .filter(({ id }) => pods[id].exports)
+      .map(({ id }) =>
+        Object.entries(pods[id].exports)
+          .filter(([k, v]) => v)
+          .map(([k, v]) => k)
+      );
+    names = [].concat(...names);
+    let nses = getUtilNs({ id, pods });
+    const child_deck_nses = pods[id].children
+      .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
+      .map(({ id, type }) => pods[id].ns);
+    nses = nses.concat(child_deck_nses);
+    // if it is a test desk, get parent
+    if (pod.thundar) {
+      nses.push(pods[pod.parent].ns);
+    }
+
+    // exported subdecks
+    let exported_decks = pods[id].children
+      .filter(
+        ({ id }) =>
+          pods[id].type === "DECK" &&
+          pods[id].exports &&
+          pods[id].exports["self"]
+      )
+      .map(({ id, type }) => pods[id].ns);
+
+    // nses = nses.concat(exported_decks);
+
+    function ns2jlmod(ns) {
+      return "Main." + ns.replaceAll("/", ".");
+    }
+
+    let code = `
+${nses
+  .map(
+    (ns) =>
+      `include_string(eval(:(${ns2jlmod(pod.ns)})), "using $(eval(:(${ns2jlmod(
+        ns
+      )})))")`
+  )
+  .join("\n")}
+
+  ${exported_decks.map(
+    (ns) =>
+      `include_string(eval(:(${ns2jlmod(
+        pod.ns
+      )})), "@reexport using $(eval(:(${ns2jlmod(ns)})))")`
+  )}
+
+  ${names.length > 0 ? `export ${names.join(",")}` : ""}
+  
+    `;
+    // console.log("code:", code);
+    // ${struct_names.map((name) => `(struct ${name} ())`)}
+
+    storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
+    storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
+    socket.send(
+      JSON.stringify({
+        type: "runCode",
+        payload: {
+          lang: pod.lang,
+          code,
+          namespace: pod.ns,
+          // raw: true,
+          // FIXME this is deck's ID
+          podId: pod.id,
+          sessionId: storeAPI.getState().repo.sessionId,
+        },
+      })
+    );
   }
   if (doEval) {
     // run all children pods

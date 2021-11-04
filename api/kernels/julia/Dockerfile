@@ -14,6 +14,9 @@ RUN KERNEL_PATH=`julia -e 'import IJulia; print(joinpath(dirname(pathof(IJulia))
     # the same (because the path is not the same)
     ln -sf $KERNEL_PATH /kernel.jl
 
+RUN julia -e 'import Pkg; Pkg.add("Reexport")'
+RUN julia -e 'import Pkg; Pkg.status()'
+
 COPY ./start.sh /start.sh
 COPY ./conn.json /conn.json
 

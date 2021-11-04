@@ -197,6 +197,30 @@ export function DeckTitle({ id }) {
           <Divider />
         </Box>
       )}
+      {pod.error && (
+        <Box overflow="scroll" maxH="3xs" border="1px" bg="gray.50">
+          <Text color="red">Error: {pod.error.evalue}</Text>
+          {pod.error.stacktrace && (
+            <Box>
+              <Text>StackTrace</Text>
+              {/* <Code w="100%" whiteSpace="pre-wrap" bg="gray.50" fontSize="sm">
+                  {stripAnsi(pod.error.stacktrace.join("\n"))}
+                </Code> */}
+              <Box
+                whiteSpace="pre-wrap"
+                fontSize="sm"
+                // this inline-style also works
+                // but it cannot be applied to <Ansi/> tag
+                // style={{
+                //   whiteSpace: "pre-wrap",
+                // }}
+              >
+                <Ansi>{pod.error.stacktrace.join("\n")}</Ansi>
+              </Box>
+            </Box>
+          )}
+        </Box>
+      )}
       {pod.running && <Text>Running ..</Text>}
       <Box
         style={{

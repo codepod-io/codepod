@@ -18,7 +18,7 @@ function ensureModuleDefined(namespace)
     for name in names
         name = Symbol(name)
         if !isdefined(eval(mod), name) 
-            include_string(eval(mod), "module $name end")
+            include_string(eval(mod), "module $name using Reexport end")
         end
         mod = :($mod.$name)
     end
@@ -47,4 +47,4 @@ function CODEPOD_DELETE_IMPORT(ns, name)
 end
 
 import Pkg
-Pkg.activate("CODEPOD")
+# Pkg.activate("CODEPOD")
