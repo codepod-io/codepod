@@ -7,7 +7,7 @@ export function computeNamespace(pods, id) {
     id = pods[id].parent;
   }
   while (id) {
-    res.push(id);
+    res.push(pods[id].name || id);
     id = pods[id].parent;
   }
   return res.reverse().join("/");

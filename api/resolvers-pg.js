@@ -112,7 +112,7 @@ async function exportFS({ username, reponame, pods }) {
   async function dfs(id, parentDir) {
     let deck = d[id];
     // let dir = deck.id === "ROOT" ? parentDir : `${parentDir}/${deck.id}`;
-    let dir = `${parentDir}/${deck.id}`;
+    let dir = `${parentDir}/${deck.name || deck.id}`;
     console.log("mkdir", dir);
     // if (!fs.existsSync(dir)) {
     await fs.promises.mkdir(dir);
@@ -214,7 +214,7 @@ export function computeNamespace(pods, id) {
     id = pods[id].parentId;
   }
   while (id) {
-    res.push(id);
+    res.push(pods[id].name || id);
     id = pods[id].parentId;
   }
   return res.reverse().join("/");

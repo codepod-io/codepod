@@ -152,24 +152,11 @@ export function DeckTitle({ id }) {
           }}
         >
           <Box colorScheme="blackAlpha">
-            {pod.name ? (
-              <Flex direction="column">
-                <Code>({pod.id})</Code>
-                <Code
-                  bg={
-                    pod.exports && pod.exports["self"] ? "blue.200" : "inherit"
-                  }
-                >
-                  {pod.name}
-                </Code>
-              </Flex>
-            ) : (
-              <Code
-                bg={pod.exports && pod.exports["self"] ? "blue.200" : "inherit"}
-              >
-                {pod.id}
-              </Code>
-            )}
+            <Code
+              bg={pod.exports && pod.exports["self"] ? "blue.200" : "inherit"}
+            >
+              {pod.name || pod.id}
+            </Code>
           </Box>
         </Button>
 
