@@ -10,18 +10,30 @@ function isModuleDefined(names)
     return true
 end
 
+# function ensureModuleDefined(namespace)
+#     # ensure the module is defined, and return the module
+#     # 1. split with /
+#     names = split(namespace, "/", keepempty=false)
+#     mod = :(Main)
+#     for name in names
+#         name = Symbol(name)
+#         if !isdefined(eval(mod), name) 
+#             include_string(eval(mod), "module $name using Reexport end")
+#         end
+#         mod = :($mod.$name)
+#     end
+#     return mod, eval(mod)
+# end
+
+
 function ensureModuleDefined(namespace)
-    # ensure the module is defined, and return the module
-    # 1. split with /
-    names = split(namespace, "/", keepempty=false)
-    mod = :(Main)
-    for name in names
-        name = Symbol(name)
-        if !isdefined(eval(mod), name) 
-            include_string(eval(mod), "module $name using Reexport end")
-        end
-        mod = :($mod.$name)
+    if !isdefined(eval(:Main), Symbol(namespace))
+        expr = :(module $(Symbol(namespace))
+                    using Reexport
+                end)
+        eval(expr)
     end
+    mod = :($(:Main).$(Symbol(namespace)))
     return mod, eval(mod)
 end
 

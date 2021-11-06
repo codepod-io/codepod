@@ -189,6 +189,40 @@ ${nses
   ${names.length > 0 ? `export ${names.join(",")}` : ""}
   
     `;
+
+    // FIXME optimize this logic. Probably construct several CODEPOD_ADD_IMPORT here
+    code = `
+    ${nses.map(
+      (ns) => `
+    include_string(eval(:($(:Main).$(Symbol("${pod.ns}")))), "using $(:($(:Main).$(Symbol("${ns}"))))")`
+    )}
+    ${exported_decks.map(
+      (ns) => `
+    include_string(eval(:($(:Main).$(Symbol("${pod.ns}")))), "@reexport using $(:($(:Main).$(Symbol("${ns}"))))")`
+    )}
+
+    ${names.length > 0 ? `export ${names.join(",")}` : ""}
+    `;
+
+    // DEBUG Much better!!!
+    code = `
+    ${nses
+      .map(
+        (ns) => `
+    eval(:(using $(:Main).$(Symbol("${ns}"))))
+    `
+      )
+      .join("\n")}
+    ${exported_decks
+      .map(
+        (ns) => `
+    eval(:(@reexport using $(:Main).$(Symbol("${ns}"))))
+    `
+      )
+      .join("\n")}
+
+    ${names.length > 0 ? `export ${names.join(",")}` : ""}
+    `;
     // console.log("code:", code);
     // ${struct_names.map((name) => `(struct ${name} ())`)}
 
