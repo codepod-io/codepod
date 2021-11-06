@@ -618,6 +618,7 @@ function LanguageMenu({ pod }) {
         <option value="scheme">Scheme</option>
         <option value="javascript">JavaScript</option>
         <option value="typescript">TypeScript</option>
+        <option value="json">JSON</option>
         <option value="css">CSS</option>
         <option value="html">HTML</option>
         <option value="sql">SQL</option>
@@ -844,7 +845,7 @@ export function ExportList({ pod }) {
                       );
                     }}
                   >
-                    <Code bg={v ? "yellow.300" : "default"}>{k}</Code>
+                    <Code bg={v ? "blue.100" : "inherit"}>{k}</Code>
                   </Button>
                 }
                 btn2={
