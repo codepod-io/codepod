@@ -99,6 +99,39 @@ async function gitExport({ username, reponame, pods }) {
   return true;
 }
 
+function normalize_cp_config(d) {
+  // extract and remove config deck, return the config
+  let configs = d["ROOT"].children.filter(({ name }) => name === "CP_CONFIG");
+
+  if (configs.length == 0) {
+    // use default config
+    return {};
+  }
+  let res = {};
+  if (configs.length > 1) {
+    console.log("WARNING: more than 1 config deck found");
+  }
+  // use first config
+  let { id } = configs[0];
+  let deck = d[id];
+  deck.children.forEach(({ id }) => {
+    let content = d[id].content;
+    let jobj = JSON.parse(content);
+    if (jobj && jobj["lang"]) {
+      res[jobj["lang"]] = jobj;
+    }
+  });
+  // remove from d
+  configs.forEach(({ id }) => {
+    let children = d["ROOT"].children;
+    children.splice(
+      children.findIndex(({ id: id2 }) => id === id2),
+      1
+    );
+  });
+  return res;
+}
+
 async function exportFS({ username, reponame, pods }) {
   let path = `/srv/git/${username}/${reponame}`;
   if (fs.existsSync(`${path}/src`)) {
@@ -106,6 +139,7 @@ async function exportFS({ username, reponame, pods }) {
   }
   await fs.promises.mkdir(`${path}/src`);
   let d = normalize(pods);
+  let config = normalize_cp_config(d);
 
   // export
   // start from ROOT, do dfs
@@ -120,7 +154,7 @@ async function exportFS({ username, reponame, pods }) {
     // console.log("deck", deck);
     for (const [name, suffix, gen] of [
       ["racket", "rkt", gen_racket],
-      ["julia", "jl", gen_default("julia")],
+      ["julia", "jl", gen_julia],
       ["javascript", "js", gen_default("javascript")],
       ["python", "py", gen_default("python")],
     ]) {
@@ -129,14 +163,14 @@ async function exportFS({ username, reponame, pods }) {
 
       // gen with different generators
       // DEBUG use the deck's lang
-      // if (deck.lang === name) {
-      let content = gen(deck, d);
-      if (content) {
-        console.log("writing to", `${dir}/main.${suffix}`);
-        // console.log(name, "content", content);
-        await fs.promises.writeFile(`${dir}/main.${suffix}`, content);
+      if (deck.lang === name) {
+        let content = gen(deck, d);
+        if (content) {
+          console.log("writing to", `${dir}/main.${suffix}`);
+          // console.log(name, "content", content);
+          await fs.promises.writeFile(`${dir}/main.${suffix}`, content);
+        }
       }
-      // }
     }
     for (const { id } of deck.children.filter(({ type }) => type === "DECK")) {
       console.log("DFS on ", id);
@@ -145,29 +179,95 @@ async function exportFS({ username, reponame, pods }) {
   }
   // let decks = pods.filter((pod) => pod.type === "DECK");
   await dfs("ROOT", `${path}/src`);
-  // export info.rkt
-  let inforkt = `
+
+  if (config.racket) {
+    // export info.rkt
+    //
+    // let defaultconfig = {
+    //   name: "bhdl",
+    //   root: "ROOT",
+    //   deps: ["base", "graph", "rebellion", "uuid"],
+    //   "build-deps": ["rackunit-lib"],
+    //   "pkg-desc": "BHDL: A Programming Language for making PCBs",
+    //   version: "0.1",
+    // };
+    config.racket.root = config.racket.root
+      ? config.racket.root.match(/^\/*(.*)/)[1]
+      : "ROOT";
+    config.racket.deps = config.racket.deps || [];
+    config.racket["build-deps"] = config.racket["build-deps"] || [];
+
+    let inforkt = `
 #lang info
-(define collection "bhdl")
-(define deps '("base" "graph" "rebellion" "uuid"))
-(define build-deps '("rackunit-lib"))
-(define pkg-desc "CodePod export")
-(define pkg-authors '(codepod))
-(define version "0.1")
+(define collection "${config.racket.name}")
+(define deps '(${config.racket.deps.map((s) => `"${s}"`).join(" ")}))
+(define build-deps '(${config.racket["build-deps"]
+      .map((s) => `"${s}"`)
+      .join(" ")}))
+(define pkg-desc "${config.racket["pkg-desc"]}")
+(define pkg-authors '())
+(define version "${config.racket.version}")
   `;
-  console.log("writing to", `${path}/info.rkt`);
-  await fs.promises.writeFile(`${path}/src/info.rkt`, inforkt);
-  await fs.promises.writeFile(
-    `${path}/src/main.rkt`,
-    `#lang racket
-(require "ROOT/main.rkt")
-(provide (all-from-out "ROOT/main.rkt"))`
-  );
-  // write codepod.rkt
-  await fs.promises.copyFile(
-    "./kernels/racket/codepod.rkt",
-    `${path}/src/codepod.rkt`
-  );
+    console.log("writing to", `${path}/info.rkt`);
+    await fs.promises.writeFile(`${path}/src/info.rkt`, inforkt);
+    await fs.promises.writeFile(
+      `${path}/src/main.rkt`,
+      `#lang racket
+(require "${config.racket.root || "ROOT"}/main.rkt")
+(provide (all-from-out "${config.racket.root || "ROOT"}/main.rkt"))`
+    );
+    // write codepod.rkt
+    await fs.promises.copyFile(
+      "./kernels/racket/codepod.rkt",
+      `${path}/src/codepod.rkt`
+    );
+  }
+  if (config.julia) {
+    // let defaultconfig = {
+    //   lang: "julia",
+    //   root: "ROOT/placer",
+    //   name: "BHDL",
+    //   uuid: "b4cd1eb8-1e24-11e8-3319-93036a3eb9f3",
+    //   pkgs: ["ProgressMeter", "CUDA"],
+    //   version: "0.1.0",
+    // };
+    // console.log("Julia config:", config.julia);
+    config.julia.root = config.julia.root
+      ? config.julia.root.match(/^\/*(.*)/)[1]
+      : "ROOT";
+    // console.log(config.julia);
+    config.julia.pkgs = config.julia.pkgs || [];
+    // How to insert deps?
+    // I could probably read from the runtime system?
+    //     await fs.promises.writeFile(
+    //       `${path}/Project.toml`,
+    //       `
+    // name = "${config.julia.name}"
+    // uuid = "${config.julia.uuid}"
+    // version = "${config.julia.version}"
+    // authors = ["Some One <someone@email.com>"]
+
+    // [deps]
+    // ${config.julia.pkgs.join("\n")}
+    //     `
+    //     );
+    function shortns(ns) {
+      let arr = ns.split("/");
+      return arr[arr.length - 1];
+    }
+    await fs.promises.writeFile(
+      `${path}/src/${config.julia.name}.jl`,
+      `
+      module ${config.julia.name}
+      using Reexport
+
+include("${config.julia.root || "ROOT"}/main.jl")
+
+@reexport using .${shortns(config.julia.root)}
+end
+    `
+    );
+  }
 }
 
 function normalize(pods) {
@@ -194,6 +294,7 @@ function normalize(pods) {
       id: pod.id,
       type: pod.type,
       lang: pod.lang,
+      name: pod.name,
     });
   }
   // sort
@@ -230,6 +331,122 @@ function gen_default(name) {
     if (ids.length == 0) return null;
     return ids.map((id) => pods[id].content).join("\n\n");
   };
+}
+
+function gen_julia(pod, pods) {
+  let ids = pod.children
+    .filter(({ type }) => type !== "DECK")
+    .filter(({ lang }) => lang === "julia")
+    .map(({ id }) => id);
+
+  let content = ids.map((id) => pods[id].content).join("\n\n");
+  let level = pod.ns.split("/").length;
+  let names = pod.children
+    .filter(({ lang, type }) => type !== "DECK" && lang === "julia")
+    .filter(({ id }) => pods[id].exports)
+    .map(({ id }) =>
+      Object.entries(pods[id].exports)
+        .filter(([k, v]) => v)
+        .map(([k, v]) => k)
+    );
+  names = [].concat(...names);
+  let nses = getUtilNs({ id: pod.id, pods });
+  console.log("utils nses", nses);
+  // child deck's
+  // console.log("111");
+  const child_deck_nses = pod.children
+    .filter(
+      ({ id }) =>
+        pods[id].type === "DECK" && !pods[id].thundar && !pods[id].utility
+    )
+    .map(({ id, type }) => pods[id].ns);
+  // console.log("222");
+  // console.log("child_deck_nses", child_deck_nses);
+
+  // FIXME the child might be utils, which will be duplicate with utilsNS
+  nses = nses.concat(child_deck_nses);
+
+  let exported_decks = pod.children
+    .filter(
+      ({ id }) =>
+        pods[id].type === "DECK" && pods[id].exports && pods[id].exports["self"]
+    )
+    .map(({ id, type }) => pods[id].ns);
+
+  function shortns(ns) {
+    let arr = ns.split("/");
+    return arr[arr.length - 1];
+  }
+
+  let code = `
+  module ${shortns(pod.ns)}
+
+  using Reexport
+
+  ${nses
+    .map(
+      (ns) => `
+  include("${"../".repeat(level)}${ns}/main.jl")
+  `
+    )
+    .join("\n")}
+
+  ${nses
+    .map(
+      (ns) => `
+    using .${shortns(ns)}`
+    )
+    .join("\n")}
+
+  ${exported_decks
+    .map(
+      (ns) => `
+    @reexport using .${shortns(ns)}`
+    )
+    .join("\n")}
+    
+  ${names.length > 0 ? `export ${names.join(",")}` : ""}
+
+  ${content}
+
+  end
+  `;
+
+  return code;
+
+  let code1 = `
+  ${nses
+    .map(
+      (ns) => `
+  include("${"../".repeat(level)}${ns}/main.jl")
+  `
+    )
+    .join("\n")}
+  eval(:(module $(Symbol("${pod.ns}"))
+    using Reexport
+
+    ${nses
+      .map(
+        (ns) => `
+      eval(:(using $(:Main).$(Symbol("${ns}"))))`
+      )
+      .join("\n")}
+    ${exported_decks
+      .map(
+        (ns) => `
+      eval(:(@reexport using $(:Main).$(Symbol("${ns}"))))`
+      )
+      .join("\n")}
+
+    ${names.length > 0 ? `export ${names.join(",")}` : ""}
+
+    ${content}
+
+  end))
+
+  
+  `;
+  return code;
 }
 
 function getUtilNs({ id, pods, exclude }) {

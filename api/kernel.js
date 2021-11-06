@@ -924,9 +924,12 @@ export class JuliaKernel extends CodePodKernel {
   lang = "julia";
   image = "julia_kernel";
   mapEval({ code, namespace }) {
-    return `CODEPOD_EVAL("""${code
+    return `CODEPOD_EVAL("""
+    ${code
       .replaceAll("\\", "\\\\")
-      .replaceAll("$", "\\$")}""", "${namespace}")`;
+      .replaceAll('"', '\\"')
+      .replaceAll("$", "\\$")}
+      """, "${namespace}")`;
   }
   mapAddImport({ from, to, name }) {
     return `CODEPOD_ADD_IMPORT("${from}", "${to}", "${name}")`;
@@ -1001,10 +1004,10 @@ export class JavascriptKernel extends CodePodKernel {
     if (midports) {
       names = midports.map((name) => `"${name}"`);
     }
-    let code1 = `CODEPOD.eval(\`${code.replaceAll(
-      "\\",
-      "\\\\"
-    )}\`, "${namespace}", [${names.join(",")}])`;
+    let code1 = `CODEPOD.eval(\`${code
+      .replaceAll("\\", "\\\\")
+      .replaceAll("`", "\\`")
+      .replaceAll('"', '\\"')}\`, "${namespace}", [${names.join(",")}])`;
     return code1;
   }
   mapAddImport({ from, to, name }) {
