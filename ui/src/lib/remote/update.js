@@ -23,7 +23,12 @@ export const remoteUpdatePod = createAsyncThunk(
   "remoteUpdatePod",
   async (pod, { dispatch }) => {
     await doRemoteUpdatePod(pod).catch((err) => {
-      dispatch(repoSlice.actions.addError({ type: "error", msg: err.message }));
+      dispatch(
+        repoSlice.actions.addError({
+          type: "error",
+          msg: "doRemoteUpdatePod:" + err.message,
+        })
+      );
       return null;
     });
   }

@@ -52,7 +52,7 @@ export default {
       // throw Error("Error:" + action.payload.errors[0].message);
       state.error = {
         type: "error",
-        msg: "Error:" + action.payload.errors[0].message,
+        msg: "Error: loopPodQueue: " + action.payload.errors[0].message,
       };
     }
     state.queue.shift();
