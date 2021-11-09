@@ -320,10 +320,6 @@ async function updateGitGutter(editor) {
   // console.log("diffs:", diffs);
   let decorations = [];
   for (const diff of diffs) {
-    diff.originalStartLineNumber;
-    diff.originalEndLineNumber;
-    diff.modifiedStartLineNumber;
-    diff.modifiedEndLineNumber;
     // newly added lines
     if (diff.originalStartLineNumber > diff.originalEndLineNumber) {
       // newly added
