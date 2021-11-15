@@ -839,6 +839,29 @@ function ToastError() {
   return <Box></Box>;
 }
 
+function SidebarTest() {
+  const dispatch = useDispatch();
+  return (
+    <Box>
+      SidebarTest
+      <Button
+        onClick={() => {
+          dispatch(repoSlice.actions.foldAll());
+        }}
+      >
+        Fold All
+      </Button>
+      <Button
+        onClick={() => {
+          dispatch(repoSlice.actions.unfoldAll());
+        }}
+      >
+        Unfold All
+      </Button>
+    </Box>
+  );
+}
+
 export function Sidebar() {
   return (
     <Box mx={2} px="1rem" boxShadow="xl" rounded="md" bg="gray.200">
@@ -848,6 +871,10 @@ export function Sidebar() {
       <Divider my={2} />
       <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
         <GitBar />
+      </Box>
+      <Divider my={2} />
+      <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
+        <SidebarTest />
       </Box>
       <Divider my={2} />
       <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
