@@ -21,4 +21,4 @@ COPY ./conn.json /conn.json
 # CMD ["racket", "-l", "iracket/iracket", "--", "/codepod-conn-racket.json"]
 # CMD ["bash"]
 # ENTRYPOINT ["tail", "-f", "/dev/null"]
-CMD ["racket", "-l", "iracket/iracket", "--", "/conn.json"]
+CMD ["racket", "-l", "iracket/iracket", "--", "-t", "/conn.json"]
