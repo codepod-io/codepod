@@ -10,6 +10,13 @@ const { PrismaClient } = Prisma;
 
 import fsp from "fs/promises";
 
+import {
+  prismaGitExport,
+  gitGetHead,
+  gitDiff,
+  gitJustCommit,
+} from "./exportfs.js";
+
 const prisma = new PrismaClient();
 
 // import { User, Repo, Pod } from "./db.js";
@@ -113,11 +120,7 @@ export const resolvers = {
       };
     },
     repos: async () => {
-      const repos = await prisma.repo.findMany({
-        include: {
-          owner: true,
-        },
-      });
+      const repos = await prisma.repo.findMany({});
       return repos;
     },
     myRepos: async (_, __, { userId }) => {
@@ -170,7 +173,7 @@ export const resolvers = {
     // getDiff: async (_, {}) => {},
     // get the HEAD commit
     gitGetHead: async (_, { username, reponame }, { userId }) => {
-      if (!userId) throw Error("Unauthenticated");
+      // if (!userId) throw Error("Unauthenticated");
       return await gitGetHead({ username, reponame });
     },
     gitGetPods: async (_, { username, reponame }, { userId }) => {
@@ -186,15 +189,6 @@ export const resolvers = {
       return await gitGetPods({ username, reponame, version: "HEAD" });
     },
     gitDiff: async (_, { username, reponame }, { userId }) => {
-      if (!userId) throw Error("Unauthenticated");
-      let user = await prisma.user.findFirst({
-        where: {
-          username,
-        },
-      });
-      if (user.id !== userId) {
-        throw new Error("You do not have access to the repo.");
-      }
       // this mutates file system
       // DEBUG I'm trying to export unpon diff request
       // await prismaGitExport({ username, reponame });
@@ -265,9 +259,6 @@ export const resolvers = {
       const repo = await prisma.repo.findFirst({
         where: {
           name: reponame,
-          owner: {
-            username: username,
-          },
         },
       });
       // console.log("=== repo", JSON.stringify(repo, null, 2));
@@ -311,15 +302,6 @@ export const resolvers = {
     //   // TODO add githead field in DB
     // },
     gitExport: async (_, { username, reponame }, { userId }) => {
-      if (!userId) throw Error("Unauthenticated");
-      let user = await prisma.user.findFirst({
-        where: {
-          username,
-        },
-      });
-      if (user.id !== userId) {
-        throw new Error("You do not have access to the repo.");
-      }
       await prismaGitExport({ username, reponame });
       return true;
     },
@@ -625,35 +607,3 @@ export const resolvers = {
     },
   },
 };
-
-async function ensurePodAccess({ id, userId }) {
-  let pod = await prisma.pod.findFirst({
-    where: { id },
-    // HEBI: select is used to select a subset of fields
-    // select: {
-    //   repo: {
-    //     select: {
-    //       owner: true,
-    //     },
-    //   },
-    // },
-    // HEBI: include is used to include additional fields
-    // Both include and select can go through relations, but they cannot be used
-    // at the same time.
-    include: {
-      repo: {
-        include: {
-          owner: true,
-        },
-      },
-    },
-  });
-  if (!pod) {
-    // this might be caused by creating a pod and update it too soon before it
-    // is created on server, which is a time sequence bug
-    throw new Error("Pod not exists.");
-  }
-  if (pod.repo.owner.id !== userId) {
-    throw new Error("You do not have write access.");
-  }
-}

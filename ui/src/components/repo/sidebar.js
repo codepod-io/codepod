@@ -598,7 +598,7 @@ function RelButton() {
   );
 }
 
-function GitExportButton({ number }) {
+function GitExportButton() {
   let reponame = useSelector((state) => state.repo.reponame);
   let username = useSelector((state) => state.repo.username);
   let [gitExport, {}] = useMutation(
@@ -813,6 +813,7 @@ function GitBar() {
         <StageAllButton />
         <GitDiffButton />
         <RepoButton />
+        <GitExportButton />
       </Flex>
     </Box>
   );
@@ -846,11 +847,9 @@ export function Sidebar() {
         <SidebarSession />
       </Box>
       <Divider my={2} />
-      {!window.codepod && (
-        <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
-          <GitBar />
-        </Box>
-      )}
+      <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
+        <GitBar />
+      </Box>
       <Divider my={2} />
 
       <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
