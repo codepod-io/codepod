@@ -914,7 +914,7 @@ export async function createKernel({ lang, sessionId, socket }) {
 // FIXME this path is outside the cpkernel package
 // const kernel_dir = "../../api/kernels";
 // const kernel_dir = "/Users/hebi/Documents/GitHub/codepod/api/kernels";
-const kernel_dir = path.join(__dirname, "../../api/kernels");
+const kernel_dir = path.join(path.resolve(), "../api/kernels");
 export class JuliaKernel extends CodePodKernel {
   startupFile = `${kernel_dir}/julia/codepod.jl`;
   startupCode = readFileSync(this.startupFile, "utf8");
@@ -948,7 +948,7 @@ export class PythonKernel extends CodePodKernel {
   fname = `${kernel_dir}/python/conn.json`;
   lang = "python";
   image = "python_kernel";
-  nativeKernelJson = os.path.join(
+  nativeKernelJson = path.join(
     os.homedir(),
     "Library/Jupyter/kernels/python/kernel.json"
   );
@@ -1012,7 +1012,7 @@ export class JavascriptKernel extends CodePodKernel {
   fname = `${kernel_dir}/javascript/conn.json`;
   lang = "javascript";
   image = "javascript_kernel";
-  nativeKernelJson = os.path.join(
+  nativeKernelJson = path.join(
     os.homedir(),
     "Library/Jupyter/kernels/javascript/kernel.json"
   );
