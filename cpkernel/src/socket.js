@@ -1,6 +1,7 @@
 import { readFileSync } from "fs";
 
-import * as pty from "node-pty";
+// import * as pty from "node-pty";
+let pty = {};
 
 import {
   constructMessage,
@@ -12,6 +13,7 @@ export const listenOnRepl = (() => {
   let procs = {};
   return (socket) => {
     // FIXME kill previous julia process?
+    throw new Error("Deprecated");
     let proc;
     socket.on("spawn", (sessionId, lang) => {
       if (sessionId in procs && lang in procs[sessionId]) {
@@ -66,6 +68,7 @@ export const listenOnKernelManagement = (() => {
 
   return (socket) => {
     socket.on("kernelTerminalSpawn", (lang) => {
+      throw new Error("Deprecated");
       // if (!kernelTerminals[lang]) {
       // kernelTerminals[lang].kill();
       let container_name = `${lang}_kernel_1`;

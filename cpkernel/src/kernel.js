@@ -4,15 +4,17 @@
 // import { spawn } from "node-pty";
 import { spawn } from "child_process";
 
-import zmq from "zeromq";
-// const zmq = require("zeromq");
+import * as zmq from "zeromq";
 import net from "net";
+import fs from "fs";
 import { readFile, readFileSync, writeFile, writeFileSync } from "fs";
 import { v4 as uuidv4 } from "uuid";
 import crypto from "crypto";
 import Docker from "dockerode";
 
 import Stomp from "stompjs";
+import path from "path";
+import os from "os";
 
 function getFreePort() {
   return new Promise((resolve) => {
@@ -74,46 +76,39 @@ export async function createNewConnSpec() {
   return spec;
 }
 
-// writeConnFile();
-
-//   let cmdArgs = {
-//     display_name: "Julia 1.6.1",
-//     argv: [
-//       "/Applications/Julia-1.6.app/Contents/Resources/julia/bin/julia",
-//       "-i",
-//       "--color=yes",
-//       "--project=@.",
-//       "/Users/hebi/.julia/packages/IJulia/e8kqU/src/kernel.jl",
-//       "{connection_file}",
-//     ],
-//     language: "julia",
-//     env: {},
-//     interrupt_mode: "signal",
-//   };
-async function startJuliaKernel(newSpec = false) {
-  // 1. generate connection file
-  let connFname = "/Users/hebi/Documents/GitHub/codepod/api/codepod-conn.json";
-  let spec;
-  if (newSpec) {
-    spec = await createNewConnSpec();
-    writeFileSync(connFname, JSON.stringify(spec));
-  } else {
-    spec = JSON.parse(readFileSync(connFname));
+export async function startNativeKernel(kernel_json) {
+  // 1. generate uuid
+  let id = uuidv4();
+  // 2. generate conn.json
+  // FIXME relative path
+  let connFname = `conns/conn-${id}.json`;
+  if (!fs.existsSync(`conns`)) {
+    await fs.promises.mkdir(`conns`);
   }
-
-  //   let juliaKernelFile =
-  //     "/Users/hebi/Library/Jupyter/kernels/julia-1.6/kernel.json";
-  let juliaKernelFile = "./kernel.json";
-  // 2. cmd args
-  let cmdArgs = JSON.parse(readFileSync(juliaKernelFile));
+  let spec = await createNewConnSpec();
+  writeFileSync(connFname, JSON.stringify(spec));
+  // 3. use the kernel.json to construct cmd
+  let cmdArgs = JSON.parse(readFileSync(kernel_json));
   //   console.log(cmdArgs);
+
   let argv = cmdArgs.argv
     .map((s) => s.replace("{connection_file}", connFname))
     .filter((x) => x.length > 0);
+  if (cmdArgs.interpreterPath) {
+    argv[0] = cmdArgs.interpreterPath;
+  }
   console.log(argv);
   console.log(argv.join(" "));
-  // spawn the process
+  // 4. launch it via spawn
   let proc = spawn(argv[0], argv.slice(1));
+  // otherwise some exception is thrown, and it is tricky where to catch that exception
+  proc.on("error", function (err) {
+    console.log(
+      "-=-=-= Oh noez, Kernel error: " + err,
+      "this is likely due to the command is not available. Make sure the kernel is correctly installed."
+    );
+  });
+  // console.log(proc);
   proc.stdout.on("data", (data) => {
     console.log(`child stdout:\n${data}`);
   });
@@ -123,6 +118,9 @@ async function startJuliaKernel(newSpec = false) {
   });
   //   proc.close();
   console.log("kernel process ID:", proc.pid);
+  if (!proc.pid) {
+    return null;
+  }
   return spec;
 }
 
@@ -269,8 +267,8 @@ export function constructExecuteRequest({ code, msg_id, cp = {} }) {
 }
 
 export class ZmqWire {
-  constructor(connFname, ip) {
-    this.kernelSpec = JSON.parse(readFileSync(connFname));
+  constructor(spec, ip) {
+    this.kernelSpec = spec;
     // console.log(this.kernelSpec);
     if (ip) {
       console.log("Got IP Address:", ip);
@@ -286,6 +284,11 @@ export class ZmqWire {
 
     // Pub/Sub Router/Dealer
     this.shell = new zmq.Dealer();
+    // FIXME this is not actually connected. I need to check the real status
+    // There does not seem to have any method to check connection status
+    // console.log("=== connecting to shell port");
+    // console.log(this.kernelSpec);
+    // console.log(`tcp://${this.kernelSpec.ip}:${this.kernelSpec.shell_port}`);
     this.shell.connect(
       `tcp://${this.kernelSpec.ip}:${this.kernelSpec.shell_port}`
     );
@@ -446,6 +449,7 @@ async function loadContainer(name, network) {
         return resolve(null);
       }
       if (data.State.Running) {
+        // console.log(data.NetworkSettings.Networks);
         let ip = data.NetworkSettings.Networks[network].IPAddress;
         console.log("IP:", ip);
         resolve(ip);
@@ -485,13 +489,13 @@ async function createContainer(image, name, network) {
             // FIXME hard coded dev_ prefix
             "dev_shared_vol:/mount/shared",
           ],
-          DeviceRequests: [
-            {
-              Count: -1,
-              Driver: "nvidia",
-              Capabilities: [["gpu"]],
-            },
-          ],
+          // DeviceRequests: [
+          //   {
+          //     Count: -1,
+          //     Driver: "nvidia",
+          //     Capabilities: [["gpu"]],
+          //   },
+          // ],
         },
       },
       (err, container) => {
@@ -518,32 +522,7 @@ async function createContainer(image, name, network) {
   });
 }
 
-var mq_client = Stomp.overTCP("rabbitmq", 61613);
-
-// the rabbitmq server does not seem to start immediately. FIXME so probably I
-// need to keep trying?
-mq_client.connect(
-  "guest",
-  "guest",
-  function () {
-    console.log("connected");
-    // mq_client.send("/queue/test", { priority: 9 }, "Hello from server");
-    // var subscription = client.subscribe("/queue/test", function (message) {
-    //   // called when the client receives a STOMP message from the server
-    //   if (message.body) {
-    //     console.log("got message with body " + message.body);
-    //   } else {
-    //     console.log("got empty message");
-    //   }
-    // });
-    // subscription.unsubscribe()
-  },
-  function () {
-    console.log("error");
-    throw new Error("Cannot connect to RabbitMQ server");
-  },
-  "/"
-);
+// var mq_client = Stomp.overTCP("rabbitmq", 61613);
 
 class MyMqSocket {
   constructor(queue) {
@@ -551,7 +530,7 @@ class MyMqSocket {
   }
   send(obj) {
     // FIXME need to make sure it is connected
-    mq_client.send(this.queue, {}, obj);
+    // mq_client.send(this.queue, {}, obj);
   }
 }
 
@@ -709,11 +688,26 @@ export class CodePodKernel {
     let network = process.env["KERNEL_NETWORK"] || "codepod";
     let name = `cpkernel_${network}_${sessionId}_${this.lang}`;
     // await removeContainer(name);
-    let ip = await loadOrCreateContainer(this.image, name, network);
+    // console.log("loadOrCreateContainer");
+    // let ip = await loadOrCreateContainer(this.image, name, network);
+
+    // create native kernel process
+    if (!this.nativeKernelJson) return null;
+    console.log("=== creating native kernel with", this.nativeKernelJson);
+    let spec;
+    try {
+      spec = await startNativeKernel(this.nativeKernelJson);
+      if (!spec) return null;
+    } catch (e) {
+      console.log(e);
+      return null;
+    }
+
     // FIXME I don't want to extend Kernel, I'm using composition
     console.log("connecting to zmq ..");
-    this.wire = new ZmqWire(this.fname, ip);
-    this.mq_socket = new MyMqSocket(sessionId);
+    // this.wire = new ZmqWire(JSON.parse(readFileSync(this.fname)), ip);
+    this.wire = new ZmqWire(spec, "127.0.0.1");
+    // this.mq_socket = new MyMqSocket(sessionId);
     if (socket) {
       // listen to IOPub here
       this.addSocket(socket);
@@ -747,7 +741,7 @@ export class CodePodKernel {
     }
     this.socket = socket;
     // DEBUG
-    socket = this.mq_socket;
+    // socket = this.mq_socket;
     this.wire.setOnIOPub((topic, msgs) => {
       // console.log("-----", topic, msgs);
       // iracket's topic seems to be an ID. I should use msg type instead
@@ -783,7 +777,8 @@ export class CodePodKernel {
     });
     this.wire.setOnShell((msgs) => {
       // DEBUG
-      socket = this.mq_socket;
+      // socket = this.mq_socket;
+      socket = this.socket;
       switch (msgs.header.msg_type) {
         case "execute_reply":
           {
@@ -916,13 +911,21 @@ export async function createKernel({ lang, sessionId, socket }) {
   }
 }
 
+// FIXME this path is outside the cpkernel package
+// const kernel_dir = "../../api/kernels";
+// const kernel_dir = "/Users/hebi/Documents/GitHub/codepod/api/kernels";
+const kernel_dir = path.join(__dirname, "../../api/kernels");
 export class JuliaKernel extends CodePodKernel {
-  startupFile = "./kernels/julia/codepod.jl";
+  startupFile = `${kernel_dir}/julia/codepod.jl`;
   startupCode = readFileSync(this.startupFile, "utf8");
   // TODO fname is not necessary, I just need a fixed port.
-  fname = "./kernels/julia/conn.json";
+  fname = `${kernel_dir}/julia/conn.json`;
   lang = "julia";
   image = "julia_kernel";
+  nativeKernelJson = path.join(
+    os.homedir(),
+    "Library/Jupyter/kernels/julia-nodeps-1.7/kernel.json"
+  );
   mapEval({ code, namespace }) {
     return `CODEPOD_EVAL("""
     ${code
@@ -940,11 +943,15 @@ export class JuliaKernel extends CodePodKernel {
 }
 
 export class PythonKernel extends CodePodKernel {
-  startupFile = "./kernels/python/codepod.py";
+  startupFile = `${kernel_dir}/python/codepod.py`;
   startupCode = readFileSync(this.startupFile, "utf8");
-  fname = "./kernels/python/conn.json";
+  fname = `${kernel_dir}/python/conn.json`;
   lang = "python";
   image = "python_kernel";
+  nativeKernelJson = os.path.join(
+    os.homedir(),
+    "Library/Jupyter/kernels/python/kernel.json"
+  );
   mapEval({ code, namespace }) {
     return `CODEPOD_EVAL("""${code
       .replaceAll("\\", "\\\\")
@@ -965,14 +972,20 @@ export class PythonKernel extends CodePodKernel {
 }
 
 export class RacketKernel extends CodePodKernel {
-  startupFile = "./kernels/racket/codepod.rkt";
+  startupFile = `${kernel_dir}/racket/codepod.rkt`;
   startupCode = `
     ${readFileSync(this.startupFile, "utf8")}
     
     (require racket/enter) (require 'CODEPOD)`;
-  fname = "./kernels/racket/conn.json";
+  fname = `${kernel_dir}/racket/conn.json`;
   lang = "racket";
   image = "racket_kernel";
+  // FIXME use ~ and escape HOME
+  // TODO detect what's available on the system instead of hard-coding
+  nativeKernelJson = path.join(
+    os.homedir(),
+    "/Library/Jupyter/kernels/racket/kernel.json"
+  );
   mapEval({ code, namespace }) {
     return `(enter! #f) (CODEPOD-EVAL "
     ${code
@@ -994,11 +1007,15 @@ export class RacketKernel extends CodePodKernel {
 }
 
 export class JavascriptKernel extends CodePodKernel {
-  startupFile = "./kernels/javascript/codepod.js";
+  startupFile = `${kernel_dir}/javascript/codepod.js`;
   startupCode = readFileSync(this.startupFile, "utf8");
-  fname = "./kernels/javascript/conn.json";
+  fname = `${kernel_dir}/javascript/conn.json`;
   lang = "javascript";
   image = "javascript_kernel";
+  nativeKernelJson = os.path.join(
+    os.homedir(),
+    "Library/Jupyter/kernels/javascript/kernel.json"
+  );
   mapEval({ code, namespace, midports }) {
     let names = [];
     if (midports) {
