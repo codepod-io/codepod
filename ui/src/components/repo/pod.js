@@ -151,7 +151,8 @@ export function DeckTitle({ id }) {
             dispatch(repoSlice.actions.toggleDeckExport({ id: pod.id }));
           }}
         >
-          <Box colorScheme="blackAlpha">
+          {/* FIXME colorScheme not recognized by electron app */}
+          <Box>
             <Code
               bg={pod.exports && pod.exports["self"] ? "blue.200" : "inherit"}
             >

@@ -846,14 +846,17 @@ export function Sidebar() {
         <SidebarSession />
       </Box>
       <Divider my={2} />
-      <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
-        <GitBar />
-      </Box>
+      {!window.codepod && (
+        <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
+          <GitBar />
+        </Box>
+      )}
       <Divider my={2} />
+
       <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
         <SidebarRuntime />
         <SidebarKernel />
-        <ActiveSessions />
+        {!window.codepod && <ActiveSessions />}
       </Box>
       <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
         <ToastError />

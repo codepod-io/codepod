@@ -342,6 +342,82 @@ function handleRunTree({ id, storeAPI, socket }) {
   helper(id);
 }
 
+function onMessage(store) {
+  return (msg) => {
+    // console.log("onMessage", msg.data || msg.body || undefined);
+    // msg.data for websocket
+    // msg.body for rabbitmq
+    let { type, payload } = JSON.parse(msg.data || msg.body || undefined);
+    console.log("got message", type, payload);
+    switch (type) {
+      case "output":
+        {
+          console.log("output:", payload);
+        }
+        break;
+      case "stdout":
+        {
+          store.dispatch(actions.wsStdout(payload));
+        }
+        break;
+      case "execute_result":
+        {
+          store.dispatch(actions.wsResult(payload));
+        }
+        break;
+      case "display_data":
+        {
+          store.dispatch(actions.wsDisplayData(payload));
+        }
+        break;
+      case "execute_reply":
+        {
+          store.dispatch(actions.wsExecuteReply(payload));
+        }
+        break;
+      case "error":
+        {
+          store.dispatch(actions.wsError(payload));
+        }
+        break;
+      case "stream":
+        {
+          store.dispatch(actions.wsStream(payload));
+        }
+        break;
+      case "IO:execute_result":
+        {
+          store.dispatch(actions.wsIOResult(payload));
+        }
+        break;
+      case "IO:execute_reply":
+        {
+          // CAUTION ignore
+        }
+        break;
+      case "IO:error":
+        {
+          store.dispatch(actions.wsIOError(payload));
+        }
+        break;
+      case "status":
+        {
+          // console.log("Received status:", payload);
+          store.dispatch(actions.wsStatus(payload));
+        }
+        break;
+      case "interrupt_reply":
+        {
+          // console.log("got interrupt_reply", payload);
+          store.dispatch(actions.wsRequestStatus({ lang: payload.lang }));
+        }
+        break;
+      default:
+        console.log("WARNING unhandled message", { type, payload });
+    }
+  };
+}
+
 const socketMiddleware = () => {
   let socket = null;
   let socket_intervalId = null;
@@ -373,7 +449,9 @@ const socketMiddleware = () => {
         // I canont use "/ws" for a WS socket. Thus I need to detect what's the
         // protocol used here, so that it supports both dev and prod env.
         let socket_url;
-        if (window.location.protocol === "http:") {
+        if (window.codepod) {
+          socket_url = `ws://localhost:14321`;
+        } else if (window.location.protocol === "http:") {
           socket_url = `ws://${window.location.host}/ws`;
         } else {
           socket_url = `wss://${window.location.host}/ws`;
@@ -381,106 +459,42 @@ const socketMiddleware = () => {
         socket = new WebSocket(socket_url);
         // socket.emit("spawn", state.sessionId, lang);
 
-        // if (mq_client) {
-        //   mq_client.disconnect()
-        // }
-        console.log("connecting to stomp ..");
-        // TODO for production
-        let mq_url;
-        if (window.location.protocol === "http:") {
-          // "ws://codepod.test/ws"
-          // "ws://mq.codepod.test/ws"
-          // FIXME why have to use /ws suffix?
-          mq_url = `ws://mq.${window.location.host}/ws`;
+        if (window.codepod) {
+          socket.onmessage = onMessage(store);
         } else {
-          mq_url = `wss://mq.${window.location.host}/ws`;
+          // if (mq_client) {
+          //   mq_client.disconnect()
+          // }
+          console.log("connecting to stomp ..");
+          // TODO for production
+          let mq_url;
+          if (window.location.protocol === "http:") {
+            // "ws://codepod.test/ws"
+            // "ws://mq.codepod.test/ws"
+            // FIXME why have to use /ws suffix?
+            mq_url = `ws://mq.${window.location.host}/ws`;
+          } else {
+            mq_url = `wss://mq.${window.location.host}/ws`;
+          }
+          mq_client = Stomp.over(new WebSocket(mq_url));
+          // remove debug messages
+          mq_client.debug = () => {};
+          mq_client.connect(
+            "guest",
+            "guest",
+            function () {
+              console.log("connected to rabbitmq");
+              mq_client.subscribe(
+                store.getState().repo.sessionId,
+                onMessage(store)
+              );
+            },
+            function () {
+              console.log("error connecting RabbitMQ");
+            },
+            "/"
+          );
         }
-        mq_client = Stomp.over(new WebSocket(mq_url));
-        // remove debug messages
-        mq_client.debug = () => {};
-        mq_client.connect(
-          "guest",
-          "guest",
-          function () {
-            console.log("connected to rabbitmq");
-            mq_client.subscribe(store.getState().repo.sessionId, (msg) => {
-              let { type, payload } = JSON.parse(msg.body);
-              // console.log("got message", type, payload);
-              switch (type) {
-                case "output":
-                  {
-                    console.log("output:", payload);
-                  }
-                  break;
-                case "stdout":
-                  {
-                    store.dispatch(actions.wsStdout(payload));
-                  }
-                  break;
-                case "execute_result":
-                  {
-                    store.dispatch(actions.wsResult(payload));
-                  }
-                  break;
-                case "display_data":
-                  {
-                    store.dispatch(actions.wsDisplayData(payload));
-                  }
-                  break;
-                case "execute_reply":
-                  {
-                    store.dispatch(actions.wsExecuteReply(payload));
-                  }
-                  break;
-                case "error":
-                  {
-                    store.dispatch(actions.wsError(payload));
-                  }
-                  break;
-                case "stream":
-                  {
-                    store.dispatch(actions.wsStream(payload));
-                  }
-                  break;
-                case "IO:execute_result":
-                  {
-                    store.dispatch(actions.wsIOResult(payload));
-                  }
-                  break;
-                case "IO:execute_reply":
-                  {
-                    // CAUTION ignore
-                  }
-                  break;
-                case "IO:error":
-                  {
-                    store.dispatch(actions.wsIOError(payload));
-                  }
-                  break;
-                case "status":
-                  {
-                    // console.log("Received status:", payload);
-                    store.dispatch(actions.wsStatus(payload));
-                  }
-                  break;
-                case "interrupt_reply":
-                  {
-                    // console.log("got interrupt_reply", payload);
-                    store.dispatch(
-                      actions.wsRequestStatus({ lang: payload.lang })
-                    );
-                  }
-                  break;
-                default:
-                  console.log("WARNING unhandled message", { type, payload });
-              }
-            });
-          },
-          function () {
-            console.log("error connecting RabbitMQ");
-          },
-          "/"
-        );
 
         // websocket handlers
         // socket.onmessage = onMessage(store);

@@ -3,6 +3,10 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { getAuthHeaders, hashPod, computeNamespace } from "../utils";
 import { repoSlice } from "../store";
 
+const graphql_url = window.codepod
+  ? "http://localhost:14321/graphql"
+  : "/graphql";
+
 export async function doRemoteLoadGit({ username, reponame }) {
   // get the pods of the git HEAD
   const query = `
@@ -13,7 +17,7 @@ export async function doRemoteLoadGit({ username, reponame }) {
     }
   }
   `;
-  const res = await fetch("/graphql", {
+  const res = await fetch(graphql_url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -35,9 +39,6 @@ export async function doRemoteLoadRepo({ username, reponame }) {
     query Repo($reponame: String!, $username: String!) {
       repo(name: $reponame, username: $username) {
         name
-        owner {
-          name
-        }
         pods {
           id
           type
@@ -69,7 +70,7 @@ export async function doRemoteLoadRepo({ username, reponame }) {
     }
   `;
   // return res
-  const res = await fetch("/graphql", {
+  const res = await fetch(graphql_url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -227,7 +228,7 @@ export async function doRemoteAddPod({
       }
     }
   `;
-  const res = await fetch("/graphql", {
+  const res = await fetch(graphql_url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -256,7 +257,7 @@ export async function doRemoteDeletePod({ id, toDelete }) {
     ) {
       deletePod(id: $id, toDelete: $toDelete)
     }`;
-  const res = await fetch("/graphql", {
+  const res = await fetch(graphql_url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -275,7 +276,7 @@ export async function doRemoteDeletePod({ id, toDelete }) {
 }
 
 export async function doRemoteUpdatePod(pod) {
-  const res = await fetch("/graphql", {
+  const res = await fetch(graphql_url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -317,7 +318,7 @@ export async function doRemoteUpdatePod(pod) {
 }
 
 export async function doRemotePastePod({ clip, parent, index, column }) {
-  const res = await fetch("/graphql", {
+  const res = await fetch(graphql_url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
