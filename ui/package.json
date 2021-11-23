@@ -1,8 +1,12 @@
 {
-  "name": "ui",
+  "name": "CodePod",
   "version": "0.1.0",
   "private": true,
   "main": "./public/electron.js",
+  "author": {
+    "name": "Hebi Li",
+    "email": "lihebi.com@gmail.com"
+  },
   "homepage": "./",
   "dependencies": {
     "@apollo/client": "^3.3.21",
@@ -22,7 +26,7 @@
     "@testing-library/user-event": "^12.1.10",
     "ansi-to-react": "^6.1.6",
     "classnames": "^2.3.1",
-    "cpkernel": "link:../cpkernel",
+    "cpkernel": "link:../cpkernel/",
     "crypto-js": "^4.0.0",
     "diff2html": "^3.4.8",
     "formik": "^2.2.9",
@@ -60,13 +64,14 @@
     "eject": "react-app-rewired eject",
     "ele": "electronmon .",
     "electron:start": "concurrently -k \"cross-env BROWSER=none CPAPP=desktop yarn start\" \"wait-on http://localhost:3000 && electronmon .\"",
+    "package": "yarn build && yarn electron:package:mac",
     "electron:package:mac": "electron-builder -m -c.extraMetadata.main=build/electron.js",
-    "electron:package:win": "yarn build && electron-builder -w -c.extraMetadata.main=build/electron.js",
-    "electron:package:linux": "yarn build && electron-builder -l -c.extraMetadata.main=build/electron.js"
+    "electron:package:win": "electron-builder -w -c.extraMetadata.main=build/electron.js",
+    "electron:package:linux": "electron-builder -l -c.extraMetadata.main=build/electron.js"
   },
   "build": {
-    "appId": "com.electron.myapp",
-    "productName": "My Electron App",
+    "appId": "io.codepod",
+    "productName": "CodePod",
     "files": [
       "build/**/*",
       "node_modules/**/*"

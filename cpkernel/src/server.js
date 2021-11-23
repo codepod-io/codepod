@@ -5,13 +5,15 @@ import { ApolloServer, gql } from "apollo-server-express";
 import jwt from "jsonwebtoken";
 
 import { typeDefs } from "./typedefs.js";
-import { resolvers } from "./resolver.js";
+// import { resolvers } from "./resolver.js";
 import { listenOnMessage } from "./socket.js";
+import { getResolvers } from "./resolver_local.js";
 
-export async function startServer() {
+export async function startServer(appDir) {
   const apollo = new ApolloServer({
     typeDefs,
-    resolvers,
+    // resolvers,
+    resolvers: getResolvers(appDir),
     context: ({ req }) => {
       const token = req?.headers?.authorization?.slice(7);
       let userId;

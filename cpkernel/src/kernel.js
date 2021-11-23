@@ -76,15 +76,23 @@ export async function createNewConnSpec() {
   return spec;
 }
 
+const appdata =
+  process.env.APPDATA ||
+  (process.platform == "darwin"
+    ? process.env.HOME + "/Library/Application Support"
+    : process.env.HOME + "/.local/share");
+
 export async function startNativeKernel(kernel_json) {
   // 1. generate uuid
   let id = uuidv4();
   // 2. generate conn.json
   // FIXME relative path
-  let connFname = `conns/conn-${id}.json`;
-  if (!fs.existsSync(`conns`)) {
-    await fs.promises.mkdir(`conns`);
+  let conns_dir = path.join(appdata, "CodePod", `conns`);
+  if (!fs.existsSync(conns_dir)) {
+    await fs.promises.mkdir(conns_dir);
   }
+  let connFname = path.join(conns_dir, `conn-${id}.json`);
+
   let spec = await createNewConnSpec();
   writeFileSync(connFname, JSON.stringify(spec));
   // 3. use the kernel.json to construct cmd
@@ -683,7 +691,6 @@ function handleIOPub_stream({ msgs, socket }) {
 
 export class CodePodKernel {
   async init({ sessionId, socket }) {
-    // fname = await genConnSpec();
     this.sessionId = sessionId;
     let network = process.env["KERNEL_NETWORK"] || "codepod";
     let name = `cpkernel_${network}_${sessionId}_${this.lang}`;
@@ -914,7 +921,8 @@ export async function createKernel({ lang, sessionId, socket }) {
 // FIXME this path is outside the cpkernel package
 // const kernel_dir = "../../api/kernels";
 // const kernel_dir = "/Users/hebi/Documents/GitHub/codepod/api/kernels";
-const kernel_dir = path.join(path.resolve(), "../api/kernels");
+const kernel_dir = path.join(__dirname, "./kernels");
+
 export class JuliaKernel extends CodePodKernel {
   startupFile = `${kernel_dir}/julia/codepod.jl`;
   startupCode = readFileSync(this.startupFile, "utf8");
@@ -1033,21 +1041,4 @@ export class JavascriptKernel extends CodePodKernel {
   mapDeleteImport({ ns, name }) {
     return `CODEPOD.deleteImport("${ns}", "${name}")`;
   }
-}
-
-function sleep(ms) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
-export async function genConnSpec() {
-  // ensure directory exist
-  if (!fs.existsSync("./conns")) {
-    fs.mkdirSync("./conns");
-  }
-  let fname = `./conns/${uuidv4()}.json`;
-  let spec = await createNewConnSpec();
-  writeFileSync(fname, JSON.stringify(spec));
-  return fname;
 }

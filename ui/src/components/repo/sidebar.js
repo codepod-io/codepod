@@ -848,7 +848,7 @@ export function Sidebar() {
       </Box>
       <Divider my={2} />
       <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
-        <GitBar />
+        {/* <GitBar /> */}
       </Box>
       <Divider my={2} />
 

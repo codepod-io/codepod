@@ -6,12 +6,12 @@ import fs from "fs";
 import * as child from "child_process";
 import util from "util";
 
-import Prisma from "@prisma/client";
-const { PrismaClient } = Prisma;
+import * as Prisma from "@prisma/client";
+// const { PrismaClient } = Prisma;
 
 import fsp from "fs/promises";
 
-const prisma = new PrismaClient();
+const prisma = new Prisma.PrismaClient();
 
 const repopath = pathAPI.join(os.homedir(), `.codepod/repos`);
 

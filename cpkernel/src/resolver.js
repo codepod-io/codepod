@@ -5,8 +5,10 @@ import * as child from "child_process";
 import fs from "fs";
 import util from "util";
 
-import Prisma from "@prisma/client";
-const { PrismaClient } = Prisma;
+import * as Prisma from "@prisma/client";
+// console.log("===", Prisma);
+// console.log(Prisma.PrismaClient);
+// const { PrismaClient } = Prisma;
 
 import fsp from "fs/promises";
 
@@ -17,7 +19,7 @@ import {
   gitJustCommit,
 } from "./exportfs.js";
 
-const prisma = new PrismaClient();
+const prisma = new Prisma.PrismaClient();
 
 // import { User, Repo, Pod } from "./db.js";
 

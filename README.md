@@ -23,6 +23,8 @@ To develop the electoron app:
 - the repo server is http://localhost:14321/graphql
 - When delievered as an electron app, the backend is packaged as a cpkernel pacakge,and the server is launched via electron's main.js process at http://localhost:14321
 
+3. go into ui directory and run `yarn ele` to start the electron app.
+
 To build the electron app:
 
 1. go to ui directory and yarn build. The UI is built into the app.

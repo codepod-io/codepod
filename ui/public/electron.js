@@ -16,6 +16,7 @@ const url = require("url");
 // import http from "http";
 
 // require("../../api/socket");
+const { startServer } = require("cpkernel");
 
 // const { listenOnMessage, typeDefs, resolvers } = require("cpkernel");
 // import { listenOnMessage } from "cpkernel";
@@ -148,3 +149,5 @@ app.on("web-contents-created", (event, contents) => {
 // http_server.listen({ port: 14321 }, () => {
 //   console.log(`🚀 Server ready at http://localhost:14321`);
 // });
+console.log(app.getPath("userData"));
+startServer(path.join(app.getPath("userData"), "repos"));

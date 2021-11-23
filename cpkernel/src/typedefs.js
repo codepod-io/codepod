@@ -27,9 +27,9 @@ export const typeDefs = gql`
     staged: String
     column: Int
     lang: String
-    parent: Pod
+    parent: String
     index: Int
-    children: [Pod]
+    children: [String]
     result: String
     stdout: String
     error: String
@@ -84,7 +84,7 @@ export const typeDefs = gql`
       invitation: String
     ): AuthData
     updateUser(username: String, email: String, name: String): Boolean
-    createRepo(name: String): Repo
+    createRepo(name: String): Boolean
     deleteRepo(name: String): Boolean
     addPod(
       reponame: String
@@ -92,27 +92,16 @@ export const typeDefs = gql`
       parent: String
       index: Int
       input: PodInput
-    ): Pod
-    deletePod(id: String, toDelete: [String]): Boolean
+    ): Boolean
+    deletePod(
+      id: String
+      toDelete: [String]
+      reponame: String
+      username: String
+    ): Boolean
     pastePod(id: String, parentId: String, index: Int, column: Int): Boolean
     pastePods(ids: [String], parentId: String, index: Int, column: Int): Boolean
-    updatePod(
-      id: String
-      content: String
-      column: Int
-      type: String
-      lang: String
-      result: String
-      stdout: String
-      error: String
-      imports: String
-      exports: String
-      midports: String
-      fold: Boolean
-      thundar: Boolean
-      utility: Boolean
-      name: String
-    ): Pod
+    updatePod(reponame: String, username: String, input: PodInput): Boolean
     clearUser: Boolean
     clearRepo: Boolean
     clearPod: Boolean
