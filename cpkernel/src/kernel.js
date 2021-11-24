@@ -89,7 +89,7 @@ export async function startNativeKernel(kernel_json) {
   // FIXME relative path
   let conns_dir = path.join(appdata, "CodePod", `conns`);
   if (!fs.existsSync(conns_dir)) {
-    await fs.promises.mkdir(conns_dir);
+    await fs.promises.mkdir(conns_dir, { recursive: true });
   }
   let connFname = path.join(conns_dir, `conn-${id}.json`);
 
