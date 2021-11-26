@@ -6,6 +6,7 @@ function App() {
     <div className="App">
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
+        <p>Go to http://localhost:14322 with your browser.</p>
         <p>
           Edit <code>src/App.js</code> and save to reload.
         </p>

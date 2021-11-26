@@ -1,7 +1,37 @@
 // Module to control the application lifecycle and the native browser window.
-const { app, BrowserWindow, protocol } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  protocol,
+  Tray,
+  Menu,
+  nativeImage,
+} = require("electron");
 const path = require("path");
 const url = require("url");
+
+
+if (app.isPackaged) {
+  const { startServer } = require("cpkernel");
+  const express = require("express");
+
+  // if packaged, run the backend:
+  // 1. the graphql on :14321
+  // 2. the static UI on :14322
+
+  // during development, I'm going to start the two server manually
+  console.log("Starting repo/kernel server ..")
+  startServer(path.join(app.getPath("userData"), "repos"));
+
+  const static_dir = path.join(__dirname, "ui");
+  console.log("===", static_dir);
+  const expapp = express();
+  expapp.use("/", express.static(static_dir));
+  console.log("starting UI server ..")
+  expapp.listen(14322, () => {
+    console.log("UI server started on port :14322");
+  });
+}
 
 // Create the native browser window.
 function createWindow() {
@@ -18,13 +48,19 @@ function createWindow() {
   // In production, set the initial browser path to the local bundle generated
   // by the Create React App build process.
   // In development, set it to localhost to allow live/hot-reloading.
+  const indexurl = url.format({
+    pathname: path.join(__dirname, "index.html"),
+    protocol: "file:",
+    slashes: true,
+  });
   const appURL = app.isPackaged
     ? url.format({
-        pathname: path.join(__dirname, "index.html"),
-        protocol: "file:",
-        slashes: true,
-      })
-    : "http://localhost:3000";
+      pathname: path.join(__dirname, "ui/index.html"),
+      protocol: "file:",
+      slashes: true,
+    })
+    : // : "http://localhost:13001";
+    "http://localhost:14322";
   mainWindow.loadURL(appURL);
 
   // Automatically open Chrome's DevTools in development mode.
@@ -48,12 +84,38 @@ function setupLocalFilesNormalizerProxy() {
   );
 }
 
+let tray;
+
 // This method will be called when Electron has finished its initialization and
 // is ready to create the browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   createWindow();
   setupLocalFilesNormalizerProxy();
+
+  const icon = nativeImage.createFromPath("./favicon.ico");
+  tray = new Tray(icon);
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      label: "Open in Browser",
+      type: "normal",
+      click: () => {
+        require("electron").shell.openExternal("http://localhost:14322");
+      },
+    },
+    { label: "Preference", type: "normal" },
+    { label: "Dashboard" },
+    { label: "Public Access", type: "checkbox" },
+    {
+      label: "Quit", click: () => {
+        app.quit();
+      }
+    },
+  ]);
+
+  tray.setContextMenu(contextMenu);
+  // tray.setToolTip("This is my application");
+  tray.setTitle("CP");
 
   app.on("activate", function () {
     // On macOS it's common to re-create a window in the app when the

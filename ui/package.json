@@ -1,5 +1,5 @@
 {
-  "name": "CodePod",
+  "name": "codepod-ui",
   "version": "0.1.0",
   "private": true,
   "main": "./public/electron.js",
@@ -26,7 +26,6 @@
     "@testing-library/user-event": "^12.1.10",
     "ansi-to-react": "^6.1.6",
     "classnames": "^2.3.1",
-    "cpkernel": "link:../cpkernel/",
     "crypto-js": "^4.0.0",
     "diff2html": "^3.4.8",
     "formik": "^2.2.9",
@@ -58,16 +57,16 @@
     "xterm-addon-fit": "^0.5.0"
   },
   "scripts": {
-    "start": "react-app-rewired start",
+    "start": "PORT=14322 react-app-rewired start",
     "build": "react-app-rewired --max_old_space_size=4096 build",
     "test": "react-app-rewired test",
     "eject": "react-app-rewired eject",
     "ele": "electronmon .",
-    "electron:start": "concurrently -k \"cross-env BROWSER=none CPAPP=desktop yarn start\" \"wait-on http://localhost:3000 && electronmon .\"",
-    "package": "yarn build && yarn electron:package:mac",
+    "electron:start": "concurrently -k \"cross-env BROWSER=none CPAPP=desktop npm run start\" \"wait-on http://localhost:3000 && electronmon .\"",
+    "package": "npx electron-builder -mwl -c.extraMetadata.main=build/electron.js",
     "electron:package:mac": "electron-builder -m -c.extraMetadata.main=build/electron.js",
     "electron:package:win": "electron-builder -w -c.extraMetadata.main=build/electron.js",
-    "electron:package:linux": "electron-builder -l -c.extraMetadata.main=build/electron.js"
+    "electron:package:linux": "electron-builder -l --x64 -c.extraMetadata.main=build/electron.js"
   },
   "build": {
     "appId": "io.codepod",

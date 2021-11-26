@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "main": "dist/cjs/index.js",
   "module": "dist/mjs/index.js",
-  "type": "module",
   "exports": {
     ".": {
       "import": "./dist/mjs/index.js",
@@ -13,11 +12,15 @@
   "license": "MIT",
   "scripts": {
     "build": "rm -fr dist/* && tsc -p tsconfig.json && tsc -p tsconfig-cjs.json && ./fixup",
-    "postbuild": "copyfiles kernels/**/* dist/cjs/ && copyfiles kernels/**/* dist/mjs/",
+    "build1": "rm -rf dist && tsc -p tsconfig.json",
+    "postbuild": "copyfiles kernels/**/* dist/",
     "watch": "watch 'tsc -p tsconfig.json && tsc -p tsconfig-cjs.json' ./src",
     "watch2": "watch 'ls' ./src",
     "build:watch": "tsc --watch -p tsconfig-cjs.json",
-    "start": "nodemon --ignore '*.json' src/start-server.js",
+    "start0": "nodemon --ignore '*.json' src/start-server.js",
+    "start2": "nodemon dist/cjs/start-server.js",
+    "start": "ts-node -O '{\"module\": \"commonjs\"}' src/start-server.ts",
+    "dev": "ts-node-dev -O '{\"module\": \"commonjs\"}' --respawn -- src/start-server.ts",
     "migrate": "npx prisma migrate dev --name init",
     "resetdb": "npx prisma db push --preview-feature"
   },
@@ -38,6 +41,7 @@
   "devDependencies": {
     "copyfiles": "^2.4.1",
     "nodemon": "^2.0.15",
+    "ts-node-dev": "^1.1.8",
     "typescript": "^4.4.4",
     "watch": "^1.0.2"
   }

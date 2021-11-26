@@ -59,7 +59,7 @@ async function readpods(dir) {
 
 export function getResolvers(appDir) {
   if (!fs.existsSync(appDir)) {
-    fs.mkdirSync(appDir);
+    fs.mkdirSync(appDir, {recursive: true});
   }
   return {
     Query: {

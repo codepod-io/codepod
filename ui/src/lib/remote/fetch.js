@@ -3,7 +3,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { getAuthHeaders, hashPod, computeNamespace } from "../utils";
 import { repoSlice } from "../store";
 
-const graphql_url = window.codepod
+const graphql_url = !window.codepodio
   ? "http://localhost:14321/graphql"
   : "/graphql";
 

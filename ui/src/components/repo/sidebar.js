@@ -855,7 +855,7 @@ export function Sidebar() {
       <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
         <SidebarRuntime />
         <SidebarKernel />
-        {!window.codepod && <ActiveSessions />}
+        {window.codepodio && <ActiveSessions />}
       </Box>
       <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
         <ToastError />

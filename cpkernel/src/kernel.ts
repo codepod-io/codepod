@@ -12,9 +12,20 @@ import { v4 as uuidv4 } from "uuid";
 import crypto from "crypto";
 import Docker from "dockerode";
 
-import Stomp from "stompjs";
 import path from "path";
+
 import os from "os";
+
+import { dirname } from "path";
+import { fileURLToPath } from "url";
+// const __dirname = dirname(fileURLToPath(import.meta.url));
+
+let consolelog = console.log;
+console.log = (...data) => {
+  consolelog(...data);
+  // DEBUG
+  fs.writeFileSync("/tmp/codepod.log.txt", '[' + new Date().toISOString() + '] ' + data.join(" ") + "\n", { flag: "a" });
+};
 
 function getFreePort() {
   return new Promise((resolve) => {
@@ -44,7 +55,7 @@ async function getAvailablePorts(n) {
 // getAvailablePorts(5);
 
 async function test() {
-  let srv = getFreePort();
+  let srv: any = getFreePort();
   console.log(srv);
   srv = await Promise.all([srv]);
   console.log(srv[0]);
@@ -82,12 +93,13 @@ const appdata =
     ? process.env.HOME + "/Library/Application Support"
     : process.env.HOME + "/.local/share");
 
+
 export async function startNativeKernel(kernel_json) {
   // 1. generate uuid
   let id = uuidv4();
   // 2. generate conn.json
-  // FIXME relative path
-  let conns_dir = path.join(appdata, "CodePod", `conns`);
+  // FIXME this path does not honor startServer(dir)
+  let conns_dir = path.join(appdata, "codepod", `conns`);
   if (!fs.existsSync(conns_dir)) {
     await fs.promises.mkdir(conns_dir, { recursive: true });
   }
@@ -96,7 +108,8 @@ export async function startNativeKernel(kernel_json) {
   let spec = await createNewConnSpec();
   writeFileSync(connFname, JSON.stringify(spec));
   // 3. use the kernel.json to construct cmd
-  let cmdArgs = JSON.parse(readFileSync(kernel_json));
+  let s = readFileSync(kernel_json).toString();
+  let cmdArgs = JSON.parse(s);
   //   console.log(cmdArgs);
 
   let argv = cmdArgs.argv
@@ -108,7 +121,13 @@ export async function startNativeKernel(kernel_json) {
   console.log(argv);
   console.log(argv.join(" "));
   // 4. launch it via spawn
-  let proc = spawn(argv[0], argv.slice(1));
+  console.log("ENV", process.env.PATH);
+  // FIXME when starting codepod not from commandline, the PATH might not
+  // contain all the pathes (e.g. specified in .zshrc). Then kernel might fail
+  // to start.
+  let proc = spawn(argv[0], argv.slice(1), {
+    env: { ...process.env, PATH: process.env.PATH + ":/opt/homebrew/bin" },
+  });
   // otherwise some exception is thrown, and it is tricky where to catch that exception
   proc.on("error", function (err) {
     console.log(
@@ -275,6 +294,15 @@ export function constructExecuteRequest({ code, msg_id, cp = {} }) {
 }
 
 export class ZmqWire {
+  kernelSpec;
+  onshell;
+  oniopub;
+  shell;
+  control;
+  iopub;
+  kernelStatus;
+  results;
+
   constructor(spec, ip) {
     this.kernelSpec = spec;
     // console.log(this.kernelSpec);
@@ -394,7 +422,7 @@ async function removeContainer(name) {
     old.inspect((err, data) => {
       if (err) {
         console.log("removeContainer: container seems not exist.");
-        return resolve();
+        return resolve(null);
       }
       if (data.State.Running) {
         old.stop((err, data) => {
@@ -405,7 +433,7 @@ async function removeContainer(name) {
             // console.log("No such container, resolving ..");
             // reject();
             console.log("No such container running. Returning.");
-            return resolve();
+            return resolve(null);
           }
           console.log("Stopped. Removing ..");
           old.remove((err, data) => {
@@ -415,7 +443,7 @@ async function removeContainer(name) {
               // resolve();
             }
             console.log("removed successfully");
-            return resolve();
+            return resolve(null);
           });
         });
       } else {
@@ -427,7 +455,7 @@ async function removeContainer(name) {
             // resolve();
           }
           console.log("removed successfully");
-          return resolve();
+          return resolve(null);
         });
       }
     });
@@ -484,7 +512,7 @@ async function createContainer(image, name, network) {
     // spawn("docker", ["run", "-d", "jp-julia"]);
     // 1. first check if the container already there. If so, stop and delete
     // let name = "julia_kernel_X";
-    console.log("spawning kernel ..");
+    console.log("spawning kernel in container ..");
     docker.createContainer(
       {
         Image: image,
@@ -533,6 +561,7 @@ async function createContainer(image, name, network) {
 // var mq_client = Stomp.overTCP("rabbitmq", 61613);
 
 class MyMqSocket {
+  queue;
   constructor(queue) {
     this.queue = queue;
   }
@@ -690,7 +719,38 @@ function handleIOPub_stream({ msgs, socket }) {
 }
 
 export class CodePodKernel {
+  lang;
+  startupFile;
+  startupCode;
+  image;
+  nativeKernelJson;
+  sessionId;
+  wire;
+  socket;
+  mapEval({ code, namespace }) { }
+  mapAddImport({
+    from,
+    to,
+    name,
+  }: {
+    from: string;
+    to: string;
+    name: string;
+  }) { }
+  mapAddImportNS({ nses, to }: { nses: [string]; to: string }) { }
+  mapDeleteImport({ ns, name }: { ns: string; name: string }) { }
+  mapEnsureImports({
+    from,
+    to,
+    name,
+  }: {
+    from: string;
+    to: string;
+    name: string;
+  }) { }
+  constructor() { }
   async init({ sessionId, socket }) {
+    console.log("=== INIT!!");
     this.sessionId = sessionId;
     let network = process.env["KERNEL_NETWORK"] || "codepod";
     let name = `cpkernel_${network}_${sessionId}_${this.lang}`;
@@ -719,7 +779,8 @@ export class CodePodKernel {
       // listen to IOPub here
       this.addSocket(socket);
     }
-    console.log("executing startup file ..");
+    // FIXME the path
+    console.log("executing startup code ..");
     this.wire.sendShellMessage(
       constructExecuteRequest({ code: this.startupCode, msg_id: "CODEPOD" })
     );
@@ -902,44 +963,39 @@ export class CodePodKernel {
   // mapEnsureImports() {}
 }
 
-export async function createKernel({ lang, sessionId, socket }) {
-  switch (lang) {
-    case "julia":
-      return await new JuliaKernel().init({ sessionId, socket });
-    case "javascript":
-      return await new JavascriptKernel().init({ sessionId, socket });
-    case "racket":
-      return await new RacketKernel().init({ sessionId, socket });
-    case "python":
-      return await new PythonKernel().init({ sessionId, socket });
-    default:
-      console.log("ERROR: language not implemented", lang);
-    // throw new Error(`Language not valid: ${lang}`);
-  }
-}
-
 // FIXME this path is outside the cpkernel package
 // const kernel_dir = "../../api/kernels";
 // const kernel_dir = "/Users/hebi/Documents/GitHub/codepod/api/kernels";
-const kernel_dir = path.join(__dirname, "./kernels");
+// const kernel_dir = path.join(
+//   dirname(fileURLToPath(import.meta.url)),
+//   "../kernels"
+// );
+// const kernel_dir = path.join(path.resolve(), "./kernels");
+const kernel_dir = path.join(__dirname, "../kernels");
+
+interface EvalInput {
+  code: string;
+  namespace: string;
+}
 
 export class JuliaKernel extends CodePodKernel {
-  startupFile = `${kernel_dir}/julia/codepod.jl`;
-  startupCode = readFileSync(this.startupFile, "utf8");
-  // TODO fname is not necessary, I just need a fixed port.
-  fname = `${kernel_dir}/julia/conn.json`;
-  lang = "julia";
-  image = "julia_kernel";
-  nativeKernelJson = path.join(
-    os.homedir(),
-    "Library/Jupyter/kernels/julia-nodeps-1.7/kernel.json"
-  );
+  constructor({ kernelJson }) {
+    super();
+    this.lang = "julia";
+    this.startupFile = `${kernel_dir}/julia/codepod.jl`;
+    console.log("reading startup code", this.lang);
+    this.startupCode = readFileSync(this.startupFile, "utf8");
+    console.log("startupCode:", this.startupCode);
+    this.image = "julia_kernel";
+    this.nativeKernelJson = kernelJson
+  }
+
   mapEval({ code, namespace }) {
     return `CODEPOD_EVAL("""
     ${code
-      .replaceAll("\\", "\\\\")
-      .replaceAll('"', '\\"')
-      .replaceAll("$", "\\$")}
+        .replaceAll("\\", "\\\\")
+        .replaceAll('"', '\\"')
+        .replaceAll("$", "\\$")}
       """, "${namespace}")`;
   }
   mapAddImport({ from, to, name }) {
@@ -951,27 +1007,30 @@ export class JuliaKernel extends CodePodKernel {
 }
 
 export class PythonKernel extends CodePodKernel {
-  startupFile = `${kernel_dir}/python/codepod.py`;
-  startupCode = readFileSync(this.startupFile, "utf8");
-  fname = `${kernel_dir}/python/conn.json`;
-  lang = "python";
-  image = "python_kernel";
-  nativeKernelJson = path.join(
-    os.homedir(),
-    "Library/Jupyter/kernels/python/kernel.json"
-  );
-  mapEval({ code, namespace }) {
+  constructor({ kernelJson }) {
+    super();
+    this.lang = "python";
+    this.startupFile = `${kernel_dir}/python/codepod.py`;
+    console.log("reading startup code", this.lang);
+    this.startupCode = readFileSync(this.startupFile, "utf8");
+    console.log("startupCode:", this.startupCode);
+
+    this.image = "python_kernel";
+    this.nativeKernelJson = kernelJson
+  }
+
+  mapEval({ code, namespace }: EvalInput) {
     return `CODEPOD_EVAL("""${code
       .replaceAll("\\", "\\\\")
       .replaceAll('"', '\\"')}""", "${namespace}")`;
   }
-  mapAddImport({ from, to, name }) {
+  mapAddImport({ from, to, name }: { from: string; to: string; name: string }) {
     // FIXME this should be re-evaluated everytime the function changes
     // I cannot use importlib because the module here lacks the finder, and
     // some other attribute functions
     return `CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${from}").__dict__["${name}"]\n0""", "${to}")`;
   }
-  mapDeleteImport({ ns, name }) {
+  mapDeleteImport({ ns, name }: { ns: string; name: string }) {
     return `CODEPOD_EVAL("del ${name}", "${ns}")`;
   }
   mapEnsureImports({ from, to, name }) {
@@ -980,52 +1039,65 @@ export class PythonKernel extends CodePodKernel {
 }
 
 export class RacketKernel extends CodePodKernel {
-  startupFile = `${kernel_dir}/racket/codepod.rkt`;
-  startupCode = `
-    ${readFileSync(this.startupFile, "utf8")}
-    
-    (require racket/enter) (require 'CODEPOD)`;
-  fname = `${kernel_dir}/racket/conn.json`;
-  lang = "racket";
-  image = "racket_kernel";
-  // FIXME use ~ and escape HOME
-  // TODO detect what's available on the system instead of hard-coding
-  nativeKernelJson = path.join(
-    os.homedir(),
-    "/Library/Jupyter/kernels/racket/kernel.json"
-  );
-  mapEval({ code, namespace }) {
+  constructor({ kernelJson }) {
+    super();
+    this.lang = "racket";
+    this.startupFile = `${kernel_dir}/racket/codepod.rkt`;
+    console.log("reading startup code", this.lang);
+    this.startupCode = `
+      ${readFileSync(this.startupFile, "utf8")}
+
+      (require racket/enter) (require 'CODEPOD)`;
+    console.log("startupCode:", this.startupCode);
+
+    this.image = "racket_kernel";
+    // FIXME use ~ and escape HOME
+    // TODO detect what's available on the system instead of hard-coding
+    this.nativeKernelJson = kernelJson
+  }
+
+  mapEval({ code, namespace }: EvalInput) {
     return `(enter! #f) (CODEPOD-EVAL "
     ${code
-      .replaceAll("\\", "\\\\")
-      // .replaceAll(";", "\\;")
-      .replaceAll('"', '\\"')}
+        .replaceAll("\\", "\\\\")
+        // .replaceAll(";", "\\;")
+        .replaceAll('"', '\\"')}
       " 
       "${namespace}")`;
   }
-  mapAddImport({ from, to, name }) {
+  mapAddImport({ from, to, name }: { from: string; to: string; name: string }) {
     return `(enter! #f) (CODEPOD-ADD-IMPORT "${from}" "${to}" "${name}")`;
   }
   mapAddImportNS({ nses, to }) {
     return `(enter! #f) (CODEPOD-ADD-IMPORT-NS "${to}" "${nses.join(" ")}")`;
   }
-  mapDeleteImport({ ns, name }) {
+  mapDeleteImport({ ns, name }: { ns: string; name: string }) {
     return `(enter! #f) (CODEPOD-DELETE-IMPORT "${ns}" "${name}")`;
   }
 }
 
 export class JavascriptKernel extends CodePodKernel {
-  startupFile = `${kernel_dir}/javascript/codepod.js`;
-  startupCode = readFileSync(this.startupFile, "utf8");
-  fname = `${kernel_dir}/javascript/conn.json`;
-  lang = "javascript";
-  image = "javascript_kernel";
-  nativeKernelJson = path.join(
-    os.homedir(),
-    "Library/Jupyter/kernels/javascript/kernel.json"
-  );
-  mapEval({ code, namespace, midports }) {
-    let names = [];
+  constructor({ kernelJson }) {
+    super();
+    this.lang = "javascript";
+    this.startupFile = `${kernel_dir}/javascript/codepod.js`;
+    console.log("reading startup code", this.lang, this.startupFile);
+    this.startupCode = readFileSync(this.startupFile, "utf8");
+    console.log("startupCode:", this.startupCode);
+    this.image = "javascript_kernel";
+    this.nativeKernelJson = kernelJson
+  }
+
+  mapEval({
+    code,
+    namespace,
+    midports,
+  }: {
+    code: string;
+    namespace: string;
+    midports: [string];
+  }) {
+    let names: any = [];
     if (midports) {
       names = midports.map((name) => `"${name}"`);
     }
@@ -1035,10 +1107,62 @@ export class JavascriptKernel extends CodePodKernel {
       .replaceAll('"', '\\"')}\`, "${namespace}", [${names.join(",")}])`;
     return code1;
   }
-  mapAddImport({ from, to, name }) {
+  mapAddImport({ from, to, name }: { from: string; to: string; name: string }) {
     return `CODEPOD.addImport("${from}", "${to}", "${name}")`;
   }
-  mapDeleteImport({ ns, name }) {
+  mapDeleteImport({ ns, name }: { ns: string; name: string }) {
     return `CODEPOD.deleteImport("${ns}", "${name}")`;
+  }
+}
+
+
+// https://jupyter-client.readthedocs.io/en/stable/kernels.html#kernel-specs
+let jupyter_kernel_dir
+if (process.platform == "win32") {
+  jupyter_kernel_dir = path.join(process.env.APPDATA, "jupyter/kernels")
+} else if (process.platform == "darwin") {
+  // CAUTION Jupyter camel-case
+  jupyter_kernel_dir = process.env.HOME + "/Library/Jupyter/kernels"
+} else {
+  jupyter_kernel_dir = process.env.HOME + "/.local/share/jupyter/kernels"
+}
+
+function detectKernels() {
+  let kernels = {}
+  let files = fs.readdirSync(jupyter_kernel_dir)
+  for (let file of files) {
+    let jsonfile = path.join(jupyter_kernel_dir, file, "kernel.json")
+    if (fs.existsSync(jsonfile)) {
+      let jobj = JSON.parse(fs.readFileSync(jsonfile).toString())
+      kernels[jobj["language"]] = jsonfile
+    }
+  }
+  console.log("Kernels detected:", kernels)
+  return kernels
+}
+
+export async function createKernel({
+  lang,
+  sessionId,
+  socket,
+}: {
+  lang: string;
+  sessionId: string;
+  socket: any;
+}) {
+  let kernels = detectKernels()
+  console.log("===", "createKernel", lang);
+  switch (lang) {
+    case "julia":
+      return await new JuliaKernel({ kernelJson: kernels["julia"] }).init({ sessionId, socket });
+    case "javascript":
+      return await new JavascriptKernel({ kernelJson: kernels["javascript"] }).init({ sessionId, socket });
+    case "racket":
+      return await new RacketKernel({ kernelJson: kernels["racket"] }).init({ sessionId, socket });
+    case "python":
+      return await new PythonKernel({ kernelJson: kernels["python"] }).init({ sessionId, socket });
+    default:
+      console.log("ERROR: language not implemented", lang);
+    // throw new Error(`Language not valid: ${lang}`);
   }
 }

@@ -51,7 +51,7 @@ export function Header() {
       w="100%"
     >
       <Text fontSize="lg" fontWeight="bold">
-        <ReactLink to="/">CodePod {window.codepod && "(Local)"}</ReactLink>
+        <ReactLink to="/">CodePod {!window.codepodio && "(Local)"}</ReactLink>
       </Text>
 
       <Box display={{ base: "block", md: "none" }} onClick={toggleMenu}>
@@ -75,7 +75,7 @@ export function Header() {
           {/* <MyMenuItem to="/test">Test</MyMenuItem> */}
           <MyMenuItem to="/docs">Docs</MyMenuItem>
           <MyMenuItem to="/about">About</MyMenuItem>
-          {!window.codepod &&
+          {window.codepodio &&
             (isSignedIn() ? (
               <Menu>
                 <MenuButton

@@ -1,5 +1,5 @@
 {
-  "name": "codepod-app",
+  "name": "codepod",
   "version": "0.1.0",
   "private": true,
   "main": "./public/electron.js",
@@ -10,6 +10,7 @@
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
     "@testing-library/user-event": "^12.1.10",
+    "cpkernel": "file:../cpkernel",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-scripts": "4.0.3",
@@ -17,10 +18,17 @@
   },
   "build": {
     "appId": "com.electron.myapp",
-    "productName": "My Electron App",
+    "productName": "CodePod",
     "files": [
       "build/**/*",
-      "node_modules/**/*"
+      "node_modules/**/*",
+      {
+        "from": "../ui/build",
+        "to": "build/ui",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
     "directories": {
       "buildResources": "public"
@@ -36,14 +44,17 @@
     }
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "PORT=13001 react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "electron:start": "concurrently -k \"cross-env BROWSER=none yarn start\" \"wait-on http://localhost:3000 && electronmon .\"",
-    "electron:package:mac": "yarn build && electron-builder -m -c.extraMetadata.main=build/electron.js",
-    "electron:package:win": "yarn build && electron-builder -w -c.extraMetadata.main=build/electron.js",
-    "electron:package:linux": "yarn build && electron-builder -l -c.extraMetadata.main=build/electron.js"
+    "package": "electron-builder -m -c.extraMetadata.main=build/electron.js",
+    "electron:start": "concurrently -k \"cross-env BROWSER=none yarn start\" \"wait-on http://localhost:13001 && electronmon .\"",
+    "electron:package:mac": "npm run build && electron-builder -m -c.extraMetadata.main=build/electron.js",
+    "electron:package:win": "npm run build && electron-builder -w -c.extraMetadata.main=build/electron.js",
+    "electron:package:linux": "npm run build && electron-builder -l -c.extraMetadata.main=build/electron.js",
+    "dev": "concurrently -k \"cd ../ui && BROWSER=none npm run start\" \"cd ../cpkernel && npm run dev\" \"cross-env BROWSER=none npm run start\" \"wait-on http://127.0.0.1:13001 && wait-on http://127.0.0.1:14322 && electronmon .\"",
+    "build:all": "cd ../cpkernel && npm run build && cd ../ui && npm run build && cd ../app && npm run build && npm run package"
   },
   "eslintConfig": {
     "extends": [

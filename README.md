@@ -7,6 +7,54 @@ docker stop $(docker ps  -a  | grep cpkernel_ | awk '{print $1}')
 docker rm $(docker ps  -a  | grep cpkernel_ | awk '{print $1}')
 ```
 
+# User Guide
+Install kernels:
+
+python:
+
+```
+python -m pip install ipykernel
+python -m ipykernel install --user
+```
+
+racket:
+
+```
+brew install zmq
+raco pkg install --auto iracket
+raco iracket install
+```
+
+On mac, zeromq lib cannot be found by racket due to [a known
+issue](https://github.com/rmculpepper/racket-zeromq/issues/6). To side-step it
+(replace the version numbers with your installation):
+
+```
+cp /opt/homebrew/Cellar/zeromq/4.3.4/lib/libzmq.5.dylib ~/Library/Racket/8.2/lib
+```
+
+julia:
+
+```
+julia
+]add add IJulia
+import IJulia
+IJulia.installkernel("Julia nodeps", "--depwarn=no")
+```
+
+Or just
+
+```
+julia -e 'import Pkg; Pkg.add("IJulia"); using IJulia; installkernel("Julia nodeps", "--depwarn=no")'
+```
+
+Javascript
+
+```
+npm install -g ijavascript
+ijsinstall
+```
+
 # About electron:
 
 - electron does not support ES6 modules

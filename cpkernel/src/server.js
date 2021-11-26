@@ -9,7 +9,7 @@ import { typeDefs } from "./typedefs.js";
 import { listenOnMessage } from "./socket.js";
 import { getResolvers } from "./resolver_local.js";
 
-export async function startServer(appDir) {
+export async function startServer(appDir, staticDir) {
   const apollo = new ApolloServer({
     typeDefs,
     // resolvers,
@@ -28,6 +28,10 @@ export async function startServer(appDir) {
     },
   });
   const expapp = express();
+  if (staticDir) {
+    console.log("using static dir", staticDir);
+    expapp.use("/", express.static(staticDir));
+  }
   const http_server = http.createServer(expapp);
   const wss = new WebSocketServer({ server: http_server });
   // graphql api will be available at /graphql

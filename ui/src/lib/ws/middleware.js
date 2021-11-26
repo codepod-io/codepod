@@ -449,7 +449,7 @@ const socketMiddleware = () => {
         // I canont use "/ws" for a WS socket. Thus I need to detect what's the
         // protocol used here, so that it supports both dev and prod env.
         let socket_url;
-        if (window.codepod) {
+        if (!window.codepodio) {
           socket_url = `ws://localhost:14321`;
         } else if (window.location.protocol === "http:") {
           socket_url = `ws://${window.location.host}/ws`;
@@ -459,7 +459,7 @@ const socketMiddleware = () => {
         socket = new WebSocket(socket_url);
         // socket.emit("spawn", state.sessionId, lang);
 
-        if (window.codepod) {
+        if (!window.codepodio) {
           socket.onmessage = onMessage(store);
         } else {
           // if (mq_client) {

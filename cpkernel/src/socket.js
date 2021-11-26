@@ -7,7 +7,7 @@ import {
   constructMessage,
   constructExecuteRequest,
   createKernel,
-} from "./kernel.js";
+} from "./kernel";
 
 export const listenOnRepl = (() => {
   let procs = {};
