@@ -152,6 +152,18 @@ export default {
       state.pods[id].fold = !state.pods[id].fold;
     }
   },
+  foldAll: (state, action) => {
+    for (const [id, pod] of Object.entries(state.pods)) {
+      if (pod) {
+        pod.fold = true;
+      }
+    }
+  },
+  unfoldAll: (state, action) => {
+    for (const [id, pod] of Object.entries(state.pods)) {
+      pod.fold = false;
+    }
+  },
   toggleThundar: (state, action) => {
     let id = action.payload;
     if (!state.pods[id].thundar) {
