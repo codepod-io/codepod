@@ -13,9 +13,17 @@ Install kernels:
 
 python:
 
+CodePod uses `ast.unparse` to analyze whether the last expression is an expression or statement. This function is only available in python 3.9 or after. To install python3.9:
+
 ```
-python -m pip install ipykernel
-python -m ipykernel install --user
+sudo apt install python3.9
+```
+
+Install ipykernel:
+
+```
+python3.9 -m pip install ipykernel
+python3.9 -m ipykernel install --user
 ```
 
 racket:
