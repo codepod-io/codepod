@@ -4,7 +4,10 @@
   "private": true,
   "main": "./public/electron.js",
   "homepage": "./",
-  "author": "John Doe",
+  "author": {
+    "name": "Hebi Li",
+    "email": "lihebi.com@gmail.com"
+  },
   "description": "My fantastic Electron app",
   "dependencies": {
     "@testing-library/jest-dom": "^5.11.4",
@@ -48,7 +51,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "package": "electron-builder -m -c.extraMetadata.main=build/electron.js",
+    "package": "electron-builder -l -c.extraMetadata.main=build/electron.js",
     "electron:start": "concurrently -k \"cross-env BROWSER=none yarn start\" \"wait-on http://localhost:13001 && electronmon .\"",
     "electron:package:mac": "npm run build && electron-builder -m -c.extraMetadata.main=build/electron.js",
     "electron:package:win": "npm run build && electron-builder -w -c.extraMetadata.main=build/electron.js",

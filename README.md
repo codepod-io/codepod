@@ -8,6 +8,7 @@ docker rm $(docker ps  -a  | grep cpkernel_ | awk '{print $1}')
 ```
 
 # User Guide
+
 Install kernels:
 
 python:
@@ -19,8 +20,22 @@ python -m ipykernel install --user
 
 racket:
 
+Install on Ubuntu:
+
+```
+sudo add-apt-repository ppa:plt/racket
+sudo apt-get update
+sudo apt install racket
+```
+
+Install zmq:
+
 ```
 brew install zmq
+sudo apt install libzmq5
+```
+
+```
 raco pkg install --auto iracket
 raco iracket install
 ```
@@ -34,6 +49,15 @@ cp /opt/homebrew/Cellar/zeromq/4.3.4/lib/libzmq.5.dylib ~/Library/Racket/8.2/lib
 ```
 
 julia:
+
+Install julia from the official binaries. On Ubuntu:
+
+```
+curl -O https://julialang-s3.julialang.org/bin/linux/x64/1.6/julia-1.6.4-linux-x86_64.tar.gz
+tar -xvzf julia-1.6.4-linux-x86_64.tar.gz
+sudo mv julia-1.6.4/ /opt/
+sudo ln -s /opt/julia-1.6.4/bin/julia /usr/local/bin/julia
+```
 
 ```
 julia
