@@ -1,17 +1,26 @@
-# CodePod
+# CodePod: A Hierarchical IDE for Interactive Development at Scale
 
-# Dev notes
+
+# Installation
+
+Binary release available for Linux and MacOS. See release page.
+
+For Debian/Ubuntu:
 
 ```
-docker stop $(docker ps  -a  | grep cpkernel_ | awk '{print $1}')
-docker rm $(docker ps  -a  | grep cpkernel_ | awk '{print $1}')
+sudo dpkg -i codepod_0.1.0_amd64.deb
 ```
 
-# User Guide
+On Mac, use the `codepod_0.1.0_arm64.dmg` image (for M1 Macs with Apple Sillicon).
 
-Install kernels:
+You can run `codepod` either in application launcher or through the `codepod` command line tool.
 
-python:
+# Install Jupyter kernels
+
+These kernels are Jupyter kernels. CodePod should detect them and work as long
+as they are properly installed to work in Jupyter.
+
+## python
 
 CodePod uses `ast.unparse` to analyze whether the last expression is an expression or statement. This function is only available in python 3.9 or after. To install python3.9:
 
@@ -26,7 +35,7 @@ python3.9 -m pip install ipykernel
 python3.9 -m ipykernel install --user
 ```
 
-racket:
+## racket
 
 Install on Ubuntu:
 
@@ -56,7 +65,7 @@ issue](https://github.com/rmculpepper/racket-zeromq/issues/6). To side-step it
 cp /opt/homebrew/Cellar/zeromq/4.3.4/lib/libzmq.5.dylib ~/Library/Racket/8.2/lib
 ```
 
-julia:
+## julia
 
 Install julia from the official binaries. On Ubuntu:
 
@@ -67,6 +76,7 @@ sudo mv julia-1.6.4/ /opt/
 sudo ln -s /opt/julia-1.6.4/bin/julia /usr/local/bin/julia
 ```
 
+<!-- 
 ```
 julia
 ]add add IJulia
@@ -74,97 +84,34 @@ import IJulia
 IJulia.installkernel("Julia nodeps", "--depwarn=no")
 ```
 
-Or just
+Or just -->
+
+Install kernel:
 
 ```
 julia -e 'import Pkg; Pkg.add("IJulia"); using IJulia; installkernel("Julia nodeps", "--depwarn=no")'
 ```
 
-Javascript
+## Javascript
 
 ```
 npm install -g ijavascript
 ijsinstall
 ```
 
-# About electron:
 
-- electron does not support ES6 modules
-- package used in electron might have node version mismatch. To solve that:
-  - add electron-rebuild to the dev dep (already added here)
-  - after npm install or yarn, run ./node_modules/.bin/electron-rebuild
+# Development Scripts
 
-To develop the electoron app:
-
-1. go into ui directory and `yarn start` to start the UI server at localhost:3000. When delivered as an electron app, the react UI is compiled to dist. When the app starts, it will access file:/path/to/index.html instead of http://localhost:3000.
-2. go into the cpkernel direcotry and `yarn start`. This will start the backend server (both repo server and kernel server) at http://localhost:14321.
-
-- the kernel server is ws://localhost:14321
-- the repo server is http://localhost:14321/graphql
-- When delievered as an electron app, the backend is packaged as a cpkernel pacakge,and the server is launched via electron's main.js process at http://localhost:14321
-
-3. go into ui directory and run `yarn ele` to start the electron app.
-
-To build the electron app:
-
-1. go to ui directory and yarn build. The UI is built into the app.
-2. TODO install the cpkernel package and launch the server in main.js
-
-# Intro
-
-The app contains the front-end (ui) and the back-end (api). To run, start both:
+Develop
 
 ```
-cd api && docker-compose up -d
-cd api && yarn dev
-cd ui && yarn start
-cd api && npx prisma studio
+cd app
+npm run dev
 ```
 
-The portals:
-
-- http://localhost:4000/graphq
-- http://localhost:3000 is the web UI
-- https://studio.apollographql.com/dev
-- The db admin page is http://localhost:8080
-
-- A docker compose file to specify the
-  - db server
-  - volume
-  - backup server & volume
-
-# Wiki
-
-## neo4j
-
-delete all:
-
-```cypher
-MATCH (n)
-DETACH DELETE n
-```
-
-add unique constraints
+Build:
 
 ```
-CREATE CONSTRAINT constraint_name ON (book:Book) ASSERT book.isbn IS UNIQUE
+cd app
+npm run build:all
 ```
-
-For the users:
-
-```
-CREATE CONSTRAINT username ON (u:User) ASSERT u.username IS UNIQUE
-CREATE CONSTRAINT email ON (u:User) ASSERT u.email IS UNIQUE
-```
-
-Show constraints:
-
-```
-SHOW CONSTRAINTS
-```
-
-## RabbitMQ
-
-- over websocket https://www.rabbitmq.com/web-stomp.html
-- the client document http://jmesnil.net/stomp-websocket/doc/
-- docker image: https://registry.hub.docker.com/_/rabbitmq/
