@@ -96,6 +96,10 @@ export default function Repo() {
       );
       dispatch(wsActions.wsConnect());
     }
+    return () => {
+      console.log("disconnecting the socket ..");
+      dispatch(wsActions.wsDisconnect());
+    };
   }, [me]);
   useEffect(() => {
     dispatch(repoSlice.actions.resetState());

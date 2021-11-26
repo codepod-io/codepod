@@ -28,7 +28,7 @@ export const loopPodQueue = createAsyncThunk(
       case repoSlice.actions.deletePod.type: {
         const { id, toDelete } = action.payload;
         // delete pod id
-        return await doRemoteDeletePod({ id, toDelete });
+        return await doRemoteDeletePod({ id, toDelete, reponame, username });
       }
 
       case "REMOTE_PASTE":

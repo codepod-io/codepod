@@ -43,7 +43,7 @@ function useProvideAuth() {
 
   function createApolloClient() {
     const link = new HttpLink({
-      uri: `/graphql`,
+      uri: !window.codepodio ? `http://localhost:14321/graphql` : `/graphql`,
       headers: getAuthHeaders(),
     });
 

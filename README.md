@@ -1,67 +1,117 @@
-# Pebble Development Platform (PDP)
+# CodePod: A Hierarchical IDE for Interactive Development at Scale
 
-# Dev notes
 
-```
-docker stop $(docker ps  -a  | grep cpkernel_ | awk '{print $1}')
-docker rm $(docker ps  -a  | grep cpkernel_ | awk '{print $1}')
-```
+# Installation
 
-# Intro
+Binary release available for Linux and MacOS. See release page.
 
-The app contains the front-end (ui) and the back-end (api). To run, start both:
+For Debian/Ubuntu:
 
 ```
-cd api && docker-compose up -d
-cd api && yarn dev
-cd ui && yarn start
-cd api && npx prisma studio
+sudo dpkg -i codepod_0.1.0_amd64.deb
 ```
 
-The portals:
+On Mac, use the `codepod_0.1.0_arm64.dmg` image (for M1 Macs with Apple Sillicon).
 
-- http://localhost:4000/graphq
-- http://localhost:3000 is the web UI
-- https://studio.apollographql.com/dev
-- The db admin page is http://localhost:8080
+You can run `codepod` either in application launcher or through the `codepod` command line tool.
 
-- A docker compose file to specify the
-  - db server
-  - volume
-  - backup server & volume
+# Install Jupyter kernels
 
-# Wiki
+These kernels are Jupyter kernels. CodePod should detect them and work as long
+as they are properly installed to work in Jupyter.
 
-## neo4j
+## python
 
-delete all:
-
-```cypher
-MATCH (n)
-DETACH DELETE n
-```
-
-add unique constraints
+CodePod uses `ast.unparse` to analyze whether the last expression is an expression or statement. This function is only available in python 3.9 or after. To install python3.9:
 
 ```
-CREATE CONSTRAINT constraint_name ON (book:Book) ASSERT book.isbn IS UNIQUE
+sudo apt install python3.9
 ```
 
-For the users:
+Install ipykernel:
 
 ```
-CREATE CONSTRAINT username ON (u:User) ASSERT u.username IS UNIQUE
-CREATE CONSTRAINT email ON (u:User) ASSERT u.email IS UNIQUE
+python3.9 -m pip install ipykernel
+python3.9 -m ipykernel install --user
 ```
 
-Show constraints:
+## racket
+
+Install on Ubuntu:
 
 ```
-SHOW CONSTRAINTS
+sudo add-apt-repository ppa:plt/racket
+sudo apt-get update
+sudo apt install racket
 ```
 
-## RabbitMQ
+Install zmq:
 
-- over websocket https://www.rabbitmq.com/web-stomp.html
-- the client document http://jmesnil.net/stomp-websocket/doc/
-- docker image: https://registry.hub.docker.com/_/rabbitmq/
+```
+brew install zmq
+sudo apt install libzmq5
+```
+
+```
+raco pkg install --auto iracket
+raco iracket install
+```
+
+On mac, zeromq lib cannot be found by racket due to [a known
+issue](https://github.com/rmculpepper/racket-zeromq/issues/6). To side-step it
+(replace the version numbers with your installation):
+
+```
+cp /opt/homebrew/Cellar/zeromq/4.3.4/lib/libzmq.5.dylib ~/Library/Racket/8.2/lib
+```
+
+## julia
+
+Install julia from the official binaries. On Ubuntu:
+
+```
+curl -O https://julialang-s3.julialang.org/bin/linux/x64/1.6/julia-1.6.4-linux-x86_64.tar.gz
+tar -xvzf julia-1.6.4-linux-x86_64.tar.gz
+sudo mv julia-1.6.4/ /opt/
+sudo ln -s /opt/julia-1.6.4/bin/julia /usr/local/bin/julia
+```
+
+<!-- 
+```
+julia
+]add add IJulia
+import IJulia
+IJulia.installkernel("Julia nodeps", "--depwarn=no")
+```
+
+Or just -->
+
+Install kernel:
+
+```
+julia -e 'import Pkg; Pkg.add("IJulia"); using IJulia; installkernel("Julia nodeps", "--depwarn=no")'
+```
+
+## Javascript
+
+```
+npm install -g ijavascript
+ijsinstall
+```
+
+
+# Development Scripts
+
+Develop
+
+```
+cd app
+npm run dev
+```
+
+Build:
+
+```
+cd app
+npm run build:all
+```

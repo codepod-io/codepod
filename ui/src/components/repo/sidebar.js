@@ -598,7 +598,7 @@ function RelButton() {
   );
 }
 
-function GitExportButton({ number }) {
+function GitExportButton() {
   let reponame = useSelector((state) => state.repo.reponame);
   let username = useSelector((state) => state.repo.username);
   let [gitExport, {}] = useMutation(
@@ -813,6 +813,7 @@ function GitBar() {
         <StageAllButton />
         <GitDiffButton />
         <RepoButton />
+        <GitExportButton />
       </Flex>
     </Box>
   );
@@ -870,9 +871,10 @@ export function Sidebar() {
       </Box>
       <Divider my={2} />
       <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
-        <GitBar />
+        {/* <GitBar /> */}
       </Box>
       <Divider my={2} />
+
       <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
         <SidebarTest />
       </Box>
@@ -880,7 +882,7 @@ export function Sidebar() {
       <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
         <SidebarRuntime />
         <SidebarKernel />
-        <ActiveSessions />
+        {window.codepodio && <ActiveSessions />}
       </Box>
       <Box boxShadow="xl" p="2" rounded="md" bg="gray.50">
         <ToastError />

@@ -3,6 +3,10 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { getAuthHeaders, hashPod, computeNamespace } from "../utils";
 import { repoSlice } from "../store";
 
+const graphql_url = !window.codepodio
+  ? "http://localhost:14321/graphql"
+  : "/graphql";
+
 export async function doRemoteLoadGit({ username, reponame }) {
   // get the pods of the git HEAD
   const query = `
@@ -13,7 +17,7 @@ export async function doRemoteLoadGit({ username, reponame }) {
     }
   }
   `;
-  const res = await fetch("/graphql", {
+  const res = await fetch(graphql_url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -35,9 +39,6 @@ export async function doRemoteLoadRepo({ username, reponame }) {
     query Repo($reponame: String!, $username: String!) {
       repo(name: $reponame, username: $username) {
         name
-        owner {
-          name
-        }
         pods {
           id
           type
@@ -57,19 +58,14 @@ export async function doRemoteLoadRepo({ username, reponame }) {
           exports
           midports
           index
-          parent {
-            id
-          }
-          children {
-            id
-            type
-          }
+          parent
+          children
         }
       }
     }
   `;
   // return res
-  const res = await fetch("/graphql", {
+  const res = await fetch(graphql_url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -106,22 +102,31 @@ export function normalize(pods) {
   pods.forEach((pod) => {
     res[pod.id] = pod;
   });
+  console.log(res);
   pods.forEach((pod) => {
-    if (!pod.parent) {
-      // add root
-      res["ROOT"].children.push({ id: pod.id, type: pod.type });
-      pod.parent = "ROOT";
-    } else {
-      // change parent.id format
-      pod.parent = pod.parent.id;
-    }
+    // if (!pod.parent) {
+    //   // add root
+    //   res["ROOT"].children.push({ id: pod.id, type: pod.type });
+    //   pod.parent = "ROOT";
+    // } else {
+    //   // change parent.id format
+    //   // pod.parent = pod.parent.id;
+    // }
+
+    console.log(pod);
+    pod.children = pod.children
+      ? pod.children.map((id) => ({
+          id: res[id].id,
+          type: res[id].type,
+        }))
+      : [];
     // change children.id format
     // UDPATE Or, I just put {id,type} in the children array
     //
     // pod.children = pod.children.map(({ id }) => id);
     //
     // sort according to index
-    pod.children.sort((a, b) => res[a.id].index - res[b.id].index);
+    // pod.children.sort((a, b) => res[a.id].index - res[b.id].index);
     // if (pod.type === "WYSIWYG" || pod.type === "CODE") {
     //   pod.content = JSON.parse(pod.content);
     // }
@@ -222,12 +227,10 @@ export async function doRemoteAddPod({
         parent: $parent
         index: $index
         input: $input
-      ) {
-        id
-      }
+      )
     }
   `;
-  const res = await fetch("/graphql", {
+  const res = await fetch(graphql_url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -248,15 +251,17 @@ export async function doRemoteAddPod({
   return res.json();
 }
 
-export async function doRemoteDeletePod({ id, toDelete }) {
+export async function doRemoteDeletePod({ id, toDelete, reponame, username }) {
   const query = `
     mutation deletePod(
       $id: String,
       $toDelete: [String]
+      $reponame: String
+      $username: String
     ) {
-      deletePod(id: $id, toDelete: $toDelete)
+      deletePod(id: $id, toDelete: $toDelete, reponame: $reponame, username: $username)
     }`;
-  const res = await fetch("/graphql", {
+  const res = await fetch(graphql_url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -268,14 +273,16 @@ export async function doRemoteDeletePod({ id, toDelete }) {
       variables: {
         id,
         toDelete,
+        reponame,
+        username,
       },
     }),
   });
   return res.json();
 }
 
-export async function doRemoteUpdatePod(pod) {
-  const res = await fetch("/graphql", {
+export async function doRemoteUpdatePod({ pod, reponame, username }) {
+  const res = await fetch(graphql_url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -284,27 +291,17 @@ export async function doRemoteUpdatePod(pod) {
     },
     body: JSON.stringify({
       query: `
-        mutation updatePod($id: String, $content: String, $type: String, $lang: String,
-                           $result: String, $stdout: String, $error: String, $column: Int,
-                           $imports: String, $exports: String, $midports: String,
-                           $fold: Boolean, $thundar: Boolean, $utility: Boolean,
-                           $name: String) {
-          updatePod(id: $id, content: $content, type: $type, lang: $lang,
-                    result: $result, stdout: $stdout, error: $error, column: $column
-                    imports: $imports, exports: $exports, midports: $midports,
-                    fold: $fold, thundar: $thundar, utility: $utility,
-                    name: $name) {
-            id
-          }
+        mutation updatePod($reponame: String, $username: String, 
+          $input: PodInput
+          ) {
+          updatePod(reponame: $reponame
+            username: $username
+            input: $input)
         }`,
       variables: {
-        ...pod,
-        content: JSON.stringify(pod.content),
-        result: JSON.stringify(pod.result),
-        error: JSON.stringify(pod.error),
-        imports: JSON.stringify(pod.imports),
-        exports: JSON.stringify(pod.exports),
-        midports: JSON.stringify(pod.midports),
+        reponame,
+        username,
+        input: serializePodInput(pod),
       },
     }),
   });
@@ -317,7 +314,7 @@ export async function doRemoteUpdatePod(pod) {
 }
 
 export async function doRemotePastePod({ clip, parent, index, column }) {
-  const res = await fetch("/graphql", {
+  const res = await fetch(graphql_url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

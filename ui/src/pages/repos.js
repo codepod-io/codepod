@@ -82,10 +82,7 @@ function CreateRepoForm(props) {
   const [createRepo, {}] = useMutation(
     gql`
       mutation CreateRepo($name: String!) {
-        createRepo(name: $name) {
-          id
-          name
-        }
+        createRepo(name: $name)
       }
     `,
     {

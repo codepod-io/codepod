@@ -51,7 +51,7 @@ export function Header() {
       w="100%"
     >
       <Text fontSize="lg" fontWeight="bold">
-        <ReactLink to="/">CodePod</ReactLink>
+        <ReactLink to="/">CodePod {!window.codepodio && "(Local)"}</ReactLink>
       </Text>
 
       <Box display={{ base: "block", md: "none" }} onClick={toggleMenu}>
@@ -75,36 +75,40 @@ export function Header() {
           {/* <MyMenuItem to="/test">Test</MyMenuItem> */}
           <MyMenuItem to="/docs">Docs</MyMenuItem>
           <MyMenuItem to="/about">About</MyMenuItem>
-          {isSignedIn() ? (
-            <Menu>
-              <MenuButton
-              // as={Button}
-              // rightIcon={<ChevronDownIcon />}
-              >
-                <Avatar name="Dan Abrahmov" src="https://bit.ly/dan-abramov" />
-              </MenuButton>
-              <MenuList>
-                <ReactLink to="/profile">
-                  <MenuItem>Profile</MenuItem>
-                </ReactLink>
-                <ReactLink to="/profile">
-                  <MenuItem>Create a Copy</MenuItem>
-                </ReactLink>
-                <MenuItem>Mark as Draft</MenuItem>
-                <MenuItem>Delete</MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    signOut();
-                    history.push("/login");
-                  }}
+          {window.codepodio &&
+            (isSignedIn() ? (
+              <Menu>
+                <MenuButton
+                // as={Button}
+                // rightIcon={<ChevronDownIcon />}
                 >
-                  Logout
-                </MenuItem>
-              </MenuList>
-            </Menu>
-          ) : (
-            <MyMenuItem to="/login">Login</MyMenuItem>
-          )}
+                  <Avatar
+                    name="Dan Abrahmov"
+                    src="https://bit.ly/dan-abramov"
+                  />
+                </MenuButton>
+                <MenuList>
+                  <ReactLink to="/profile">
+                    <MenuItem>Profile</MenuItem>
+                  </ReactLink>
+                  <ReactLink to="/profile">
+                    <MenuItem>Create a Copy</MenuItem>
+                  </ReactLink>
+                  <MenuItem>Mark as Draft</MenuItem>
+                  <MenuItem>Delete</MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      signOut();
+                      history.push("/login");
+                    }}
+                  >
+                    Logout
+                  </MenuItem>
+                </MenuList>
+              </Menu>
+            ) : (
+              <MyMenuItem to="/login">Login</MyMenuItem>
+            ))}
         </Flex>
       </Box>
     </Flex>
