@@ -1,5 +1,6 @@
 # CodePod: A Hierarchical IDE for Interactive Development at Scale
 
+![screenshot](./screenshot.png)
 
 # Installation
 
