@@ -23,17 +23,15 @@ as they are properly installed to work in Jupyter.
 
 ## python
 
-CodePod uses `ast.unparse` to analyze whether the last expression is an expression or statement. This function is only available in python 3.9 or after. To install python3.9:
-
 ```
-sudo apt install python3.9
+sudo apt install python3
 ```
 
 Install ipykernel:
 
 ```
-python3.9 -m pip install ipykernel
-python3.9 -m ipykernel install --user
+python3 -m pip install ipykernel
+python3 -m ipykernel install --user
 ```
 
 ## racket
@@ -77,7 +75,7 @@ sudo mv julia-1.6.4/ /opt/
 sudo ln -s /opt/julia-1.6.4/bin/julia /usr/local/bin/julia
 ```
 
-<!-- 
+<!--
 ```
 julia
 ]add add IJulia
@@ -99,7 +97,6 @@ julia -e 'import Pkg; Pkg.add("IJulia"); using IJulia; installkernel("Julia node
 npm install -g ijavascript
 ijsinstall
 ```
-
 
 # Development Scripts
 
