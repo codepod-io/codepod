@@ -33,7 +33,7 @@ export const loopPodQueue = createAsyncThunk(
 
       case "REMOTE_PASTE":
         {
-          return await doRemotePastePod(action.payload);
+          return await doRemotePastePod({ reponame, ...action.payload });
         }
         break;
 

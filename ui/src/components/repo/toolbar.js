@@ -261,7 +261,7 @@ export function UpButton({ pod }) {
             dispatch(
               qActions.remoteAdd({
                 parent: pod.parent,
-                index: pod.index,
+                anchor: pod.id,
                 type: pod.type === "DECK" ? "DECK" : pod.type,
                 lang: pod.lang,
                 column: pod.column,
@@ -279,7 +279,7 @@ export function UpButton({ pod }) {
             dispatch(
               qActions.remotePaste({
                 parent: pod.parent,
-                index: pod.index,
+                anchor: pod.id,
                 column: pod.column,
               })
             );
@@ -304,7 +304,8 @@ export function DownButton({ pod }) {
             dispatch(
               qActions.remoteAdd({
                 parent: pod.parent,
-                index: pod.index + 1,
+                anchor: pod.id,
+                shift: 1,
                 type: pod.type === "DECK" ? "DECK" : pod.type,
                 lang: pod.lang,
                 column: pod.column,
@@ -326,7 +327,8 @@ export function DownButton({ pod }) {
             dispatch(
               qActions.remotePaste({
                 parent: pod.parent,
-                index: pod.index + 1,
+                anchor: pod.id,
+                shift: 1,
                 column: pod.column,
               })
             );

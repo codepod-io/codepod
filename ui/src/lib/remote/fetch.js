@@ -116,9 +116,9 @@ export function normalize(pods) {
     console.log(pod);
     pod.children = pod.children
       ? pod.children.map((id) => ({
-          id: res[id].id,
-          type: res[id].type,
-        }))
+        id: res[id].id,
+        type: res[id].type,
+      }))
       : [];
     // change children.id format
     // UDPATE Or, I just put {id,type} in the children array
@@ -313,7 +313,7 @@ export async function doRemoteUpdatePod({ pod, reponame, username }) {
   return result;
 }
 
-export async function doRemotePastePod({ clip, parent, index, column }) {
+export async function doRemotePastePod({ clip, reponame, parent, index, column }) {
   const res = await fetch(graphql_url, {
     method: "POST",
     headers: {
@@ -324,14 +324,15 @@ export async function doRemotePastePod({ clip, parent, index, column }) {
     body: JSON.stringify({
       // movePod(id: String, parentId: String, index: Int): Boolean
       query: `
-        mutation PastePods($ids: [String], $parentId: String, $index: Int, $column: Int) {
-          pastePods(ids: $ids, parentId: $parentId, index: $index, column: $column)
+        mutation PastePods($reponame: String, $ids: [String], $parentId: String, $index: Int, $column: Int) {
+          pastePods(reponame: $reponame, ids: $ids, parentId: $parentId, index: $index, column: $column)
         }`,
       variables: {
         ids: clip,
         parentId: parent,
         index,
         column,
+        reponame,
       },
     }),
   });

@@ -57,9 +57,52 @@ async function readpods(dir) {
   return d;
 }
 
+async function pastePod({ appDir, reponame, id, parentId, index }) {
+  let jsonfile = path.join(appDir, reponame, ".pods", `${id}.json`);
+  let jobj = JSON.parse(await fs.promises.readFile(jsonfile));
+  // remove from old parent
+  {
+    let parent_json = path.join(
+      appDir,
+      reponame,
+      ".pods",
+      `${jobj.parent}.json`
+    );
+    let parent_obj = JSON.parse(await fs.promises.readFile(parent_json));
+    let oldindex = parent_obj.children.indexOf(id);
+    if (jobj.parent == parentId && index > oldindex) {
+      // moving within the same deck.
+      // from 5 to 3: simply remove 5 and insert into 3
+      // from 5 to 7: remove 5, insert to 6
+      index -= 1;
+    }
+    parent_obj.children.splice(oldindex, 1);
+    await fs.promises.writeFile(
+      parent_json,
+      JSON.stringify(parent_obj, null, 2)
+    );
+  }
+
+  {
+    // add to the new parent
+    let parent_json = path.join(appDir, reponame, ".pods", `${parentId}.json`);
+    let parent_obj = JSON.parse(await fs.promises.readFile(parent_json));
+    parent_obj.children.splice(index, 0, id);
+    await fs.promises.writeFile(
+      parent_json,
+      JSON.stringify(parent_obj, null, 2)
+    );
+  }
+  // set the pod data itself
+  jobj.parent = parentId;
+  await fs.promises.writeFile(jsonfile, JSON.stringify(jobj, null, 2));
+
+  return true;
+}
+
 export function getResolvers(appDir) {
   if (!fs.existsSync(appDir)) {
-    fs.mkdirSync(appDir, {recursive: true});
+    fs.mkdirSync(appDir, { recursive: true });
   }
   return {
     Query: {
@@ -238,11 +281,17 @@ export function getResolvers(appDir) {
         );
         return true;
       },
-      pastePod: async (_, { id, parentId, index, column }) => {
-        return false;
-      },
-      pastePods: async (_, { ids, parentId, index, column }) => {
-        return false;
+      pastePods: async (_, { reponame, ids, parentId, index }) => {
+        for (let id of ids) {
+          await pastePod({
+            appDir,
+            reponame,
+            id,
+            parentId,
+            index,
+          });
+          index += 1;
+        }
       },
       updatePod: async (_, { reponame, username, input }, { userId }) => {
         let { id } = input;
@@ -264,7 +313,7 @@ export function getResolvers(appDir) {
           `${child.parent}.json`
         );
         let parent = JSON.parse(await fs.promises.readFile(parent_fname));
-        parent.children.splice(child.index, 1);
+        parent.children.splice(parent.children.indexOf(child.id), 1);
         await fs.promises.writeFile(
           parent_fname,
           JSON.stringify(parent, null, 2)

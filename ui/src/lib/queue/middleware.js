@@ -44,6 +44,13 @@ export default (storeAPI) => (next) => (action) => {
       {
         // construct the ID here so that the client and the server got the same ID
         let payload = produce(action.payload, (draft) => {
+          let { parent, index, anchor, shift } = draft;
+          if (!index) {
+            index = storeAPI.getState().repo.pods[parent].children.findIndex(({ id }) => id === anchor)
+            if (index == -1) throw new Error("Cannot find anchoar pod:", anchor)
+            index += shift | 0
+            draft.index = index
+          }
           const id = "CP" + nanoid();
           draft.id = id;
         });
@@ -107,7 +114,7 @@ export default (storeAPI) => (next) => (action) => {
       break;
     case "REMOTE_PASTE":
       {
-        let { parent, index, column } = action.payload;
+        let { parent, index, anchor, shift, column } = action.payload;
         let pods = store.getState().repo.pods;
         // get all clipped pods
         let clip = Object.entries(pods)
@@ -119,11 +126,18 @@ export default (storeAPI) => (next) => (action) => {
         }
         // clear last clip
         storeAPI.dispatch(repoSlice.actions.clearLastClip());
+        // compute index
+        if (!index) {
+          index = storeAPI.getState().repo.pods[parent].children.findIndex(({ id }) => id === anchor)
+          if (index == -1) throw new Error("Cannot find anchoar pod:", anchor)
+          index += shift | 0
+        }
+        let tmpindex = index;
         for (let id of clip) {
           storeAPI.dispatch(
-            repoSlice.actions.pastePod({ parent, index, column, id })
+            repoSlice.actions.pastePod({ parent, index: tmpindex, column, id })
           );
-          index += 1;
+          tmpindex += 1;
         }
         storeAPI.dispatch(
           repoSlice.actions.addPodQueue({
