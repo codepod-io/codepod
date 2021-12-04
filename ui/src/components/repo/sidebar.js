@@ -859,6 +859,15 @@ function SidebarTest() {
       >
         Unfold All
       </Button>
+      <Box>
+        Dev Mode{" "}
+        <Switch
+          onChange={(e) => {
+            // console.log(e.target.checked);
+            dispatch(repoSlice.actions.setDevMode(e.target.checked));
+          }}
+        ></Switch>
+      </Box>
     </Box>
   );
 }

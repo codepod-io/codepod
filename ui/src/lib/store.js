@@ -123,6 +123,7 @@ const initialState = {
   reponame: null,
   username: null,
   repoLoaded: false,
+  dev: false,
   pods: {},
   queue: [],
   showdiff: false,
@@ -158,6 +159,9 @@ export const repoSlice = createSlice({
     resetState: () => initialState,
     resetSessionId: (state, action) => {
       state.sessionId = nanoid();
+    },
+    setDevMode: (state, action) => {
+      state.dev = action.payload;
     },
     setSessionId: (state, action) => {
       state.sessionId = action.payload;

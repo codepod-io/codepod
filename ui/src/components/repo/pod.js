@@ -100,6 +100,7 @@ function getDeck({ id, level }) {
 export function DeckTitle({ id }) {
   const [showMenu, setShowMenu] = useState(false);
   const pod = useSelector((state) => state.repo.pods[id]);
+  const devmode = useSelector((state) => state.repo.dev);
   const dispatch = useDispatch();
   return (
     <Box
@@ -139,6 +140,12 @@ export function DeckTitle({ id }) {
           </Button>
         </HoveringMenu>
       </Box>
+      {devmode && (
+        <Box>
+          ID: <Code>{pod.id}</Code>
+          Children: <Code>{JSON.stringify(pod.children)}</Code>
+        </Box>
+      )}
       <Flex>
         <Flex alignItems="center">
           <GiPlatform />
@@ -691,6 +698,7 @@ function PodDiff({ id, setShowDiff }) {
 
 function PodWrapper({ id, draghandle, children }) {
   const pod = useSelector((state) => state.repo.pods[id]);
+  const devmode = useSelector((state) => state.repo.dev);
   const dispatch = useDispatch();
   const [showMenu, setShowMenu] = useState(false);
   const [showDiff, setShowDiff] = useState(false);
@@ -718,6 +726,7 @@ function PodWrapper({ id, draghandle, children }) {
         <ImportList pod={pod} />
         <ThundarMark pod={pod} />
         <UtilityMark pod={pod} />
+        {devmode && <Code>{pod.id}</Code>}
         {hasgitdiff && (
           <Button
             onClick={() => {
