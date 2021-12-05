@@ -45,11 +45,14 @@ export default (storeAPI) => (next) => (action) => {
         // construct the ID here so that the client and the server got the same ID
         let payload = produce(action.payload, (draft) => {
           let { parent, index, anchor, shift } = draft;
-          if (!index) {
-            index = storeAPI.getState().repo.pods[parent].children.findIndex(({ id }) => id === anchor)
-            if (index == -1) throw new Error("Cannot find anchoar pod:", anchor)
-            index += shift | 0
-            draft.index = index
+          if (index === undefined) {
+            index = storeAPI
+              .getState()
+              .repo.pods[parent].children.findIndex(({ id }) => id === anchor);
+            if (index == -1)
+              throw new Error("Cannot find anchoar pod:", anchor);
+            index += shift | 0;
+            draft.index = index;
           }
           const id = "CP" + nanoid();
           draft.id = id;
@@ -127,10 +130,12 @@ export default (storeAPI) => (next) => (action) => {
         // clear last clip
         storeAPI.dispatch(repoSlice.actions.clearLastClip());
         // compute index
-        if (!index) {
-          index = storeAPI.getState().repo.pods[parent].children.findIndex(({ id }) => id === anchor)
-          if (index == -1) throw new Error("Cannot find anchoar pod:", anchor)
-          index += shift | 0
+        if (index === undefined) {
+          index = storeAPI
+            .getState()
+            .repo.pods[parent].children.findIndex(({ id }) => id === anchor);
+          if (index == -1) throw new Error("Cannot find anchoar pod:", anchor);
+          index += shift | 0;
         }
         let tmpindex = index;
         for (let id of clip) {
