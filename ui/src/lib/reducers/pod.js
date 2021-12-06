@@ -36,7 +36,7 @@ export function addPod(state, action) {
   // TODO the children no longer need to be ordered
   // TODO the frontend should handle differently for the children
   // state.pods[parent].children.splice(index, 0, id);
-  state.pods[parent].children.splice(index, 0, { id, type: pod.type })
+  state.pods[parent].children.splice(index, 0, { id, type: pod.type });
   // DEBUG sort-in-place
   // TODO I can probably insert
   // CAUTION the sort expects -1,0,1, not true/false
@@ -62,13 +62,13 @@ export function pastePod(state, action) {
   let pod = state.pods[id];
   // 1. remove the clipped pod
   let oldparent = state.pods[pod.parent];
-  let oldindex = oldparent.children.map(({ id }) => id).indexOf(pod.id)
+  let oldindex = oldparent.children.map(({ id }) => id).indexOf(pod.id);
   if (oldindex == -1) {
-    throw new Error("Pod not found", pod.id)
+    throw new Error("Pod not found", pod.id);
   }
   oldparent.children.splice(oldindex, 1);
   if (oldparent.id === parent && index > oldindex) {
-    index -= 1
+    index -= 1;
   }
   // 2. insert into the new position
   let newparent = state.pods[parent];
