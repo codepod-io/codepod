@@ -10,6 +10,7 @@ export const remoteUpdateAllPods = createAsyncThunk(
       let pod = getState().repo.pods[id];
       pod.children.map(({ id }) => helper(id));
       if (id !== "ROOT") {
+        // console.log("hashPod at remoteUpdateAllPods");
         if (pod.remoteHash !== hashPod(pod)) {
           dispatch(remoteUpdatePod(pod));
         }
@@ -50,6 +51,7 @@ export default {
       state.pods[action.meta.arg.id]
     );
     state.pods[action.meta.arg.id].isSyncing = false;
+    state.pods[action.meta.arg.id].dirty = false;
   },
   [remoteUpdatePod.rejected]: (state, action) => {
     // TODO display some error message

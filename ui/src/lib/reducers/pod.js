@@ -109,6 +109,7 @@ function setPodType(state, action) {
     pod.content = slackGetPlainText(pod.content);
   }
   pod.type = type;
+  pod.dirty = pod.remoteHash !== hashPod(pod);
 }
 
 export default {
@@ -118,59 +119,65 @@ export default {
   setPodType,
   toggleFold: (state, action) => {
     let id = action.payload;
-    if (!state.pods[id].fold) {
+    let pod = state.pods[id];
+    if (!pod.fold) {
       // adapter for adding fold field
-      state.pods[id].fold = true;
+      pod.fold = true;
     } else {
-      state.pods[id].fold = !state.pods[id].fold;
+      pod.fold = !pod.fold;
     }
+    pod.dirty = pod.remoteHash !== hashPod(pod);
   },
   foldAll: (state, action) => {
     for (const [id, pod] of Object.entries(state.pods)) {
       if (pod) {
         pod.fold = true;
+        pod.dirty = pod.remoteHash !== hashPod(pod);
       }
     }
   },
   unfoldAll: (state, action) => {
     for (const [id, pod] of Object.entries(state.pods)) {
       pod.fold = false;
+      pod.dirty = pod.remoteHash !== hashPod(pod);
     }
   },
   toggleThundar: (state, action) => {
     let id = action.payload;
-    if (!state.pods[id].thundar) {
-      state.pods[id].thundar = true;
+    let pod = state.pods[id];
+    if (!pod.thundar) {
+      pod.thundar = true;
     } else {
-      state.pods[id].thundar = !state.pods[id].thundar;
+      pod.thundar = !pod.thundar;
     }
+    pod.dirty = pod.remoteHash !== hashPod(pod);
   },
   toggleUtility: (state, action) => {
     let id = action.payload;
-    if (!state.pods[id].utility) {
-      state.pods[id].utility = true;
+    let pod = state.pods[id];
+    if (!pod.utility) {
+      pod.utility = true;
     } else {
-      state.pods[id].utility = !state.pods[id].utility;
+      pod.utility = !pod.utility;
     }
+    pod.dirty = pod.remoteHash !== hashPod(pod);
   },
   setName: (state, action) => {
     let { id, name } = action.payload;
-    state.pods[id].name = name;
+    let pod = state.pods[id];
+    pod.name = name;
+    pod.dirty = pod.remoteHash !== hashPod(pod);
   },
   setPodLang: (state, action) => {
     const { id, lang } = action.payload;
-    state.pods[id].lang = lang;
+    let pod = state.pods[id];
+    pod.lang = lang;
+    pod.dirty = pod.remoteHash !== hashPod(pod);
   },
   setPodContent: (state, action) => {
     const { id, content } = action.payload;
-    state.pods[id].content = content;
-  },
-  addColumn: (state, action) => {
-    let { id } = action.payload;
-    state.pods[id].column += 1;
-  },
-  deleteColumn: (state, action) => {
-    let { id } = action.payload;
-    state.pods[id].column -= 1;
+    let pod = state.pods[id];
+    pod.content = content;
+    pod.dirty = pod.remoteHash !== hashPod(pod);
   },
 };

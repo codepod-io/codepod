@@ -54,7 +54,7 @@ export function selectNumDirty() {
     let res = 0;
     if (state.repo.repoLoaded) {
       mapPods(state.repo.pods, (pod) => {
-        if (pod.remoteHash !== hashPod(pod)) {
+        if (pod.dirty) {
           res += 1;
         }
       });
