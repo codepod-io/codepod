@@ -6,6 +6,7 @@ import fs from "fs";
 import util from "util";
 
 import path from "path";
+import { exportFS } from "./exportfs.js";
 
 function normalize(pods) {
   // build a id=>pod map
@@ -203,7 +204,19 @@ export function getResolvers(appDir) {
         return false;
       },
       gitExport: async (_, { username, reponame }, { userId }) => {
-        return false;
+        // 1. read pods
+        let dir = path.join(appDir, reponame, ".pods");
+        let jsons = await fs.promises.readdir(dir);
+        let podlst = [];
+        for (let jsonfile of jsons) {
+          let jobj = JSON.parse(
+            await fs.promises.readFile(path.join(dir, jsonfile))
+          );
+          podlst.push(jobj);
+        }
+        // 2. export fs
+        await exportFS({ pods: podlst, repopath: path.join(appDir, reponame) });
+        return true;
       },
       gitStage: async (_, { username, reponame, podId }) => {
         // 1. set pod.staged = pod.content

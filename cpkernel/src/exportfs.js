@@ -71,7 +71,10 @@ async function gitExport({ username, reponame, pods }) {
     );
   }
 
-  await exportFS({ username, reponame, pods });
+  await exportFS({
+    pods,
+    repopath: pathAPI.join(repopath, `${username}/${reponame}`),
+  });
   await exec(`cd ${path} && git add .`);
   return true;
 }
@@ -109,8 +112,8 @@ function normalize_cp_config(d) {
   return res;
 }
 
-async function exportFS({ username, reponame, pods }) {
-  let path = pathAPI.join(repopath, `${username}/${reponame}`);
+export async function exportFS({ pods, repopath }) {
+  let path = repopath;
   if (fs.existsSync(`${path}/src`)) {
     await fs.promises.rm(`${path}/src`, { recursive: true });
   }
@@ -175,23 +178,23 @@ async function exportFS({ username, reponame, pods }) {
     config.racket["build-deps"] = config.racket["build-deps"] || [];
 
     let inforkt = `
-  #lang info
-  (define collection "${config.racket.name}")
-  (define deps '(${config.racket.deps.map((s) => `"${s}"`).join(" ")}))
-  (define build-deps '(${config.racket["build-deps"]
-    .map((s) => `"${s}"`)
-    .join(" ")}))
-  (define pkg-desc "${config.racket["pkg-desc"]}")
-  (define pkg-authors '())
-  (define version "${config.racket.version}")
-    `;
+#lang info
+(define collection "${config.racket.name}")
+(define deps '(${config.racket.deps.map((s) => `"${s}"`).join(" ")}))
+(define build-deps '(${config.racket["build-deps"]
+      .map((s) => `"${s}"`)
+      .join(" ")}))
+(define pkg-desc "${config.racket["pkg-desc"]}")
+(define pkg-authors '())
+(define version "${config.racket.version}")
+  `;
     console.log("writing to", `${path}/info.rkt`);
     await fs.promises.writeFile(`${path}/src/info.rkt`, inforkt);
     await fs.promises.writeFile(
       `${path}/src/main.rkt`,
       `#lang racket
-  (require "${config.racket.root || "ROOT"}/main.rkt")
-  (provide (all-from-out "${config.racket.root || "ROOT"}/main.rkt"))`
+(require "${config.racket.root || "ROOT"}/main.rkt")
+(provide (all-from-out "${config.racket.root || "ROOT"}/main.rkt"))`
     );
     // write codepod.rkt
     await fs.promises.copyFile(
@@ -235,14 +238,14 @@ async function exportFS({ username, reponame, pods }) {
     await fs.promises.writeFile(
       `${path}/src/${config.julia.name}.jl`,
       `
-        module ${config.julia.name}
-        using Reexport
-  
-  include("${config.julia.root || "ROOT"}/main.jl")
-  
-  @reexport using .${shortns(config.julia.root)}
-  end
-      `
+      module ${config.julia.name}
+      using Reexport
+
+include("${config.julia.root || "ROOT"}/main.jl")
+
+@reexport using .${shortns(config.julia.root)}
+end
+    `
     );
   }
 }
@@ -251,34 +254,36 @@ function normalize(pods) {
   // build a id=>pod map
   let d = {};
   for (const pod of pods) {
+    // console.log("----", pod.id);
+    // console.log(pod.content);
     d[pod.id] = pod;
-    pod.children = [];
-    pod.content = JSON.parse(pod.content);
-    pod.imports = JSON.parse(pod.imports);
-    pod.exports = JSON.parse(pod.exports);
-    pod.midports = JSON.parse(pod.midports);
+    // pod.children = [];
+    pod.content = pod.content && JSON.parse(pod.content);
+    pod.imports = pod.imports && JSON.parse(pod.imports);
+    pod.exports = pod.exports && JSON.parse(pod.exports);
+    pod.midports = pod.midports && JSON.parse(pod.midports);
   }
-  d["ROOT"] = {
-    id: "ROOT",
-    type: "DECK",
-    ns: "ROOT",
-    children: [],
-  };
   // construct .children
   for (const pod of pods) {
-    pod.parentId = pod.parentId || "ROOT";
-    d[pod.parentId].children.push({
-      id: pod.id,
-      type: pod.type,
-      lang: pod.lang,
-      name: pod.name,
-    });
+    pod.children = pod.children.map((id) => ({
+      id,
+      type: d[id].type,
+      lang: d[id].lang,
+      name: d[id].name,
+    }));
+    // pod.parentId = pod.parentId || "ROOT";
+    // d[pod.parentId].children.push({
+    //   id: pod.id,
+    //   type: pod.type,
+    //   lang: pod.lang,
+    //   name: pod.name,
+    // });
   }
   // sort
-  for (const [id, pod] of Object.entries(d)) {
-    // console.log("---", id, pod);
-    pod.children.sort((a, b) => d[a.id].index - d[b.id].index);
-  }
+  // for (const [id, pod] of Object.entries(d)) {
+  //   // console.log("---", id, pod);
+  //   pod.children.sort((a, b) => d[a.id].index - d[b.id].index);
+  // }
   pods.forEach((pod) => {
     pod.ns = computeNamespace(d, pod.id);
   });
@@ -289,11 +294,11 @@ export function computeNamespace(pods, id) {
   let res = [];
   // if the pod is a pod, do not include its id
   if (pods[id].type !== "DECK") {
-    id = pods[id].parentId;
+    id = pods[id].parent;
   }
   while (id) {
     res.push(pods[id].name || id);
-    id = pods[id].parentId;
+    id = pods[id].parent;
   }
   return res.reverse().join("/");
 }
@@ -356,38 +361,38 @@ function gen_julia(pod, pods) {
   }
 
   let code = `
-    module ${shortns(pod.ns)}
-  
-    using Reexport
-  
-    ${nses
-      .map(
-        (ns) => `
-    include("${"../".repeat(level)}${ns}/main.jl")
-    `
-      )
-      .join("\n")}
-  
-    ${nses
-      .map(
-        (ns) => `
-      using .${shortns(ns)}`
-      )
-      .join("\n")}
-  
-    ${exported_decks
-      .map(
-        (ns) => `
-      @reexport using .${shortns(ns)}`
-      )
-      .join("\n")}
-      
-    ${names.length > 0 ? `export ${names.join(",")}` : ""}
-  
-    ${content}
-  
-    end
-    `;
+  module ${shortns(pod.ns)}
+
+  using Reexport
+
+  ${nses
+    .map(
+      (ns) => `
+  include("${"../".repeat(level)}${ns}/main.jl")
+  `
+    )
+    .join("\n")}
+
+  ${nses
+    .map(
+      (ns) => `
+    using .${shortns(ns)}`
+    )
+    .join("\n")}
+
+  ${exported_decks
+    .map(
+      (ns) => `
+    @reexport using .${shortns(ns)}`
+    )
+    .join("\n")}
+    
+  ${names.length > 0 ? `export ${names.join(",")}` : ""}
+
+  ${content}
+
+  end
+  `;
 
   return code;
 
@@ -434,7 +439,7 @@ function getUtilNs({ id, pods, exclude }) {
     .filter(({ id }) => id !== exclude && pods[id].utility)
     .map(({ id, type }) => pods[id].ns);
   // keep to go to parents
-  return res.concat(getUtilNs({ id: pods[id].parentId, pods, exclude: id }));
+  return res.concat(getUtilNs({ id: pods[id].parent, pods, exclude: id }));
 }
 
 function gen_racket(pod, pods) {
@@ -477,7 +482,7 @@ function gen_racket(pod, pods) {
   console.log("nses", nses);
   // if it is a test desk, get parent
   if (pod.thundar) {
-    nses.push(pods[pod.parentId].ns);
+    nses.push(pods[pod.parent].ns);
   }
 
   // exported subdecks
@@ -494,8 +499,8 @@ function gen_racket(pod, pods) {
     .map((id) =>
       pods[id].thundar
         ? `(module+ test
-       ${pods[id].content}
-      )`
+     ${pods[id].content}
+    )`
         : pods[id].content
     )
     .join("\n\n");
@@ -503,28 +508,28 @@ function gen_racket(pod, pods) {
   let level = pod.ns.split("/").length;
 
   let code = `
-  (module ${pod.ns} racket 
-    (require rackunit 
-      "${"../".repeat(level)}codepod.rkt"
-      ${nses.map((s) => `"${"../".repeat(level)}${s}/main.rkt"`).join(" ")})
-    (provide ${names.join(" ")}
-      ${struct_names.map((s) => `(struct-out ${s})`).join("\n")}
-      ${exported_decks
-        .map((s) => `(all-from-out "${"../".repeat(level)}${s}/main.rkt")`)
-        .join("\n")}
-      )
-  
-      ${
-        pod.thundar
-          ? `(module+ test
-  
-        ${content}
-  
-        )`
-          : content
-      }
+(module ${pod.ns} racket 
+  (require rackunit 
+    "${"../".repeat(level)}codepod.rkt"
+    ${nses.map((s) => `"${"../".repeat(level)}${s}/main.rkt"`).join(" ")})
+  (provide ${names.join(" ")}
+    ${struct_names.map((s) => `(struct-out ${s})`).join("\n")}
+    ${exported_decks
+      .map((s) => `(all-from-out "${"../".repeat(level)}${s}/main.rkt")`)
+      .join("\n")}
     )
-      `;
+
+    ${
+      pod.thundar
+        ? `(module+ test
+
+      ${content}
+
+      )`
+        : content
+    }
+  )
+    `;
   return code;
 }
 
