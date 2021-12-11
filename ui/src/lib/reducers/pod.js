@@ -178,6 +178,7 @@ export default {
     const { id, content } = action.payload;
     let pod = state.pods[id];
     pod.content = content;
-    pod.dirty = pod.remoteHash !== hashPod(pod);
+    // pod.dirty = pod.remoteHash !== hashPod(pod);
+    pod.dirty = true;
   },
 };
