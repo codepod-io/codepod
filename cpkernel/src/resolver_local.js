@@ -101,6 +101,54 @@ async function pastePod({ appDir, reponame, id, parentId, index }) {
   return true;
 }
 
+// Deprecated Utility function
+async function convertLocal(podsdir) {
+  // convert local files
+  // 1. read local files
+  let jsons = await fs.promises.readdir(podsdir);
+  let podlst = [];
+  for (let jsonfile of jsons) {
+    let jobj = JSON.parse(
+      await fs.promises.readFile(path.join(podsdir, jsonfile))
+    );
+    podlst.push(jobj);
+  }
+  // 2. build d
+  podlst.forEach((pod) => {
+    pod.parent = pod.parentId || "ROOT";
+    delete pod.parentId;
+    pod.children = [];
+  });
+  // children
+  let d = {};
+  d["ROOT"] = {
+    type: "DECK",
+    id: "ROOT",
+    children: [],
+  };
+  podlst.forEach((pod) => {
+    d[pod.id] = pod;
+  });
+  // 3. modify format and save back to files
+  podlst.forEach((pod) => {
+    d[pod.parent].children.push(pod.id);
+  });
+  podlst.forEach((pod) => {
+    pod.children.sort((a, b) => d[a].index - d[b].index);
+  });
+  podlst.forEach((pod) => {
+    delete pod.index;
+  });
+  podlst.push(d["ROOT"]);
+  // 4. save back to files
+  podlst.forEach(async (pod) => {
+    await fs.promises.writeFile(
+      path.join(podsdir, `${pod.id}.json`),
+      JSON.stringify(pod, null, 2)
+    );
+  });
+}
+
 export function getResolvers(appDir) {
   if (!fs.existsSync(appDir)) {
     fs.mkdirSync(appDir, { recursive: true });
