@@ -66,6 +66,7 @@ export const typeDefs = gql`
     me: User
     repos: [Repo]
     repo(name: String!, username: String!): Repo
+    repoConfig(name: String!): String
     pods(username: String, reponame: String): [Pod]
     pod(id: ID!): Pod
     myRepos: [Repo]
@@ -86,6 +87,7 @@ export const typeDefs = gql`
     updateUser(username: String, email: String, name: String): Boolean
     createRepo(name: String): Boolean
     deleteRepo(name: String): Boolean
+    updateRepoConfig(name: String, config: String): Boolean
     addPod(
       reponame: String
       username: String

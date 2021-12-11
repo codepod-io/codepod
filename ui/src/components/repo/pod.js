@@ -942,6 +942,9 @@ function ThePod({ id }) {
   // console.log("rendinering thepod", id);
   const pod = useSelector((state) => state.repo.pods[id]);
   const dispatch = useDispatch();
+  const doubleClickToEdit = useSelector(
+    (state) => state.repo.repoConfig?.doubleClickToEdit
+  );
   if (pod.type === "WYSIWYG") {
     return <WysiwygPod pod={pod} />;
   } else if (pod.type === "MD") {
@@ -959,7 +962,7 @@ function ThePod({ id }) {
     );
   } else if (pod.type === "CODE") {
     // return <Text>CODE</Text>;
-    if (pod.render) {
+    if (!doubleClickToEdit || pod.render) {
       return <CodePod id={id} />;
     } else {
       return (

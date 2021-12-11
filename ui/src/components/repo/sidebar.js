@@ -872,6 +872,89 @@ function SidebarTest() {
   );
 }
 
+function ConfigButton() {
+  let reponame = useSelector((state) => state.repo.reponame);
+  const dispatch = useDispatch();
+  // let username = useSelector((state) => state.repo.username);
+  const { data, loading, error } = useQuery(gql`
+    query RepoConfig {
+      repoConfig(name: "${reponame}")
+    }
+  `);
+  const [updateRepoConfig, {}] = useMutation(
+    gql`
+      mutation UpdateRepoConfig($reponame: String, $config: String) {
+        updateRepoConfig(name: $reponame, config: $config)
+      }
+    `,
+    { refetchQueries: ["RepoConfig"] }
+  );
+  useEffect(() => {
+    console.log(data);
+    if (data) {
+      dispatch(repoSlice.actions.setRepoConfig(JSON.parse(data.repoConfig)));
+    }
+  }, [data]);
+  const repoConfig = useSelector((state) => state.repo.repoConfig);
+  // console.log("repoConfig", repoConfig);
+  // console.log("ConfigButton", data);
+  // const [open, setOpen] = React.useState(false);
+  // const handleOpen = () => setOpen(true);
+  // const handleClose = () => setOpen(false);
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  return (
+    <Box>
+      <Button
+        onClick={() => {
+          // 1. show a new interface
+          // setOpen(true);
+          onOpen();
+          // 2. do the config
+          // 3. update the config
+        }}
+      >
+        Config
+      </Button>
+      <Modal isOpen={isOpen} onClose={onClose} size="6xl">
+        <ModalOverlay />
+
+        <ModalContent>
+          <ModalHeader>Config</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody h={50} overflow="scroll">
+            <Box>
+              <Text>Double Click to Edit</Text>
+              <Switch
+                defaultChecked={repoConfig && repoConfig.doubleClickToEdit}
+                onChange={(e) => {
+                  // dispatch(repoSlice.actions.setDevMode(e.target.checked));
+                  updateRepoConfig({
+                    variables: {
+                      reponame,
+                      config: JSON.stringify({
+                        doubleClickToEdit: e.target.checked,
+                      }),
+                    },
+                  });
+                }}
+              ></Switch>
+            </Box>
+          </ModalBody>
+
+          <ModalFooter>
+            {/* <Button colorScheme="blue" mr={3} onClick={onClose}>
+              Save
+            </Button> */}
+            <Button colorScheme="blue" mr={3} onClick={onClose}>
+              Close
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </Box>
+  );
+}
+
 export function Sidebar() {
   return (
     <Box mx={2} px="1rem" boxShadow="xl" rounded="md" bg="gray.200">
@@ -898,6 +981,7 @@ export function Sidebar() {
         <ApplyAll />
       </Box>
       <Divider my={2} />
+      <ConfigButton />
     </Box>
   );
 }

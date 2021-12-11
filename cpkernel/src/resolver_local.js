@@ -146,6 +146,18 @@ export function getResolvers(appDir) {
       activeSessions: async (_, __, { userId }) => {
         return [];
       },
+      repoConfig: async (_, { name }) => {
+        if (!fs.existsSync(path.join(appDir, name))) {
+          return false;
+        }
+        // codepod config
+        let config_file = path.join(appDir, name, "codepod.json");
+        let config = "{}";
+        if (fs.existsSync(config_file)) {
+          config = await fs.promises.readFile(config_file);
+        }
+        return config.toString();
+      },
       repo: async (_, { name, username }) => {
         if (!fs.existsSync(path.join(appDir, name))) {
           return false;
@@ -197,6 +209,21 @@ export function getResolvers(appDir) {
       },
     },
     Mutation: {
+      updateRepoConfig: async (_, { name, config }) => {
+        if (!fs.existsSync(path.join(appDir, name))) {
+          return false;
+        }
+        let config_file = path.join(appDir, name, "codepod.json");
+        let newconfig = JSON.parse(config);
+
+        let obj = {};
+        if (fs.existsSync(config_file)) {
+          obj = JSON.parse(await fs.promises.readFile(config_file));
+        }
+        Object.assign(obj, newconfig);
+        await fs.promises.writeFile(config_file, JSON.stringify(obj, null, 2));
+        return true;
+      },
       signup: async (_, { username, email, password, invitation }) => {
         return false;
       },

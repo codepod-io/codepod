@@ -181,6 +181,9 @@ export const repoSlice = createSlice({
       state.reponame = reponame;
       state.username = username;
     },
+    setRepoConfig: (state, action) => {
+      state.repoConfig = action.payload;
+    },
     markClip: (state, action) => {
       let { id } = action.payload;
       let pod = state.pods[id];
