@@ -50,7 +50,6 @@ import {
   loadPodQueue,
   remoteUpdatePod,
   remoteUpdateAllPods,
-  selectIsDirty,
   selectNumDirty,
   selectNumStaged,
   selectNumChanged,
@@ -214,6 +213,7 @@ function ApplyAll() {
 
   useEffect(() => {
     if (numDirty > 0) {
+      // FIXME doesn't work on mac?
       // window.onbeforeunload = () => true;
       window.addEventListener("beforeunload", alertUser);
     } else {

@@ -102,18 +102,21 @@ export function normalize(pods) {
   pods.forEach((pod) => {
     res[pod.id] = pod;
   });
-  console.log(res);
+  // console.log(res);
   pods.forEach((pod) => {
+    // console.log("P:", pod.parent);
+    // FIXME this is for backward compatibility
     // if (!pod.parent) {
     //   // add root
     //   res["ROOT"].children.push({ id: pod.id, type: pod.type });
     //   pod.parent = "ROOT";
+    //   console.log("=========");
     // } else {
     //   // change parent.id format
     //   // pod.parent = pod.parent.id;
     // }
 
-    console.log(pod);
+    // console.log(pod);
     pod.children = pod.children
       ? pod.children.map((id) => ({
           id: res[id].id,

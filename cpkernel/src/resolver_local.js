@@ -150,6 +150,9 @@ export function getResolvers(appDir) {
         if (!fs.existsSync(path.join(appDir, name))) {
           return false;
         }
+        // if (name === "bhdl") {
+        // await convertLocal(path.join(appDir, name, ".pods"));
+        // }
         let dir = path.join(appDir, name, ".pods");
         let jsons = await fs.promises.readdir(dir);
         let podlst = [];
@@ -160,7 +163,7 @@ export function getResolvers(appDir) {
           podlst.push(jobj);
         }
         // let pods = await readpods(p);
-        console.log("===", podlst);
+        // console.log("===", podlst);
         return {
           name,
           id: "NULL",

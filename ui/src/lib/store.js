@@ -29,6 +29,7 @@ const nanoid = customAlphabet(nolookalikes, 10);
 export function selectIsDirty(id) {
   return (state) => {
     let pod = state.repo.pods[id];
+    // console.log("selectIsDirty");
     if (pod.remoteHash === hashPod(pod)) {
       return false;
     } else {
@@ -51,6 +52,7 @@ function mapPods(pods, func) {
 // FIXME performance
 export function selectNumDirty() {
   return (state) => {
+    // console.log("selectNumDirty");
     let res = 0;
     if (state.repo.repoLoaded) {
       mapPods(state.repo.pods, (pod) => {

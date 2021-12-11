@@ -72,9 +72,7 @@ import {
   repoSlice,
   loadPodQueue,
   remoteUpdatePod,
-  remoteUpdateAllPods,
   selectIsDirty,
-  selectNumDirty,
 } from "../../lib/store";
 import * as wsActions from "../../lib/ws/actions";
 import * as qActions from "../../lib/queue/actions";
