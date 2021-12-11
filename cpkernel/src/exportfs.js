@@ -6,12 +6,7 @@ import fs from "fs";
 import * as child from "child_process";
 import util from "util";
 
-import * as Prisma from "@prisma/client";
-// const { PrismaClient } = Prisma;
-
 import fsp from "fs/promises";
-
-const prisma = new Prisma.PrismaClient();
 
 const repopath = pathAPI.join(os.homedir(), `.codepod/repos`);
 
@@ -564,24 +559,4 @@ async function gitGetPods({ username, reponame, version }) {
     pods.push(pod);
   }
   return pods;
-}
-
-export async function prismaGitExport({ username, reponame }) {
-  // put everything into the folder
-  const repo = await prisma.repo.findFirst({
-    where: {
-      name: reponame,
-    },
-  });
-  // console.log("=== repo", JSON.stringify(repo, null, 2));
-  const pods = await prisma.pod.findMany({
-    where: {
-      repo: {
-        id: repo.id,
-      },
-    },
-  });
-  // console.log("=== pods", pods);
-  // 1. write all pods into /path/to/folder/pods/[uuid].json
-  await gitExport({ reponame, username, pods });
 }
