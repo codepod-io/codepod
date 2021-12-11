@@ -181,4 +181,8 @@ export default {
     // pod.dirty = pod.remoteHash !== hashPod(pod);
     pod.dirty = true;
   },
+  setPodRender: (state, action) => {
+    const { id, value } = action.payload;
+    state.pods[id].render = value;
+  },
 };

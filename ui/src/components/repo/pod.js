@@ -285,6 +285,7 @@ export function DeckTitle({ id }) {
 
 function PodSummary({ id }) {
   let pod = useSelector((state) => state.repo.pods[id]);
+  // console.log("PodSummary", id, pod.running);
   return (
     <Box as="span">
       {pod.running && <Spinner />}
@@ -598,6 +599,7 @@ function WysiwygPod({ pod }) {
   );
 }
 function Pod({ id, draghandle }) {
+  console.log("Rendering pod", id);
   return (
     <PodWrapper id={id} draghandle={draghandle}>
       <ThePod id={id} />
@@ -697,6 +699,7 @@ function PodDiff({ id, setShowDiff }) {
 }
 
 function PodWrapper({ id, draghandle, children }) {
+  // console.log("PodWrapper", id);
   const pod = useSelector((state) => state.repo.pods[id]);
   const devmode = useSelector((state) => state.repo.dev);
   const dispatch = useDispatch();
@@ -955,7 +958,24 @@ function ThePod({ id }) {
       ></Textarea>
     );
   } else if (pod.type === "CODE") {
-    return <CodePod id={id} />;
+    // return <Text>CODE</Text>;
+    if (pod.render) {
+      return <CodePod id={id} />;
+    } else {
+      return (
+        <Code
+          onDoubleClick={() => {
+            // console.log("Double clicked!");
+            dispatch(repoSlice.actions.setPodRender({ id, value: true }));
+          }}
+          whiteSpace="pre-wrap"
+          fontSize="sm"
+        >
+          {pod.content}
+          <Text>(Read-only)</Text>
+        </Code>
+      );
+    }
   } else if (pod.type === "REPL") {
     return <ReplPod pod={pod} />;
   } else if (pod.type === "DECK") {
