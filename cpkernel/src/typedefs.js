@@ -101,7 +101,13 @@ export const typeDefs = gql`
       reponame: String
       username: String
     ): Boolean
-    pastePods(reponame: String, ids: [String], parentId: String, index: Int, column: Int): Boolean
+    pastePods(
+      reponame: String
+      ids: [String]
+      parentId: String
+      index: Int
+      column: Int
+    ): Boolean
     updatePod(reponame: String, username: String, input: PodInput): Boolean
     clearUser: Boolean
     clearRepo: Boolean
