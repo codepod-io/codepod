@@ -1,6 +1,6 @@
 {
   "name": "codepod",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "main": "./public/electron.js",
   "homepage": "./",
@@ -51,7 +51,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "package": "electron-builder -m -c.extraMetadata.main=build/electron.js",
+    "package": "electron-builder -mwl -c.extraMetadata.main=build/electron.js",
     "electron:start": "concurrently -k \"cross-env BROWSER=none yarn start\" \"wait-on http://localhost:13001 && electronmon .\"",
     "electron:package:mac": "npm run build && electron-builder -m -c.extraMetadata.main=build/electron.js",
     "electron:package:win": "npm run build && electron-builder -w -c.extraMetadata.main=build/electron.js",
