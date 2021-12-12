@@ -229,7 +229,7 @@ function ApplyAll() {
       // clearInterval(update_intervalId);
       update_intervalId = setInterval(() => {
         // websocket resets after 60s of idle by most firewalls
-        console.log("periodically saving ..");
+        // console.log("periodically saving ..");
         dispatch(remoteUpdateAllPods());
       }, 1000);
     }
@@ -890,7 +890,7 @@ function ConfigButton() {
     { refetchQueries: ["RepoConfig"] }
   );
   useEffect(() => {
-    console.log(data);
+    // console.log(data);
     if (data) {
       dispatch(repoSlice.actions.setRepoConfig(JSON.parse(data.repoConfig)));
     }

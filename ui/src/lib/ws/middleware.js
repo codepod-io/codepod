@@ -426,7 +426,7 @@ function onMessage(store) {
     // msg.data for websocket
     // msg.body for rabbitmq
     let { type, payload } = JSON.parse(msg.data || msg.body || undefined);
-    console.log("got message", type, payload);
+    // console.log("got message", type, payload);
     switch (type) {
       case "output":
         {
