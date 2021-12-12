@@ -242,6 +242,71 @@ ${nses
         },
       })
     );
+  } else if (pod.lang === "python") {
+    // python powerrun
+    // 1. create the module
+    let names = pod.children
+      .filter(({ id }) => pods[id].type !== "DECK")
+      .filter(({ id }) => pods[id].exports)
+      .map(({ id }) =>
+        Object.entries(pods[id].exports)
+          .filter(([k, v]) => v)
+          .map(([k, v]) => k)
+      );
+    names = [].concat(...names);
+    let nses = getUtilNs({ id, pods });
+    const child_deck_nses = pods[id].children
+      .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
+      .map(({ id, type }) => pods[id].ns);
+    nses = nses.concat(child_deck_nses);
+    // if it is a test desk, get parent
+    if (pod.thundar) {
+      nses.push(pods[pod.parent].ns);
+    }
+
+    // exported subdecks
+    // TODO handle this in python,
+    // In racket: all-from-out
+    // In julia: @reexport
+    let exported_decks = pods[id].children
+      .filter(
+        ({ id }) =>
+          pods[id].type === "DECK" &&
+          pods[id].exports &&
+          pods[id].exports["self"]
+      )
+      .map(({ id, type }) => pods[id].ns);
+    // 2. import the namespaces
+    let code = `${nses
+      .map(
+        (ns) => `
+CODEPOD_ADD_IMPORT("${ns}", "${pod.ns}")`
+      )
+      .join("\n")}
+
+CODEPOD_SET_EXPORT("${pod.ns}", {${names.map((name) => `"${name}"`).join(",")}})
+
+CODEPOD_SET_EXPORT_SUB("${pod.ns}", {${exported_decks
+      .map((name) => `"${name}"`)
+      .join(",")}})
+    `;
+    // console.log("==== PYTHON CODE", code);
+    storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
+    storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
+    socket.send(
+      JSON.stringify({
+        type: "runCode",
+        payload: {
+          lang: pod.lang,
+          code,
+          // namespace: pod.ns,
+          raw: true,
+          // FIXME this is deck's ID
+          podId: pod.id,
+          sessionId: storeAPI.getState().repo.sessionId,
+        },
+      })
+    );
   }
   if (doEval) {
     // run all children pods

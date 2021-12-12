@@ -1264,28 +1264,66 @@ def code2parts(code):
     else:
         return [unparse(ast1.body[:-1]), expr]
 
+from collections import defaultdict
 
-def _make_codepod():
-    d = {}
+d = {}
 
-    def getmod(ns):
-        if ns not in d:
-            d[ns] = types.ModuleType(ns)
-            # for testing purpose
-            d[ns].__dict__["CODEPOD_GETMOD"] = getmod
-        return d[ns]
+"""
+here's the new plan for python's eval
 
-    def eval_func(code, ns):
-        # the codepod(code) is the program sent to backend
-        # codepod is defined on the kernel
-        mod = getmod(ns)
-        [stmt, expr] = code2parts(code)
-        if stmt:
-            exec(stmt, mod.__dict__)
-        if expr:
-            return eval(expr, mod.__dict__)
+Python's module is closely bound to the file system, so it is not possible to use that.
 
-    return eval_func, getmod
+I have to use my own globals and locals during exec/eval.
 
+Then, I'll just record the calling relationships for the modules. When evaluating, I'll:
 
-CODEPOD_EVAL, CODEPOD_GETMOD = _make_codepod()
+1. eval_func(code, nses)
+    - nses is a list of namespaces in order, the last one is this ns
+    - that should be it. The question is where to compute nses. I would
+        1. compute it when powerRunTree
+        2. let the kernel knows it by using CODEPOD_ADD_IMPORT. The kernel will record this.
+"""
+
+# from ns to nses that should imported
+import_d = defaultdict(set)
+# from ns to exported names
+export_d = defaultdict(set)
+# from ns to subdeck nses
+export_sub_d = defaultdict(set)
+
+def CODEPOD_GETMOD(ns):
+    if ns not in d:
+        d[ns] = types.ModuleType(ns)
+    return d[ns]
+
+def merge_dicts(dicts):
+    """
+    Given any number of dictionaries, shallow copy and merge into a new dict,
+    precedence goes to key-value pairs in latter dictionaries.
+    """
+    result = {}
+    for dictionary in dicts:
+        result.update(dictionary)
+    return result
+
+def CODEPOD_ADD_IMPORT(FROM, TO):
+    import_d[TO].add(FROM)
+def CODEPOD_REMOVE_IMPORT(FROM, TO):
+    if FROM in import_d[TO]:
+        import_d[TO].remove(FROM)
+def CODEPOD_SET_EXPORT(ns, exports):
+    export_d[ns] = exports
+def CODEPOD_SET_EXPORT_SUB(ns, nses):
+    export_sub_d[ns] = nses
+
+def CODEPOD_EVAL(code, ns):
+    # the codepod(code) is the program sent to backend
+    # codepod is defined on the kernel
+    mod = CODEPOD_GETMOD(ns)
+    [stmt, expr] = code2parts(code)
+    _dict = merge_dicts([{k:v for k,v in CODEPOD_GETMOD(x).__dict__.items() if k in export_d[x]} for x in import_d[ns]]
+                      + [{k:v for k,v in CODEPOD_GETMOD(x).__dict__.items() if k in export_d[x]} for ns1 in export_sub_d[ns] for x in import_d[ns1]])
+    if stmt:
+        exec(stmt, _dict, mod.__dict__)
+    if expr:
+        return eval(expr, _dict, mod.__dict__)
