@@ -43,133 +43,130 @@ function getDeckExports({ id, pods }) {
   };
 }
 
-function handlePowerRun({ id, doEval, storeAPI, socket }) {
-  // assume id is a deck
-  // this is used to init or reset the deck with all exported names
+function powerRun_racket({ id, storeAPI, socket }) {
   let pods = storeAPI.getState().repo.pods;
   let pod = pods[id];
-  if (pod.lang === "racket") {
-    let names = pod.children
-      .filter(({ id }) => pods[id].type !== "DECK")
-      .filter(({ id }) => pods[id].exports)
-      .map(({ id }) =>
+  let names = pod.children
+    .filter(({ id }) => pods[id].type !== "DECK")
+    .filter(({ id }) => pods[id].exports)
+    .map(({ id }) =>
+      Object.entries(pods[id].exports)
+        .filter(([k, v]) => v)
+        .map(([k, v]) => k)
+    );
+  names = [].concat(...names);
+  let struct_codes = pod.children
+    .filter(({ id }) => pods[id].exports)
+    .filter(
+      ({ id }) =>
         Object.entries(pods[id].exports)
           .filter(([k, v]) => v)
           .map(([k, v]) => k)
-      );
-    names = [].concat(...names);
-    let struct_codes = pod.children
-      .filter(({ id }) => pods[id].exports)
-      .filter(
-        ({ id }) =>
-          Object.entries(pods[id].exports)
-            .filter(([k, v]) => v)
-            .map(([k, v]) => k)
-            .filter((k) => k.startsWith("struct ")).length > 0
-      )
-      .map(({ id }) => pods[id].content);
-    // FIXME reset-module is problematic! it is equivalanet to the following expansion. Why??
-    // let code = `(enter! #f) (reset-module ${ns} ${names.join(" ")})`;
-    let struct_names = names
-      .filter((s) => s.startsWith("struct "))
-      .map((s) => s.split(" ")[1]);
-    // FIXME will the struct-out support update?
-    //
-    // UPDATE this does not work. Instead, I could insert the real content for
-    // all exported names maybe?
-    names = names.filter((s) => !s.startsWith("struct "));
+          .filter((k) => k.startsWith("struct ")).length > 0
+    )
+    .map(({ id }) => pods[id].content);
+  // FIXME reset-module is problematic! it is equivalanet to the following expansion. Why??
+  // let code = `(enter! #f) (reset-module ${ns} ${names.join(" ")})`;
+  let struct_names = names
+    .filter((s) => s.startsWith("struct "))
+    .map((s) => s.split(" ")[1]);
+  // FIXME will the struct-out support update?
+  //
+  // UPDATE this does not work. Instead, I could insert the real content for
+  // all exported names maybe?
+  names = names.filter((s) => !s.startsWith("struct "));
 
-    // also I need to require for struct:parent
-    let nses = getUtilNs({ id, pods });
-    // console.log("nses", nses);
-    // child deck's
-    const child_deck_nses = pods[id].children
-      .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
-      .map(({ id, type }) => pods[id].ns);
-    // console.log("child_deck_nses", child_deck_nses);
-    nses = nses.concat(child_deck_nses);
-    // if it is a test desk, get parent
-    if (pod.thundar) {
-      nses.push(pods[pod.parent].ns);
-    }
+  // also I need to require for struct:parent
+  let nses = getUtilNs({ id, pods });
+  // console.log("nses", nses);
+  // child deck's
+  const child_deck_nses = pods[id].children
+    .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
+    .map(({ id, type }) => pods[id].ns);
+  // console.log("child_deck_nses", child_deck_nses);
+  nses = nses.concat(child_deck_nses);
+  // if it is a test desk, get parent
+  if (pod.thundar) {
+    nses.push(pods[pod.parent].ns);
+  }
 
-    // exported subdecks
-    let exported_decks = pods[id].children
-      .filter(
-        ({ id }) =>
-          pods[id].type === "DECK" &&
-          pods[id].exports &&
-          pods[id].exports["self"]
-      )
-      .map(({ id, type }) => pods[id].ns);
+  // exported subdecks
+  let exported_decks = pods[id].children
+    .filter(
+      ({ id }) =>
+        pods[id].type === "DECK" && pods[id].exports && pods[id].exports["self"]
+    )
+    .map(({ id, type }) => pods[id].ns);
 
-    let code = `
+  let code = `
 (enter! #f)
 (module ${pod.ns} racket 
-  (require rackunit 'CODEPOD ${nses.map((s) => "'" + s).join(" ")})
-  (provide ${names.join(" ")}
-    ${struct_names.map((s) => `(struct-out ${s})`).join("\n")}
-    ${exported_decks.map((s) => `(all-from-out '${s})`).join("\n")}
-    )
-  ${names.map((name) => `(define ${name} "PLACEHOLDER-${name}")`).join("\n")}
-  ${struct_codes.join("\n")}
-  )
-    `;
-    // ${struct_names.map((name) => `(struct ${name} ())`)}
+(require rackunit 'CODEPOD ${nses.map((s) => "'" + s).join(" ")})
+(provide ${names.join(" ")}
+${struct_names.map((s) => `(struct-out ${s})`).join("\n")}
+${exported_decks.map((s) => `(all-from-out '${s})`).join("\n")}
+)
+${names.map((name) => `(define ${name} "PLACEHOLDER-${name}")`).join("\n")}
+${struct_codes.join("\n")}
+)
+`;
+  // ${struct_names.map((name) => `(struct ${name} ())`)}
 
-    storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
-    storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
-    socket.send(
-      JSON.stringify({
-        type: "runCode",
-        payload: {
-          lang: pod.lang,
-          code,
-          namespace: pod.ns,
-          raw: true,
-          // FIXME this is deck's ID
-          podId: pod.id,
-          sessionId: storeAPI.getState().repo.sessionId,
-        },
-      })
+  storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
+  storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
+  socket.send(
+    JSON.stringify({
+      type: "runCode",
+      payload: {
+        lang: pod.lang,
+        code,
+        namespace: pod.ns,
+        raw: true,
+        // FIXME this is deck's ID
+        podId: pod.id,
+        sessionId: storeAPI.getState().repo.sessionId,
+      },
+    })
+  );
+}
+
+function powerRun_julia({ id, storeAPI, socket }) {
+  let pods = storeAPI.getState().repo.pods;
+  let pod = pods[id];
+  let names = pod.children
+    .filter(({ id }) => pods[id].type !== "DECK")
+    .filter(({ id }) => pods[id].exports)
+    .map(({ id }) =>
+      Object.entries(pods[id].exports)
+        .filter(([k, v]) => v)
+        .map(([k, v]) => k)
     );
-  } else if (pod.lang === "julia") {
-    let names = pod.children
-      .filter(({ id }) => pods[id].type !== "DECK")
-      .filter(({ id }) => pods[id].exports)
-      .map(({ id }) =>
-        Object.entries(pods[id].exports)
-          .filter(([k, v]) => v)
-          .map(([k, v]) => k)
-      );
-    names = [].concat(...names);
-    let nses = getUtilNs({ id, pods });
-    const child_deck_nses = pods[id].children
-      .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
-      .map(({ id, type }) => pods[id].ns);
-    nses = nses.concat(child_deck_nses);
-    // if it is a test desk, get parent
-    if (pod.thundar) {
-      nses.push(pods[pod.parent].ns);
-    }
+  names = [].concat(...names);
+  let nses = getUtilNs({ id, pods });
+  const child_deck_nses = pods[id].children
+    .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
+    .map(({ id, type }) => pods[id].ns);
+  nses = nses.concat(child_deck_nses);
+  // if it is a test desk, get parent
+  if (pod.thundar) {
+    nses.push(pods[pod.parent].ns);
+  }
 
-    // exported subdecks
-    let exported_decks = pods[id].children
-      .filter(
-        ({ id }) =>
-          pods[id].type === "DECK" &&
-          pods[id].exports &&
-          pods[id].exports["self"]
-      )
-      .map(({ id, type }) => pods[id].ns);
+  // exported subdecks
+  let exported_decks = pods[id].children
+    .filter(
+      ({ id }) =>
+        pods[id].type === "DECK" && pods[id].exports && pods[id].exports["self"]
+    )
+    .map(({ id, type }) => pods[id].ns);
 
-    // nses = nses.concat(exported_decks);
+  // nses = nses.concat(exported_decks);
 
-    function ns2jlmod(ns) {
-      return "Main." + ns.replaceAll("/", ".");
-    }
+  function ns2jlmod(ns) {
+    return "Main." + ns.replaceAll("/", ".");
+  }
 
-    let code = `
+  let code = `
 ${nses
   .map(
     (ns) =>
@@ -190,8 +187,8 @@ ${nses
   
     `;
 
-    // FIXME optimize this logic. Probably construct several CODEPOD_ADD_IMPORT here
-    code = `
+  // FIXME optimize this logic. Probably construct several CODEPOD_ADD_IMPORT here
+  code = `
     ${nses.map(
       (ns) => `
     include_string(eval(:($(:Main).$(Symbol("${pod.ns}")))), "using $(:($(:Main).$(Symbol("${ns}"))))")`
@@ -204,8 +201,8 @@ ${nses
     ${names.length > 0 ? `export ${names.join(",")}` : ""}
     `;
 
-    // DEBUG Much better!!!
-    code = `
+  // DEBUG Much better!!!
+  code = `
     ${nses
       .map(
         (ns) => `
@@ -223,91 +220,107 @@ ${nses
 
     ${names.length > 0 ? `export ${names.join(",")}` : ""}
     `;
-    // console.log("code:", code);
-    // ${struct_names.map((name) => `(struct ${name} ())`)}
+  // console.log("code:", code);
+  // ${struct_names.map((name) => `(struct ${name} ())`)}
 
-    storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
-    storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
-    socket.send(
-      JSON.stringify({
-        type: "runCode",
-        payload: {
-          lang: pod.lang,
-          code,
-          namespace: pod.ns,
-          // raw: true,
-          // FIXME this is deck's ID
-          podId: pod.id,
-          sessionId: storeAPI.getState().repo.sessionId,
-        },
-      })
+  storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
+  storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
+  socket.send(
+    JSON.stringify({
+      type: "runCode",
+      payload: {
+        lang: pod.lang,
+        code,
+        namespace: pod.ns,
+        // raw: true,
+        // FIXME this is deck's ID
+        podId: pod.id,
+        sessionId: storeAPI.getState().repo.sessionId,
+      },
+    })
+  );
+}
+
+function powerRun_python({ id, storeAPI, socket }) {
+  let pods = storeAPI.getState().repo.pods;
+  let pod = pods[id];
+  // python powerrun
+  // 1. create the module
+  let names = pod.children
+    .filter(({ id }) => pods[id].type !== "DECK")
+    .filter(({ id }) => pods[id].exports)
+    .map(({ id }) =>
+      Object.entries(pods[id].exports)
+        .filter(([k, v]) => v)
+        .map(([k, v]) => k)
     );
-  } else if (pod.lang === "python") {
-    // python powerrun
-    // 1. create the module
-    let names = pod.children
-      .filter(({ id }) => pods[id].type !== "DECK")
-      .filter(({ id }) => pods[id].exports)
-      .map(({ id }) =>
-        Object.entries(pods[id].exports)
-          .filter(([k, v]) => v)
-          .map(([k, v]) => k)
-      );
-    names = [].concat(...names);
-    let nses = getUtilNs({ id, pods });
-    const child_deck_nses = pods[id].children
-      .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
-      .map(({ id, type }) => pods[id].ns);
-    nses = nses.concat(child_deck_nses);
-    // if it is a test desk, get parent
-    if (pod.thundar) {
-      nses.push(pods[pod.parent].ns);
-    }
+  names = [].concat(...names);
+  let nses = getUtilNs({ id, pods });
+  const child_deck_nses = pods[id].children
+    .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
+    .map(({ id, type }) => pods[id].ns);
+  nses = nses.concat(child_deck_nses);
+  // if it is a test desk, get parent
+  if (pod.thundar) {
+    nses.push(pods[pod.parent].ns);
+  }
 
-    // exported subdecks
-    // TODO handle this in python,
-    // In racket: all-from-out
-    // In julia: @reexport
-    let exported_decks = pods[id].children
-      .filter(
-        ({ id }) =>
-          pods[id].type === "DECK" &&
-          pods[id].exports &&
-          pods[id].exports["self"]
-      )
-      .map(({ id, type }) => pods[id].ns);
-    // 2. import the namespaces
-    let code = `${nses
-      .map(
-        (ns) => `
+  // exported subdecks
+  // TODO handle this in python,
+  // In racket: all-from-out
+  // In julia: @reexport
+  let exported_decks = pods[id].children
+    .filter(
+      ({ id }) =>
+        pods[id].type === "DECK" && pods[id].exports && pods[id].exports["self"]
+    )
+    .map(({ id, type }) => pods[id].ns);
+  // 2. import the namespaces
+  let code = `${nses
+    .map(
+      (ns) => `
 CODEPOD_ADD_IMPORT("${ns}", "${pod.ns}")`
-      )
-      .join("\n")}
+    )
+    .join("\n")}
 
 CODEPOD_SET_EXPORT("${pod.ns}", {${names.map((name) => `"${name}"`).join(",")}})
 
 CODEPOD_SET_EXPORT_SUB("${pod.ns}", {${exported_decks
-      .map((name) => `"${name}"`)
-      .join(",")}})
+    .map((name) => `"${name}"`)
+    .join(",")}})
     `;
-    // console.log("==== PYTHON CODE", code);
-    storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
-    storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
-    socket.send(
-      JSON.stringify({
-        type: "runCode",
-        payload: {
-          lang: pod.lang,
-          code,
-          // namespace: pod.ns,
-          raw: true,
-          // FIXME this is deck's ID
-          podId: pod.id,
-          sessionId: storeAPI.getState().repo.sessionId,
-        },
-      })
-    );
+  // console.log("==== PYTHON CODE", code);
+  storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
+  storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
+  socket.send(
+    JSON.stringify({
+      type: "runCode",
+      payload: {
+        lang: pod.lang,
+        code,
+        // namespace: pod.ns,
+        raw: true,
+        // FIXME this is deck's ID
+        podId: pod.id,
+        sessionId: storeAPI.getState().repo.sessionId,
+      },
+    })
+  );
+}
+
+function handlePowerRun({ id, doEval, storeAPI, socket }) {
+  // assume id is a deck
+  // this is used to init or reset the deck with all exported names
+  let pods = storeAPI.getState().repo.pods;
+  let pod = pods[id];
+  if (pod.lang === "racket") {
+    powerRun_racket({ id, storeAPI, socket });
+  } else if (pod.lang === "julia") {
+    powerRun_julia({ id, storeAPI, socket });
+  } else if (pod.lang === "python") {
+    powerRun_python({ id, storeAPI, socket });
   }
+
   if (doEval) {
     // run all children pods
     pod.children
