@@ -414,7 +414,7 @@ function CommitButton({ disabled }) {
           open={show}
           anchorEl={anchorEl.current}
           // need this, otherwise the z-index seems to be berried under Chakra Modal
-          disablePortal
+          // disablePortal
           placement="top"
         >
           <Paper>

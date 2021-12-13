@@ -4,6 +4,10 @@ import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
+import IconButton from "@mui/material/IconButton";
+import TextField from "@mui/material/TextField";
+import Input from "@mui/material/Input";
+import InputLabel from "@mui/material/InputLabel";
 
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormControl from "@mui/material/FormControl";
@@ -11,18 +15,6 @@ import FormLabel from "@mui/material/FormLabel";
 
 import Grid from "@mui/material/Grid";
 
-import {
-  SimpleGrid,
-  useColorModeValue,
-  VisuallyHidden,
-  Input,
-  useDisclosure,
-  useMergeRefs,
-  useColorModeValue as mode,
-  InputGroup,
-  InputRightElement,
-  IconButton,
-} from "@chakra-ui/react";
 import { useHistory } from "react-router-dom";
 
 import Link from "@mui/material/Link";
@@ -56,7 +48,7 @@ function Text(props) {
 
 export const Card = (props) => (
   <Box
-    bg={useColorModeValue("white", "gray.700")}
+    bg="white"
     py="8"
     px={{
       base: "4",
@@ -80,12 +72,7 @@ export const DividerWithText = (props) => {
       <Box flex="1">
         <Divider borderColor="currentcolor" />
       </Box>
-      <Text
-        as="span"
-        px="3"
-        color={useColorModeValue("gray.600", "gray.400")}
-        fontWeight="medium"
-      >
+      <Text as="span" px="3" color="gray.600" fontWeight="medium">
         {children}
       </Text>
       <Box flex="1">
@@ -137,7 +124,7 @@ function LoginForm(props) {
             <Stack spacing="6">
               <FormControl id="username">
                 <FormLabel>Username or Email</FormLabel>
-                <Input
+                <TextField
                   name="username"
                   type="username"
                   autoComplete="username"
@@ -171,12 +158,14 @@ function LoginForm(props) {
 ///////// Password
 
 export const PasswordField = React.forwardRef((props, ref) => {
-  const { isOpen, onToggle } = useDisclosure();
+  const [isOpen, setOpen] = useState(false);
   const inputRef = React.useRef(null);
-  const mergeRef = useMergeRefs(inputRef, ref);
+  // FIXME alternatives?
+  // const mergeRef = useMergeRefs(inputRef, ref);
+  const mergeRef = inputRef;
 
   const onClickReveal = () => {
-    onToggle();
+    setOpen(!isOpen);
     const input = inputRef.current;
 
     if (input) {
@@ -194,17 +183,11 @@ export const PasswordField = React.forwardRef((props, ref) => {
     <FormControl id="password">
       <Flex justify="space-between">
         <FormLabel>Password</FormLabel>
-        <Box
-          as="a"
-          color={mode("blue.600", "blue.200")}
-          fontWeight="semibold"
-          fontSize="sm"
-        >
+        <Box as="a" color="blue.600" fontWeight="semibold" fontSize="sm">
           Forgot Password?
         </Box>
       </Flex>
-      <InputGroup>
-        <InputRightElement>
+      {/* <InputRightElement>
           <IconButton
             bg="transparent !important"
             variant="ghost"
@@ -212,18 +195,17 @@ export const PasswordField = React.forwardRef((props, ref) => {
             icon={isOpen ? <HiEyeOff /> : <HiEye />}
             onClick={onClickReveal}
           />
-        </InputRightElement>
-        <Input
-          ref={mergeRef}
-          name="password"
-          type={isOpen ? "text" : "password"}
-          autoComplete="current-password"
-          onChange={props.handleChange}
-          onBlur={props.handleBlur}
-          required
-          // {...props}
-        />
-      </InputGroup>
+        </InputRightElement> */}
+      <TextField
+        ref={mergeRef}
+        name="password"
+        type={isOpen ? "text" : "password"}
+        autoComplete="current-password"
+        onChange={props.handleChange}
+        onBlur={props.handleBlur}
+        required
+        // {...props}
+      />
     </FormControl>
   );
 });
@@ -239,7 +221,7 @@ export default function Login() {
   }, [isSignedIn]);
   return (
     <Box
-      //   bg={useColorModeValue("gray.50", "inherit")}
+      bg="gray.50"
       minH="100vh"
       py="12"
       px={{
@@ -275,19 +257,19 @@ export default function Login() {
                   console.log("hello");
                 }}
               >
-                <VisuallyHidden>Login with Facebook</VisuallyHidden>
+                {/* <VisuallyHidden>Login with Facebook</VisuallyHidden> */}
                 <FaFacebook />
               </Button>
             </Grid>
             <Grid item xs={4}>
               <Button color="currentColor" variant="outline">
-                <VisuallyHidden>Login with Google</VisuallyHidden>
+                {/* <VisuallyHidden>Login with Google</VisuallyHidden> */}
                 <FaGoogle />
               </Button>
             </Grid>
             <Grid item xs={4}>
               <Button color="currentColor" variant="outline">
-                <VisuallyHidden>Login with Github</VisuallyHidden>
+                {/* <VisuallyHidden>Login with Github</VisuallyHidden> */}
                 <FaGithub />
               </Button>
             </Grid>

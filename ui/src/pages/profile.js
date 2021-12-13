@@ -1,29 +1,22 @@
 import { useMutation } from "@apollo/client";
-import {
-  Center,
-  Box,
-  Code,
-  Flex,
-  Button,
-  Heading,
-  SimpleGrid,
-  Text,
-  useColorModeValue,
-  VisuallyHidden,
-  Stack,
-  FormControl,
-  FormLabel,
-  Input,
-  Divider,
-  useDisclosure,
-  useMergeRefs,
-  useColorModeValue as mode,
-  InputGroup,
-  InputRightElement,
-  IconButton,
-  Alert,
-  AlertIcon,
-} from "@chakra-ui/react";
+
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Divider from "@mui/material/Divider";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import Alert from "@mui/material/Alert";
+import IconButton from "@mui/material/IconButton";
+import TextField from "@mui/material/TextField";
+import Input from "@mui/material/Input";
+import InputLabel from "@mui/material/InputLabel";
+
+import FormControlLabel from "@mui/material/FormControlLabel";
+import FormControl from "@mui/material/FormControl";
+import FormLabel from "@mui/material/FormLabel";
+
+import Grid from "@mui/material/Grid";
+
 import {
   ApolloProvider,
   ApolloClient,
@@ -32,13 +25,19 @@ import {
   gql,
 } from "@apollo/client";
 
-import { chakra } from "@chakra-ui/system";
-
 import React, { useEffect, useState } from "react";
 import { Formik } from "formik";
 
 import { useAuth } from "../lib/auth";
 import useMe from "../lib/me";
+
+function Flex(props) {
+  return (
+    <Box sx={{ display: "flex" }} {...props}>
+      {props.children}
+    </Box>
+  );
+}
 
 function UpdateForm({ me }) {
   let [updateUser, {}] = useMutation(
@@ -98,7 +97,12 @@ function UpdateForm({ me }) {
         isSubmitting,
       }) => (
         <div>
-          <chakra.form onSubmit={handleSubmit}>
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            noValidate
+            sx={{ mt: 1 }}
+          >
             <Stack spacing="6">
               <FormControl id="username">
                 <FormLabel>Username</FormLabel>
@@ -145,14 +149,9 @@ function UpdateForm({ me }) {
               >
                 Update
               </Button>
-              {error && (
-                <Alert status="error">
-                  <AlertIcon />
-                  {error}
-                </Alert>
-              )}
+              {error && <Alert severity="error">{error}</Alert>}
             </Stack>
-          </chakra.form>
+          </Box>
         </div>
       )}
     </Formik>
@@ -166,24 +165,24 @@ export default function Profile() {
     // router.push("/login");
     // return null;
     return (
-      <Center>
-        <Text>Profile Page</Text>
-        <Text>Please Log In</Text>
-      </Center>
+      <Box>
+        <Box>Profile Page</Box>
+        <Box>Please Log In</Box>
+      </Box>
     );
   }
 
   return (
-    <Center>
+    <Box>
       <Flex direction="column">
-        <Text>Profile page</Text>
-        <Text>Hello {me.name}</Text>
+        <Box>Profile page</Box>
+        <Box>Hello {me.name}</Box>
         <Box>Name: {me.name || "NULL"}</Box>
-        <Text>Username: {me.username}</Text>
-        <Code>{JSON.stringify(me)}</Code>
+        <Box>Username: {me.username}</Box>
+        <Box component="pre">{JSON.stringify(me)}</Box>
         <Divider />
         <UpdateForm me={me} />
       </Flex>
-    </Center>
+    </Box>
   );
 }

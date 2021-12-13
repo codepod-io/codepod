@@ -804,7 +804,7 @@ function PodWrapper({ id, draghandle, children }) {
                 open={showDiff}
                 anchorEl={anchorEl.current}
                 // need this, otherwise the z-index seems to be berried under Chakra Modal
-                disablePortal={false}
+                // disablePortal={false}
                 placement="right-start"
                 modifiers={[
                   {

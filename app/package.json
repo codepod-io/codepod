@@ -52,11 +52,11 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "package": "electron-builder -c.extraMetadata.main=build/electron.js",
-    "electron:start": "concurrently -k \"cross-env BROWSER=none yarn start\" \"wait-on http://localhost:13001 && electronmon .\"",
+    "electron:start": "concurrently -k \"cross-env BROWSER=none npm run start\" \"wait-on -v http://127.0.0.1:13001 && electronmon .\"",
     "electron:package:mac": "npm run build && electron-builder -m -c.extraMetadata.main=build/electron.js",
     "electron:package:win": "npm run build && electron-builder -w -c.extraMetadata.main=build/electron.js",
     "electron:package:linux": "npm run build && electron-builder -l -c.extraMetadata.main=build/electron.js",
-    "dev": "concurrently -k \"cd ../ui && BROWSER=none npm run start\" \"cd ../cpkernel && npm run dev\" \"cross-env BROWSER=none npm run start\" \"wait-on http://127.0.0.1:13001 && wait-on http://127.0.0.1:14322 && electronmon .\"",
+    "dev": "concurrently -k \"cd ../ui && BROWSER=none npm run start\" \"cd ../cpkernel && npm run dev\" \"cross-env BROWSER=none npm run start\" \"wait-on -v http://127.0.0.1:13001 && wait-on -v http://127.0.0.1:14322 && electronmon .\"",
     "build:all": "cd ../cpkernel && npm run build && cd ../ui && npm run build && cd ../app && npm run build && npm run package"
   },
   "eslintConfig": {
