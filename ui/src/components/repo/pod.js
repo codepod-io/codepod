@@ -5,8 +5,10 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import AddIcon from "@mui/icons-material/Add";
-import { purple, red, grey } from "@mui/material/colors";
+import { purple, red, grey, blue } from "@mui/material/colors";
 import IconButton from "@mui/material/IconButton";
+import RawOnIcon from "@mui/icons-material/RawOn";
+import RawOffIcon from "@mui/icons-material/RawOff";
 
 import { gql, useQuery, useMutation } from "@apollo/client";
 import { GoDiff } from "react-icons/go";
@@ -115,28 +117,37 @@ export function DeckTitle({ id }) {
           left: "-30px",
         }}
       >
+        {/* The hovering menu */}
         <HoveringMenu pod={pod} showMenu={showMenu}>
-          {pod.id !== "ROOT" && <UpButton pod={pod} />}
-          {pod.id !== "ROOT" && <DownButton pod={pod} />}
-          <RightButton pod={pod} />
-
-          {pod.id !== "ROOT" && <DeleteButton pod={pod} />}
-          {pod.id !== "ROOT" && (
-            <Box>
-              <ThundarButton pod={pod} />
-              <UtilityButton pod={pod} />
-            </Box>
-          )}
-          <Button
-            // variant="ghost"
-            color="green"
-            size="xs"
-            onClick={() => {
-              dispatch(wsActions.wsRun(id));
+          <Box
+            sx={{
+              display: "flex",
+              // justifyContent: "center",
             }}
           >
-            <PlayArrowIcon fontSize="small" />
-          </Button>
+            {pod.id !== "ROOT" && <UpButton pod={pod} />}
+            {pod.id !== "ROOT" && <DownButton pod={pod} />}
+            <RightButton pod={pod} />
+
+            {pod.id !== "ROOT" && <DeleteButton pod={pod} />}
+            {pod.id !== "ROOT" && (
+              <Box>
+                <ThundarButton pod={pod} />
+                <UtilityButton pod={pod} />
+              </Box>
+            )}
+            <IconButton
+              sx={{
+                color: "green",
+              }}
+              size="small"
+              onClick={() => {
+                dispatch(wsActions.wsRun(id));
+              }}
+            >
+              <PlayArrowIcon sx={{ fontSize: 15 }} />
+            </IconButton>
+          </Box>
         </HoveringMenu>
       </Box>
       {devmode && (
@@ -145,26 +156,26 @@ export function DeckTitle({ id }) {
           Children: <Code>{JSON.stringify(pod.children)}</Code>
         </Box>
       )}
+
+      {/* The name of the deck */}
       <Box sx={{ display: "flex" }}>
         <Box sx={{ display: "flex", alignItems: "center" }}>
           <GiPlatform />
         </Box>
         <Button
-          // variant="ghost"
-          size="xs"
+          size="small"
+          sx={{
+            height: "1rem",
+            bgcolor: pod.exports && pod.exports["self"] ? blue[100] : "inherit",
+          }}
+          variant="outlined"
           onClick={() => {
             // dispatch
             dispatch(repoSlice.actions.toggleDeckExport({ id: pod.id }));
           }}
         >
           <Box>
-            <Code
-              bgcolor={
-                pod.exports && pod.exports["self"] ? "blue.200" : "inherit"
-              }
-            >
-              {pod.name || pod.id}
-            </Code>
+            <Box component="pre">{pod.name || pod.id}</Box>
           </Box>
         </Button>
 
@@ -237,7 +248,7 @@ export function DeckTitle({ id }) {
         style={{
           margin: "5px",
           position: "absolute",
-          top: "-30px",
+          top: "-40px",
           left: "15px",
           zIndex: 100,
         }}
@@ -307,24 +318,35 @@ function PodSummary({ id }) {
   let pod = useSelector((state) => state.repo.pods[id]);
   // console.log("PodSummary", id, pod.running);
   return (
-    <Box as="span">
+    <Box>
       {pod.running && <CircularProgress />}
       {pod.error && (
-        <Code
-          color="red"
-          mr={pod.exports && Object.keys(pod.exports).length > 0 ? 0 : 1}
+        <Box
+          // component="pre"
+          sx={{
+            color: "red",
+            mr: pod.exports && Object.keys(pod.exports).length > 0 ? 0 : 1,
+          }}
         >
           X
-        </Code>
+        </Box>
       )}
       {pod.stdout && <Code color="blue">O</Code>}
+      {/* {pod.id} */}
       {pod.exports && Object.keys(pod.exports).length > 0 && (
-        <Box as="span">
+        <Box>
           {Object.entries(pod.exports)
             .filter(([k, v]) => v)
             .map(([k, v]) => (
-              <Box as="span" key={k} mr={1}>
-                <Code>{k}</Code>
+              <Box
+                key={k}
+                sx={{
+                  mr: 1,
+                }}
+              >
+                <Box component="pre" sx={{ m: 0 }}>
+                  {k}
+                </Box>
               </Box>
             ))}
         </Box>
@@ -415,7 +437,7 @@ export function Deck(props) {
     >
       <Box>
         <DeckTitle id={id} />
-        <Box sx={{ maxWidth: "md", flexWrap: "wrap" }}>
+        <Box sx={{ display: "flex", maxWidth: "md", flexWrap: "wrap" }}>
           {pod.children
             .filter(({ type }) => type !== "DECK")
             .map(({ id }) => (
@@ -766,23 +788,24 @@ function PodWrapper({ id, draghandle, children }) {
           : undefined,
       }}
     >
-      <Box sx={{ display: "flex" }}>
+      <Box sx={{ display: "flex", alignItems: "center" }}>
         <ExportList pod={pod} />
         <ImportList pod={pod} />
         <ThundarMark pod={pod} />
         <UtilityMark pod={pod} />
         {devmode && <Code>{pod.id}</Code>}
         {hasgitdiff && (
-          <Button
+          <IconButton
             onClick={() => {
               setShowDiff(!showDiff);
             }}
-            size="xs"
-            variant="ghost"
-            color="orange.600"
+            sx={{
+              color: "orange",
+            }}
+            size="small"
           >
-            <GoDiff />
-          </Button>
+            <GoDiff fontSize={15} />
+          </IconButton>
         )}
       </Box>
 
@@ -884,7 +907,7 @@ function PodWrapper({ id, draghandle, children }) {
               <UpButton pod={pod} />
               <DownButton pod={pod} />
               <DeleteButton pod={pod} />
-              <Button
+              <IconButton
                 size="smal"
                 sx={{
                   fontSize: 10,
@@ -893,8 +916,12 @@ function PodWrapper({ id, draghandle, children }) {
                   dispatch(repoSlice.actions.toggleRaw(pod.id));
                 }}
               >
-                raw
-              </Button>
+                {pod.raw ? (
+                  <RawOnIcon sx={{ fontSize: 15 }} />
+                ) : (
+                  <RawOffIcon sx={{ fontSize: 15 }} />
+                )}
+              </IconButton>
               <FoldButton pod={pod} />
               <RunButton id={id} />
             </Box>

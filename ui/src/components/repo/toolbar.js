@@ -6,6 +6,8 @@ import Tooltip from "@mui/material/Tooltip";
 import CircularProgress from "@mui/material/CircularProgress";
 import Stack from "@mui/material/Stack";
 import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import { purple, red, grey, blue } from "@mui/material/colors";
 
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
@@ -102,8 +104,8 @@ export function SyncStatus({ pod }) {
     return (
       <Box>
         <Button
-          size="xs"
-          variant="ghost"
+          size="small"
+          // variant="ghost"
           onClick={() => {
             dispatch(remoteUpdatePod(pod));
           }}
@@ -115,7 +117,7 @@ export function SyncStatus({ pod }) {
   } else {
     return (
       <Box>
-        <Button size="xs" variant="ghost" isDisabled>
+        <Button size="small" isDisabled>
           <CheckIcon />
         </Button>
       </Box>
@@ -132,8 +134,8 @@ export function InfoBar({ pod }) {
   const anchorEl = useRef(null);
   return (
     <Box>
-      <Button
-        size="sm"
+      <IconButton
+        size="small"
         ref={anchorEl}
         onClick={(e) => {
           setShow(!show);
@@ -141,7 +143,7 @@ export function InfoBar({ pod }) {
       >
         {/* <InfoOutlinedIcon /> */}
         <InfoIcon />
-      </Button>
+      </IconButton>
       <Popper open={show} anchorEl={anchorEl.current} placement="left-start">
         <Paper>
           <Box p={5}>
@@ -202,7 +204,6 @@ export function ClickInputButton({ callback, children, defvalue }) {
       <Box>
         <IconButton
           ref={anchorEl}
-          variant="ghost"
           size="small"
           onClick={() => {
             // pop up a input box for entering exporrt
@@ -355,8 +356,7 @@ export function RightButton({ pod }) {
   const dispatch = useDispatch();
   return (
     <IconButton
-      size="xs"
-      variant="ghost"
+      size="small"
       onClick={() => {
         // 1. add a dec
         dispatch(
@@ -397,7 +397,7 @@ export function ThundarMark({ pod }) {
   return (
     <Box>
       {pod.thundar && (
-        <Button size="xs" variant="ghost" bg="teal.300">
+        <Button size="small" bg="teal.300">
           <AiFillThunderbolt /> Test{" "}
         </Button>
       )}
@@ -409,9 +409,6 @@ export function RunButton({ id }) {
   const dispatch = useDispatch();
   return (
     <Flex>
-      <Text mr={2} color="gray" fontSize="sm">
-        {/* {pod.lang} */}
-      </Text>
       <Tooltip title="Run (shift-enter)">
         <IconButton
           size="small"
@@ -480,9 +477,8 @@ export function ThundarButton({ pod }) {
   // executed by run all button or run deck.
   const dispatch = useDispatch();
   return (
-    <Button
-      size="xs"
-      variant="ghost"
+    <IconButton
+      size="small"
       bg={pod.thundar ? "teal.300" : "default"}
       onClick={() => {
         dispatch(repoSlice.actions.toggleThundar(pod.id));
@@ -495,7 +491,7 @@ export function ThundarButton({ pod }) {
       ) : (
         <AiOutlineSafetyCertificate />
       )}
-    </Button>
+    </IconButton>
   );
 }
 
@@ -503,7 +499,7 @@ export function UtilityMark({ pod }) {
   return (
     <Box>
       {pod.utility && (
-        <Button size="xs" variant="ghost" bg="green.200">
+        <Button size="small" bg="green.200">
           <Box>
             <BuildIcon style={{ fontSize: 15 }} />
           </Box>
@@ -516,9 +512,8 @@ export function UtilityMark({ pod }) {
 export function UtilityButton({ pod }) {
   const dispatch = useDispatch();
   return (
-    <Button
-      size="xs"
-      variant="ghost"
+    <IconButton
+      size="small"
       bg={pod.utility ? "green.200" : "default"}
       onClick={() => {
         dispatch(repoSlice.actions.toggleUtility(pod.id));
@@ -534,7 +529,7 @@ export function UtilityButton({ pod }) {
       ) : (
         <BuildIcon color="disabled" style={{ fontSize: 15 }} />
       )}
-    </Button>
+    </IconButton>
   );
 }
 
@@ -612,7 +607,7 @@ function LanguageMenu({ pod }) {
   return (
     <Box>
       <Select
-        size="xs"
+        size="small"
         placeholder="Select option"
         value={pod.lang || ""}
         onChange={(e) =>
@@ -624,18 +619,18 @@ function LanguageMenu({ pod }) {
           )
         }
       >
-        <option value="python">Python</option>
-        <option value="julia">Julia</option>
-        <option value="racket">Racket</option>
-        <option value="scheme">Scheme</option>
-        <option value="javascript">JavaScript</option>
-        <option value="typescript">TypeScript</option>
-        <option value="json">JSON</option>
-        <option value="css">CSS</option>
-        <option value="html">HTML</option>
-        <option value="sql">SQL</option>
-        <option value="java">Java</option>
-        <option value="php">PHP</option>
+        <MenuItem value="python">Python</MenuItem>
+        <MenuItem value="julia">Julia</MenuItem>
+        <MenuItem value="racket">Racket</MenuItem>
+        <MenuItem value="scheme">Scheme</MenuItem>
+        <MenuItem value="javascript">JavaScript</MenuItem>
+        <MenuItem value="typescript">TypeScript</MenuItem>
+        <MenuItem value="json">JSON</MenuItem>
+        <MenuItem value="css">CSS</MenuItem>
+        <MenuItem value="html">HTML</MenuItem>
+        <MenuItem value="sql">SQL</MenuItem>
+        <MenuItem value="java">Java</MenuItem>
+        <MenuItem value="php">PHP</MenuItem>
       </Select>
     </Box>
   );
@@ -646,7 +641,7 @@ function TypeMenu({ pod }) {
   return (
     <Box>
       <Select
-        size="xs"
+        size="small"
         placeholder="Select option"
         value={pod.type || ""}
         onChange={(e) =>
@@ -658,10 +653,10 @@ function TypeMenu({ pod }) {
           )
         }
       >
-        <option value="CODE">CODE</option>
-        <option value="WYSIWYG">WYSIWYG</option>
-        <option value="REPL">REPL</option>
-        <option value="MD">Markdown</option>
+        <MenuItem value="CODE">CODE</MenuItem>
+        <MenuItem value="WYSIWYG">WYSIWYG</MenuItem>
+        <MenuItem value="REPL">REPL</MenuItem>
+        <MenuItem value="MD">Markdown</MenuItem>
       </Select>
     </Box>
   );
@@ -678,7 +673,7 @@ function IOStatus({ id, name }) {
     );
   } else if ("result" in status) {
     return (
-      <Button as="span" size="xs" variant="ghost">
+      <Button component="span" size="small">
         <CheckIcon color="green" />
       </Button>
     );
@@ -769,8 +764,8 @@ export function HoveringMenu({ pod, showMenu, draghandle, children }) {
             flexDirection: "column",
             bgcolor: "white",
             border: "1px",
-            p: 3,
-            borderRadius: 8,
+            p: 1,
+            borderRadius: 2,
             boxShadow: 3,
           }}
           // direction="column"
@@ -781,9 +776,7 @@ export function HoveringMenu({ pod, showMenu, draghandle, children }) {
           // boxShadow="md"
         >
           <HStack>
-            <InfoBar pod={pod} />
-
-            <Button
+            {/* <Button
               size="small"
               // variant="ghost"
               onClick={() => {
@@ -791,9 +784,9 @@ export function HoveringMenu({ pod, showMenu, draghandle, children }) {
               }}
             >
               <FcAddColumn />
-            </Button>
+            </Button> */}
 
-            <Button
+            {/* <Button
               size="small"
               // variant="ghost"
               onClick={() => {
@@ -801,14 +794,13 @@ export function HoveringMenu({ pod, showMenu, draghandle, children }) {
               }}
             >
               <FcDeleteColumn />
-            </Button>
-            <Text as="span">col:{pod.column}</Text>
+            </Button> */}
+            {/* <Text as="span">col:{pod.column}</Text> */}
           </HStack>
           <HStack my={2}>
+            <InfoBar pod={pod} />
             <TypeMenu pod={pod} />
             <LanguageMenu pod={pod} />
-          </HStack>
-          <HStack>
             <Button
               size="small"
               onClick={() => {
@@ -839,15 +831,19 @@ export function ExportList({ pod }) {
               <HoverButton
                 btn1={
                   <Button
-                    size="xs"
-                    variant="ghost"
+                    size="small"
+                    sx={{
+                      height: "1rem",
+                      bgcolor: v ? blue[100] : "inherit",
+                    }}
+                    variant="outlined"
                     onClick={() => {
                       dispatch(
                         wsActions.wsToggleExport({ id: pod.id, name: k })
                       );
                     }}
                   >
-                    <Code bg={v ? "blue.100" : "inherit"}>{k}</Code>
+                    <Box component="pre">{k}</Box>
                   </Button>
                 }
                 btn2={
@@ -879,8 +875,7 @@ export function ExportList({ pod }) {
                       Rename
                     </ClickInputButton>
                     <Button
-                      size="xs"
-                      variant="ghost"
+                      size="small"
                       onClick={() => {
                         dispatch(
                           repoSlice.actions.deletePodExport({
@@ -893,8 +888,7 @@ export function ExportList({ pod }) {
                       Delete
                     </Button>
                     <Button
-                      size="xs"
-                      variant="ghost"
+                      size="small"
                       onClick={() => {
                         dispatch(
                           wsActions.wsToggleExport({ id: pod.id, name: k })
