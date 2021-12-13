@@ -1,9 +1,13 @@
-import { Center, Text } from "@chakra-ui/react";
+import Box from "@mui/material/Box";
 
 export default function Docs() {
   return (
-    <Center>
-      <Text>Documents</Text>
-    </Center>
+    <Box
+      sx={{
+        textAlign: "center",
+      }}
+    >
+      Documents
+    </Box>
   );
 }

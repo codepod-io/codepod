@@ -1,32 +1,35 @@
-import {
-  Flex,
-  Text,
-  Box,
-  Avatar,
-  Menu,
-  MenuButton,
-  MenuList,
-  MenuItem,
-} from "@chakra-ui/react";
 // TODO react link might work natively with chakra
 import { Link as ReactLink } from "react-router-dom";
 
 import { useState } from "react";
 
-import { CloseIcon, HamburgerIcon } from "@chakra-ui/icons";
+import { useHistory } from "react-router-dom";
+
+import Box from "@mui/material/Box";
+import CloseIcon from "@mui/icons-material/Close";
+import MenuIcon from "@mui/icons-material/Menu";
+import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
+import MenuList from "@mui/material/MenuList";
+import ListItemText from "@mui/material/ListItemText";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import Button from "@mui/material/Button";
+import Avatar from "@mui/material/Avatar";
+import Link from "@mui/material/Link";
 
 import { useAuth } from "../lib/auth";
-import { useHistory } from "react-router-dom";
 
 const MyMenuItem = ({ children, isLast, to = "/" }) => {
   return (
-    <Text
-      mb={{ base: isLast ? 0 : 8, sm: 0 }}
-      mr={{ base: 0, sm: isLast ? 0 : 8 }}
+    <Box
+      mb={{ xl: isLast ? 0 : 2, sm: 0 }}
+      mr={{ xl: 0, sm: isLast ? 0 : 2 }}
       display="block"
     >
-      <ReactLink to={to}>{children}</ReactLink>
-    </Text>
+      <Link to={to} component={ReactLink} underline="none">
+        {children}
+      </Link>
+    </Box>
   );
 };
 
@@ -38,55 +41,73 @@ export function Header() {
   const { isSignedIn, signOut } = useAuth();
 
   return (
-    <Flex
-      px={8}
-      as="nav"
-      align="center"
-      justify="space-between"
-      position="fixed"
-      top="0px"
-      bg="white"
-      zIndex={1}
-      wrap="wrap"
-      w="100%"
-    >
-      <Text fontSize="lg" fontWeight="bold">
-        <ReactLink to="/">CodePod {!window.codepodio && "(Local)"}</ReactLink>
-      </Text>
+    <Box
+      // component="nav"
+      sx={{
+        display: "flex",
+        my: 2,
+        px: 2,
 
-      <Box display={{ base: "block", md: "none" }} onClick={toggleMenu}>
-        {show ? <CloseIcon /> : <HamburgerIcon />}
+        alignItems: "center",
+        justifyContent: "space-between",
+        textAlign: "center",
+        // position: "fixed",
+        // top: 0,
+        background: "white",
+        zIndex: 1,
+        flexWrap: "wrap",
+        // width: 1,
+      }}
+    >
+      <Box
+        sx={{
+          fontSize: 16,
+          fontWeight: "bold",
+        }}
+      >
+        <Link component={ReactLink} underline="none" to="/">
+          CodePod {!window.codepodio && "(Local)"}
+        </Link>
+      </Box>
+
+      <Box display={{ sm: "block", md: "none" }} onClick={toggleMenu}>
+        {show ? <CloseIcon /> : <MenuIcon />}
       </Box>
 
       <Box
-        display={{ base: show ? "block" : "none", md: "block" }}
-        flexBasis={{ base: "100%", md: "auto" }}
+        sx={{
+          display: { xs: show ? "block" : "none", md: "block" },
+          // display: ["none", "block"],
+          // display: { xs: "none", md: "block" },
+        }}
+        // flexBasis={{ base: "100%", md: "auto" }}
+        // display="none"
+        // display={{ sm: "none", xl: "none" }}
       >
-        <Flex
-          align="center"
-          justify={["center", "space-between", "flex-end", "flex-end"]}
-          direction={["column", "row", "row", "row"]}
-          pt={[4, 4, 0, 0]}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: ["center", "space-between", "flex-end", "flex-end"],
+            flexDirection: ["column", "row", "row", "row"],
+            pt: [4, 4, 0, 0],
+            // width: 0.5,
+          }}
         >
           <MyMenuItem to="/">Home</MyMenuItem>
           <MyMenuItem to="/repos">Repos</MyMenuItem>
-          {/* <MyMenuItem to="/kernels">Kernels</MyMenuItem>
-          <MyMenuItem to="/commitnote">CommitNote</MyMenuItem> */}
-          {/* <MyMenuItem to="/test">Test</MyMenuItem> */}
+          <MyMenuItem to="/test">Test</MyMenuItem>
           <MyMenuItem to="/docs">Docs</MyMenuItem>
           <MyMenuItem to="/about">About</MyMenuItem>
           {window.codepodio &&
             (isSignedIn() ? (
               <Menu>
-                <MenuButton
+                <Button
                 // as={Button}
                 // rightIcon={<ChevronDownIcon />}
                 >
-                  <Avatar
-                    name="Dan Abrahmov"
-                    src="https://bit.ly/dan-abramov"
-                  />
-                </MenuButton>
+                  <Avatar alt="Dan Abrahmov" src="https://bit.ly/dan-abramov" />
+                </Button>
                 <MenuList>
                   <ReactLink to="/profile">
                     <MenuItem>Profile</MenuItem>
@@ -109,30 +130,37 @@ export function Header() {
             ) : (
               <MyMenuItem to="/login">Login</MyMenuItem>
             ))}
-        </Flex>
+        </Box>
       </Box>
-    </Flex>
+    </Box>
   );
 }
 
 export function Footer() {
   return (
-    <Flex
-      mb={8}
-      p={8}
-      as="nav"
-      align="center"
-      justify="space-between"
-      wrap="wrap"
-      w="100%"
+    <Box
+      component="nav"
+      sx={{
+        display: "flex",
+        mb: 8,
+        p: 8,
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        // width: "100%",
+      }}
     >
-      <Text fontSize="lg" fontWeight="bold">
-        <ReactLink to="/">CodePod</ReactLink>
-      </Text>
+      <Box fontSize="lg" fontWeight="bold">
+        <Link component={ReactLink} to="/" underline="none">
+          CodePod
+        </Link>
+      </Box>
 
-      <Text fontSize="lg" fontWeight="bold">
-        <ReactLink to="/">Copyright © CodePod Inc</ReactLink>
-      </Text>
-    </Flex>
+      <Box fontSize="lg" fontWeight="bold">
+        <Link component={ReactLink} to="/" underline="none">
+          Copyright © CodePod Inc
+        </Link>
+      </Box>
+    </Box>
   );
 }

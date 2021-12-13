@@ -1,64 +1,44 @@
 import { useParams, Link as ReactLink, Prompt } from "react-router-dom";
 
-import {
-  Box,
-  Text,
-  Flex,
-  Textarea,
-  Button,
-  Tooltip,
-  Image,
-  Spinner,
-  Code,
-  Spacer,
-  Divider,
-  useToast,
-  Input,
-} from "@chakra-ui/react";
-import { HStack, VStack, Select } from "@chakra-ui/react";
-import { useClipboard } from "@chakra-ui/react";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Tooltip from "@mui/material/Tooltip";
+import CircularProgress from "@mui/material/CircularProgress";
+import Stack from "@mui/material/Stack";
+import Select from "@mui/material/Select";
 
-import {
-  ArrowUpIcon,
-  ArrowForwardIcon,
-  ArrowDownIcon,
-  CheckIcon,
-  CloseIcon,
-  RepeatIcon,
-  HamburgerIcon,
-  InfoIcon,
-  ChevronDownIcon,
-  DragHandleIcon,
-  DeleteIcon,
-  AddIcon,
-  QuestionOutlineIcon,
-} from "@chakra-ui/icons";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import CheckIcon from "@mui/icons-material/Check";
+import CloseIcon from "@mui/icons-material/Close";
+import ReplayIcon from "@mui/icons-material/Replay";
+import InfoIcon from "@mui/icons-material/Info";
+import DeleteIcon from "@mui/icons-material/Delete";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
+
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-import Popover from "@material-ui/core/Popover";
-import Paper from "@material-ui/core/Paper";
+import Popover from "@mui/material/Popover";
+import Paper from "@mui/material/Paper";
 import stripAnsi from "strip-ansi";
-import IconButton from "@material-ui/core/IconButton";
-import BuildIcon from "@material-ui/icons/Build";
+import IconButton from "@mui/material/IconButton";
+import BuildIcon from "@mui/icons-material/Build";
 import { FaCut, FaPaste } from "react-icons/fa";
 
-import UnfoldLessIcon from "@material-ui/icons/UnfoldLess";
-import UnfoldMoreIcon from "@material-ui/icons/UnfoldMore";
+import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
+import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
 import { AiOutlineSafetyCertificate, AiFillThunderbolt } from "react-icons/ai";
 
-import InfoOutlinedIcon from "@material-ui/icons/InfoOutlined";
 import { CgMenuRound } from "react-icons/cg";
-// import { CheckIcon } from "@material-ui/icons";
-import RefreshIcon from "@material-ui/icons/Refresh";
-import CloudUploadIcon from "@material-ui/icons/CloudUpload";
-import { Switch } from "@material-ui/core";
-import Popper from "@material-ui/core/Popper";
-import TextField from "@material-ui/core/TextField";
-import ClickAwayListener from "@material-ui/core/ClickAwayListener";
-import PlayArrowIcon from "@material-ui/icons/PlayArrow";
-import FastForwardIcon from "@material-ui/icons/FastForward";
-import PlaylistPlayIcon from "@material-ui/icons/PlaylistPlay";
+import Switch from "@mui/material/Switch";
+import Popper from "@mui/material/Popper";
+import TextField from "@mui/material/TextField";
+import ClickAwayListener from "@mui/material/ClickAwayListener";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import FastForwardIcon from "@mui/icons-material/FastForward";
+import PlaylistPlayIcon from "@mui/icons-material/PlaylistPlay";
 import { AiOutlineFunction } from "react-icons/ai";
 import Ansi from "ansi-to-react";
 import { FcAddColumn, FcDeleteColumn } from "react-icons/fc";
@@ -77,19 +57,45 @@ import {
 import * as wsActions from "../../lib/ws/actions";
 import * as qActions from "../../lib/queue/actions";
 
+function Code(props) {
+  return (
+    <Box component="pre" {...props}>
+      {props.children}
+    </Box>
+  );
+}
+
+function Text(props) {
+  return (
+    <Box component="span" {...props}>
+      {props.children}
+    </Box>
+  );
+}
+
+function Flex(props) {
+  return (
+    <Box sx={{ display: "flex" }} {...props}>
+      {props.children}
+    </Box>
+  );
+}
+
+function HStack(props) {
+  return (
+    <Stack direction="row" {...props}>
+      {props.children}
+    </Stack>
+  );
+}
+
 export function SyncStatus({ pod }) {
   const dispatch = useDispatch();
   const isDirty = useSelector(selectIsDirty(pod.id));
   if (pod.isSyncing) {
     return (
       <Box>
-        <Spinner
-          thickness="4px"
-          speed="0.65s"
-          emptyColor="gray.200"
-          color="blue.500"
-          size="sm"
-        />
+        <CircularProgress />
       </Box>
     );
   } else if (isDirty) {
@@ -98,13 +104,11 @@ export function SyncStatus({ pod }) {
         <Button
           size="xs"
           variant="ghost"
-          // icon={}
-          // colorScheme={"yellow"}
           onClick={() => {
             dispatch(remoteUpdatePod(pod));
           }}
         >
-          <RepeatIcon />
+          <ReplayIcon />
         </Button>
       </Box>
     );
@@ -121,8 +125,9 @@ export function SyncStatus({ pod }) {
 
 export function InfoBar({ pod }) {
   /* eslint-disable no-unused-vars */
-  const { hasCopied, onCopy } = useClipboard(pod.id);
-  const { hasCopied: hasCopied_ns, onCopy: onCopy_ns } = useClipboard(pod.ns);
+  const [hasCopied, setCopied] = useState(false);
+  const [hasCopied_ns, setCopied_ns] = useState(false);
+
   const [show, setShow] = useState(false);
   const anchorEl = useRef(null);
   return (
@@ -144,29 +149,36 @@ export function InfoBar({ pod }) {
             <Box>
               <Box>
                 ID:{" "}
-                <Code colorScheme="blackAlpha">
+                <Code>
                   {
                     // pod.id.substring(0, 8)
                     pod.id
                   }
                 </Code>
-                <Button onClick={onCopy}>
+                <Button
+                  onClick={() => {
+                    navigator.clipboard.writeText(pod.id);
+                    setCopied(true);
+                  }}
+                >
                   {hasCopied ? "Copied" : "Copy"}
                 </Button>
               </Box>
               <Box>
                 Namespace:
-                <Code colorScheme="blackAlpha">{pod.ns}</Code>
-                <Button onClick={onCopy_ns}>
+                <Code>{pod.ns}</Code>
+                <Button
+                  onClick={() => {
+                    navigator.clipboard.writeText(pod.ns);
+                    setCopied_ns(true);
+                  }}
+                >
                   {hasCopied_ns ? "Copied" : "Copy"}
                 </Button>
               </Box>
               <Text mr={5}>Index: {pod.index}</Text>
               <Box>
-                Parent:{" "}
-                <Code colorScheme="blackAlpha">
-                  {pod.parent?.substring(0, 8)}
-                </Code>
+                Parent: <Code>{pod.parent?.substring(0, 8)}</Code>
               </Box>
               <Code whiteSpace="pre-wrap">{JSON.stringify(pod, null, 2)}</Code>
             </Box>
@@ -188,17 +200,17 @@ export function ClickInputButton({ callback, children, defvalue }) {
       }}
     >
       <Box>
-        <Button
+        <IconButton
           ref={anchorEl}
           variant="ghost"
-          size="xs"
+          size="small"
           onClick={() => {
             // pop up a input box for entering exporrt
             setShow(!show);
           }}
         >
           {children || "Edit"}
-        </Button>
+        </IconButton>
         <Popper open={show} anchorEl={anchorEl.current} placement="top">
           <Paper>
             <TextField
@@ -242,7 +254,7 @@ export function ExportButton({ id }) {
         }
       }}
     >
-      <AiOutlineFunction />
+      <AiOutlineFunction size={15} />
     </ClickInputButton>
   );
 }
@@ -252,9 +264,8 @@ export function UpButton({ pod }) {
   return (
     <HoverButton
       btn1={
-        <Button
-          variant="ghost"
-          size="xs"
+        <IconButton
+          size="small"
           onClick={() => {
             dispatch(
               qActions.remoteAdd({
@@ -267,8 +278,8 @@ export function UpButton({ pod }) {
             );
           }}
         >
-          <ArrowUpIcon />
-        </Button>
+          <ArrowUpwardIcon sx={{ fontSize: 15 }} />
+        </IconButton>
       }
       btn2={
         <IconButton
@@ -295,9 +306,9 @@ export function DownButton({ pod }) {
   return (
     <HoverButton
       btn1={
-        <Button
-          variant="ghost"
-          size="xs"
+        <IconButton
+          // variant="ghost"
+          size="small"
           onClick={() => {
             dispatch(
               qActions.remoteAdd({
@@ -311,8 +322,8 @@ export function DownButton({ pod }) {
             );
           }}
         >
-          <ArrowDownIcon />
-        </Button>
+          <ArrowDownwardIcon sx={{ fontSize: 15 }} />
+        </IconButton>
       }
       btn2={
         <IconButton
@@ -343,7 +354,7 @@ export function RightButton({ pod }) {
   // This is only used in deck
   const dispatch = useDispatch();
   return (
-    <Button
+    <IconButton
       size="xs"
       variant="ghost"
       onClick={() => {
@@ -358,27 +369,27 @@ export function RightButton({ pod }) {
         );
       }}
     >
-      <ArrowForwardIcon />
-    </Button>
+      <ArrowForwardIcon sx={{ fontSize: 15 }} />
+    </IconButton>
   );
 }
 
 export function FoldButton({ pod }) {
   const dispatch = useDispatch();
   return (
-    <Button
-      size="xs"
-      variant="ghost"
+    <IconButton
+      size="small"
+      // variant="ghost"
       onClick={() => {
         dispatch(repoSlice.actions.toggleFold(pod.id));
       }}
     >
       {pod.fold ? (
-        <UnfoldMoreIcon fontSize="small" />
+        <UnfoldMoreIcon sx={{ fontSize: 15 }} />
       ) : (
-        <UnfoldLessIcon fontSize="small" />
+        <UnfoldLessIcon sx={{ fontSize: 15 }} />
       )}
-    </Button>
+    </IconButton>
   );
 }
 
@@ -401,17 +412,16 @@ export function RunButton({ id }) {
       <Text mr={2} color="gray" fontSize="sm">
         {/* {pod.lang} */}
       </Text>
-      <Tooltip label="Run (shift-enter)">
-        <Button
-          variant="ghost"
-          color="green"
-          size="xs"
+      <Tooltip title="Run (shift-enter)">
+        <IconButton
+          size="small"
+          sx={{ color: "green" }}
           onClick={() => {
             dispatch(wsActions.wsRun(id));
           }}
         >
-          <PlayArrowIcon fontSize="small" />
-        </Button>
+          <PlayArrowIcon sx={{ fontSize: 15 }} />
+        </IconButton>
       </Tooltip>
     </Flex>
   );
@@ -422,39 +432,43 @@ export function DeckRunButton({ id }) {
   return (
     <HoverButton
       btn1={
-        <Button
-          variant="ghost"
-          color="green"
-          size="xs"
+        <IconButton
+          sx={{
+            color: "green",
+          }}
+          size="small"
           onClick={() => {
             dispatch(wsActions.wsRun(id));
           }}
         >
           <PlayArrowIcon fontSize="small" />
-        </Button>
+        </IconButton>
       }
       btn2={
         <Flex>
-          <Button
+          <IconButton
             variant="ghost"
-            color="green"
-            size="xs"
+            sx={{
+              color: "green",
+            }}
+            size="small"
             onClick={() => {
               dispatch(wsActions.wsPowerRun({ id }));
             }}
           >
             <FastForwardIcon fontSize="small" />
-          </Button>
-          <Button
-            variant="ghost"
-            color="green"
-            size="xs"
+          </IconButton>
+          <IconButton
+            sx={{
+              color: "green",
+            }}
+            size="small"
             onClick={() => {
               dispatch(wsActions.wsPowerRun({ id, doEval: true }));
             }}
           >
             <PlaylistPlayIcon fontSize="small" />
-          </Button>
+          </IconButton>
         </Flex>
       }
     />
@@ -529,39 +543,37 @@ export function DeleteButton({ pod }) {
   return (
     <HoverButton
       btn1={
-        <Button
-          variant="ghost"
-          size="xs"
-          color="red"
+        <IconButton
+          size="small"
+          // color="red"
+          sx={{
+            color: "red",
+          }}
           onClick={() => {
             dispatch(qActions.remoteDelete({ id: pod.id }));
           }}
         >
-          <DeleteIcon />
-        </Button>
+          <DeleteIcon sx={{ fontSize: 15 }} />
+        </IconButton>
       }
       btn2={
         <Flex direction="column">
           <Button
-            variant="ghost"
-            size="xs"
-            color="red"
+            size="small"
             onClick={() => {
               dispatch(repoSlice.actions.clearClip());
             }}
           >
             CLR
           </Button>
-          <Button
-            variant="ghost"
-            size="xs"
-            color="red"
+          <IconButton
+            size="small"
             onClick={() => {
               dispatch(repoSlice.actions.markClip({ id: pod.id }));
             }}
           >
-            <FaCut />
-          </Button>
+            <FaCut fontSize={15} />
+          </IconButton>
         </Flex>
       }
     />
@@ -572,10 +584,10 @@ export function HoverButton({ btn1, btn2 }) {
   const [show, setShow] = useState(false);
   const anchorEl = useRef(null);
   return (
-    <Box as="span">
+    <Box component="span">
       <Box
-        as="span"
-        pt={2}
+        component="span"
+        // pt={2}
         ref={anchorEl}
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
@@ -661,7 +673,7 @@ function IOStatus({ id, name }) {
   if (!status) {
     return (
       <Box as="span" size="xs" variant="ghost">
-        <QuestionOutlineIcon color="orange" />
+        <HelpOutlineIcon color="orange" />
       </Box>
     );
   } else if ("result" in status) {
@@ -751,20 +763,29 @@ export function HoveringMenu({ pod, showMenu, draghandle, children }) {
         anchorEl={anchorEl.current}
         placement="left-start"
       >
-        <Flex
-          direction="column"
-          bg="white"
-          border="1px"
-          p={3}
-          rounded="md"
-          boxShadow="md"
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            bgcolor: "white",
+            border: "1px",
+            p: 3,
+            borderRadius: 8,
+            boxShadow: 3,
+          }}
+          // direction="column"
+          // bg="white"
+          // border="1px"
+          // p={3}
+          // rounded="md"
+          // boxShadow="md"
         >
           <HStack>
             <InfoBar pod={pod} />
 
             <Button
-              size="sm"
-              variant="ghost"
+              size="small"
+              // variant="ghost"
               onClick={() => {
                 dispatch(repoSlice.actions.addColumn({ id: pod.id }));
               }}
@@ -773,8 +794,8 @@ export function HoveringMenu({ pod, showMenu, draghandle, children }) {
             </Button>
 
             <Button
-              size="sm"
-              variant="ghost"
+              size="small"
+              // variant="ghost"
               onClick={() => {
                 dispatch(repoSlice.actions.deleteColumn({ id: pod.id }));
               }}
@@ -789,7 +810,7 @@ export function HoveringMenu({ pod, showMenu, draghandle, children }) {
           </HStack>
           <HStack>
             <Button
-              size="sm"
+              size="small"
               onClick={() => {
                 dispatch(repoSlice.actions.toggleRaw(pod.id));
               }}
@@ -798,28 +819,9 @@ export function HoveringMenu({ pod, showMenu, draghandle, children }) {
             </Button>
           </HStack>
           <HStack>{children}</HStack>
-        </Flex>
+        </Box>
       </Popper>
     </Flex>
-  );
-}
-
-function MyInputButton({ onClick = (v) => {}, placeholder, children }) {
-  const [value, setValue] = useState("");
-  return (
-    <Box>
-      <Input
-        size="sm"
-        // maxWidth={20}
-        w="50%"
-        placeholder={placeholder}
-        value={value}
-        onChange={(event) => setValue(event.target.value)}
-      ></Input>
-      <Button size="sm" onClick={() => onClick(value)}>
-        {children}
-      </Button>
-    </Box>
   );
 }
 

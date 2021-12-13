@@ -1,37 +1,21 @@
-import {
-  Box,
-  Text,
-  Flex,
-  Textarea,
-  Button,
-  Tooltip,
-  Image,
-  Spinner,
-  Code,
-  Spacer,
-  Divider,
-  useToast,
-  Input,
-} from "@chakra-ui/react";
-import { HStack, VStack, Select } from "@chakra-ui/react";
+import Box from "@mui/material/Box";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import CircularProgress from "@mui/material/CircularProgress";
+import Divider from "@mui/material/Divider";
+import Stack from "@mui/material/Stack";
+import AddIcon from "@mui/icons-material/Add";
+import { purple, red, grey } from "@mui/material/colors";
+import IconButton from "@mui/material/IconButton";
 
 import { gql, useQuery, useMutation } from "@apollo/client";
-import {
-  ArrowUpIcon,
-  ArrowForwardIcon,
-  ArrowDownIcon,
-  AddIcon,
-  QuestionOutlineIcon,
-} from "@chakra-ui/icons";
 import { GoDiff } from "react-icons/go";
 
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import IconButton from "@material-ui/core/IconButton";
-
 import { FaCut, FaPaste } from "react-icons/fa";
 
-import PlayArrowIcon from "@material-ui/icons/PlayArrow";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { AiOutlineFunction } from "react-icons/ai";
 import { GiPlatform } from "react-icons/gi";
 import Ansi from "ansi-to-react";
@@ -53,8 +37,7 @@ import {
 } from "@dnd-kit/sortable";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import Popper from "@material-ui/core/Popper";
-import Paper from "@material-ui/core/Paper";
+import Popper from "@mui/material/Popper";
 
 import { repoSlice } from "../../lib/store";
 import { MySlate } from "../MySlate";
@@ -86,6 +69,22 @@ import {
   DeckRunButton,
 } from "./toolbar";
 
+function Flex(props) {
+  return (
+    <Box sx={{ display: "flex" }} {...props}>
+      {props.children}
+    </Box>
+  );
+}
+
+function Code(props) {
+  return (
+    <Box component="pre" {...props}>
+      {props.children}
+    </Box>
+  );
+}
+
 // FIXME this should be cleared if pods get deleted
 const deckCache = {};
 
@@ -109,7 +108,7 @@ export function DeckTitle({ id }) {
       onMouseLeave={() => setShowMenu(false)}
     >
       <Box
-        style={{
+        sx={{
           margin: "5px",
           position: "absolute",
           top: "0px",
@@ -129,7 +128,7 @@ export function DeckTitle({ id }) {
             </Box>
           )}
           <Button
-            variant="ghost"
+            // variant="ghost"
             color="green"
             size="xs"
             onClick={() => {
@@ -146,58 +145,75 @@ export function DeckTitle({ id }) {
           Children: <Code>{JSON.stringify(pod.children)}</Code>
         </Box>
       )}
-      <Flex>
-        <Flex alignItems="center">
+      <Box sx={{ display: "flex" }}>
+        <Box sx={{ display: "flex", alignItems: "center" }}>
           <GiPlatform />
-        </Flex>
+        </Box>
         <Button
-          variant="ghost"
+          // variant="ghost"
           size="xs"
           onClick={() => {
             // dispatch
             dispatch(repoSlice.actions.toggleDeckExport({ id: pod.id }));
           }}
         >
-          {/* FIXME colorScheme not recognized by electron app */}
           <Box>
             <Code
-              bg={pod.exports && pod.exports["self"] ? "blue.200" : "inherit"}
+              bgcolor={
+                pod.exports && pod.exports["self"] ? "blue.200" : "inherit"
+              }
             >
               {pod.name || pod.id}
             </Code>
           </Box>
         </Button>
 
-        <Text>
-          ({pod.children.filter(({ type }) => type !== "DECK").length})
-        </Text>
+        <Box>({pod.children.filter(({ type }) => type !== "DECK").length})</Box>
 
         {pod.id !== "ROOT" && (
-          <Flex>
+          <Box sx={{ display: "flex" }}>
             <ThundarMark pod={pod} />
             <UtilityMark pod={pod} />
-          </Flex>
+          </Box>
         )}
-      </Flex>
+      </Box>
       {pod.stdout && (
-        <Box overflow="scroll" maxH="3xs" border="1px">
+        <Box
+          sx={{
+            overflow: "scroll",
+            maxHeight: "3xs",
+            border: "1px",
+          }}
+        >
           {/* <Code maxW="lg" whiteSpace="pre-wrap">
               {pod.stdout}
             </Code> */}
           {/* TODO separate stdout and stderr */}
-          <Text>Stdout/Stderr:</Text>
-          <Box whiteSpace="pre-wrap" fontSize="sm">
+          <Box>Stdout/Stderr:</Box>
+          <Box
+            sx={{
+              whiteSpace: "pre-wrap",
+              fontSize: "sm",
+            }}
+          >
             <Ansi>{pod.stdout}</Ansi>
           </Box>
           <Divider />
         </Box>
       )}
       {pod.error && (
-        <Box overflow="scroll" maxH="3xs" border="1px" bg="gray.50">
-          <Text color="red">Error: {pod.error.evalue}</Text>
+        <Box
+          sx={{
+            overflow: "scroll",
+            maxHeight: "3xs",
+            border: "1px",
+            bg: grey[50],
+          }}
+        >
+          <Box color="red">Error: {pod.error.evalue}</Box>
           {pod.error.stacktrace && (
             <Box>
-              <Text>StackTrace</Text>
+              <Box>StackTrace</Box>
               {/* <Code w="100%" whiteSpace="pre-wrap" bg="gray.50" fontSize="sm">
                   {stripAnsi(pod.error.stacktrace.join("\n"))}
                 </Code> */}
@@ -216,7 +232,7 @@ export function DeckTitle({ id }) {
           )}
         </Box>
       )}
-      {pod.running && <Text>Running ..</Text>}
+      {pod.running && <Box>Running ..</Box>}
       <Box
         style={{
           margin: "5px",
@@ -226,14 +242,18 @@ export function DeckTitle({ id }) {
           zIndex: 100,
         }}
       >
-        <Flex
+        {/* ===== The hovering bar */}
+        <Box
+          sx={{
+            display: "flex",
+            background: grey[50],
+            rounded: "md",
+            boxShadow: "2xl",
+            flexDir: "row",
+          }}
           visibility={showMenu ? "visible" : "hidden"}
           // visibility="visible"
           display={showMenu ? "flex" : "none"}
-          background="gray.50"
-          rounded="md"
-          boxShadow="2xl"
-          flexDir="row"
         >
           {/* <Button>Diff</Button>
               <Button>+</Button> */}
@@ -253,7 +273,7 @@ export function DeckTitle({ id }) {
           <HoverButton
             btn1={<RightButton pod={pod} />}
             btn2={
-              <Button
+              <IconButton
                 variant="ghost"
                 size="xs"
                 onClick={() => {
@@ -269,7 +289,7 @@ export function DeckTitle({ id }) {
                 }}
               >
                 +
-              </Button>
+              </IconButton>
             }
           />
 
@@ -277,7 +297,7 @@ export function DeckTitle({ id }) {
           {pod.id !== "ROOT" && <FoldButton pod={pod} />}
           {/* Run button, with hovering support */}
           <DeckRunButton id={id} />
-        </Flex>
+        </Box>
       </Box>
     </Box>
   );
@@ -288,7 +308,7 @@ function PodSummary({ id }) {
   // console.log("PodSummary", id, pod.running);
   return (
     <Box as="span">
-      {pod.running && <Spinner />}
+      {pod.running && <CircularProgress />}
       {pod.error && (
         <Code
           color="red"
@@ -300,9 +320,6 @@ function PodSummary({ id }) {
       {pod.stdout && <Code color="blue">O</Code>}
       {pod.exports && Object.keys(pod.exports).length > 0 && (
         <Box as="span">
-          {/* <Text as="span" mr={2}>
-        Exports:
-      </Text> */}
           {Object.entries(pod.exports)
             .filter(([k, v]) => v)
             .map(([k, v]) => (
@@ -375,24 +392,30 @@ export function Deck(props) {
     );
   }
   return (
-    <HStack
+    <Stack
+      direction="row"
       // borderLeft="2px"
       // borderTop="2px"
       // border="2px"
-      my={1}
-      // mx={2}
-      bg={`rgba(0,0,0,${0.03 * level})`}
-      // ROOT's shadow apears as a vertical line in the right
-      boxShadow={id == "ROOT" ? undefined : "xl"}
-      p={2}
-      border={
-        pod.clipped ? "dashed red" : pod.lastclip ? "dashed orange" : undefined
-      }
-      minW="md"
+      sx={{
+        my: 1,
+        // mx={2}
+        bgcolor: `rgba(0,0,0,${0.03 * level})`,
+        // ROOT's shadow apears as a vertical line in the right
+        boxShadow: id == "ROOT" ? undefined : "xl",
+        p: 2,
+        border: pod.clipped
+          ? "dashed red"
+          : pod.lastclip
+          ? "dashed orange"
+          : undefined,
+
+        minWidth: 36,
+      }}
     >
       <Box>
         <DeckTitle id={id} />
-        <Flex maxW="md" flexWrap="wrap">
+        <Box sx={{ maxWidth: "md", flexWrap: "wrap" }}>
           {pod.children
             .filter(({ type }) => type !== "DECK")
             .map(({ id }) => (
@@ -407,13 +430,16 @@ export function Deck(props) {
                   <DeckSummary id={id} level={level + 1} />
                 </Box>
               ))} */}
-        </Flex>
+        </Box>
         {pod.fold ? (
           <Box>Folded</Box>
         ) : (
-          <Flex
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+            }}
             // FIXME column flex with maxH won't auto flow to right.
-            direction="column"
             // border="5px solid blue"
             // maxH="lg"
             // maxW={2000}
@@ -426,10 +452,10 @@ export function Deck(props) {
                   <Pod id={id} />
                 </Box>
               ))}
-          </Flex>
+          </Box>
         )}
       </Box>
-      <Flex direction="column">
+      <Box sx={{ display: "flex", flexDirection: "column" }}>
         {pod.children
           .filter(({ type }) => type === "DECK")
           .map(({ id }) => (
@@ -437,8 +463,8 @@ export function Deck(props) {
               <Deck id={id} level={level + 1} />
             </Box>
           ))}
-      </Flex>
-    </HStack>
+      </Box>
+    </Stack>
   );
 }
 
@@ -486,12 +512,18 @@ function CodePod(props) {
   return (
     // FIXME using VStack will cause some strange padding
     <Box
-      align="start"
+      sx={{
+        alignItems: "start",
+      }}
       // p={2}
       // w="xs"
     >
       <Box>
-        <Box alignContent="center">
+        <Box
+          sx={{
+            alignContent: "center",
+          }}
+        >
           <MyMonaco
             value={pod.content || ""}
             gitvalue={pod.staged}
@@ -539,7 +571,7 @@ function ReplPod({ pod }) {
   }, []);
 
   return (
-    <VStack align="start" p={2}>
+    <Stack align="start" p={2}>
       {/* <HStack>
           <Button
             size="sm"
@@ -565,14 +597,14 @@ function ReplPod({ pod }) {
         {/* <XTerm /> */}
         {term && <XTerm term={term} />}
       </Box>
-    </VStack>
+    </Stack>
   );
 }
 
 function WysiwygPod({ pod }) {
   let dispatch = useDispatch();
   return (
-    <VStack align="start">
+    <Stack align="start">
       <Box border="1px" w="100%" p="1rem">
         <MySlate
           value={
@@ -595,7 +627,7 @@ function WysiwygPod({ pod }) {
           placeholder="Write some rich text"
         />
       </Box>
-    </VStack>
+    </Stack>
   );
 }
 function Pod({ id, draghandle }) {
@@ -642,7 +674,7 @@ function PodDiff({ id, setShowDiff }) {
   return (
     <>
       <Box>
-        <Flex>
+        <Box sx={{ display: "flex" }}>
           <Button
             onClick={() => {
               setShowDiff(false);
@@ -681,9 +713,15 @@ function PodDiff({ id, setShowDiff }) {
           >
             UnStage
           </Button>
-        </Flex>
-        <Flex>
-          <Box w="xs" border="solid 1px" mx={2}>
+        </Box>
+        <Box sx={{ display: "flex" }}>
+          <Box
+            sx={{
+              width: "xs",
+              border: "solid 1px",
+              mx: 2,
+            }}
+          >
             <Box>Diff</Box>
             {/* I have to use || "" otherwise it is not updated */}
             <MyMonacoDiff from={pod.staged} to={pod.content} />
@@ -692,7 +730,7 @@ function PodDiff({ id, setShowDiff }) {
             <Box>Staged</Box>
             <MyMonacoDiff from={pod.githead} to={pod.staged} />
           </Box>
-        </Flex>
+        </Box>
       </Box>
     </>
   );
@@ -716,15 +754,19 @@ function PodWrapper({ id, draghandle, children }) {
   if (pod.type === "DECK") return <Box></Box>;
   return (
     <Box
-      ml={0}
-      my={1}
-      w="md"
-      // w={150}
-      border={
-        pod.clipped ? "dashed red" : pod.lastclip ? "dashed orange" : undefined
-      }
+      sx={{
+        ml: 0,
+        my: 1,
+        width: 400,
+        // w={150}
+        border: pod.clipped
+          ? "dashed red"
+          : pod.lastclip
+          ? "dashed orange"
+          : undefined,
+      }}
     >
-      <Flex>
+      <Box sx={{ display: "flex" }}>
         <ExportList pod={pod} />
         <ImportList pod={pod} />
         <ThundarMark pod={pod} />
@@ -742,7 +784,7 @@ function PodWrapper({ id, draghandle, children }) {
             <GoDiff />
           </Button>
         )}
-      </Flex>
+      </Box>
 
       <Box
         position="relative"
@@ -751,7 +793,7 @@ function PodWrapper({ id, draghandle, children }) {
       >
         {pod.fold ? (
           <Box h={10} border="dashed 1px">
-            <Text>Folded</Text>
+            <Box>Folded</Box>
           </Box>
         ) : (
           // <ThePod id={id} />
@@ -764,13 +806,20 @@ function PodWrapper({ id, draghandle, children }) {
                 // need this, otherwise the z-index seems to be berried under Chakra Modal
                 disablePortal={false}
                 placement="right-start"
-                modifiers={{
-                  hide: { enabled: false },
-                  flip: { enabled: false },
-                  preventOverflow: {
+                modifiers={[
+                  {
+                    name: "flip",
                     enabled: false,
                   },
-                }}
+                  {
+                    name: "hide",
+                    enabled: false,
+                  },
+                  {
+                    name: "preventOverflow",
+                    enabled: false,
+                  },
+                ]}
               >
                 <Box bg="gray" w="2xl">
                   <PodDiff id={id} setShowDiff={setShowDiff} />
@@ -817,14 +866,17 @@ function PodWrapper({ id, draghandle, children }) {
             right: "15px",
           }}
         >
-          <Flex>
+          <Box sx={{ display: "flex" }}>
             {/* ===== The hovering bar */}
-            <Flex
+            <Box
+              sx={{
+                display: "flex",
+                background: grey[50],
+                rounded: "md",
+                boxShadow: "2xl",
+              }}
               visibility={showMenu ? "visible" : "hidden"}
               display={showMenu ? "inherit" : "none"}
-              background="gray.50"
-              rounded="md"
-              boxShadow="2xl"
             >
               {/* <Button>Diff</Button>
               <Button>+</Button> */}
@@ -833,7 +885,10 @@ function PodWrapper({ id, draghandle, children }) {
               <DownButton pod={pod} />
               <DeleteButton pod={pod} />
               <Button
-                size="sm"
+                size="smal"
+                sx={{
+                  fontSize: 10,
+                }}
                 onClick={() => {
                   dispatch(repoSlice.actions.toggleRaw(pod.id));
                 }}
@@ -842,14 +897,15 @@ function PodWrapper({ id, draghandle, children }) {
               </Button>
               <FoldButton pod={pod} />
               <RunButton id={id} />
-            </Flex>
+            </Box>
             {/* <SyncStatus pod={pod} /> */}
-          </Flex>
+          </Box>
         </Box>
 
         {!pod.fold && (
-          <Flex
-            style={{
+          <Box
+            sx={{
+              display: "flex",
               margin: "5px",
               position: "absolute",
               bottom: "-4px",
@@ -858,21 +914,25 @@ function PodWrapper({ id, draghandle, children }) {
           >
             {/* The lang */}
             {pod.type === "WYSIWYG" && (
-              <Text color="gray" mr={2} fontSize="xs">
+              <Box color="gray" mr={2} fontSize="xs">
                 {pod.type}
-              </Text>
+              </Box>
             )}
             {pod.type === "CODE" && pod.lang && (
-              <Flex>
+              <Box
+                sx={{
+                  display: "flex",
+                }}
+              >
                 {pod.raw && (
                   <Box pr={2} color="gray">
                     raw
                   </Box>
                 )}
                 <Box color="gray">{pod.lang}</Box>
-              </Flex>
+              </Box>
             )}
-          </Flex>
+          </Box>
         )}
       </Box>
 
@@ -882,13 +942,13 @@ function PodWrapper({ id, draghandle, children }) {
               {pod.stdout}
             </Code> */}
           {/* TODO separate stdout and stderr */}
-          <Text>Stdout/Stderr:</Text>
+          <Box>Stdout/Stderr:</Box>
           <Box whiteSpace="pre-wrap" fontSize="sm">
             <Ansi>{pod.stdout}</Ansi>
           </Box>
         </Box>
       )}
-      {pod.running && <Spinner />}
+      {pod.running && <CircularProgress />}
       {pod.result && (
         <Flex direction="column">
           {pod.result.html ? (
@@ -896,12 +956,12 @@ function PodWrapper({ id, draghandle, children }) {
           ) : (
             pod.result.text && (
               <Flex>
-                <Text color="gray" mr="1rem">
+                <Box color="gray" mr="1rem">
                   Result: [{pod.result.count}]:
-                </Text>
-                <Text>
+                </Box>
+                <Box>
                   <Code whiteSpace="pre-wrap">{pod.result.text}</Code>
-                </Text>
+                </Box>
               </Flex>
             )
           )}
@@ -912,10 +972,10 @@ function PodWrapper({ id, draghandle, children }) {
       )}
       {pod.error && (
         <Box overflow="scroll" maxH="3xs" border="1px" bg="gray.50">
-          <Text color="red">Error: {pod.error.evalue}</Text>
+          <Box color="red">Error: {pod.error.evalue}</Box>
           {pod.error.stacktrace && (
             <Box>
-              <Text>StackTrace</Text>
+              <Box>StackTrace</Box>
               {/* <Code w="100%" whiteSpace="pre-wrap" bg="gray.50" fontSize="sm">
                   {stripAnsi(pod.error.stacktrace.join("\n"))}
                 </Code> */}
@@ -949,8 +1009,8 @@ function ThePod({ id }) {
     return <WysiwygPod pod={pod} />;
   } else if (pod.type === "MD") {
     return (
-      <Textarea
-        w="xs"
+      <TextField
+        w="md"
         onChange={(e) => {
           dispatch(
             repoSlice.actions.setPodContent({ id, content: e.target.value })
@@ -958,10 +1018,9 @@ function ThePod({ id }) {
         }}
         value={pod.content || ""}
         placeholder="Markdown here"
-      ></Textarea>
+      ></TextField>
     );
   } else if (pod.type === "CODE") {
-    // return <Text>CODE</Text>;
     if (!doubleClickToEdit || pod.render) {
       return <CodePod id={id} />;
     } else {
@@ -971,11 +1030,13 @@ function ThePod({ id }) {
             // console.log("Double clicked!");
             dispatch(repoSlice.actions.setPodRender({ id, value: true }));
           }}
-          whiteSpace="pre-wrap"
-          fontSize="sm"
+          sx={{
+            whiteSpace: "pre-wrap",
+            fontSize: "sm",
+          }}
         >
           {pod.content}
-          <Text>(Read-only)</Text>
+          <Box>(Read-only)</Box>
         </Code>
       );
     }
@@ -1000,8 +1061,6 @@ function ThePod({ id }) {
             <AddIcon />
           </Button>
         )}
-
-        {/* <Text>Deck</Text> */}
       </Box>
     );
   } else {

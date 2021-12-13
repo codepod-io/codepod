@@ -1,17 +1,29 @@
-import { Box, Text, Heading, Center } from "@chakra-ui/layout";
+import Box from "@mui/material/Box";
 
 export default function Home() {
   return (
-    <Box maxW="3xl" m="auto">
+    <Box
+      sx={{
+        maxWidth: "lg",
+        m: "auto",
+      }}
+    >
       <Box my={20}>
-        <Heading align="center">CodePod</Heading>
-        <Text align="center" fontSize="xl">
+        <Box
+          sx={{
+            textAlign: "center",
+            fontSize: 50,
+          }}
+        >
+          CodePod
+        </Box>
+        <Box sx={{ textAlign: "center", fontSize: 50 }}>
           Your next IDE doesn't edit files
-        </Text>
+        </Box>
       </Box>
 
       <Box>
-        <Heading>Lipsums</Heading>
+        <Box sx={{ fontSize: 30 }}>Lipsums</Box>
         <Box>
           Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer
           luctus fringilla urna accumsan sollicitudin. Proin tellus eros,

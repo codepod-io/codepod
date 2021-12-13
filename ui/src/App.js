@@ -6,23 +6,21 @@ import Home from "./pages/index";
 import About from "./pages/about";
 import Repos from "./pages/repos";
 import Repo from "./pages/repo";
-import CommitNote from "./pages/commitnote";
 import Test from "./pages/test";
 import Login from "./pages/login";
 import Signup from "./pages/signup";
 import Profile from "./pages/profile";
 
-import { ChakraProvider } from "@chakra-ui/react";
-
-import { Box } from "@chakra-ui/react";
-
 import { AuthProvider } from "./lib/auth.js";
 import { Header, Footer } from "./components/Header";
+
+import Box from "@mui/material/Box";
+import { SnackbarProvider } from "notistack";
+import Button from "@mui/material/Button";
 
 import { Provider } from "react-redux";
 
 import store from "./lib/store";
-import Kernels from "./pages/kernels";
 import Docs from "./pages/docs";
 
 function NormalLayout({ children }) {
@@ -39,8 +37,8 @@ function App() {
   return (
     <Router>
       <Provider store={store}>
-        <ChakraProvider>
-          <AuthProvider>
+        <AuthProvider>
+          <SnackbarProvider maxSnack={5}>
             <Switch>
               <Route path="/about">
                 <NormalLayout>
@@ -64,16 +62,6 @@ function App() {
                     <Repo />
                   </Box>
                 </Box>
-              </Route>
-              <Route path="/kernels">
-                <NormalLayout>
-                  <Kernels />
-                </NormalLayout>
-              </Route>
-              <Route path="/commitnote">
-                <NormalLayout>
-                  <CommitNote />
-                </NormalLayout>
               </Route>
               <Route path="/test">
                 <NormalLayout>
@@ -101,8 +89,8 @@ function App() {
                 </NormalLayout>
               </Route>
             </Switch>
-          </AuthProvider>
-        </ChakraProvider>
+          </SnackbarProvider>
+        </AuthProvider>
       </Provider>
     </Router>
   );

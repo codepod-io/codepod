@@ -1,29 +1,32 @@
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Divider from "@mui/material/Divider";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import Alert from "@mui/material/Alert";
+
+import FormControlLabel from "@mui/material/FormControlLabel";
+import FormControl from "@mui/material/FormControl";
+import FormLabel from "@mui/material/FormLabel";
+
+import Grid from "@mui/material/Grid";
+
 import {
-  Box,
-  Flex,
-  Button,
-  Heading,
   SimpleGrid,
-  Text,
   useColorModeValue,
   VisuallyHidden,
-  Stack,
-  FormControl,
-  FormLabel,
   Input,
-  Divider,
   useDisclosure,
   useMergeRefs,
   useColorModeValue as mode,
   InputGroup,
   InputRightElement,
   IconButton,
-  Alert,
-  AlertIcon,
 } from "@chakra-ui/react";
-import { chakra } from "@chakra-ui/system";
 import { useHistory } from "react-router-dom";
-import { StyledLink as Link } from "../components/utils";
+
+import Link from "@mui/material/Link";
+import { Link as ReactLink } from "react-router-dom";
 
 import React, { useEffect, useState } from "react";
 import { FaFacebook, FaGithub, FaGoogle } from "react-icons/fa";
@@ -31,6 +34,22 @@ import { HiEye, HiEyeOff } from "react-icons/hi";
 import { Formik } from "formik";
 
 import { useAuth } from "../lib/auth";
+
+function Flex(props) {
+  return (
+    <Box sx={{ display: "flex" }} {...props}>
+      {props.children}
+    </Box>
+  );
+}
+
+function Text(props) {
+  return (
+    <Box component="span" {...props}>
+      {props.children}
+    </Box>
+  );
+}
 
 //////////
 // Card
@@ -109,13 +128,11 @@ function LoginForm(props) {
         isSubmitting,
       }) => (
         <div>
-          <chakra.form
-            //   onSubmit={(e) => {
-            //     e.preventDefault(); // your login logic here
-            //     // signIn();
-            //   }}
+          <Box
+            component="form"
             onSubmit={handleSubmit}
-            {...props}
+            noValidate
+            sx={{ mt: 1 }}
           >
             <Stack spacing="6">
               <FormControl id="username">
@@ -136,21 +153,15 @@ function LoginForm(props) {
               />
               <Button
                 type="submit"
-                colorScheme="blue"
                 size="lg"
                 fontSize="md"
                 disabled={isSubmitting}
               >
                 Sign in
               </Button>
-              {error && (
-                <Alert status="error">
-                  <AlertIcon />
-                  {error}
-                </Alert>
-              )}
+              {error && <Alert severity="error">{error}</Alert>}
             </Stack>
-          </chakra.form>
+          </Box>
         </div>
       )}
     </Formik>
@@ -237,36 +248,50 @@ export default function Login() {
       }}
     >
       <Box maxW="md" mx="auto">
-        <Heading textAlign="center" size="xl" fontWeight="extrabold">
+        <Typography variant="h2" gutterBottom component="div">
           Sign in to your account
-        </Heading>
+        </Typography>
         <Text mt="4" mb="8" align="center" maxW="md" fontWeight="medium">
           <Text as="span">Don&apos;t have an account?</Text>
-          <Link to="/signup">Sign up for free</Link>
+          <Link component={ReactLink} to="/signup">
+            Sign up for free
+          </Link>
         </Text>
         <Card>
           <LoginForm />
           <DividerWithText mt="6">or continue with</DividerWithText>
-          <SimpleGrid mt="6" columns={3} spacing="3">
-            <Button
-              color="currentColor"
-              variant="outline"
-              onClick={() => {
-                console.log("hello");
-              }}
-            >
-              <VisuallyHidden>Login with Facebook</VisuallyHidden>
-              <FaFacebook />
-            </Button>
-            <Button color="currentColor" variant="outline">
-              <VisuallyHidden>Login with Google</VisuallyHidden>
-              <FaGoogle />
-            </Button>
-            <Button color="currentColor" variant="outline">
-              <VisuallyHidden>Login with Github</VisuallyHidden>
-              <FaGithub />
-            </Button>
-          </SimpleGrid>
+          <Grid
+            container
+            spacing={2}
+            sx={{
+              mt: 3,
+            }}
+          >
+            <Grid item xs={4}>
+              <Button
+                color="currentColor"
+                variant="outline"
+                onClick={() => {
+                  console.log("hello");
+                }}
+              >
+                <VisuallyHidden>Login with Facebook</VisuallyHidden>
+                <FaFacebook />
+              </Button>
+            </Grid>
+            <Grid item xs={4}>
+              <Button color="currentColor" variant="outline">
+                <VisuallyHidden>Login with Google</VisuallyHidden>
+                <FaGoogle />
+              </Button>
+            </Grid>
+            <Grid item xs={4}>
+              <Button color="currentColor" variant="outline">
+                <VisuallyHidden>Login with Github</VisuallyHidden>
+                <FaGithub />
+              </Button>
+            </Grid>
+          </Grid>
         </Card>
       </Box>
     </Box>

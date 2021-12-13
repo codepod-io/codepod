@@ -139,7 +139,6 @@ function UpdateForm({ me }) {
               </FormControl>
               <Button
                 type="submit"
-                colorScheme="blue"
                 size="lg"
                 fontSize="md"
                 disabled={isSubmitting}

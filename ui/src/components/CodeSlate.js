@@ -31,10 +31,9 @@ import {
 } from "react-icons/fa";
 import { MdImportExport, MdSwapVert, MdCallMissed } from "react-icons/md";
 import { FcIdea } from "react-icons/fc";
-import { ArrowUpDownIcon } from "@chakra-ui/icons";
 import ImportExportIcon from "@material-ui/icons/ImportExport";
 
-import { Box } from "@chakra-ui/react";
+import Box from "@mui/material/Box";
 
 import { Button, Menu, Portal } from "./slate_helper";
 
@@ -75,7 +74,12 @@ const RichLeaf = ({ attributes, children, leaf }) => {
   if (leaf.export) {
     // yellow background
     children = (
-      <Box as="span" bg="yellow">
+      <Box
+        component="span"
+        sx={{
+          background: "yellow",
+        }}
+      >
         {children}
       </Box>
     );
@@ -83,7 +87,9 @@ const RichLeaf = ({ attributes, children, leaf }) => {
 
   if (leaf.midport) {
     children = (
-      <Box as="span" bg="cyan">
+      <Box component="span" sx={{
+        background="cyan"
+      }}>
         {children}
       </Box>
     );

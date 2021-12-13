@@ -22,7 +22,8 @@ import {
   AlertIcon,
 } from "@chakra-ui/react";
 import { chakra } from "@chakra-ui/system";
-import { StyledLink as Link } from "../components/utils";
+import Link from "@mui/material/Link";
+import { Link as ReactLink } from "react-router-dom";
 
 import React, { useEffect, useState } from "react";
 import { FaFacebook, FaGithub, FaGoogle } from "react-icons/fa";
@@ -159,7 +160,6 @@ function SignupForm(props) {
               </FormControl>
               <Button
                 type="submit"
-                colorScheme="blue"
                 size="lg"
                 fontSize="md"
                 disabled={isSubmitting}
@@ -265,7 +265,9 @@ export default function Signup() {
         </Heading>
         <Text mt="4" mb="8" align="center" maxW="md" fontWeight="medium">
           <Text as="span">Already have an account?</Text>
-          <Link to="/login">Login</Link>
+          <Link component={ReactLink} to="/login">
+            Login
+          </Link>
         </Text>
         <Card>
           <SignupForm />

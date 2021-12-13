@@ -1,22 +1,30 @@
 import { useQuery, useMutation, gql } from "@apollo/client";
 import React, { useEffect, useState } from "react";
 import useMe from "../lib/me";
-import { StyledLink as Link } from "../components/utils";
 
-import {
-  Box,
-  Button,
-  Heading,
-  Text,
-  Stack,
-  FormControl,
-  FormLabel,
-  Input,
-  Alert,
-  AlertIcon,
-} from "@chakra-ui/react";
+import Link from "@mui/material/Link";
+import { Link as ReactLink } from "react-router-dom";
+
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Stack from "@mui/material/Stack";
+import Typography from "@mui/material/Typography";
+import Alert from "@mui/material/Alert";
+import TextField from "@mui/material/TextField";
+
+import FormControlLabel from "@mui/material/FormControlLabel";
+import FormControl from "@mui/material/FormControl";
+import FormLabel from "@mui/material/FormLabel";
+
 import { Formik } from "formik";
-import { chakra } from "@chakra-ui/system";
+
+function Text(props) {
+  return (
+    <Box component="span" {...props}>
+      {props.children}
+    </Box>
+  );
+}
 
 const FETCH_REPOS = gql`
   query GetRepos {
@@ -41,26 +49,26 @@ function Repos() {
   );
   const { me } = useMe();
   if (loading) return <p>Loading...</p>;
-  if (error)
-    return (
-      <Alert status="error">
-        <AlertIcon />
-        {error.message}
-      </Alert>
-    );
+  if (error) return <Alert severity="error">{error.message}</Alert>;
   let repos = data.myRepos.slice().reverse();
   return (
     <Box>
       <CreateRepoForm />
-      <Heading>Your repos {repos.length}:</Heading>
+      <Typography variant="h2" gutterBottom component="div">
+        Your repos {repos.length}:
+      </Typography>
       {repos.map((repo) => (
-        <Text key={repo.id}>
+        <div key={repo.id}>
           The link:{" "}
           <Link
+            component={ReactLink}
             to={`/${me?.username}/${repo.name}`}
           >{`/${me?.username}/${repo.name}`}</Link>
           <Button
             size="xs"
+            sx={{
+              color: "red",
+            }}
             onClick={() => {
               deleteRepo({
                 variables: {
@@ -71,7 +79,7 @@ function Repos() {
           >
             Delete
           </Button>
-        </Text>
+        </div>
       ))}
     </Box>
   );
@@ -126,11 +134,16 @@ function CreateRepoForm(props) {
     >
       {({ values, handleChange, handleBlur, handleSubmit, isSubmitting }) => (
         <div>
-          <chakra.form onSubmit={handleSubmit} {...props}>
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            noValidate
+            sx={{ mt: 1 }}
+          >
             <Stack spacing="6">
               <FormControl id="reponame">
                 <FormLabel>Repo Name:</FormLabel>
-                <Input
+                <TextField
                   name="reponame"
                   onChange={handleChange}
                   onBlur={handleBlur}
@@ -143,21 +156,15 @@ function CreateRepoForm(props) {
 
               <Button
                 type="submit"
-                colorScheme="blue"
                 size="lg"
                 fontSize="md"
                 disabled={isSubmitting}
               >
                 Create New Repo
               </Button>
-              {error && (
-                <Alert status="error">
-                  <AlertIcon />
-                  {error}
-                </Alert>
-              )}
+              {error && <Alert severity="error">{error}</Alert>}
             </Stack>
-          </chakra.form>
+          </Box>
         </div>
       )}
     </Formik>
@@ -166,7 +173,7 @@ function CreateRepoForm(props) {
 
 export default function Page() {
   return (
-    <Box maxW="lg" align="center" m="auto">
+    <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
       {/* TODO some meta information about the user */}
       {/* <CurrentUser /> */}
       {/* TODO the repos of this user */}

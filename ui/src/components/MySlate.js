@@ -6,7 +6,6 @@ import { withHistory } from "slate-history";
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { Button, Menu, Portal } from "./slate_helper";
 import { css } from "@emotion/css";
-// import {Icon}  from "@chakra-ui/react";
 import { FaBold, FaItalic, FaUnderline, FaStrikethrough } from "react-icons/fa";
 import { Node } from "slate";
 

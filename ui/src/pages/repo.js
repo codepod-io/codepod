@@ -1,6 +1,8 @@
 import { useParams, Link as ReactLink, Prompt } from "react-router-dom";
 
-import { Box, Text, Button, Flex, Spacer } from "@chakra-ui/react";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+
 import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -28,14 +30,16 @@ function RepoWrapper({ children }) {
   return (
     <Box m="auto" height="100%">
       <Box
-        display="inline-block"
-        verticalAlign="top"
-        height="100%"
-        w={show ? "18%" : 0}
-        overflow="auto"
+        sx={{
+          display: "inline-block",
+          verticalAlign: "top",
+          height: "100%",
+          width: show ? 0.18 : 0,
+          overflow: "auto",
+        }}
       >
-        <Flex>
-          <Spacer />
+        <Box sx={{ display: "flex" }}>
+          {/* <Spacer /> */}
           <Button
             onClick={() => {
               setShow(!show);
@@ -45,7 +49,7 @@ function RepoWrapper({ children }) {
           >
             {show ? "Hide" : "Show"}
           </Button>
-        </Flex>
+        </Box>
         <Sidebar />
       </Box>
 
@@ -53,7 +57,7 @@ function RepoWrapper({ children }) {
         display="inline-block"
         verticalAlign="top"
         height="100%"
-        w={show ? "80%" : "100%"}
+        width={show ? 0.8 : 1}
         overflow="scroll"
       >
         <Box
@@ -118,11 +122,11 @@ export default function Repo() {
   // const queueL = useSelector((state) => state.repo.queue.length);
   const repoLoaded = useSelector((state) => state.repo.repoLoaded);
 
-  if (loading) return <Text>Loading</Text>;
+  if (loading) return <Box>Loading</Box>;
 
   return (
     <RepoWrapper>
-      {!repoLoaded && <Text>Repo Loading ...</Text>}
+      {!repoLoaded && <Box>Repo Loading ...</Box>}
       {repoLoaded && (
         <Box
           height="100%"
