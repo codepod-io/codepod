@@ -531,7 +531,7 @@ const socketMiddleware = () => {
           // socket_url = `ws://localhost:14321`;
           // socket_url = `ws://192.168.1.142:14321`;
           // FIXME variable not ready?
-          socket_url = `ws://${store.getState().repo.activeRuntime}`;
+          socket_url = `ws://${store.getState().repo.activeRuntime[0]}`;
         } else if (window.location.protocol === "http:") {
           socket_url = `ws://${window.location.host}/ws`;
         } else {
@@ -541,9 +541,12 @@ const socketMiddleware = () => {
         socket = new WebSocket(socket_url);
         // socket.emit("spawn", state.sessionId, lang);
 
-        if (!window.codepodio) {
+        if (!store.getState().repo.activeRuntime[1]) {
+          // If the mqAddress is not supplied, use the websocket
           socket.onmessage = onMessage(store);
         } else {
+          // otherwise, use the mqAddress
+
           // if (mq_client) {
           //   mq_client.disconnect()
           // }
@@ -554,10 +557,13 @@ const socketMiddleware = () => {
             // "ws://codepod.test/ws"
             // "ws://mq.codepod.test/ws"
             // FIXME why have to use /ws suffix?
-            mq_url = `ws://mq.${window.location.host}/ws`;
+            // mq_url = `ws://mq.${window.location.host}/ws`;
+            // mq_url = `ws://192.168.1.142:15674/ws`;
+            mq_url = `ws://${store.getState().repo.activeRuntime[1]}/ws`;
           } else {
             mq_url = `wss://mq.${window.location.host}/ws`;
           }
+          console.log("connecting to MQ:", mq_url);
           mq_client = Stomp.over(new WebSocket(mq_url));
           // remove debug messages
           mq_client.debug = () => {};

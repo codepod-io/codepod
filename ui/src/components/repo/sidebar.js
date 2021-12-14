@@ -118,13 +118,133 @@ function SidebarSession() {
   );
 }
 
+function RuntimeItem({ socketAddress, mqAddress }) {
+  const [edit, setEdit] = useState(false);
+  const [addr1, setAddr1] = useState(socketAddress);
+  const [addr2, setAddr2] = useState(mqAddress);
+  const dispatch = useDispatch();
+  const activeRuntime = useSelector((state) => state.repo.activeRuntime);
+  let reponame = useSelector((state) => state.repo.reponame);
+  const repoConfig = useSelector((state) => state.repo.repoConfig);
+  const [updateRepoConfig, {}] = useMutation(
+    gql`
+      mutation UpdateRepoConfig($reponame: String, $config: String) {
+        updateRepoConfig(name: $reponame, config: $config)
+      }
+    `,
+    { refetchQueries: ["RepoConfig"] }
+  );
+  return (
+    <Stack key={socketAddress} direction="row" alignItems="center">
+      <Radio
+        checked={
+          JSON.stringify([socketAddress, mqAddress]) ==
+          JSON.stringify(activeRuntime)
+        }
+        onChange={() => {
+          dispatch(wsActions.wsDisconnect());
+          dispatch(
+            repoSlice.actions.activateRuntime([socketAddress, mqAddress])
+          );
+          // dispatch(wsActions.wsConnect());
+        }}
+        value="a"
+        name="radio-buttons"
+        inputProps={{ "aria-label": "A" }}
+      />
+      {edit ? (
+        <Box sx={{ display: "flex", flexDirection: "column" }}>
+          <TextField
+            size="small"
+            value={addr1}
+            onChange={(e) => {
+              setAddr1(e.target.value);
+            }}
+          ></TextField>
+          <TextField
+            size="small"
+            value={addr2}
+            onChange={(e) => {
+              setAddr2(e.target.value);
+            }}
+          ></TextField>
+          <Button
+            onClick={() => {
+              updateRepoConfig({
+                variables: {
+                  reponame,
+                  config: JSON.stringify({
+                    runtimes: produce(repoConfig.runtimes, (draft) => {
+                      let idx = draft.findIndex(
+                        ([addr1, addr2]) => addr1 === socketAddress
+                      );
+                      draft[idx] = [addr1, addr2];
+                    }),
+                  }),
+                },
+              });
+              setEdit(false);
+            }}
+          >
+            Save
+          </Button>
+          <Button
+            onClick={() => {
+              setAddr1(socketAddress);
+              setAddr2(mqAddress);
+              setEdit(false);
+            }}
+          >
+            Cancel
+          </Button>
+        </Box>
+      ) : (
+        <Box>
+          <Box fontSize="small">{socketAddress}</Box>
+          {mqAddress && <Box fontSize="small">{mqAddress}</Box>}
+        </Box>
+      )}
+
+      {!edit && socketAddress !== "localhost:14321" && (
+        <Box>
+          <IconButton
+          // onClick={() => {
+          //   updateRepoConfig({
+          //     variables: {
+          //       reponame,
+          //       config: JSON.stringify({
+          //         runtimes: produce(repoConfig.runtimes, (draft) => {
+          //           let idx = draft.findIndex(
+          //             ([addr1, addr2]) => addr1 === socketAddress
+          //           );
+          //           draft.splice(idx, 1);
+          //         }),
+          //       }),
+          //     },
+          //   });
+          // }}
+          >
+            <DeleteForeverTwoToneIcon sx={{ fontSize: 15, color: "red" }} />
+          </IconButton>
+          <Button
+            onClick={() => {
+              setEdit(true);
+            }}
+          >
+            Edit
+          </Button>
+        </Box>
+      )}
+    </Stack>
+  );
+}
+
 function SidebarRuntime() {
   const sessionRuntime = useSelector((state) => state.repo.sessionRuntime);
   const runtimeConnected = useSelector((state) => state.repo.runtimeConnected);
   // const runtimes = useSelector((state) => state.repo.runtimes);
-  const activeRuntime = useSelector((state) => state.repo.activeRuntime);
-  let reponame = useSelector((state) => state.repo.reponame);
 
+  let reponame = useSelector((state) => state.repo.reponame);
   const [updateRepoConfig, {}] = useMutation(
     gql`
       mutation UpdateRepoConfig($reponame: String, $config: String) {
@@ -151,10 +271,9 @@ function SidebarRuntime() {
               variables: {
                 reponame,
                 config: JSON.stringify({
-                  runtimes: Object.assign(
-                    { [value]: true },
-                    repoConfig.runtimes
-                  ),
+                  runtimes: produce(repoConfig.runtimes, (draft) => {
+                    draft[value] = true;
+                  }),
                 }),
               },
             });
@@ -162,43 +281,18 @@ function SidebarRuntime() {
         >
           Add
         </ClickInputButton>
-        {/* <Box>{JSON.stringify(runtimes)}</Box> */}
-        {Object.entries(
-          Object.assign({ "localhost:14321": false }, repoConfig?.runtimes)
-        ).map(([address, canDelete]) => (
-          <Stack key={address} direction="row" alignItems="center">
-            <Radio
-              checked={address === activeRuntime}
-              onChange={() => {
-                dispatch(wsActions.wsDisconnect());
-                dispatch(repoSlice.actions.activateRuntime(address));
-                // dispatch(wsActions.wsConnect());
-              }}
-              value="a"
-              name="radio-buttons"
-              inputProps={{ "aria-label": "A" }}
-            />
-            <Box fontSize="small">{address}</Box>
-            {canDelete && (
-              <IconButton
-                onClick={() => {
-                  updateRepoConfig({
-                    variables: {
-                      reponame,
-                      config: JSON.stringify({
-                        runtimes: produce(repoConfig.runtimes, (draft) => {
-                          delete draft[address];
-                        }),
-                      }),
-                    },
-                  });
-                }}
-              >
-                <DeleteForeverTwoToneIcon sx={{ fontSize: 15, color: "red" }} />
-              </IconButton>
-            )}
-          </Stack>
-        ))}
+        <Button
+          onClick={() => {
+            dispatch(repoSlice.actions.addRuntime());
+          }}
+        >
+          +
+        </Button>
+        {[["localhost:14321", ""]]
+          .concat(repoConfig?.runtimes || [])
+          .map(([address, mqAddress]) => (
+            <RuntimeItem socketAddress={address} mqAddress={mqAddress} />
+          ))}
       </Box>
       <Box>
         Runtime connected?{" "}

@@ -98,6 +98,24 @@ npm install -g ijavascript
 ijsinstall
 ```
 
+# Using remote runtime
+
+In the runtime section in the sidebar, you can add a new runtime. For the runtime, you need to specify the two addresses: the websocket address for sending code to server, and the MQ address for receiving output. If MQ address is empty, the websocket will be used.
+
+The default runtime is the local runtime, which is `localhost:14321`
+
+To start the server, on the server machine, you need to setup the kernels. Then, you need to clone this repo, go into the cpkernel folder, and do:
+
+1. `docker-compose up -d`. This will setup a rabbitmq server. The MQ address is `:15674`
+2. `npm run kernel-server`. This will run the server. The websocket address is `:14321`
+
+So to use this server, enter:
+
+- `<your-server-ip>:14321` for the socket address
+- `<your-server-ip>:15674` for the MQ address
+
+We can spawn a docker container on the server for the kernels. However, it will be tricky to access files and install packages. One has to install packages for every restart of the kernel, and one has to mount a volume to exchange files between the server and the container. Thus we think it is a better experience to use the bare-metal server.
+
 # Development Scripts
 
 Develop

@@ -132,7 +132,7 @@ const initialState = {
   // sessionId: nanoid(),
   sessionId: null,
   sessionRuntime: {},
-  activeRuntime: "localhost:14321",
+  activeRuntime: ["localhost:14321", ""],
   runtimeConnected: false,
   kernels: {
     julia: {
