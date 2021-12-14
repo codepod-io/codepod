@@ -968,10 +968,13 @@ function ConfigButton() {
     `,
     { refetchQueries: ["RepoConfig"] }
   );
+  const [str, setStr] = useState("");
+
   useEffect(() => {
     // console.log(data);
     if (data) {
       dispatch(repoSlice.actions.setRepoConfig(JSON.parse(data.repoConfig)));
+      setStr(data.repoConfig);
     }
   }, [data]);
   const repoConfig = useSelector((state) => state.repo.repoConfig);
@@ -1032,6 +1035,25 @@ function ConfigButton() {
           <Typography id="modal-modal-description" sx={{ mt: 2 }}>
             Duis mollis, est non commodo luctus, nisi erat porttitor ligula.
           </Typography>
+          <MyMonaco
+            onChange={(value) => {
+              // dispatch(repoSlice.actions.setRepoConfig(value));
+              setStr(value);
+            }}
+            value={str}
+          ></MyMonaco>
+          <Button
+            onClick={() => {
+              updateRepoConfig({
+                variables: {
+                  reponame,
+                  config: JSON.stringify(JSON.parse(str)),
+                },
+              });
+            }}
+          >
+            Save
+          </Button>
         </Box>
       </Modal>
     </div>
