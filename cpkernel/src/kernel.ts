@@ -12,6 +12,8 @@ import { v4 as uuidv4 } from "uuid";
 import crypto from "crypto";
 import Docker from "dockerode";
 
+import Stomp from "stompjs";
+
 import path from "path";
 
 import os from "os";
@@ -558,16 +560,16 @@ async function createContainer(image, name, network) {
   });
 }
 
-// var mq_client = Stomp.overTCP("rabbitmq", 61613);
-
 class MyMqSocket {
   queue;
-  constructor(queue) {
+  mq_client;
+  constructor(queue, mq_client) {
     this.queue = queue;
+    this.mq_client = mq_client
   }
   send(obj) {
     // FIXME need to make sure it is connected
-    // mq_client.send(this.queue, {}, obj);
+    this.mq_client.send(this.queue, {}, obj);
   }
 }
 
@@ -718,6 +720,7 @@ function handleIOPub_stream({ msgs, socket }) {
   }
 }
 
+let mq_client = null;
 export class CodePodKernel {
   lang;
   startupFile;
@@ -727,6 +730,8 @@ export class CodePodKernel {
   sessionId;
   wire;
   socket;
+  mq_socket;
+  useMQ;
   mapEval({ code, namespace }) { }
   mapAddImport({
     from,
@@ -749,9 +754,10 @@ export class CodePodKernel {
     name: string;
   }) { }
   constructor() { }
-  async init({ sessionId, socket }) {
+  async init({ sessionId, socket, useMQ }) {
     console.log("=== INIT!!");
     this.sessionId = sessionId;
+    this.useMQ = useMQ;
     let network = process.env["KERNEL_NETWORK"] || "codepod";
     let name = `cpkernel_${network}_${sessionId}_${this.lang}`;
     // await removeContainer(name);
@@ -774,7 +780,26 @@ export class CodePodKernel {
     console.log("connecting to zmq ..");
     // this.wire = new ZmqWire(JSON.parse(readFileSync(this.fname)), ip);
     this.wire = new ZmqWire(spec, "127.0.0.1");
-    // this.mq_socket = new MyMqSocket(sessionId);
+
+    if (useMQ) {
+      if (!mq_client) {
+        mq_client = Stomp.overTCP("localhost", 61613);
+        mq_client.connect(
+          "guest",
+          "guest",
+          function () {
+            console.log("connected");
+          },
+          function () {
+            console.log("error");
+            throw new Error("Cannot connect to RabbitMQ server");
+          },
+          "/"
+        );
+      }
+      this.mq_socket = new MyMqSocket(sessionId, mq_client);
+    }
+    
     if (socket) {
       // listen to IOPub here
       this.addSocket(socket);
@@ -809,7 +834,9 @@ export class CodePodKernel {
     }
     this.socket = socket;
     // DEBUG
-    // socket = this.mq_socket;
+    if (this.useMQ) {
+      socket = this.mq_socket;
+    }
     this.wire.setOnIOPub((topic, msgs) => {
       // console.log("-----", topic, msgs);
       // iracket's topic seems to be an ID. I should use msg type instead
@@ -846,7 +873,7 @@ export class CodePodKernel {
     this.wire.setOnShell((msgs) => {
       // DEBUG
       // socket = this.mq_socket;
-      socket = this.socket;
+      // socket = this.socket;
       switch (msgs.header.msg_type) {
         case "execute_reply":
           {
@@ -1145,22 +1172,24 @@ export async function createKernel({
   lang,
   sessionId,
   socket,
+  useMQ
 }: {
   lang: string;
   sessionId: string;
   socket: any;
+  useMQ: boolean;
 }) {
   let kernels = detectKernels()
   console.log("===", "createKernel", lang);
   switch (lang) {
     case "julia":
-      return await new JuliaKernel({ kernelJson: kernels["julia"] }).init({ sessionId, socket });
+      return await new JuliaKernel({ kernelJson: kernels["julia"] }).init({ sessionId, socket, useMQ });
     case "javascript":
-      return await new JavascriptKernel({ kernelJson: kernels["javascript"] }).init({ sessionId, socket });
+      return await new JavascriptKernel({ kernelJson: kernels["javascript"] }).init({ sessionId, socket, useMQ });
     case "racket":
-      return await new RacketKernel({ kernelJson: kernels["racket"] }).init({ sessionId, socket });
+      return await new RacketKernel({ kernelJson: kernels["racket"] }).init({ sessionId, socket, useMQ });
     case "python":
-      return await new PythonKernel({ kernelJson: kernels["python"] }).init({ sessionId, socket });
+      return await new PythonKernel({ kernelJson: kernels["python"] }).init({ sessionId, socket, useMQ });
     default:
       console.log("ERROR: language not implemented", lang);
     // throw new Error(`Language not valid: ${lang}`);

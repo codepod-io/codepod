@@ -1,0 +1,18 @@
+# Use postgres/example user/password credentials
+version: "3.5"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    restart: always
+    volumes:
+      - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
+    ports:
+      # The AMQP port
+      # - 5672:5672
+      # the management UI
+      - 15672:15672
+      # STOMP-over-WebSockets
+      - 15674:15674
+      # 61613 STOMP clients, internally used by kernel.js
+      - 61613:61613

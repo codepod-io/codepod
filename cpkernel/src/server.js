@@ -26,7 +26,8 @@ export function startSocketServer() {
     // listenOnKernelManagement(socket);
     // listenOnSessionManagement(socket);
     // listenOnRunCode(socket);
-    listenOnMessage(socket);
+    // useMQ=true when creating a stand-alone runtime server
+    listenOnMessage(socket, true);
   });
 
   http_server.listen({ port: 14321 }, () => {

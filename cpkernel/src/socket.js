@@ -152,7 +152,7 @@ async function killKernel({ sessionId, lang }) {
   }
 }
 
-async function getSessionKernel({ sessionId, lang, socket }) {
+async function getSessionKernel({ sessionId, lang, socket, useMQ }) {
   if (!sessionId || !lang) {
     console.log("sesisonId or lang is undefined", sessionId, lang);
     return null;
@@ -173,18 +173,18 @@ async function getSessionKernel({ sessionId, lang, socket }) {
   // FIXME what if the process never finish?
   session[lang] = "spawning";
   console.log("spawning kernel ..");
-  let kernel = await createKernel({ lang, sessionId, socket });
+  let kernel = await createKernel({ lang, sessionId, socket, useMQ });
   console.log("returning the newly spawned kernel");
   session[lang] = kernel;
   return kernel;
 }
 
-export function listenOnMessage(socket) {
+export function listenOnMessage(socket, useMQ = false) {
   socket.on("message", async (msg) => {
     let { type, payload } = JSON.parse(msg.toString());
     if (type === "ping") return;
     let { sessionId, lang } = payload;
-    let kernel = await getSessionKernel({ sessionId, lang, socket });
+    let kernel = await getSessionKernel({ sessionId, lang, socket, useMQ });
     if (!kernel) {
       console.log("ERROR: kernel error");
       return;
