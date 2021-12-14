@@ -51,7 +51,7 @@ export function Header() {
   return (
     <AppBar
       position="fixed"
-      color="transparent"
+      color="inherit"
       sx={{
         color: "white",
       }}
