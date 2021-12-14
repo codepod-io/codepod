@@ -153,7 +153,16 @@ export function DeckTitle({ id }) {
       {devmode && (
         <Box>
           ID: <Code>{pod.id}</Code>
-          Children: <Code>{JSON.stringify(pod.children)}</Code>
+          Children:{" "}
+          <Box
+            component="pre"
+            sx={{
+              whiteSpace: "pre-wrap",
+              width: 400,
+            }}
+          >
+            {JSON.stringify(pod.children)}
+          </Box>
         </Box>
       )}
 
