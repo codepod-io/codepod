@@ -291,7 +291,11 @@ function SidebarRuntime() {
         {[["localhost:14321", ""]]
           .concat(repoConfig?.runtimes || [])
           .map(([address, mqAddress]) => (
-            <RuntimeItem socketAddress={address} mqAddress={mqAddress} />
+            <RuntimeItem
+              socketAddress={address}
+              mqAddress={mqAddress}
+              key={address + mqAddress}
+            />
           ))}
       </Box>
       <Box>
