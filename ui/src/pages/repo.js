@@ -98,7 +98,8 @@ export default function Repo() {
           `${me?.username}_${username}_${reponame}`
         )
       );
-      dispatch(wsActions.wsConnect());
+      // Do not connect on open
+      // dispatch(wsActions.wsConnect());
     }
     return () => {
       console.log("disconnecting the socket ..");

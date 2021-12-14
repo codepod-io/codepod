@@ -10,6 +10,10 @@ import Modal from "@mui/material/Modal";
 import Switch from "@mui/material/Switch";
 import IconButton from "@mui/material/IconButton";
 
+import Radio from "@mui/material/Radio";
+import RadioGroup from "@mui/material/RadioGroup";
+import DeleteForeverTwoToneIcon from "@mui/icons-material/DeleteForeverTwoTone";
+
 import { purple, red, grey } from "@mui/material/colors";
 
 import { useSnackbar } from "notistack";
@@ -30,6 +34,8 @@ import ClickAwayListener from "@mui/base/ClickAwayListener";
 import * as Diff2Html from "diff2html";
 import "diff2html/bundles/css/diff2html.min.css";
 
+import { ClickInputButton } from "./toolbar";
+
 import {
   repoSlice,
   loadPodQueue,
@@ -44,6 +50,7 @@ import {
 import { MyMonaco, MyMonacoDiff } from "../MyMonaco";
 
 import * as wsActions from "../../lib/ws/actions";
+import produce from "immer";
 
 const modalStyle = {
   position: "absolute",
@@ -114,12 +121,84 @@ function SidebarSession() {
 function SidebarRuntime() {
   const sessionRuntime = useSelector((state) => state.repo.sessionRuntime);
   const runtimeConnected = useSelector((state) => state.repo.runtimeConnected);
+  // const runtimes = useSelector((state) => state.repo.runtimes);
+  const activeRuntime = useSelector((state) => state.repo.activeRuntime);
+  let reponame = useSelector((state) => state.repo.reponame);
+
+  const [updateRepoConfig, {}] = useMutation(
+    gql`
+      mutation UpdateRepoConfig($reponame: String, $config: String) {
+        updateRepoConfig(name: $reponame, config: $config)
+      }
+    `,
+    { refetchQueries: ["RepoConfig"] }
+  );
+  const repoConfig = useSelector((state) => state.repo.repoConfig);
   const dispatch = useDispatch();
   return (
     <Box>
       <Box>
         Session Runtime:
-        <Code>{Object.keys(sessionRuntime)}</Code>
+        <Box>{Object.keys(sessionRuntime)}</Box>
+      </Box>
+      <Box>
+        Runtimes:
+        <ClickInputButton
+          callback={(value) => {
+            // dispatch(repoSlice.actions.addRuntime(value));
+            // also save this to config
+            updateRepoConfig({
+              variables: {
+                reponame,
+                config: JSON.stringify({
+                  runtimes: Object.assign(
+                    { [value]: true },
+                    repoConfig.runtimes
+                  ),
+                }),
+              },
+            });
+          }}
+        >
+          Add
+        </ClickInputButton>
+        {/* <Box>{JSON.stringify(runtimes)}</Box> */}
+        {Object.entries(
+          Object.assign({ "localhost:14321": false }, repoConfig?.runtimes)
+        ).map(([address, canDelete]) => (
+          <Stack key={address} direction="row" alignItems="center">
+            <Radio
+              checked={address === activeRuntime}
+              onChange={() => {
+                dispatch(wsActions.wsDisconnect());
+                dispatch(repoSlice.actions.activateRuntime(address));
+                // dispatch(wsActions.wsConnect());
+              }}
+              value="a"
+              name="radio-buttons"
+              inputProps={{ "aria-label": "A" }}
+            />
+            <Box fontSize="small">{address}</Box>
+            {canDelete && (
+              <IconButton
+                onClick={() => {
+                  updateRepoConfig({
+                    variables: {
+                      reponame,
+                      config: JSON.stringify({
+                        runtimes: produce(repoConfig.runtimes, (draft) => {
+                          delete draft[address];
+                        }),
+                      }),
+                    },
+                  });
+                }}
+              >
+                <DeleteForeverTwoToneIcon sx={{ fontSize: 15, color: "red" }} />
+              </IconButton>
+            )}
+          </Stack>
+        ))}
       </Box>
       <Box>
         Runtime connected?{" "}
@@ -134,7 +213,7 @@ function SidebarRuntime() {
         )}
       </Box>
 
-      <HStack>
+      <Box sx={{ display: "flex" }}>
         <Button
           size="small"
           onClick={() => {
@@ -152,7 +231,7 @@ function SidebarRuntime() {
         >
           Disconnect
         </Button>
-      </HStack>
+      </Box>
     </Box>
   );
 }

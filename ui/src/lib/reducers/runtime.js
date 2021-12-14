@@ -17,4 +17,7 @@ export default {
     let id = action.payload;
     state.pods[id].running = true;
   },
+  activateRuntime: (state, action) => {
+    state.activeRuntime = action.payload;
+  },
 };

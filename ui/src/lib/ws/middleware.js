@@ -528,12 +528,16 @@ const socketMiddleware = () => {
         // protocol used here, so that it supports both dev and prod env.
         let socket_url;
         if (!window.codepodio) {
-          socket_url = `ws://localhost:14321`;
+          // socket_url = `ws://localhost:14321`;
+          // socket_url = `ws://192.168.1.142:14321`;
+          // FIXME variable not ready?
+          socket_url = `ws://${store.getState().repo.activeRuntime}`;
         } else if (window.location.protocol === "http:") {
           socket_url = `ws://${window.location.host}/ws`;
         } else {
           socket_url = `wss://${window.location.host}/ws`;
         }
+        console.log("socket_url", socket_url);
         socket = new WebSocket(socket_url);
         // socket.emit("spawn", state.sessionId, lang);
 
@@ -647,8 +651,8 @@ const socketMiddleware = () => {
         if (socket !== null) {
           socket.close();
         }
-        socket = null;
-        console.log("websocket closed");
+        // socket = null;
+        // console.log("websocket closed");
         break;
       case "NEW_MESSAGE":
         console.log("sending a message", action.msg);
