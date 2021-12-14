@@ -101,7 +101,7 @@ function getDeck({ id, level }) {
 export function DeckTitle({ id }) {
   const [showMenu, setShowMenu] = useState(false);
   const pod = useSelector((state) => state.repo.pods[id]);
-  const devmode = useSelector((state) => state.repo.dev);
+  const devmode = useSelector((state) => state.repo.repoConfig?.devMode);
   const dispatch = useDispatch();
   return (
     <Box
@@ -761,7 +761,7 @@ function PodDiff({ id, setShowDiff }) {
 function PodWrapper({ id, draghandle, children }) {
   // console.log("PodWrapper", id);
   const pod = useSelector((state) => state.repo.pods[id]);
-  const devmode = useSelector((state) => state.repo.dev);
+  const devmode = useSelector((state) => state.repo.repoConfig?.devmode);
   const dispatch = useDispatch();
   const [showMenu, setShowMenu] = useState(false);
   const [showDiff, setShowDiff] = useState(false);

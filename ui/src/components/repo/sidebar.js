@@ -1032,15 +1032,6 @@ function SidebarTest() {
       >
         Unfold All
       </Button>
-      <Box>
-        Dev Mode{" "}
-        <Switch
-          onChange={(e) => {
-            // console.log(e.target.checked);
-            dispatch(repoSlice.actions.setDevMode(e.target.checked));
-          }}
-        ></Switch>
-      </Box>
     </Box>
   );
 }
@@ -1123,6 +1114,26 @@ function ConfigButton() {
               }}
             ></Switch>
           </Box>
+
+          <Box>
+            Dev Mode{" "}
+            <Switch
+              defaultChecked={repoConfig && repoConfig.devMode}
+              onChange={(e) => {
+                // console.log(e.target.checked);
+                // dispatch(repoSlice.actions.setDevMode(e.target.checked));
+                updateRepoConfig({
+                  variables: {
+                    reponame,
+                    config: JSON.stringify({
+                      devMode: e.target.checked,
+                    }),
+                  },
+                });
+              }}
+            ></Switch>
+          </Box>
+
           <Button mr={3} onClick={handleClose}>
             Close
           </Button>
