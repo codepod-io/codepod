@@ -71,7 +71,7 @@ export function Header() {
             sx={{ mr: 2, display: { xs: "none", md: "flex" } }}
           >
             <Link component={ReactLink} underline="none" to="/">
-              CodePod {!window.codepodio && "(Local)"}
+              CodePod
             </Link>
           </Typography>
 
@@ -82,7 +82,7 @@ export function Header() {
               aria-controls="menu-appbar"
               aria-haspopup="true"
               onClick={handleOpenNavMenu}
-              color="inherit"
+              color="primary"
             >
               <MenuIcon />
             </IconButton>
@@ -131,9 +131,12 @@ export function Header() {
             variant="h6"
             noWrap
             component="div"
+            color="primary"
             sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}
           >
-            CodePod
+            <Link component={ReactLink} underline="none" to="/">
+              CodePod
+            </Link>
           </Typography>
 
           {/* The navigation on desktop */}
