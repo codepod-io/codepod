@@ -20,6 +20,7 @@
     "start0": "nodemon --ignore '*.json' src/start-server.js",
     "start2": "nodemon dist/cjs/start-server.js",
     "start": "ts-node -O '{\"module\": \"commonjs\"}' src/start-server.ts",
+    "kernel-server": "ts-node -O '{\"module\": \"commonjs\"}' src/start-kernel-server.ts",
     "dev": "ts-node-dev -O '{\"module\": \"commonjs\"}' --respawn -- src/start-server.ts",
     "migrate": "npx prisma migrate dev --name init",
     "resetdb": "npx prisma db push --preview-feature"

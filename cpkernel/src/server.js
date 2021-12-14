@@ -9,6 +9,31 @@ import { typeDefs } from "./typedefs.js";
 import { listenOnMessage } from "./socket.js";
 import { getResolvers } from "./resolver_local.js";
 
+export function startSocketServer() {
+  // only listen on socket for kernel
+
+  const app = express();
+  const http_server = http.createServer(app);
+  const wss = new WebSocketServer({ server: http_server });
+  wss.on("connection", (socket) => {
+    console.log("a user connected");
+    // CAUTION should listen to message on this socket instead of io
+    socket.on("close", () => {
+      console.log("user disconnected");
+    });
+
+    // listenOnRepl(socket);
+    // listenOnKernelManagement(socket);
+    // listenOnSessionManagement(socket);
+    // listenOnRunCode(socket);
+    listenOnMessage(socket);
+  });
+
+  http_server.listen({ port: 14321 }, () => {
+    console.log(`🚀 Server ready at http://localhost:14321`);
+  });
+}
+
 export async function startServer(appDir, staticDir) {
   const apollo = new ApolloServer({
     typeDefs,
