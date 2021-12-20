@@ -799,7 +799,7 @@ export class CodePodKernel {
       }
       this.mq_socket = new MyMqSocket(sessionId, mq_client);
     }
-    
+
     if (socket) {
       // listen to IOPub here
       this.addSocket(socket);
