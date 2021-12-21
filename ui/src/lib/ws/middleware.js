@@ -9,32 +9,28 @@ function powerRun_racket({ id, storeAPI, socket }) {
   let names = pod.children
     .filter(({ id }) => pods[id].type !== "DECK")
     .filter(({ id }) => pods[id].exports)
-    .map(({ id }) =>
-      Object.entries(pods[id].exports)
-        .filter(([k, v]) => v)
-        .map(([k, v]) => k)
-    );
+    .map(({ id }) => pods[id].exports);
   names = [].concat(...names);
   let struct_codes = pod.children
-    .filter(({ id }) => pods[id].exports)
     .filter(
       ({ id }) =>
-        Object.entries(pods[id].exports)
-          .filter(([k, v]) => v)
-          .map(([k, v]) => k)
-          .filter((k) => k.startsWith("struct ")).length > 0
+        pods[id].type === "DECK" && !pods[id].thundar && pods[id].exports
+    )
+    .filter(
+      ({ id }) =>
+        pods[id].exports.filter((k) => k.startsWith("struct:")).length > 0
     )
     .map(({ id }) => pods[id].content);
   // FIXME reset-module is problematic! it is equivalanet to the following expansion. Why??
   // let code = `(enter! #f) (reset-module ${ns} ${names.join(" ")})`;
   let struct_names = names
-    .filter((s) => s.startsWith("struct "))
+    .filter((s) => s.startsWith("struct:"))
     .map((s) => s.split(" ")[1]);
   // FIXME will the struct-out support update?
   //
   // UPDATE this does not work. Instead, I could insert the real content for
   // all exported names maybe?
-  names = names.filter((s) => !s.startsWith("struct "));
+  names = names.filter((s) => !s.startsWith("struct:"));
 
   // also I need to require for struct:parent
   let nses = getUtilNs({ id, pods });
@@ -50,21 +46,25 @@ function powerRun_racket({ id, storeAPI, socket }) {
     nses.push(pods[pod.parent].ns);
   }
 
-  // exported subdecks
-  let exported_decks = pods[id].children
-    .filter(
-      ({ id }) =>
-        pods[id].type === "DECK" && pods[id].exports && pods[id].exports["self"]
+  let reexports = getReexports({ id, pods });
+  let reexport_code = Object.keys(reexports)
+    .map(
+      (ns) => `
+      (require (only-in '${ns} ${reexports[ns]
+        .map((name) => `${name}`)
+        .join(" ")}))
+      (provide ${reexports[ns].map((name) => `${name}`).join(" ")})
+      `
     )
-    .map(({ id, type }) => pods[id].ns);
+    .join("\n");
 
   let code = `
 (enter! #f)
 (module ${pod.ns} racket 
 (require rackunit 'CODEPOD ${nses.map((s) => "'" + s).join(" ")})
+${reexport_code}
 (provide ${names.join(" ")}
 ${struct_names.map((s) => `(struct-out ${s})`).join("\n")}
-${exported_decks.map((s) => `(all-from-out '${s})`).join("\n")}
 )
 ${names.map((name) => `(define ${name} "PLACEHOLDER-${name}")`).join("\n")}
 ${struct_codes.join("\n")}
