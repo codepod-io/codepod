@@ -622,15 +622,15 @@ function LanguageMenu({ pod }) {
         <MenuItem value="python">Python</MenuItem>
         <MenuItem value="julia">Julia</MenuItem>
         <MenuItem value="racket">Racket</MenuItem>
-        <MenuItem value="scheme">Scheme</MenuItem>
+        {/* <MenuItem value="scheme">Scheme</MenuItem> */}
         <MenuItem value="javascript">JavaScript</MenuItem>
-        <MenuItem value="typescript">TypeScript</MenuItem>
+        {/* <MenuItem value="typescript">TypeScript</MenuItem> */}
         <MenuItem value="json">JSON</MenuItem>
-        <MenuItem value="css">CSS</MenuItem>
+        {/* <MenuItem value="css">CSS</MenuItem>
         <MenuItem value="html">HTML</MenuItem>
         <MenuItem value="sql">SQL</MenuItem>
         <MenuItem value="java">Java</MenuItem>
-        <MenuItem value="php">PHP</MenuItem>
+        <MenuItem value="php">PHP</MenuItem> */}
       </Select>
     </Box>
   );
