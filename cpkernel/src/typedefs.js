@@ -35,6 +35,7 @@ export const typeDefs = gql`
     error: String
     imports: String
     exports: String
+    reexports: String
     midports: String
     fold: Boolean
     thundar: Boolean
@@ -53,6 +54,7 @@ export const typeDefs = gql`
     error: String
     imports: String
     exports: String
+    reexports: String
     midports: String
     fold: Boolean
     thundar: Boolean

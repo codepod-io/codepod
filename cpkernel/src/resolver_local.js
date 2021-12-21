@@ -17,6 +17,7 @@ function normalize(pods) {
     pod.content = JSON.parse(pod.content);
     pod.imports = JSON.parse(pod.imports);
     pod.exports = JSON.parse(pod.exports);
+    pod.reexports = JSON.parse(pod.reexports);
     pod.midports = JSON.parse(pod.midports);
   }
   d["ROOT"] = {

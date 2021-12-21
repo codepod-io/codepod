@@ -256,6 +256,7 @@ function normalize(pods) {
     pod.content = pod.content && JSON.parse(pod.content);
     pod.imports = pod.imports && JSON.parse(pod.imports);
     pod.exports = pod.exports && JSON.parse(pod.exports);
+    pod.reexports = pod.reexports && JSON.parse(pod.reexports);
     pod.midports = pod.midports && JSON.parse(pod.midports);
   }
   // construct .children

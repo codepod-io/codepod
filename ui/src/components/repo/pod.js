@@ -167,26 +167,18 @@ export function DeckTitle({ id }) {
       )}
 
       {/* The name of the deck */}
-      <Box sx={{ display: "flex" }}>
-        <Box sx={{ display: "flex", alignItems: "center" }}>
+      <Box sx={{ display: "flex", alignItems: "center" }}>
+        <Box sx={{ display: "flex" }}>
           <GiPlatform />
         </Box>
-        <Button
-          size="small"
+        <Box
+          component="pre"
           sx={{
-            height: "1rem",
-            bgcolor: pod.exports && pod.exports["self"] ? blue[100] : "inherit",
-          }}
-          variant="outlined"
-          onClick={() => {
-            // dispatch
-            dispatch(repoSlice.actions.toggleDeckExport({ id: pod.id }));
+            my: 0,
           }}
         >
-          <Box>
-            <Box component="pre">{pod.name || pod.id}</Box>
-          </Box>
-        </Button>
+          {pod.name || pod.id}
+        </Box>
 
         <Box>({pod.children.filter(({ type }) => type !== "DECK").length})</Box>
 
@@ -342,22 +334,24 @@ function PodSummary({ id }) {
       )}
       {pod.stdout && <Code color="blue">O</Code>}
       {/* {pod.id} */}
-      {pod.exports && Object.keys(pod.exports).length > 0 && (
-        <Box>
-          {Object.entries(pod.exports)
-            .filter(([k, v]) => v)
-            .map(([k, v]) => (
-              <Box
-                key={k}
-                sx={{
-                  mr: 1,
-                }}
-              >
-                <Box component="pre" sx={{ m: 0 }}>
-                  {k}
-                </Box>
+      {pod.exports && pod.exports.length > 0 && (
+        <Box
+          sx={{
+            display: "flex",
+          }}
+        >
+          {pod.exports.map((k) => (
+            <Box
+              key={k}
+              sx={{
+                mr: 1,
+              }}
+            >
+              <Box component="pre" sx={{ m: 0 }}>
+                {k}
               </Box>
-            ))}
+            </Box>
+          ))}
         </Box>
       )}
 
@@ -447,13 +441,13 @@ export function Deck(props) {
       <Box>
         <DeckTitle id={id} />
         <Box sx={{ display: "flex", maxWidth: "md", flexWrap: "wrap" }}>
-          {pod.children
+          {/* {pod.children
             .filter(({ type }) => type !== "DECK")
             .map(({ id }) => (
               <Box key={id}>
                 <PodSummary id={id} />
               </Box>
-            ))}
+            ))} */}
           {/* {pod.children
               .filter(({ type }) => type === "DECK")
               .map(({ id }) => (

@@ -10,13 +10,10 @@ export default {
     pod.exports[name] = false;
   },
   setPodExport: (state, action) => {
-    // This is to support adjust export solely based on the input field. No more
-    // close button.
-    // TODO support add multiple exports by entering "aaa,bbb"
-    let { id, name } = action.payload;
+    let { id, exports, reexports } = action.payload;
     let pod = state.pods[id];
-    pod.exports = {};
-    pod.exports[name] = false;
+    pod.exports = exports;
+    pod.reexports = reexports;
   },
   clearIO: (state, action) => {
     let { id, name } = action.payload;
@@ -24,14 +21,7 @@ export default {
   },
   deletePodExport: (state, action) => {
     let { id, name } = action.payload;
-    if (!(name in state.pods[state.pods[id].parent].imports)) {
-      delete state.pods[id].exports[name];
-    } else {
-      state.error = {
-        type: "error",
-        msg: `${name} is actively exported. Un-export first before removing.`,
-      };
-    }
+    delete state.pods[id].exports[name];
   },
   clearPodExport: (state, action) => {
     let { id } = action.payload;

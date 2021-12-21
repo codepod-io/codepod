@@ -22,6 +22,7 @@ export function addPod(state, action) {
     name: "",
     exports: {},
     imports: {},
+    reexports: {},
     midports: {},
     isSyncing: false,
     lastPosUpdate: Date.now(),

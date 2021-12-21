@@ -56,6 +56,7 @@ export async function doRemoteLoadRepo({ username, reponame }) {
           error
           imports
           exports
+          reexports
           midports
           index
           parent
@@ -148,6 +149,9 @@ export function normalize(pods) {
     if (pod.exports) {
       pod.exports = JSON.parse(pod.exports);
     }
+    if (pod.reexports) {
+      pod.reexports = JSON.parse(pod.reexports);
+    }
     if (pod.midports) {
       pod.midports = JSON.parse(pod.midports);
     }
@@ -189,6 +193,7 @@ function serializePodInput(pod) {
     error,
     imports,
     exports,
+    reexports,
     midports,
   }) => ({
     id,
@@ -205,6 +210,7 @@ function serializePodInput(pod) {
     // error: JSON.stringify(error),
     imports: JSON.stringify(imports),
     exports: JSON.stringify(exports),
+    reexports: JSON.stringify(reexports),
     midports: JSON.stringify(midports),
   }))(pod);
 }

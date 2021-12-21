@@ -821,109 +821,39 @@ export function ExportList({ pod }) {
   const dispatch = useDispatch();
   return (
     <Box>
-      {pod.exports && Object.keys(pod.exports).length > 0 && (
-        <Box>
-          {/* <Text as="span" mr={2}>
+      {pod.exports && pod.exports.length > 0 && (
+        <Box
+          sx={{
+            display: "flex",
+          }}
+        >
+          {/* <Box
+            component="span"
+            sx={{
+              mr: 1,
+            }}
+          >
             Exports:
-          </Text> */}
-          {Object.entries(pod.exports).map(([k, v]) => (
-            <Box as="span" key={k} mr={1}>
-              <HoverButton
-                btn1={
-                  <Button
-                    size="small"
-                    sx={{
-                      height: "1rem",
-                      bgcolor: v ? blue[100] : "inherit",
-                    }}
-                    variant="outlined"
-                    onClick={() => {
-                      dispatch(
-                        wsActions.wsToggleExport({ id: pod.id, name: k })
-                      );
-                    }}
-                  >
-                    <Box component="pre">{k}</Box>
-                  </Button>
-                }
-                btn2={
-                  <Flex>
-                    <ClickInputButton
-                      defvalue={k}
-                      callback={(value) => {
-                        if (value) {
-                          dispatch(
-                            repoSlice.actions.addPodExport({
-                              id: pod.id,
-                              name: value,
-                            })
-                          );
-                          if (v) {
-                            dispatch(
-                              wsActions.wsToggleExport({ id: pod.id, name: k })
-                            );
-                          }
-                        }
-                        dispatch(
-                          repoSlice.actions.deletePodExport({
-                            id: pod.id,
-                            name: k,
-                          })
-                        );
-                      }}
-                    >
-                      Rename
-                    </ClickInputButton>
-                    <Button
-                      size="small"
-                      onClick={() => {
-                        dispatch(
-                          repoSlice.actions.deletePodExport({
-                            id: pod.id,
-                            name: k,
-                          })
-                        );
-                      }}
-                    >
-                      Delete
-                    </Button>
-                    <Button
-                      size="small"
-                      onClick={() => {
-                        dispatch(
-                          wsActions.wsToggleExport({ id: pod.id, name: k })
-                        );
-                      }}
-                    >
-                      Toggle
-                    </Button>
-                  </Flex>
-                }
-              />
-
-              {/* <Switch
-                size="small"
-                checked={v}
-                onChange={() => {
-                  dispatch(wsActions.wsToggleExport({ id: pod.id, name: k }));
-                }}
-              /> */}
-              {/* <Button
-                size="xs"
-                color="red"
-                variant="ghost"
-                onClick={() => {
-                  // FIXME also delete all imports for it
-                  // Or just show error
-                  dispatch(
-                    repoSlice.actions.deletePodExport({ id: pod.id, name: k })
-                  );
-                }}
-              >
-                <CloseIcon />
-              </Button> */}
-              {/* No need IOStatus for exports */}
-              {/* <IOStatus id={pod.id} name={k} /> */}
+          </Box> */}
+          {pod.exports.map((k) => (
+            <Box
+              component="pre"
+              key={k}
+              sx={{
+                mr: 1,
+                my: 0,
+              }}
+            >
+              {k}
+            </Box>
+          ))}
+        </Box>
+      )}
+      {pod.reexports && Object.keys(pod.reexports).length > 0 && (
+        <Box>
+          {Object.entries(pod.reexports).map(([k, v]) => (
+            <Box key={k}>
+              {k}: {v ? v : "null"}
             </Box>
           ))}
         </Box>

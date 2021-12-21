@@ -26,6 +26,7 @@ export function hashPod(pod) {
       // error: pod.error,
       imports: pod.imports,
       exports: pod.exports,
+      reexports: pod.reexports,
       midports: pod.midports,
       fold: pod.fold,
       thundar: pod.thundar,

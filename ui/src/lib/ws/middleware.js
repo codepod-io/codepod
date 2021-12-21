@@ -2,46 +2,6 @@ import * as actions from "./actions";
 
 import { repoSlice } from "../store";
 import Stomp from "stompjs";
-function getAllUtils({ id, pods }) {
-  // get all utils for id
-  // get children utils nodes
-  if (id === "ROOT") return {};
-  const res = Object.assign(
-    {},
-    ...pods[id].children
-      .filter(({ id }) => pods[id].utility)
-      .map(({ id, type }) => {
-        if (type === "DECK") {
-          // if this is a deck, use its children's exports
-          return {
-            [pods[id].ns]: Object.assign(
-              {},
-              ...pods[id].children.map(({ id }) => pods[id].exports)
-            ),
-          };
-        } else {
-          // if this is a pod, just use its export
-          return { [`${pods[id].ns}/${id}`]: pods[id].exports };
-        }
-      })
-  );
-  // keep to go to parents
-  return Object.assign(res, getAllUtils({ id: pods[id].parent, pods }));
-}
-
-function getDeckExports({ id, pods }) {
-  if (pods[id].type !== "DECK") return {};
-  // console.log("EXP", id, pods[id].exports);
-  // pods[id].children.forEach(({ id }) => {
-  //   console.log("ch", id, pods[id].exports);
-  // });
-  return {
-    [pods[id].ns]: Object.assign(
-      {},
-      ...pods[id].children.map(({ id }) => pods[id].exports)
-    ),
-  };
-}
 
 function powerRun_racket({ id, storeAPI, socket }) {
   let pods = storeAPI.getState().repo.pods;
@@ -249,11 +209,7 @@ function powerRun_python({ id, storeAPI, socket }) {
   let names = pod.children
     .filter(({ id }) => pods[id].type !== "DECK")
     .filter(({ id }) => pods[id].exports)
-    .map(({ id }) =>
-      Object.entries(pods[id].exports)
-        .filter(([k, v]) => v)
-        .map(([k, v]) => k)
-    );
+    .map(({ id }) => pods[id].exports);
   names = [].concat(...names);
   let nses = getUtilNs({ id, pods });
   const child_deck_nses = pods[id].children
@@ -264,17 +220,43 @@ function powerRun_python({ id, storeAPI, socket }) {
   if (pod.thundar) {
     nses.push(pods[pod.parent].ns);
   }
+  // the child deck's reexports
+  let reexports = Object.assign(
+    {},
+    ...pods[id].children
+      .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
+      .map(({ id, type }) => pods[id])
+      .map((deck) =>
+        Object.assign(
+          {},
+          ...deck.children
+            .filter(({ id }) => pods[id].type !== "DECK")
+            .map(({ id }) => pods[id])
+            .map((pod) => pod.reexports)
+        )
+      )
+  );
 
-  // exported subdecks
-  // TODO handle this in python,
-  // In racket: all-from-out
-  // In julia: @reexport
-  let exported_decks = pods[id].children
-    .filter(
-      ({ id }) =>
-        pods[id].type === "DECK" && pods[id].exports && pods[id].exports["self"]
+  // change reexport from name=>id to ns=>names
+  let reexports2 = {};
+  for (let [name, id] of Object.entries(reexports)) {
+    if (!reexports2[pods[id].ns]) {
+      reexports2[pods[id].ns] = [];
+    }
+    reexports2[pods[id].ns].push(name);
+  }
+
+  // CODEPOD_SET_REEXPORT(from, to, [foo, bar])
+  let reexport_code = Object.keys(reexports2)
+    .map(
+      (ns) => `
+CODEPOD_ADD_REEXPORT("${ns}", "${pod.ns}", [${reexports2[ns]
+        .map((name) => `"${name}"`)
+        .join(",")}])
+    `
     )
-    .map(({ id, type }) => pods[id].ns);
+    .join("\n");
+
   // 2. import the namespaces
   let code = `${nses
     .map(
@@ -285,9 +267,7 @@ CODEPOD_ADD_IMPORT("${ns}", "${pod.ns}")`
 
 CODEPOD_SET_EXPORT("${pod.ns}", {${names.map((name) => `"${name}"`).join(",")}})
 
-CODEPOD_SET_EXPORT_SUB("${pod.ns}", {${exported_decks
-    .map((name) => `"${name}"`)
-    .join(",")}})
+${reexport_code}
     `;
   // console.log("==== PYTHON CODE", code);
   storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
@@ -359,6 +339,46 @@ function getUtilNs({ id, pods, exclude }) {
   return res.concat(getUtilNs({ id: pods[id].parent, pods, exclude: id }));
 }
 
+function getExports(content) {
+  // Return exports, reexports, and the rest content
+  // analyze the content for magic commands
+  content = content.trim();
+  let exports = [];
+  let reexports = {};
+  while (content.startsWith("@export ") || content.startsWith("@reexport ")) {
+    let idx = content.indexOf("\n");
+    let line;
+    if (idx == -1) {
+      line = content;
+      content = "";
+    } else {
+      line = content.substr(0, idx);
+      content = content.substr(idx).trimStart();
+    }
+    if (line.startsWith("@export ")) {
+      exports.push(
+        ...line
+          .substr("@export ".length)
+          .split(" ")
+          .filter((word) => word.length > 0)
+      );
+    } else {
+      for (let name of line
+        .substr("@reexport ".length)
+        .split(" ")
+        .filter((word) => word.length > 0)) {
+        // 1. find the name in child decks
+        // 2. if not found, set it to null
+        reexports[name] = null;
+      }
+    }
+  }
+  // console.log("content", content);
+  // console.log("exports", exports);
+  // console.log("reexports", reexports);
+  return { exports, reexports, content };
+}
+
 function handleRunTree({ id, storeAPI, socket }) {
   // get all pods
   console.log("handleRunTree", { id, storeAPI, socket });
@@ -400,20 +420,57 @@ function handleRunTree({ id, storeAPI, socket }) {
       // actually run the code
       if (pod.type === "CODE" && pod.content && pod.lang && !pod.thundar) {
         storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
-        storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
-        socket.send(
-          JSON.stringify({
-            type: "runCode",
-            payload: {
-              lang: pod.lang,
-              code: pod.content,
-              namespace: pod.ns,
-              raw: pod.raw,
-              podId: pod.id,
-              sessionId: storeAPI.getState().repo.sessionId,
-            },
+
+        let { exports, reexports, content } = getExports(pod.content);
+        // console.log("resolving ..", reexports);
+        // TODO resolve reexports
+        for (let subdeckid of pods[pod.parent].children
+          .filter(({ id }) => pods[id].type === "DECK")
+          .filter(({ id }) => !pods[id].utility && !pods[id].thundar)
+          .map(({ id }) => id)) {
+          // console.log("trying", subdeckid);
+          let subdeck = storeAPI.getState().repo.pods[subdeckid];
+          let subpods = subdeck.children
+            .filter(({ id }) => pods[id].type !== "DECK")
+            .map(({ id }) => pods[id]);
+          for (let pod of subpods) {
+            for (let name of Object.keys(reexports)) {
+              if (!reexports[name]) {
+                // console.log("in", name);
+                if (pod.exports.indexOf(name) != -1) {
+                  // console.log("Resolved", name);
+                  reexports[name] = subdeckid;
+                } else if (pod.reexports && pod.reexports[name]) {
+                  reexports[name] = pod.reexports[name];
+                }
+              }
+            }
+          }
+        }
+
+        storeAPI.dispatch(
+          repoSlice.actions.setPodExport({
+            id,
+            exports,
+            reexports,
           })
         );
+        if (content) {
+          storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
+          socket.send(
+            JSON.stringify({
+              type: "runCode",
+              payload: {
+                lang: pod.lang,
+                code: content,
+                namespace: pod.ns,
+                raw: pod.raw,
+                podId: pod.id,
+                sessionId: storeAPI.getState().repo.sessionId,
+              },
+            })
+          );
+        }
       }
     }
   }

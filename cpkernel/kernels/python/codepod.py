@@ -51,6 +51,8 @@ import_d = defaultdict(set)
 export_d = defaultdict(set)
 # from ns to subdeck nses
 export_sub_d = defaultdict(set)
+# to=>[from=>names]
+reexport_d = defaultdict(lambda: defaultdict(set))
 
 def CODEPOD_GETMOD(ns):
     if ns not in d:
@@ -76,14 +78,21 @@ def CODEPOD_SET_EXPORT(ns, exports):
     export_d[ns] = exports
 def CODEPOD_SET_EXPORT_SUB(ns, nses):
     export_sub_d[ns] = nses
+def CODEPOD_ADD_REEXPORT(from_ns, to_ns, names):
+    reexport_d[to_ns][from_ns].update(names)
 
 def CODEPOD_EVAL(code, ns):
     # the codepod(code) is the program sent to backend
     # codepod is defined on the kernel
     mod = CODEPOD_GETMOD(ns)
     [stmt, expr] = code2parts(code)
-    _dict = merge_dicts([{k:v for k,v in CODEPOD_GETMOD(x).__dict__.items() if k in export_d[x]} for x in import_d[ns]]
-                      + [{k:v for k,v in CODEPOD_GETMOD(x).__dict__.items() if k in export_d[x]} for ns1 in export_sub_d[ns] for x in import_d[ns1]])
+    
+    _dict = merge_dicts([{k:v for k,v in CODEPOD_GETMOD(x).__dict__.items() if k in export_d[x]} for x in import_d[ns]])
+    for from_ns, names in reexport_d[ns].items():
+        for name in names:
+            v = CODEPOD_GETMOD(from_ns).__dict__.get(name, None)
+            if v:
+                _dict[name] = v
     if stmt:
         exec(stmt, _dict, mod.__dict__)
     if expr:
