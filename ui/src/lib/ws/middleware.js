@@ -90,17 +90,42 @@ ${struct_codes.join("\n")}
   );
 }
 
+function getReexports({ id, pods }) {
+  // Get the reexports available for the deck id. Those are from this deck's subdecks
+  let reexports = Object.assign(
+    {},
+    ...pods[id].children
+      .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
+      .map(({ id, type }) => pods[id])
+      .map((deck) =>
+        Object.assign(
+          {},
+          ...deck.children
+            .filter(({ id }) => pods[id].type !== "DECK")
+            .map(({ id }) => pods[id])
+            .map((pod) => pod.reexports)
+        )
+      )
+  );
+
+  // change reexport from name=>id to ns=>names
+  let res = {};
+  for (let [name, id] of Object.entries(reexports)) {
+    if (!res[pods[id].ns]) {
+      res[pods[id].ns] = [];
+    }
+    res[pods[id].ns].push(name);
+  }
+  return res;
+}
+
 function powerRun_julia({ id, storeAPI, socket }) {
   let pods = storeAPI.getState().repo.pods;
   let pod = pods[id];
   let names = pod.children
     .filter(({ id }) => pods[id].type !== "DECK")
     .filter(({ id }) => pods[id].exports)
-    .map(({ id }) =>
-      Object.entries(pods[id].exports)
-        .filter(([k, v]) => v)
-        .map(([k, v]) => k)
-    );
+    .map(({ id }) => pods[id].exports);
   names = [].concat(...names);
   let nses = getUtilNs({ id, pods });
   const child_deck_nses = pods[id].children
@@ -112,57 +137,25 @@ function powerRun_julia({ id, storeAPI, socket }) {
     nses.push(pods[pod.parent].ns);
   }
 
-  // exported subdecks
-  let exported_decks = pods[id].children
-    .filter(
-      ({ id }) =>
-        pods[id].type === "DECK" && pods[id].exports && pods[id].exports["self"]
-    )
-    .map(({ id, type }) => pods[id].ns);
+  let reexports = getReexports({ id, pods });
 
-  // nses = nses.concat(exported_decks);
+  let reexport_code = Object.keys(reexports)
+    .map(
+      (ns) =>
+        `
+    eval(:(@reexport using $(:Main).$(Symbol("${ns}")): ${reexports[ns]
+          .map((name) => `${name}`)
+          .join(",")}))
+    `
+    )
+    .join("\n");
 
   function ns2jlmod(ns) {
     return "Main." + ns.replaceAll("/", ".");
   }
 
+  // Much better!!!
   let code = `
-${nses
-  .map(
-    (ns) =>
-      `include_string(eval(:(${ns2jlmod(pod.ns)})), "using $(eval(:(${ns2jlmod(
-        ns
-      )})))")`
-  )
-  .join("\n")}
-
-  ${exported_decks.map(
-    (ns) =>
-      `include_string(eval(:(${ns2jlmod(
-        pod.ns
-      )})), "@reexport using $(eval(:(${ns2jlmod(ns)})))")`
-  )}
-
-  ${names.length > 0 ? `export ${names.join(",")}` : ""}
-  
-    `;
-
-  // FIXME optimize this logic. Probably construct several CODEPOD_ADD_IMPORT here
-  code = `
-    ${nses.map(
-      (ns) => `
-    include_string(eval(:($(:Main).$(Symbol("${pod.ns}")))), "using $(:($(:Main).$(Symbol("${ns}"))))")`
-    )}
-    ${exported_decks.map(
-      (ns) => `
-    include_string(eval(:($(:Main).$(Symbol("${pod.ns}")))), "@reexport using $(:($(:Main).$(Symbol("${ns}"))))")`
-    )}
-
-    ${names.length > 0 ? `export ${names.join(",")}` : ""}
-    `;
-
-  // DEBUG Much better!!!
-  code = `
     ${nses
       .map(
         (ns) => `
@@ -170,13 +163,8 @@ ${nses
     `
       )
       .join("\n")}
-    ${exported_decks
-      .map(
-        (ns) => `
-    eval(:(@reexport using $(:Main).$(Symbol("${ns}"))))
-    `
-      )
-      .join("\n")}
+    
+    ${reexport_code}
 
     ${names.length > 0 ? `export ${names.join(",")}` : ""}
     `;
@@ -220,37 +208,14 @@ function powerRun_python({ id, storeAPI, socket }) {
   if (pod.thundar) {
     nses.push(pods[pod.parent].ns);
   }
-  // the child deck's reexports
-  let reexports = Object.assign(
-    {},
-    ...pods[id].children
-      .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
-      .map(({ id, type }) => pods[id])
-      .map((deck) =>
-        Object.assign(
-          {},
-          ...deck.children
-            .filter(({ id }) => pods[id].type !== "DECK")
-            .map(({ id }) => pods[id])
-            .map((pod) => pod.reexports)
-        )
-      )
-  );
 
-  // change reexport from name=>id to ns=>names
-  let reexports2 = {};
-  for (let [name, id] of Object.entries(reexports)) {
-    if (!reexports2[pods[id].ns]) {
-      reexports2[pods[id].ns] = [];
-    }
-    reexports2[pods[id].ns].push(name);
-  }
+  let reexports = getReexports({ id, pods });
 
   // CODEPOD_SET_REEXPORT(from, to, [foo, bar])
-  let reexport_code = Object.keys(reexports2)
+  let reexport_code = Object.keys(reexports)
     .map(
       (ns) => `
-CODEPOD_ADD_REEXPORT("${ns}", "${pod.ns}", [${reexports2[ns]
+CODEPOD_ADD_REEXPORT("${ns}", "${pod.ns}", [${reexports[ns]
         .map((name) => `"${name}"`)
         .join(",")}])
     `
