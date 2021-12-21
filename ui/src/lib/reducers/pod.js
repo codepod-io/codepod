@@ -20,7 +20,7 @@ export function addPod(state, action) {
     thundar: false,
     utility: false,
     name: "",
-    exports: {},
+    exports: [],
     imports: {},
     reexports: {},
     midports: {},
