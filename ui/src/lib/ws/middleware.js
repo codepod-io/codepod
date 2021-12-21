@@ -3,6 +3,35 @@ import * as actions from "./actions";
 import { repoSlice } from "../store";
 import Stomp from "stompjs";
 
+function getReexports({ id, pods }) {
+  // Get the reexports available for the deck id. Those are from this deck's subdecks
+  let reexports = Object.assign(
+    {},
+    ...pods[id].children
+      .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
+      .map(({ id, type }) => pods[id])
+      .map((deck) =>
+        Object.assign(
+          {},
+          ...deck.children
+            .filter(({ id }) => pods[id].type !== "DECK")
+            .map(({ id }) => pods[id])
+            .map((pod) => pod.reexports)
+        )
+      )
+  );
+
+  // change reexport from name=>id to ns=>names
+  let res = {};
+  for (let [name, id] of Object.entries(reexports)) {
+    if (!res[pods[id].ns]) {
+      res[pods[id].ns] = [];
+    }
+    res[pods[id].ns].push(name);
+  }
+  return res;
+}
+
 function powerRun_racket({ id, storeAPI, socket }) {
   let pods = storeAPI.getState().repo.pods;
   let pod = pods[id];
@@ -88,35 +117,6 @@ ${struct_codes.join("\n")}
       },
     })
   );
-}
-
-function getReexports({ id, pods }) {
-  // Get the reexports available for the deck id. Those are from this deck's subdecks
-  let reexports = Object.assign(
-    {},
-    ...pods[id].children
-      .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
-      .map(({ id, type }) => pods[id])
-      .map((deck) =>
-        Object.assign(
-          {},
-          ...deck.children
-            .filter(({ id }) => pods[id].type !== "DECK")
-            .map(({ id }) => pods[id])
-            .map((pod) => pod.reexports)
-        )
-      )
-  );
-
-  // change reexport from name=>id to ns=>names
-  let res = {};
-  for (let [name, id] of Object.entries(reexports)) {
-    if (!res[pods[id].ns]) {
-      res[pods[id].ns] = [];
-    }
-    res[pods[id].ns].push(name);
-  }
-  return res;
 }
 
 function powerRun_julia({ id, storeAPI, socket }) {
