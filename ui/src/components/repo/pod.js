@@ -764,7 +764,7 @@ function PodDiff({ id, setShowDiff }) {
 function PodWrapper({ id, draghandle, children }) {
   // console.log("PodWrapper", id);
   const pod = useSelector((state) => state.repo.pods[id]);
-  const devmode = useSelector((state) => state.repo.repoConfig?.devmode);
+  const devmode = useSelector((state) => state.repo.repoConfig?.devMode);
   const dispatch = useDispatch();
   const [showMenu, setShowMenu] = useState(false);
   const [showDiff, setShowDiff] = useState(false);
@@ -796,7 +796,7 @@ function PodWrapper({ id, draghandle, children }) {
         <ImportList pod={pod} />
         <ThundarMark pod={pod} />
         <UtilityMark pod={pod} />
-        {devmode && <Code>{pod.id}</Code>}
+        {devmode && <Code>ID: {pod.id}</Code>}
         {hasgitdiff && (
           <IconButton
             onClick={() => {
