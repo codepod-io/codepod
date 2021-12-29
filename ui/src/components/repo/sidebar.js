@@ -262,25 +262,6 @@ function SidebarRuntime() {
         <Box>{Object.keys(sessionRuntime)}</Box>
       </Box>
       <Box>
-        Runtimes:
-        <Button
-          onClick={() => {
-            dispatch(repoSlice.actions.addRuntime());
-          }}
-        >
-          +
-        </Button>
-        {[["localhost:14321", ""]]
-          .concat(repoConfig?.runtimes || [])
-          .map(([address, mqAddress]) => (
-            <RuntimeItem
-              socketAddress={address}
-              mqAddress={mqAddress}
-              key={address + mqAddress}
-            />
-          ))}
-      </Box>
-      <Box>
         Runtime connected?{" "}
         {runtimeConnected ? (
           <Box as="span" color="green">
@@ -292,7 +273,6 @@ function SidebarRuntime() {
           </Box>
         )}
       </Box>
-
       <Box sx={{ display: "flex" }}>
         <Button
           size="small"
@@ -311,6 +291,25 @@ function SidebarRuntime() {
         >
           Disconnect
         </Button>
+      </Box>
+      <Box>
+        Runtimes:
+        <Button
+          onClick={() => {
+            dispatch(repoSlice.actions.addRuntime());
+          }}
+        >
+          +
+        </Button>
+        {[["localhost:14321", ""]]
+          .concat(repoConfig?.runtimes || [])
+          .map(([address, mqAddress]) => (
+            <RuntimeItem
+              socketAddress={address}
+              mqAddress={mqAddress}
+              key={address + mqAddress}
+            />
+          ))}
       </Box>
     </Box>
   );
