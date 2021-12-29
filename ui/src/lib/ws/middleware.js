@@ -189,6 +189,35 @@ function powerRun_julia({ id, storeAPI, socket }) {
   );
 }
 
+function getChildExports({ id, pods }) {
+  // get all the exports and reexports. The return would be:
+  // ns=>names
+  // Get the reexports available for the deck id. Those are from this deck's subdecks
+  let res = {};
+
+  for (let deck of pods[id].children
+    .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
+    .map(({ id, type }) => pods[id])) {
+    res[deck.ns] = [].concat(
+      ...deck.children
+        .filter(({ id }) => pods[id].type !== "DECK")
+        .map(({ id }) => pods[id])
+        .map((pod) => Object.keys(pod.exports))
+    );
+    for (let deckpod of deck.children
+      .filter(({ id }) => pods[id].type !== "DECK")
+      .map(({ id }) => pods[id])) {
+      for (let [name, id] of Object.entries(deckpod.reexports)) {
+        if (!res[pods[id].ns]) {
+          res[pods[id].ns] = [];
+        }
+        res[pods[id].ns].push(name);
+      }
+    }
+  }
+  return res;
+}
+
 function powerRun_python({ id, storeAPI, socket }) {
   let pods = storeAPI.getState().repo.pods;
   let pod = pods[id];
@@ -209,16 +238,25 @@ function powerRun_python({ id, storeAPI, socket }) {
     nses.push(pods[pod.parent].ns);
   }
 
-  let reexports = getReexports({ id, pods });
+  // for python, we need to introduce the mapping of each exported names
+  // 0. [X] so, loop through the child decks, and if there are exported names, evaluate it
+  // for all re-exports, gather and evaluate all of them
 
-  // CODEPOD_SET_REEXPORT(from, to, [foo, bar])
-  let reexport_code = Object.keys(reexports)
-    .map(
-      (ns) => `
-CODEPOD_ADD_REEXPORT("${ns}", "${pod.ns}", [${reexports[ns]
-        .map((name) => `"${name}"`)
-        .join(",")}])
-    `
+  // in the future updates
+  // 1. [X] if you changed a def, I should find all uses and update them
+  // 2. [ ] if you add a new function to be exported, upon evaluation, I should add it to the parent (and TODO others for utility pods)
+  //    if that's a new reexport, add to parent as well and do the resolve and evaluation
+  // 3. [ ] delete a function. Just delete the parent's def? Not sure.
+
+  let allexports = getChildExports({ id, pods });
+  let export_code = Object.keys(allexports)
+    .map((ns) =>
+      allexports[ns]
+        .map(
+          (name) =>
+            `CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${ns}").__dict__["${name}"]\n0""", "${pod.ns}")`
+        )
+        .join("\n")
     )
     .join("\n");
 
@@ -232,7 +270,7 @@ CODEPOD_ADD_IMPORT("${ns}", "${pod.ns}")`
 
 CODEPOD_SET_EXPORT("${pod.ns}", {${names.map((name) => `"${name}"`).join(",")}})
 
-${reexport_code}
+${export_code}
     `;
   // console.log("==== PYTHON CODE", code);
   storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
@@ -290,6 +328,55 @@ function handlePowerRun({ id, doEval, storeAPI, socket }) {
           );
         }
       });
+  }
+}
+
+function handleUpdateDef({ id, storeAPI, socket }) {
+  let pods = storeAPI.getState().repo.pods;
+  let pod = pods[id];
+  if (pod.lang === "python") {
+    let code = "";
+    for (let [name, uses] of Object.entries(pod.exports)) {
+      // reevaluate name in parent deck
+      let parent_deck = pods[pods[pod.parent].parent];
+      code += `
+CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${pod.ns}").__dict__["${name}"]\n0""", "${parent_deck.ns}")
+`;
+      console.log("==", name, uses);
+      if (uses) {
+        for (let use of uses) {
+          // reevaluate name in use's parent deck
+          let to_deck = pods[pods[pods[use].parent].parent];
+          code += `
+CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${pod.ns}").__dict__["${name}"]\n0""", "${to_deck.ns}")
+`;
+        }
+      }
+    }
+
+    code += `"ok"`;
+
+    // console.log("handleUpdateDef code", code);
+
+    // send for evaluation
+    console.log("sending for handleUpdateDef ..");
+    storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
+    socket.send(
+      JSON.stringify({
+        type: "runCode",
+        payload: {
+          lang: pod.lang,
+          code,
+          namespace: pod.ns,
+          // raw: pod.raw,
+          raw: true,
+          // FIXME TODO podId?
+          // podId: "NULL",
+          podId: pod.parent,
+          sessionId: storeAPI.getState().repo.sessionId,
+        },
+      })
+    );
   }
 }
 
@@ -388,7 +475,7 @@ function handleRunTree({ id, storeAPI, socket }) {
 
         let { exports, reexports, content } = getExports(pod.content);
         // console.log("resolving ..", reexports);
-        // TODO resolve reexports
+        // resolve reexports
         for (let subdeckid of pods[pod.parent].children
           .filter(({ id }) => pods[id].type === "DECK")
           .filter(({ id }) => !pods[id].utility && !pods[id].thundar)
@@ -402,9 +489,9 @@ function handleRunTree({ id, storeAPI, socket }) {
             for (let name of Object.keys(reexports)) {
               if (!reexports[name]) {
                 // console.log("in", name);
-                if (pod.exports.indexOf(name) != -1) {
+                if (name in pod.exports) {
                   // console.log("Resolved", name);
-                  reexports[name] = subdeckid;
+                  reexports[name] = pod.id;
                 } else if (pod.reexports && pod.reexports[name]) {
                   reexports[name] = pod.reexports[name];
                 }
@@ -435,6 +522,7 @@ function handleRunTree({ id, storeAPI, socket }) {
               },
             })
           );
+          handleUpdateDef({ id, storeAPI, socket });
         }
       }
     }

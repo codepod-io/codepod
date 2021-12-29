@@ -9,11 +9,26 @@ export default {
     }
     pod.exports[name] = false;
   },
+  clearAllExports: (state, action) => {
+    for (let [id, pod] of Object.entries(state.pods)) {
+      pod.exports = {};
+      pod.reexports = {};
+    }
+  },
   setPodExport: (state, action) => {
     let { id, exports, reexports } = action.payload;
     let pod = state.pods[id];
-    pod.exports = exports;
+    pod.exports = Object.assign(
+      {},
+      ...exports.map((name) => ({ [name]: pod.exports[name] || [] }))
+    );
     pod.reexports = reexports;
+    // add the reexports use reference to the origin
+    for (let [name, origid] of Object.entries(reexports)) {
+      if (state.pods[origid].exports[name].indexOf(id) == -1) {
+        state.pods[origid].exports[name].push(id);
+      }
+    }
   },
   clearIO: (state, action) => {
     let { id, name } = action.payload;

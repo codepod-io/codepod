@@ -57,6 +57,7 @@ reexport_d = defaultdict(lambda: defaultdict(set))
 def CODEPOD_GETMOD(ns):
     if ns not in d:
         d[ns] = types.ModuleType(ns)
+        d[ns].__dict__["CODEPOD_GETMOD"] = CODEPOD_GETMOD
     return d[ns]
 
 def merge_dicts(dicts):
@@ -87,13 +88,13 @@ def CODEPOD_EVAL(code, ns):
     mod = CODEPOD_GETMOD(ns)
     [stmt, expr] = code2parts(code)
     
-    _dict = merge_dicts([{k:v for k,v in CODEPOD_GETMOD(x).__dict__.items() if k in export_d[x]} for x in import_d[ns]])
-    for from_ns, names in reexport_d[ns].items():
-        for name in names:
-            v = CODEPOD_GETMOD(from_ns).__dict__.get(name, None)
-            if v:
-                _dict[name] = v
+    # _dict = merge_dicts([{k:v for k,v in CODEPOD_GETMOD(x).__dict__.items() if k in export_d[x]} for x in import_d[ns]])
+    # for from_ns, names in reexport_d[ns].items():
+    #     for name in names:
+    #         v = CODEPOD_GETMOD(from_ns).__dict__.get(name, None)
+    #         if v:
+    #             _dict[name] = v
     if stmt:
-        exec(stmt, _dict, mod.__dict__)
+        exec(stmt, mod.__dict__)
     if expr:
-        return eval(expr, _dict, mod.__dict__)
+        return eval(expr, mod.__dict__)

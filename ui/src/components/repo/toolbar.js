@@ -819,9 +819,17 @@ export function HoveringMenu({ pod, showMenu, draghandle, children }) {
 
 export function ExportList({ pod }) {
   const dispatch = useDispatch();
+  if (Array.isArray(pod.exports)) {
+    return (
+      <Box>
+        WARNING: pod.exports is an array. This was deprecated. Try clear all
+        exports.
+      </Box>
+    );
+  }
   return (
     <Box>
-      {pod.exports && pod.exports.length > 0 && (
+      {pod.exports && Object.keys(pod.exports).length > 0 && (
         <Box
           sx={{
             display: "flex",
@@ -835,7 +843,7 @@ export function ExportList({ pod }) {
           >
             Exports:
           </Box> */}
-          {pod.exports.map((k) => (
+          {Object.entries(pod.exports).map(([k, v]) => (
             <Box
               component="pre"
               key={k}
@@ -844,7 +852,7 @@ export function ExportList({ pod }) {
                 my: 0,
               }}
             >
-              {k}
+              {k}: {v}
             </Box>
           ))}
         </Box>
