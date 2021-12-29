@@ -208,21 +208,21 @@ function RuntimeItem({ socketAddress, mqAddress }) {
       {!edit && socketAddress !== "localhost:14321" && (
         <Box>
           <IconButton
-          onClick={() => {
-            updateRepoConfig({
-              variables: {
-                reponame,
-                config: JSON.stringify({
-                  runtimes: produce(repoConfig.runtimes, (draft) => {
-                    let idx = draft.findIndex(
-                      ([addr1, addr2]) => addr1 === socketAddress
-                    );
-                    draft.splice(idx, 1);
+            onClick={() => {
+              updateRepoConfig({
+                variables: {
+                  reponame,
+                  config: JSON.stringify({
+                    runtimes: produce(repoConfig.runtimes, (draft) => {
+                      let idx = draft.findIndex(
+                        ([addr1, addr2]) => addr1 === socketAddress
+                      );
+                      draft.splice(idx, 1);
+                    }),
                   }),
-                }),
-              },
-            });
-          }}
+                },
+              });
+            }}
           >
             <DeleteForeverTwoToneIcon sx={{ fontSize: 15, color: "red" }} />
           </IconButton>
@@ -1016,6 +1016,13 @@ function SidebarTest() {
         }}
       >
         Unfold All
+      </Button>
+      <Button
+        onClick={() => {
+          dispatch(repoSlice.actions.clearAllExports());
+        }}
+      >
+        ClearExports
       </Button>
     </Box>
   );
