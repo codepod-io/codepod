@@ -223,11 +223,6 @@ function powerRun_python({ id, storeAPI, socket }) {
   let pod = pods[id];
   // python powerrun
   // 1. create the module
-  let names = pod.children
-    .filter(({ id }) => pods[id].type !== "DECK")
-    .filter(({ id }) => pods[id].exports)
-    .map(({ id }) => pods[id].exports);
-  names = [].concat(...names);
   let nses = getUtilNs({ id, pods });
   const child_deck_nses = pods[id].children
     .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
@@ -249,7 +244,7 @@ function powerRun_python({ id, storeAPI, socket }) {
   // 3. [ ] delete a function. Just delete the parent's def? Not sure.
 
   let allexports = getChildExports({ id, pods });
-  let export_code = Object.keys(allexports)
+  let code = Object.keys(allexports)
     .map((ns) =>
       allexports[ns]
         .map(
@@ -260,18 +255,6 @@ function powerRun_python({ id, storeAPI, socket }) {
     )
     .join("\n");
 
-  // 2. import the namespaces
-  let code = `${nses
-    .map(
-      (ns) => `
-CODEPOD_ADD_IMPORT("${ns}", "${pod.ns}")`
-    )
-    .join("\n")}
-
-CODEPOD_SET_EXPORT("${pod.ns}", {${names.map((name) => `"${name}"`).join(",")}})
-
-${export_code}
-    `;
   // console.log("==== PYTHON CODE", code);
   storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
   storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
