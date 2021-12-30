@@ -38,7 +38,7 @@ function powerRun_racket({ id, storeAPI, socket }) {
   let names = pod.children
     .filter(({ id }) => pods[id].type !== "DECK")
     .filter(({ id }) => pods[id].exports)
-    .map(({ id }) => pods[id].exports);
+    .map(({ id }) => Object.keys(pods[id].exports));
   names = [].concat(...names);
   let struct_codes = pod.children
     .filter(
@@ -125,7 +125,7 @@ function powerRun_julia({ id, storeAPI, socket }) {
   let names = pod.children
     .filter(({ id }) => pods[id].type !== "DECK")
     .filter(({ id }) => pods[id].exports)
-    .map(({ id }) => pods[id].exports);
+    .map(({ id }) => Object.keys(pods[id].exports));
   names = [].concat(...names);
   let nses = getUtilNs({ id, pods });
   const child_deck_nses = pods[id].children
