@@ -333,10 +333,9 @@ export function getResolvers(appDir) {
         return true;
       },
       deleteRepo: async (_, { name }, { userId }) => {
-        await fs.promises.rmdir(path.join(appDir, name, ".pods"), {
+        await fs.promises.rmdir(path.join(appDir, name), {
           recursive: true,
         });
-        await fs.promises.rmdir(path.join(appDir, name));
         return true;
       },
       clearUser: () => {},
