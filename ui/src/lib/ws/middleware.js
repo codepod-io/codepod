@@ -2,6 +2,7 @@ import * as actions from "./actions";
 
 import { repoSlice } from "../store";
 import Stomp from "stompjs";
+import pod from "../reducers/pod";
 
 function getReexports({ id, pods }) {
   // Get the reexports available for the deck id. Those are from this deck's subdecks
@@ -218,20 +219,36 @@ function getChildExports({ id, pods }) {
   return res;
 }
 
+function getUtilExports({ id, pods }) {
+  let res = {};
+  let utilIds = getUtilIds({ id, pods });
+  for (let deck of utilIds.map((id) => pods[id])) {
+    // FIXME these are identical to getChildExports
+    res[deck.ns] = [].concat(
+      ...deck.children
+        .filter(({ id }) => pods[id].type !== "DECK")
+        .map(({ id }) => pods[id])
+        .map((pod) => Object.keys(pod.exports))
+    );
+    for (let deckpod of deck.children
+      .filter(({ id }) => pods[id].type !== "DECK")
+      .map(({ id }) => pods[id])) {
+      for (let [name, id] of Object.entries(deckpod.reexports)) {
+        if (!res[pods[id].ns]) {
+          res[pods[id].ns] = [];
+        }
+        res[pods[id].ns].push(name);
+      }
+    }
+  }
+  return res;
+}
+
 function powerRun_python({ id, storeAPI, socket }) {
   let pods = storeAPI.getState().repo.pods;
   let pod = pods[id];
   // python powerrun
   // 1. create the module
-  let nses = getUtilNs({ id, pods });
-  const child_deck_nses = pods[id].children
-    .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
-    .map(({ id, type }) => pods[id].ns);
-  nses = nses.concat(child_deck_nses);
-  // if it is a test desk, get parent
-  if (pod.thundar) {
-    nses.push(pods[pod.parent].ns);
-  }
 
   // for python, we need to introduce the mapping of each exported names
   // 0. [X] so, loop through the child decks, and if there are exported names, evaluate it
@@ -243,7 +260,10 @@ function powerRun_python({ id, storeAPI, socket }) {
   //    if that's a new reexport, add to parent as well and do the resolve and evaluation
   // 3. [ ] delete a function. Just delete the parent's def? Not sure.
 
-  let allexports = getChildExports({ id, pods });
+  let childexports = getChildExports({ id, pods });
+  let utilexports = getUtilExports({ id, pods });
+  // FIXME would childexports and utilexports overlap?
+  let allexports = Object.assign({}, childexports, utilexports);
   let code = Object.keys(allexports)
     .map((ns) =>
       allexports[ns]
@@ -314,6 +334,26 @@ function handlePowerRun({ id, doEval, storeAPI, socket }) {
   }
 }
 
+function codeForReEvalDeck({ deck, pods, name, ns }) {
+  // this deck is a utility deck. Evaluate a re-define of name from ns in all the scope
+  let parent = pods[deck.parent];
+  let res = "";
+  res += `
+CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${ns}").__dict__["${name}"]\n0""", "${parent.ns}")
+  `;
+  function helper(id) {
+    if (pods[id].type === "DECK" && pods[id].ns !== ns) {
+      res += `
+CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${ns}").__dict__["${name}"]\n0""", "${pods[id].ns}")
+      `;
+      pods[id].children.map(({ id, type }) => helper(id));
+    }
+  }
+  // for all the subdecks
+  parent.children.map(({ id, type }) => helper(id));
+  return res;
+}
+
 function handleUpdateDef({ id, storeAPI, socket }) {
   let pods = storeAPI.getState().repo.pods;
   let pod = pods[id];
@@ -325,6 +365,17 @@ function handleUpdateDef({ id, storeAPI, socket }) {
       code += `
 CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${pod.ns}").__dict__["${name}"]\n0""", "${parent_deck.ns}")
 `;
+      if (pods[pod.parent].utility) {
+        // TODO get all scopes and reevaluate
+        // 1. get parent
+        // 2. loop
+        code += codeForReEvalDeck({
+          deck: pods[pod.parent],
+          pods,
+          name,
+          ns: pod.ns,
+        });
+      }
       console.log("==", name, uses);
       if (uses) {
         for (let use of uses) {
@@ -333,11 +384,22 @@ CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${pod.ns}").__dict__["${name}"]\n0""",
           code += `
 CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${pod.ns}").__dict__["${name}"]\n0""", "${to_deck.ns}")
 `;
+          if (pods[pods[use].parent].utility) {
+            // TODO get all scopes and re-evaluate
+            code += codeForReEvalDeck({
+              deck: pods[pods[use].parent],
+              pods,
+              name,
+              ns: pod.ns,
+            });
+          }
         }
       }
     }
 
-    code += `"ok"`;
+    code += `
+"ok"
+`;
 
     // console.log("handleUpdateDef code", code);
 
@@ -372,6 +434,16 @@ function getUtilNs({ id, pods, exclude }) {
     .map(({ id, type }) => pods[id].ns);
   // keep to go to parents
   return res.concat(getUtilNs({ id: pods[id].parent, pods, exclude: id }));
+}
+
+function getUtilIds({ id, pods, exclude }) {
+  // similar to getUtilNs, but return the id of the util deck
+  if (!id) return [];
+  let res = pods[id].children
+    .filter(({ id }) => id !== exclude && pods[id].utility)
+    .map(({ id, type }) => id);
+  // keep to go to parents
+  return res.concat(getUtilIds({ id: pods[id].parent, pods, exclude: id }));
 }
 
 function getExports(content) {
