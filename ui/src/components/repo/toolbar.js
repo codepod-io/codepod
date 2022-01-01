@@ -61,7 +61,15 @@ import * as qActions from "../../lib/queue/actions";
 
 function Code(props) {
   return (
-    <Box component="pre" {...props}>
+    <Box
+      component="pre"
+      sx={{
+        // mr: 1,
+        // my: 0,
+        display: "inline",
+      }}
+      {...props}
+    >
       {props.children}
     </Box>
   );
@@ -845,14 +853,13 @@ export function ExportList({ pod }) {
           </Box> */}
           {Object.entries(pod.exports).map(([k, v]) => (
             <Box
-              component="pre"
               key={k}
               sx={{
                 mr: 1,
                 my: 0,
               }}
             >
-              {k}: {v}
+              Exports: <Code>{k}</Code>: use: <Code>{v.join(",")}</Code>
             </Box>
           ))}
         </Box>
@@ -861,7 +868,7 @@ export function ExportList({ pod }) {
         <Box>
           {Object.entries(pod.reexports).map(([k, v]) => (
             <Box key={k}>
-              {k}: {v ? v : "null"}
+              RE-exports: <Code>{k}</Code>: from: <Code>{v ? v : "null"}</Code>
             </Box>
           ))}
         </Box>
