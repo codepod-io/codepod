@@ -415,8 +415,10 @@ export function MyMonaco({
         formatOnType: true,
         autoIndent: "full",
         // autoIndent: true,
+        overviewRulerLanes: 0,
         scrollbar: {
           alwaysConsumeMouseWheel: false,
+          vertical: "hidden",
         },
       }}
       onChange={onChange}
@@ -428,7 +430,8 @@ export function MyMonaco({
           // max height: 400
           const contentHeight = Math.max(
             100,
-            Math.min(400, editor.getContentHeight())
+            editor.getContentHeight()
+            // Math.min(400, editor.getContentHeight())
           );
           // console.log("target height:", contentHeight);
           const editorElement = editor.getDomNode();
