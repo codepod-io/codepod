@@ -198,7 +198,7 @@ function serializePodInput(pod) {
   }) => ({
     id,
     type,
-    // column,
+    column,
     lang,
     // stdout,
     fold,

@@ -41,6 +41,8 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import Popper from "@mui/material/Popper";
 
+import { FcAddColumn, FcDeleteColumn } from "react-icons/fc";
+
 import { repoSlice } from "../../lib/store";
 import { MySlate } from "../MySlate";
 import { MyMonaco, MyMonacoDiff } from "../MyMonaco";
@@ -70,6 +72,8 @@ import {
   RunButton,
   DeckRunButton,
 } from "./toolbar";
+
+import Masonry from "@mui/lab/Masonry";
 
 function Flex(props) {
   return (
@@ -122,7 +126,7 @@ export function DeckTitle({ id }) {
           <Box
             sx={{
               display: "flex",
-              // justifyContent: "center",
+              alignItems: "center",
             }}
           >
             {pod.id !== "ROOT" && <UpButton pod={pod} />}
@@ -147,6 +151,33 @@ export function DeckTitle({ id }) {
             >
               <PlayArrowIcon sx={{ fontSize: 15 }} />
             </IconButton>
+          </Box>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <Button
+              size="small"
+              // variant="ghost"
+              onClick={() => {
+                dispatch(repoSlice.actions.addColumn(pod.id));
+              }}
+            >
+              <FcAddColumn />
+            </Button>
+
+            <Button
+              size="small"
+              // variant="ghost"
+              onClick={() => {
+                dispatch(repoSlice.actions.deleteColumn(pod.id));
+              }}
+            >
+              <FcDeleteColumn />
+            </Button>
+            <Box component="span">col:{pod.column}</Box>
           </Box>
         </HoveringMenu>
       </Box>
@@ -396,6 +427,7 @@ export function Deck(props) {
   // console.log("rendering deck", id);
   const dispatch = useDispatch();
   const pod = useSelector((state) => state.repo.pods[id]);
+  let numPods = pod.children.filter(({ type }) => type !== "DECK").length;
   if (pod.type !== "DECK") return <Pod id={id}></Pod>;
   if (pod.children.length == 0 && pod.id === "ROOT") {
     return (
@@ -434,13 +466,11 @@ export function Deck(props) {
           : pod.lastclip
           ? "dashed orange"
           : undefined,
-
-        minWidth: 36,
       }}
     >
       <Box>
         <DeckTitle id={id} />
-        <Box sx={{ display: "flex", maxWidth: "md", flexWrap: "wrap" }}>
+        <Box sx={{ display: "flex", flexWrap: "wrap" }}>
           {/* {pod.children
             .filter(({ type }) => type !== "DECK")
             .map(({ id }) => (
@@ -459,25 +489,33 @@ export function Deck(props) {
         {pod.fold ? (
           <Box>Folded</Box>
         ) : (
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-            }}
-            // FIXME column flex with maxH won't auto flow to right.
-            // border="5px solid blue"
-            // maxH="lg"
-            // maxW={2000}
-            // wrap="wrap"
-          >
-            {pod.children
-              .filter(({ type }) => type !== "DECK")
-              .map(({ id }) => (
-                <Box key={id}>
-                  <Pod id={id} />
-                </Box>
-              ))}
-          </Box>
+          numPods > 0 && (
+            <Box width={`${430 * (pod.column || 1)}px`}>
+              <Masonry columns={pod.column || 1} spacing={1}>
+                {pod.children
+                  .filter(({ type }) => type !== "DECK")
+                  .map(({ id }, index) => (
+                    <Box
+                      key={id}
+                      // sx={{
+                      //   width: "360px",
+                      // }}
+                    >
+                      <Box
+                        sx={{
+                          position: "relative",
+                          top: "30px",
+                          left: "-17px",
+                        }}
+                      >
+                        {index}
+                      </Box>
+                      <Pod id={id} />
+                    </Box>
+                  ))}
+              </Masonry>
+            </Box>
+          )
         )}
       </Box>
       <Box sx={{ display: "flex", flexDirection: "column" }}>
@@ -867,20 +905,27 @@ function PodWrapper({ id, draghandle, children }) {
         >
           {/* ==== The hovering menu */}
           <HoveringMenu pod={pod} showMenu={showMenu} draghandle={draghandle}>
-            <ExportButton id={pod.id} />
-            <UpButton pod={pod} />
-            <DownButton pod={pod} />
-            <DeleteButton pod={pod} />
-            <FoldButton pod={pod} />
-            <ThundarButton pod={pod} />
-            <UtilityButton pod={pod} />
-            <Button
-              onClick={() => {
-                setShowDiff(!showDiff);
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
               }}
             >
-              toggle diff
-            </Button>
+              <ExportButton id={pod.id} />
+              <UpButton pod={pod} />
+              <DownButton pod={pod} />
+              <DeleteButton pod={pod} />
+              <FoldButton pod={pod} />
+              <ThundarButton pod={pod} />
+              <UtilityButton pod={pod} />
+              <Button
+                onClick={() => {
+                  setShowDiff(!showDiff);
+                }}
+              >
+                toggle diff
+              </Button>
+            </Box>
           </HoveringMenu>
         </Box>
 

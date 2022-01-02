@@ -186,4 +186,14 @@ export default {
     const { id, value } = action.payload;
     state.pods[id].render = value;
   },
+  addColumn: (state, action) => {
+    state.pods[action.payload].column =
+      (state.pods[action.payload].column || 1) + 1;
+  },
+  deleteColumn: (state, action) => {
+    state.pods[action.payload].column = Math.max(
+      1,
+      (state.pods[action.payload].column || 1) - 1
+    );
+  },
 };

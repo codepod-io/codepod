@@ -818,7 +818,7 @@ export function HoveringMenu({ pod, showMenu, draghandle, children }) {
               {pod.raw ? "raw" : "wrapped"}
             </Button>
           </HStack>
-          <HStack>{children}</HStack>
+          <Stack>{children}</Stack>
         </Box>
       </Popper>
     </Flex>
