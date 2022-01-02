@@ -21,6 +21,7 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import { AiOutlineFunction } from "react-icons/ai";
 import { GiPlatform } from "react-icons/gi";
 import Ansi from "ansi-to-react";
+import FastForwardIcon from "@mui/icons-material/FastForward";
 
 import {
   DndContext,
@@ -293,6 +294,7 @@ export function DeckTitle({ id }) {
             rounded: "md",
             boxShadow: "2xl",
             flexDir: "row",
+            alignItems: "center",
           }}
           visibility={showMenu ? "visible" : "hidden"}
           // visibility="visible"
@@ -336,10 +338,40 @@ export function DeckTitle({ id }) {
             }
           />
 
+          <IconButton
+            variant="ghost"
+            size="xs"
+            onClick={() => {
+              dispatch(
+                qActions.remoteAdd({
+                  parent: pod.id,
+                  index: 0,
+                  type: "CODE",
+                  lang: pod.lang,
+                  column: pod.column,
+                })
+              );
+            }}
+          >
+            +
+          </IconButton>
+
           {pod.id !== "ROOT" && <DeleteButton pod={pod} />}
           {pod.id !== "ROOT" && <FoldButton pod={pod} />}
           {/* Run button, with hovering support */}
           <DeckRunButton id={id} />
+          <IconButton
+            variant="ghost"
+            sx={{
+              color: "green",
+            }}
+            size="small"
+            onClick={() => {
+              dispatch(wsActions.wsPowerRun({ id }));
+            }}
+          >
+            <FastForwardIcon fontSize="small" />
+          </IconButton>
         </Box>
       </Box>
     </Box>
@@ -945,6 +977,7 @@ function PodWrapper({ id, draghandle, children }) {
                 background: grey[50],
                 rounded: "md",
                 boxShadow: "2xl",
+                alignItems: "center",
               }}
               visibility={showMenu ? "visible" : "hidden"}
               display={showMenu ? "inherit" : "none"}
