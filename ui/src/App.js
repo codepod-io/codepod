@@ -23,6 +23,16 @@ import { Provider } from "react-redux";
 import store from "./lib/store";
 import Docs from "./pages/docs";
 
+import { createTheme, ThemeProvider, styled } from "@mui/material/styles";
+
+const theme = createTheme({
+  typography: {
+    button: {
+      textTransform: "none",
+    },
+  },
+});
+
 function NormalLayout({ children }) {
   return (
     <Box>
@@ -37,60 +47,62 @@ function App() {
   return (
     <Router>
       <Provider store={store}>
-        <AuthProvider>
-          <SnackbarProvider maxSnack={5}>
-            <Switch>
-              <Route path="/about">
-                <NormalLayout>
-                  <About />
-                </NormalLayout>
-              </Route>
-              <Route path="/docs">
-                <NormalLayout>
-                  <Docs />
-                </NormalLayout>
-              </Route>
-              <Route path="/repos">
-                <NormalLayout>
-                  <Repos />
-                </NormalLayout>
-              </Route>
-              <Route path="/:username/:reponame">
-                <Box height="100vh">
-                  <Header />
-                  <Box height="100%" pt="50px">
-                    <Repo />
+        <ThemeProvider theme={theme}>
+          <AuthProvider>
+            <SnackbarProvider maxSnack={5}>
+              <Switch>
+                <Route path="/about">
+                  <NormalLayout>
+                    <About />
+                  </NormalLayout>
+                </Route>
+                <Route path="/docs">
+                  <NormalLayout>
+                    <Docs />
+                  </NormalLayout>
+                </Route>
+                <Route path="/repos">
+                  <NormalLayout>
+                    <Repos />
+                  </NormalLayout>
+                </Route>
+                <Route path="/:username/:reponame">
+                  <Box height="100vh">
+                    <Header />
+                    <Box height="100%" pt="50px">
+                      <Repo />
+                    </Box>
                   </Box>
-                </Box>
-              </Route>
-              <Route path="/test">
-                <NormalLayout>
-                  <Test />
-                </NormalLayout>
-              </Route>
-              <Route path="/login">
-                <NormalLayout>
-                  <Login />
-                </NormalLayout>
-              </Route>
-              <Route path="/signup">
-                <NormalLayout>
-                  <Signup />
-                </NormalLayout>
-              </Route>
-              <Route path="/profile">
-                <NormalLayout>
-                  <Profile />
-                </NormalLayout>
-              </Route>
-              <Route path="/">
-                <NormalLayout>
-                  <Home />
-                </NormalLayout>
-              </Route>
-            </Switch>
-          </SnackbarProvider>
-        </AuthProvider>
+                </Route>
+                <Route path="/test">
+                  <NormalLayout>
+                    <Test />
+                  </NormalLayout>
+                </Route>
+                <Route path="/login">
+                  <NormalLayout>
+                    <Login />
+                  </NormalLayout>
+                </Route>
+                <Route path="/signup">
+                  <NormalLayout>
+                    <Signup />
+                  </NormalLayout>
+                </Route>
+                <Route path="/profile">
+                  <NormalLayout>
+                    <Profile />
+                  </NormalLayout>
+                </Route>
+                <Route path="/">
+                  <NormalLayout>
+                    <Home />
+                  </NormalLayout>
+                </Route>
+              </Switch>
+            </SnackbarProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </Provider>
     </Router>
   );
