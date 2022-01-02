@@ -215,6 +215,23 @@ export function getResolvers(appDir) {
         // await convertLocal(path.join(appDir, name, ".pods"));
         // }
         let dir = path.join(appDir, name, ".pods");
+        if (!fs.existsSync(dir)) {
+          // This is a folder, without .pods. So init it.
+          await fs.promises.mkdir(dir, {
+            recursive: true,
+          });
+          // create ROOT.json
+          let root = {
+            id: "ROOT",
+            type: "DECK",
+            ns: "ROOT",
+            children: [],
+          };
+          await fs.promises.writeFile(
+            path.join(dir, "ROOT.json"),
+            JSON.stringify(root, null, 2)
+          );
+        }
         let jsons = await fs.promises.readdir(dir);
         let podlst = [];
         for (let jsonfile of jsons) {
