@@ -1058,7 +1058,7 @@ function PodWrapper({ id, draghandle, children }) {
       )}
       {pod.running && <CircularProgress />}
       {pod.result && (
-        <Flex direction="column">
+        <Flex direction="column" overflow="scroll" maxHeight="200px">
           {pod.result.html ? (
             <div dangerouslySetInnerHTML={{ __html: pod.result.html }}></div>
           ) : (
