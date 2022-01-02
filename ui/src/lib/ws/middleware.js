@@ -219,6 +219,26 @@ function getChildExports({ id, pods }) {
   return res;
 }
 
+function getDeckExports({ id, pods }) {
+  let res = {};
+  res[pods[id].ns] = [].concat(
+    ...pods[id].children
+      .filter(({ id }) => pods[id].type !== "DECK" && pods[id].exports)
+      .map(({ id }) => Object.keys(pods[id].exports))
+  );
+  for (let pod of pods[id].children
+    .filter(({ id }) => pods[id].type !== "DECK" && pods[id].reexports)
+    .map(({ id }) => pods[id])) {
+    for (let [name, id] of Object.entries(pod.reexports)) {
+      if (!res[pods[id].ns]) {
+        res[pods[id].ns] = [];
+      }
+      res[pods[id].ns].push(name);
+    }
+  }
+  return res;
+}
+
 function getUtilExports({ id, pods }) {
   let res = {};
   let utilIds = getUtilIds({ id, pods });
@@ -262,8 +282,15 @@ function powerRun_python({ id, storeAPI, socket }) {
 
   let childexports = getChildExports({ id, pods });
   let utilexports = getUtilExports({ id, pods });
-  // FIXME would childexports and utilexports overlap?
   let allexports = Object.assign({}, childexports, utilexports);
+  if (pod.thundar) {
+    // for testing pod, get all exports/reexports from its parent
+    allexports = Object.assign(
+      allexports,
+      getDeckExports({ id: pod.parent, pods })
+    );
+  }
+  // FIXME would childexports and utilexports overlap?
   let code = Object.keys(allexports)
     .map((ns) =>
       allexports[ns]
@@ -376,6 +403,15 @@ CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${pod.ns}").__dict__["${name}"]\n0""",
           ns: pod.ns,
         });
       }
+      // if the deck of this pod contains testing decks, update there as well
+      pods[pod.parent].children
+        .filter(({ id, type }) => type === "DECK" && pods[id].thundar)
+        .map(({ id }) => {
+          code += `
+CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${pod.ns}").__dict__["${name}"]\n0""", "${pods[id].ns}")
+`;
+        });
+
       console.log("==", name, uses);
       if (uses) {
         for (let use of uses) {
@@ -393,6 +429,13 @@ CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${pod.ns}").__dict__["${name}"]\n0""",
               ns: pod.ns,
             });
           }
+          pods[pods[use].parent].children
+            .filter(({ id, type }) => type === "DECK" && pods[id].thundar)
+            .map(({ id }) => {
+              code += `
+CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${pod.ns}").__dict__["${name}"]\n0""", "${pods[id].ns}")
+`;
+            });
         }
       }
     }
