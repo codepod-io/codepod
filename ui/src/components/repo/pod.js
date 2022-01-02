@@ -1012,7 +1012,7 @@ function PodWrapper({ id, draghandle, children }) {
       </Box>
 
       {pod.stdout && (
-        <Box overflow="scroll" maxH="3xs" border="1px">
+        <Box overflow="scroll" maxHeight="200px" border="1px">
           {/* <Code maxW="lg" whiteSpace="pre-wrap">
               {pod.stdout}
             </Code> */}
@@ -1046,7 +1046,7 @@ function PodWrapper({ id, draghandle, children }) {
         </Flex>
       )}
       {pod.error && (
-        <Box overflow="scroll" maxH="3xs" border="1px" bg="gray.50">
+        <Box overflow="scroll" maxHeight="3xs" border="1px" bg="gray.50">
           <Box color="red">Error: {pod.error.evalue}</Box>
           {pod.error.stacktrace && (
             <Box>
