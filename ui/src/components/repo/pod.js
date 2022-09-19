@@ -472,6 +472,8 @@ export function Deck(props) {
               parent: pod.id,
               type: "DECK",
               index: pod.children.length,
+              // FIXME hard-coded python. Only support python for now.
+              lang: "python",
             })
           );
         }}
