@@ -24,7 +24,7 @@ services:
       - 8080:8080
 
   prisma:
-    image: node
+    image: node:18
     restart: always
     ports:
       - 5555:5555
@@ -33,12 +33,12 @@ services:
     working_dir: /app
     volumes:
       - ../../api:/app
-      # - ./api/node_modules:/app/node_modules
+      - api-node-modules:/app/node_modules
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
 
   api:
-    image: node:16
+    image: node:18
     depends_on:
       # FIXME rabbitmq stomp server does not start immediately
       - rabbitmq
@@ -48,20 +48,23 @@ services:
       - 4000:4000
     volumes:
       - ../../api:/app
+      - api-node-modules:/app/node_modules
       - /var/run/docker.sock:/var/run/docker.sock
       - git-data:/srv/git
     command: yarn dev
+    # tty: true
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
       JWT_SECRET: ${JWT_SECRET}
       KERNEL_NETWORK: "codepod"
 
   ui:
-    image: node:16
+    image: node:18
     working_dir: /app
     restart: always
     volumes:
       - ../../ui:/app
+      - ui-node-modules:/app/node_modules
     command: yarn start
 
   rabbitmq:
@@ -70,9 +73,7 @@ services:
     volumes:
       # This will allow the enabled plugins to persist on restart
       # In production, I need to use /etc/rabbitmq/enabled_plugins to enable plugins
-      - rabbitmq-etc:/etc/rabbitmq/
-      - rabbitmq-data:/var/lib/rabbitmq/
-      - rabbitmq-logs:/var/log/rabbitmq/
+      - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
     ports:
       # The AMQP port
       # - 5672:5672
@@ -82,20 +83,8 @@ services:
       # - 15674:15674
       # 61613 STOMP clients, internally used by kernel.js
 
-  # https://github.com/anyakichi/docker-git-http
-  #
-  # visit git.codepod.test:3000 to visit the gitweb interface
-  # clone using git clone http://git.codepod.test:3000/path/to/repo/.git
-  git-http:
-    restart: always
-    build: ./docker-git-http
-    ports:
-      - "2222:80"
-    volumes:
-      - git-data:/var/lib/git
-
-  # I need nginx in dev build too because I don't want to add :4000 in the
-  # browser code. The nginx here forwards the /graphql to :4000
+      # I need nginx in dev build too because I don't want to add :4000 in the
+      # browser code. The nginx here forwards the /graphql to :4000
   nginx:
     image: nginx:1.15-alpine
     restart: always
@@ -114,6 +103,9 @@ volumes:
   rabbitmq-data:
   rabbitmq-logs:
   rabbitmq-etc:
+  api-node-modules:
+  ui-node-modules:
+
 
 networks:
   default:

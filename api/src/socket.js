@@ -1,17 +1,19 @@
 import { readFileSync } from "fs";
 
-import * as pty from "node-pty";
+// import * as pty from "node-pty";
+let pty = {};
 
 import {
   constructMessage,
   constructExecuteRequest,
   createKernel,
-} from "./kernel.js";
+} from "./kernel";
 
 export const listenOnRepl = (() => {
   let procs = {};
   return (socket) => {
     // FIXME kill previous julia process?
+    throw new Error("Deprecated");
     let proc;
     socket.on("spawn", (sessionId, lang) => {
       if (sessionId in procs && lang in procs[sessionId]) {
@@ -66,6 +68,7 @@ export const listenOnKernelManagement = (() => {
 
   return (socket) => {
     socket.on("kernelTerminalSpawn", (lang) => {
+      throw new Error("Deprecated");
       // if (!kernelTerminals[lang]) {
       // kernelTerminals[lang].kill();
       let container_name = `${lang}_kernel_1`;
@@ -106,23 +109,6 @@ export const listenOnKernelManagement = (() => {
 
 let sessions = {};
 
-// return a list of [(<sessionId>, <lang>)] pairs
-function listMyKernels(username) {
-  let res = [];
-  for (let sessionId of Object.keys(sessions).filter((id) =>
-    id.startsWith(username)
-  )) {
-    res = res.concat(
-      Object.keys(sessions[sessionId]).map((lang) => (sessionId, lang))
-    );
-  }
-  return res;
-}
-
-export function listMySessions(username) {
-  return Object.keys(sessions).filter((id) => id.startsWith(username));
-}
-
 export async function killSession(sessionId) {
   let session = sessions[sessionId];
   if (session) {
@@ -139,17 +125,7 @@ export async function killSession(sessionId) {
   }
 }
 
-async function killKernel({ sessionId, lang }) {
-  // FIXME only allow to kill one's own kernel
-  let kernel = sessions[sessionId]?.[lang];
-  if (kernel) {
-    await kernel.kill();
-    // FIXME handle errors
-    sessions[sessionId][lang] = undefined;
-  }
-}
-
-async function getSessionKernel({ sessionId, lang, socket }) {
+async function getSessionKernel({ sessionId, lang, socket, useMQ }) {
   if (!sessionId || !lang) {
     console.log("sesisonId or lang is undefined", sessionId, lang);
     return null;
@@ -170,18 +146,18 @@ async function getSessionKernel({ sessionId, lang, socket }) {
   // FIXME what if the process never finish?
   session[lang] = "spawning";
   console.log("spawning kernel ..");
-  let kernel = await createKernel({ lang, sessionId, socket });
+  let kernel = await createKernel({ lang, sessionId, socket, useMQ });
   console.log("returning the newly spawned kernel");
   session[lang] = kernel;
   return kernel;
 }
 
-export function listenOnMessage(socket) {
+export function listenOnMessage(socket, useMQ = false) {
   socket.on("message", async (msg) => {
     let { type, payload } = JSON.parse(msg.toString());
     if (type === "ping") return;
     let { sessionId, lang } = payload;
-    let kernel = await getSessionKernel({ sessionId, lang, socket });
+    let kernel = await getSessionKernel({ sessionId, lang, socket, useMQ });
     if (!kernel) {
       console.log("ERROR: kernel error");
       return;

@@ -16,143 +16,6 @@ import Stomp from "stompjs";
 
 import path from "path";
 
-import os from "os";
-
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-// const __dirname = dirname(fileURLToPath(import.meta.url));
-
-let consolelog = console.log;
-console.log = (...data) => {
-  consolelog(...data);
-  // DEBUG
-  fs.writeFileSync("/tmp/codepod.log.txt", '[' + new Date().toISOString() + '] ' + data.join(" ") + "\n", { flag: "a" });
-};
-
-function getFreePort() {
-  return new Promise((resolve) => {
-    // get one free pod
-    var srv = net.createServer();
-    srv.listen(0, function () {
-      //   console.log("Listening on port " + srv.address().port);
-      resolve(srv);
-    });
-  });
-}
-
-async function getAvailablePorts(n) {
-  let srvs = [];
-  for (let i = 0; i < n; i++) {
-    srvs.push(getFreePort());
-  }
-  //   console.log(srvs);
-  srvs = await Promise.all(srvs);
-  //   console.log(srvs);
-  let ports = srvs.map((srv) => srv.address().port);
-  srvs.map((srv) => srv.close());
-  //   console.log(ports);
-  return ports;
-}
-
-// getAvailablePorts(5);
-
-async function test() {
-  let srv: any = getFreePort();
-  console.log(srv);
-  srv = await Promise.all([srv]);
-  console.log(srv[0]);
-  console.log(srv[0].address().port);
-  srv.map((s) => s.address().port);
-}
-
-// test();
-
-export async function createNewConnSpec() {
-  // get a list of free ports
-  // well, the ports should be generated from the kernel side
-  //
-  // But, to be compatible with jupyter kernels, I need to do this
-  let ports = await getAvailablePorts(5);
-  let spec = {
-    shell_port: ports[0],
-    iopub_port: ports[1],
-    stdin_port: ports[2],
-    control_port: ports[3],
-    hb_port: ports[4],
-    ip: "127.0.0.1",
-    key: "412d24d7-baca5d46b674d910851edd2f",
-    // key: "",
-    transport: "tcp",
-    signature_scheme: "hmac-sha256",
-    kernel_name: "julia-1.6",
-  };
-  return spec;
-}
-
-const appdata =
-  process.env.APPDATA ||
-  (process.platform == "darwin"
-    ? process.env.HOME + "/Library/Application Support"
-    : process.env.HOME + "/.local/share");
-
-
-export async function startNativeKernel(kernel_json) {
-  // 1. generate uuid
-  let id = uuidv4();
-  // 2. generate conn.json
-  // FIXME this path does not honor startServer(dir)
-  let conns_dir = path.join(appdata, "codepod", `conns`);
-  if (!fs.existsSync(conns_dir)) {
-    await fs.promises.mkdir(conns_dir, { recursive: true });
-  }
-  let connFname = path.join(conns_dir, `conn-${id}.json`);
-
-  let spec = await createNewConnSpec();
-  writeFileSync(connFname, JSON.stringify(spec));
-  // 3. use the kernel.json to construct cmd
-  let s = readFileSync(kernel_json).toString();
-  let cmdArgs = JSON.parse(s);
-  //   console.log(cmdArgs);
-
-  let argv = cmdArgs.argv
-    .map((s) => s.replace("{connection_file}", connFname))
-    .filter((x) => x.length > 0);
-  if (cmdArgs.interpreterPath) {
-    argv[0] = cmdArgs.interpreterPath;
-  }
-  console.log(argv);
-  console.log(argv.join(" "));
-  // 4. launch it via spawn
-  console.log("ENV", process.env.PATH);
-  // FIXME when starting codepod not from commandline, the PATH might not
-  // contain all the pathes (e.g. specified in .zshrc). Then kernel might fail
-  // to start.
-  let proc = spawn(argv[0], argv.slice(1), {
-    env: { ...process.env, PATH: process.env.PATH + ":/opt/homebrew/bin" },
-  });
-  // otherwise some exception is thrown, and it is tricky where to catch that exception
-  proc.on("error", function (err) {
-    console.log(
-      "-=-=-= Oh noez, Kernel error: " + err,
-      "this is likely due to the command is not available. Make sure the kernel is correctly installed."
-    );
-  });
-  // console.log(proc);
-  proc.stdout.on("data", (data) => {
-    console.log(`child stdout:\n${data}`);
-  });
-
-  proc.stderr.on("data", (data) => {
-    console.error(`child stderr:\n${data}`);
-  });
-  //   proc.close();
-  console.log("kernel process ID:", proc.pid);
-  if (!proc.pid) {
-    return null;
-  }
-  return spec;
-}
-
 function serializeMsg(msg, key) {
   // return a list of message parts
   // 4. header
@@ -565,7 +428,7 @@ class MyMqSocket {
   mq_client;
   constructor(queue, mq_client) {
     this.queue = queue;
-    this.mq_client = mq_client
+    this.mq_client = mq_client;
   }
   send(obj) {
     // FIXME need to make sure it is connected
@@ -726,13 +589,13 @@ export class CodePodKernel {
   startupFile;
   startupCode;
   image;
-  nativeKernelJson;
+  fname;
   sessionId;
   wire;
   socket;
   mq_socket;
   useMQ;
-  mapEval({ code, namespace }) { }
+  mapEval({ code, namespace }) {}
   mapAddImport({
     from,
     to,
@@ -741,9 +604,9 @@ export class CodePodKernel {
     from: string;
     to: string;
     name: string;
-  }) { }
-  mapAddImportNS({ nses, to }: { nses: [string]; to: string }) { }
-  mapDeleteImport({ ns, name }: { ns: string; name: string }) { }
+  }) {}
+  mapAddImportNS({ nses, to }: { nses: [string]; to: string }) {}
+  mapDeleteImport({ ns, name }: { ns: string; name: string }) {}
   mapEnsureImports({
     from,
     to,
@@ -752,8 +615,8 @@ export class CodePodKernel {
     from: string;
     to: string;
     name: string;
-  }) { }
-  constructor() { }
+  }) {}
+  constructor() {}
   async init({ sessionId, socket, useMQ }) {
     console.log("=== INIT!!");
     this.sessionId = sessionId;
@@ -761,25 +624,15 @@ export class CodePodKernel {
     let network = process.env["KERNEL_NETWORK"] || "codepod";
     let name = `cpkernel_${network}_${sessionId}_${this.lang}`;
     // await removeContainer(name);
-    // console.log("loadOrCreateContainer");
-    // let ip = await loadOrCreateContainer(this.image, name, network);
-
-    // create native kernel process
-    if (!this.nativeKernelJson) return null;
-    console.log("=== creating native kernel with", this.nativeKernelJson);
-    let spec;
-    try {
-      spec = await startNativeKernel(this.nativeKernelJson);
-      if (!spec) return null;
-    } catch (e) {
-      console.log(e);
-      return null;
-    }
+    console.log("loadOrCreateContainer");
+    let ip = await loadOrCreateContainer(this.image, name, network);
 
     // FIXME I don't want to extend Kernel, I'm using composition
     console.log("connecting to zmq ..");
-    // this.wire = new ZmqWire(JSON.parse(readFileSync(this.fname)), ip);
-    this.wire = new ZmqWire(spec, "127.0.0.1");
+    this.wire = new ZmqWire(
+      JSON.parse(readFileSync(this.fname).toString()),
+      ip
+    );
 
     if (useMQ) {
       if (!mq_client) {
@@ -1005,45 +858,17 @@ interface EvalInput {
   namespace: string;
 }
 
-export class JuliaKernel extends CodePodKernel {
-  constructor({ kernelJson }) {
-    super();
-    this.lang = "julia";
-    this.startupFile = `${kernel_dir}/julia/codepod.jl`;
-    console.log("reading startup code", this.lang);
-    this.startupCode = readFileSync(this.startupFile, "utf8");
-    console.log("startupCode:", this.startupCode);
-    this.image = "julia_kernel";
-    this.nativeKernelJson = kernelJson
-  }
-
-  mapEval({ code, namespace }) {
-    return `CODEPOD_EVAL("""
-    ${code
-        .replaceAll("\\", "\\\\")
-        .replaceAll('"', '\\"')
-        .replaceAll("$", "\\$")}
-      """, "${namespace}")`;
-  }
-  mapAddImport({ from, to, name }) {
-    return `CODEPOD_ADD_IMPORT("${from}", "${to}", "${name}")`;
-  }
-  mapDeleteImport({ ns, name }) {
-    return `CODEPOD_DELETE_IMPORT("${ns}", "${name}")`;
-  }
-}
-
 export class PythonKernel extends CodePodKernel {
-  constructor({ kernelJson }) {
+  constructor() {
     super();
     this.lang = "python";
     this.startupFile = `${kernel_dir}/python/codepod.py`;
+    this.fname = "./kernels/python/conn.json";
     console.log("reading startup code", this.lang);
     this.startupCode = readFileSync(this.startupFile, "utf8");
     console.log("startupCode:", this.startupCode);
 
-    this.image = "python_kernel";
-    this.nativeKernelJson = kernelJson
+    this.image = "codepod_kernel_python";
   }
 
   mapEval({ code, namespace }: EvalInput) {
@@ -1065,133 +890,16 @@ export class PythonKernel extends CodePodKernel {
   }
 }
 
-export class RacketKernel extends CodePodKernel {
-  constructor({ kernelJson }) {
-    super();
-    this.lang = "racket";
-    this.startupFile = `${kernel_dir}/racket/codepod.rkt`;
-    console.log("reading startup code", this.lang);
-    this.startupCode = `
-      ${readFileSync(this.startupFile, "utf8")}
-
-      (require racket/enter) (require 'CODEPOD)`;
-    console.log("startupCode:", this.startupCode);
-
-    this.image = "racket_kernel";
-    // FIXME use ~ and escape HOME
-    // TODO detect what's available on the system instead of hard-coding
-    this.nativeKernelJson = kernelJson
-  }
-
-  mapEval({ code, namespace }: EvalInput) {
-    return `(enter! #f) (CODEPOD-EVAL "
-    ${code
-        .replaceAll("\\", "\\\\")
-        // .replaceAll(";", "\\;")
-        .replaceAll('"', '\\"')}
-      " 
-      "${namespace}")`;
-  }
-  mapAddImport({ from, to, name }: { from: string; to: string; name: string }) {
-    return `(enter! #f) (CODEPOD-ADD-IMPORT "${from}" "${to}" "${name}")`;
-  }
-  mapAddImportNS({ nses, to }) {
-    return `(enter! #f) (CODEPOD-ADD-IMPORT-NS "${to}" "${nses.join(" ")}")`;
-  }
-  mapDeleteImport({ ns, name }: { ns: string; name: string }) {
-    return `(enter! #f) (CODEPOD-DELETE-IMPORT "${ns}" "${name}")`;
-  }
-}
-
-export class JavascriptKernel extends CodePodKernel {
-  constructor({ kernelJson }) {
-    super();
-    this.lang = "javascript";
-    this.startupFile = `${kernel_dir}/javascript/codepod.js`;
-    console.log("reading startup code", this.lang, this.startupFile);
-    this.startupCode = readFileSync(this.startupFile, "utf8");
-    console.log("startupCode:", this.startupCode);
-    this.image = "javascript_kernel";
-    this.nativeKernelJson = kernelJson
-  }
-
-  mapEval({
-    code,
-    namespace,
-    midports,
-  }: {
-    code: string;
-    namespace: string;
-    midports: [string];
-  }) {
-    let names: any = [];
-    if (midports) {
-      names = midports.map((name) => `"${name}"`);
-    }
-    let code1 = `CODEPOD.eval(\`${code
-      .replaceAll("\\", "\\\\")
-      .replaceAll("`", "\\`")
-      .replaceAll('"', '\\"')}\`, "${namespace}", [${names.join(",")}])`;
-    return code1;
-  }
-  mapAddImport({ from, to, name }: { from: string; to: string; name: string }) {
-    return `CODEPOD.addImport("${from}", "${to}", "${name}")`;
-  }
-  mapDeleteImport({ ns, name }: { ns: string; name: string }) {
-    return `CODEPOD.deleteImport("${ns}", "${name}")`;
-  }
-}
-
-
-// https://jupyter-client.readthedocs.io/en/stable/kernels.html#kernel-specs
-let jupyter_kernel_dir
-if (process.platform == "win32") {
-  jupyter_kernel_dir = path.join(process.env.APPDATA, "jupyter/kernels")
-} else if (process.platform == "darwin") {
-  // CAUTION Jupyter camel-case
-  jupyter_kernel_dir = process.env.HOME + "/Library/Jupyter/kernels"
-} else {
-  jupyter_kernel_dir = process.env.HOME + "/.local/share/jupyter/kernels"
-}
-
-function detectKernels() {
-  let kernels = {}
-  let files = fs.readdirSync(jupyter_kernel_dir)
-  for (let file of files) {
-    let jsonfile = path.join(jupyter_kernel_dir, file, "kernel.json")
-    if (fs.existsSync(jsonfile)) {
-      let jobj = JSON.parse(fs.readFileSync(jsonfile).toString())
-      kernels[jobj["language"]] = jsonfile
-    }
-  }
-  console.log("Kernels detected:", kernels)
-  return kernels
-}
-
 export async function createKernel({
   lang,
   sessionId,
   socket,
-  useMQ
+  useMQ,
 }: {
   lang: string;
   sessionId: string;
   socket: any;
   useMQ: boolean;
 }) {
-  let kernels = detectKernels()
-  console.log("===", "createKernel", lang);
-  switch (lang) {
-    case "julia":
-      return await new JuliaKernel({ kernelJson: kernels["julia"] }).init({ sessionId, socket, useMQ });
-    case "javascript":
-      return await new JavascriptKernel({ kernelJson: kernels["javascript"] }).init({ sessionId, socket, useMQ });
-    case "racket":
-      return await new RacketKernel({ kernelJson: kernels["racket"] }).init({ sessionId, socket, useMQ });
-    case "python":
-      return await new PythonKernel({ kernelJson: kernels["python"] }).init({ sessionId, socket, useMQ });
-    default:
-      console.log("ERROR: language not implemented", lang);
-    // throw new Error(`Language not valid: ${lang}`);
-  }
+  return await new PythonKernel().init({ sessionId, socket, useMQ });
 }

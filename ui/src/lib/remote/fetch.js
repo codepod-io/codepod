@@ -3,41 +3,14 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { getAuthHeaders, hashPod, computeNamespace } from "../utils";
 import { repoSlice } from "../store";
 
-const graphql_url = !window.codepodio
-  ? "http://localhost:14321/graphql"
-  : "/graphql";
+const graphql_url = "/graphql";
 
-export async function doRemoteLoadGit({ username, reponame }) {
-  // get the pods of the git HEAD
-  const query = `
-  query GitPods{
-    gitGetPods(reponame: "${reponame}", username: "${username}", version:"HEAD") {
-      id
-      content
-    }
-  }
-  `;
-  const res = await fetch(graphql_url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({
-      query: query,
-    }),
-  });
-  return res.json();
-}
-
-export async function doRemoteLoadRepo({ username, reponame }) {
+export async function doRemoteLoadRepo({ id }) {
   // load from remote
-  // const reponame = getState().repo.reponame;
-  // const username = getState().repo.username;
   const query = `
-    query Repo($reponame: String!, $username: String!) {
-      repo(name: $reponame, username: $username) {
+    query Repo($id: String!) {
+      repo(id: $id) {
+        id
         name
         pods {
           id
@@ -59,8 +32,8 @@ export async function doRemoteLoadRepo({ username, reponame }) {
           reexports
           midports
           index
-          parent
-          children
+          parent {id}
+          children {id}
         }
       }
     }
@@ -76,8 +49,7 @@ export async function doRemoteLoadRepo({ username, reponame }) {
     body: JSON.stringify({
       query: query,
       variables: {
-        reponame,
-        username,
+        id,
       },
     }),
   });
@@ -89,6 +61,7 @@ export function normalize(pods) {
     ROOT: {
       type: "DECK",
       id: "ROOT",
+      name: "root",
       children: [],
       // Adding this to avoid errors
       // XXX should I save these to db?
@@ -96,6 +69,7 @@ export function normalize(pods) {
       imports: {},
       midport: {},
       io: {},
+      lang: "python",
     },
   };
 
@@ -107,19 +81,18 @@ export function normalize(pods) {
   pods.forEach((pod) => {
     // console.log("P:", pod.parent);
     // FIXME this is for backward compatibility
-    // if (!pod.parent) {
-    //   // add root
-    //   res["ROOT"].children.push({ id: pod.id, type: pod.type });
-    //   pod.parent = "ROOT";
-    //   console.log("=========");
-    // } else {
-    //   // change parent.id format
-    //   // pod.parent = pod.parent.id;
-    // }
+    if (!pod.parent) {
+      // add root
+      res["ROOT"].children.push({ id: pod.id, type: pod.type });
+      pod.parent = "ROOT";
+      // console.log("=========");
+    } else {
+      // change parent.id format
+      pod.parent = pod.parent.id;
+    }
 
-    // console.log(pod);
     pod.children = pod.children
-      ? pod.children.map((id) => ({
+      ? pod.children.map(({ id }) => ({
           id: res[id].id,
           type: res[id].type,
         }))
@@ -130,7 +103,7 @@ export function normalize(pods) {
     // pod.children = pod.children.map(({ id }) => id);
     //
     // sort according to index
-    // pod.children.sort((a, b) => res[a.id].index - res[b.id].index);
+    pod.children.sort((a, b) => res[a.id].index - res[b.id].index);
     // if (pod.type === "WYSIWYG" || pod.type === "CODE") {
     //   pod.content = JSON.parse(pod.content);
     // }
@@ -215,24 +188,16 @@ function serializePodInput(pod) {
   }))(pod);
 }
 
-export async function doRemoteAddPod({
-  username,
-  reponame,
-  parent,
-  index,
-  pod,
-}) {
+export async function doRemoteAddPod({ repoId, parent, index, pod }) {
   const query = `
     mutation addPod(
-      $reponame: String
-      $username: String
+      $repoId: String
       $parent: String
       $index: Int
       $input: PodInput
     ) {
       addPod(
-        reponame: $reponame
-        username: $username
+        repoId: $repoId
         parent: $parent
         index: $index
         input: $input
@@ -249,8 +214,7 @@ export async function doRemoteAddPod({
     body: JSON.stringify({
       query: query,
       variables: {
-        reponame,
-        username,
+        repoId,
         parent,
         index,
         input: serializePodInput(pod),
@@ -260,16 +224,12 @@ export async function doRemoteAddPod({
   return res.json();
 }
 
-export async function doRemoteDeletePod({ id, toDelete, reponame, username }) {
+export async function doRemoteDeletePod({ id, toDelete }) {
   const query = `
-    mutation deletePod(
-      $id: String,
-      $toDelete: [String]
-      $reponame: String
-      $username: String
-    ) {
-      deletePod(id: $id, toDelete: $toDelete, reponame: $reponame, username: $username)
-    }`;
+    mutation deletePod($id: String, $toDelete: [String]) {
+      deletePod(id: $id, toDelete: $toDelete)
+    }
+  `;
   const res = await fetch(graphql_url, {
     method: "POST",
     headers: {
@@ -282,15 +242,13 @@ export async function doRemoteDeletePod({ id, toDelete, reponame, username }) {
       variables: {
         id,
         toDelete,
-        reponame,
-        username,
       },
     }),
   });
   return res.json();
 }
 
-export async function doRemoteUpdatePod({ pod, reponame, username }) {
+export async function doRemoteUpdatePod({ pod }) {
   const res = await fetch(graphql_url, {
     method: "POST",
     headers: {
@@ -300,16 +258,12 @@ export async function doRemoteUpdatePod({ pod, reponame, username }) {
     },
     body: JSON.stringify({
       query: `
-        mutation updatePod($reponame: String, $username: String, 
-          $input: PodInput
-          ) {
-          updatePod(reponame: $reponame
-            username: $username
-            input: $input)
-        }`,
+        mutation updatePod($id: String, $input: PodInput) {
+          updatePod(id: $id, input: $input)
+        }
+      `,
       variables: {
-        reponame,
-        username,
+        id: pod.id,
         input: serializePodInput(pod),
       },
     }),
@@ -324,7 +278,7 @@ export async function doRemoteUpdatePod({ pod, reponame, username }) {
 
 export async function doRemotePastePod({
   clip,
-  reponame,
+  repoId, // FIXME repoId is not used.
   parent,
   index,
   column,
@@ -339,15 +293,28 @@ export async function doRemotePastePod({
     body: JSON.stringify({
       // movePod(id: String, parentId: String, index: Int): Boolean
       query: `
-        mutation PastePods($reponame: String, $ids: [String], $parentId: String, $index: Int, $column: Int) {
-          pastePods(reponame: $reponame, ids: $ids, parentId: $parentId, index: $index, column: $column)
-        }`,
+        mutation PastePods(
+          $repoId: String
+          $ids: [String]
+          $parentId: String
+          $index: Int
+          $column: Int
+        ) {
+          pastePods(
+            repoId: $repoId
+            ids: $ids
+            parentId: $parentId
+            index: $index
+            column: $column
+          )
+        }
+      `,
       variables: {
         ids: clip,
         parentId: parent,
         index,
         column,
-        reponame,
+        repoId,
       },
     }),
   });

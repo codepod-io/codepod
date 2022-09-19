@@ -15,7 +15,7 @@ import FormLabel from "@mui/material/FormLabel";
 
 import Grid from "@mui/material/Grid";
 
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import Link from "@mui/material/Link";
 import { Link as ReactLink } from "react-router-dom";
@@ -70,13 +70,13 @@ export const DividerWithText = (props) => {
   return (
     <Flex align="center" color="gray.300" {...flexProps}>
       <Box flex="1">
-        <Divider borderColor="currentcolor" />
+        <Divider sx={{ borderColor: "currentcolor" }} />
       </Box>
       <Text as="span" px="3" color="gray.600" fontWeight="medium">
         {children}
       </Text>
       <Box flex="1">
-        <Divider borderColor="currentcolor" />
+        <Divider sx={{ borderColor: "currentcolor" }} />
       </Box>
     </Flex>
   );
@@ -90,14 +90,14 @@ function LoginForm(props) {
   const [error, setError] = useState(null);
   return (
     <Formik
-      initialValues={{ username: "", password: "" }}
+      initialValues={{ email: "", password: "" }}
       onSubmit={(values, { setSubmitting }) => {
         console.log("Logging in");
         console.log(values);
-        console.log([values.username, values.password]);
+        console.log([values.email, values.password]);
         setError(null);
         return signIn({
-          username: values.username,
+          email: values.email,
           password: values.password,
         }).catch((err) => {
           // TODO use more user friendly error message
@@ -122,12 +122,12 @@ function LoginForm(props) {
             sx={{ mt: 1 }}
           >
             <Stack spacing="6">
-              <FormControl id="username">
-                <FormLabel>Username or Email</FormLabel>
+              <FormControl id="email">
+                <FormLabel>Email</FormLabel>
                 <TextField
-                  name="username"
-                  type="username"
-                  autoComplete="username"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
                   onChange={handleChange}
                   onBlur={handleBlur}
                   required
@@ -213,27 +213,42 @@ PasswordField.displayName = "PasswordField";
 
 export default function Login() {
   const { isSignedIn } = useAuth();
-  const history = useHistory();
+  const navigate = useNavigate();
   useEffect(() => {
     if (isSignedIn()) {
-      history.push("/");
+      navigate("/");
     }
   }, [isSignedIn]);
   return (
     <Box
-      bg="gray.50"
-      minH="100vh"
-      py="12"
-      px={{
-        base: "4",
-        lg: "8",
+      sx={{
+        bg: "gray.50",
+        minH: "100vh",
+        py: "12",
+        px: {
+          base: "4",
+          lg: "8",
+        },
       }}
     >
-      <Box maxW="md" mx="auto">
+      <Box
+        sx={{
+          maxWidth: "md",
+          mx: "auto",
+        }}
+      >
         <Typography variant="h2" gutterBottom component="div">
           Sign in to your account
         </Typography>
-        <Text mt="4" mb="8" align="center" maxW="md" fontWeight="medium">
+        <Text
+          sx={{
+            mt: "4",
+            mb: "8",
+            align: "center",
+            maxWidth: "md",
+            fontWeight: "medium",
+          }}
+        >
           <Text as="span">Don&apos;t have an account?</Text>
           <Link component={ReactLink} to="/signup">
             Sign up for free

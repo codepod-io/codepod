@@ -22,10 +22,8 @@ export const remoteUpdateAllPods = createAsyncThunk(
 
 export const remoteUpdatePod = createAsyncThunk(
   "remoteUpdatePod",
-  async (pod, { dispatch, getState }) => {
-    const reponame = getState().repo.reponame;
-    const username = getState().repo.username;
-    await doRemoteUpdatePod({ reponame, username, pod }).catch((err) => {
+  async (pod, { dispatch }) => {
+    await doRemoteUpdatePod({ pod }).catch((err) => {
       dispatch(
         repoSlice.actions.addError({
           type: "error",
