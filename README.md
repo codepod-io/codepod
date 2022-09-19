@@ -72,14 +72,15 @@ docker push lihebi/codepod-ui:v0.1.0
 docker push lihebi/codepod-api:v0.1.0
 ```
 
-Create a cloud VM with docker support. Setup TLS:
+Create a cloud VM with docker support. Setup TLS, e.g., `app-v1.codepod.io`:
 
 ```
-sudo certbot certonly
+ufw allow 80
+certbot certonly --standalone
 ```
 
 Clone this repo on the cloud VM, and go to the production folder, change the
-domain name to e.g. app-v0_1_0.codepod.io:
+domain name to your DNS e.g., `app-v1.codepod.io`:
 
 ```
 cd compose/prod
