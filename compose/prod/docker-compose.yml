@@ -13,13 +13,12 @@ services:
       - codepod-db-prod:/var/lib/postgresql/data
 
   api:
-    image: codepod-api:v0.0.3.1
+    image: lihebi/codepod-api:v0.1.0
     depends_on:
       - rabbitmq
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - git-data-prod:/srv/git
     command: yarn start
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
@@ -27,7 +26,7 @@ services:
       KERNEL_NETWORK: "codepod-prod"
 
   ui:
-    image: codepod-ui:v0.0.3.1
+    image: lihebi/codepod-ui:v0.1.0
     restart: always
     # FIXME this takes a lot of time on startup
     command: yarn start
@@ -37,12 +36,6 @@ services:
     restart: always
     volumes:
       - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins
-
-  git-http:
-    restart: always
-    build: ../dev/docker-git-http
-    volumes:
-      - git-data-prod:/var/lib/git
 
   # docker-compose up -d --build --force-recreate --no-deps nginx
   nginx:
@@ -73,17 +66,9 @@ services:
     depends_on:
       - ui
 
-  # docker run -it --rm --network host -v $(pwd)/frpc.ini:/etc/frp/frpc.ini snowdreamtech/frpc
-  frpc:
-    image: snowdreamtech/frpc
-    restart: always
-    volumes:
-      - ./frpc.ini:/etc/frp/frpc.ini
-    network_mode: "host"
 
 volumes:
   codepod-db-prod:
-  git-data-prod:
 
 networks:
   default:
