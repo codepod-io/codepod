@@ -4,11 +4,11 @@ export function computeNamespace(pods, id) {
   let res = [];
   // if the pod is a pod, do not include its id
   if (pods[id].type !== "DECK") {
-    id = pods[id].parent.id;
+    id = pods[id].parent;
   }
   while (id) {
     res.push(pods[id].name || id);
-    id = pods[id].parent?.id;
+    id = pods[id].parent;
   }
   return res.reverse().join("/");
 }
