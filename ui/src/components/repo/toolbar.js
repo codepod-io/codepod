@@ -854,7 +854,7 @@ export function ExportList({ pod }) {
                 my: 0,
               }}
             >
-              Exports: <Code>{k}</Code>: use: <Code>{v.join(",")}</Code>
+              Exports: <Code>{k}</Code>: use: <Code>{v}</Code>
             </Box>
           ))}
         </Box>
