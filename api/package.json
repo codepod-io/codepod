@@ -19,7 +19,7 @@
     "build:watch": "tsc --watch -p tsconfig-cjs.json",
     "start0": "nodemon --ignore '*.json' src/server.js",
     "start2": "nodemon dist/cjs/server.js",
-    "start": "ts-node -O '{\"module\": \"commonjs\"}' src/server.ts",
+    "start": "ts-node -O '{\"module\": \"commonjs\"}' src/start-server.ts",
     "kernel-server": "ts-node -O '{\"module\": \"commonjs\"}' src/start-kernel-server.ts",
     "dev": "ts-node-dev -O '{\"module\": \"commonjs\"}' --respawn -- src/start-server.ts",
     "migrate": "npx prisma migrate dev --name init",

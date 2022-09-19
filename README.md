@@ -63,6 +63,7 @@ Build the docker images:
 ```
 docker build -t lihebi/codepod-ui:v0.1.0 ./ui
 docker build -t lihebi/codepod-api:v0.1.0 ./api
+docker build -t lihebi/codepod_kernel_python:v0.1.0 ./api/kernels/python
 ```
 
 Push to registry:
@@ -70,6 +71,7 @@ Push to registry:
 ```
 docker push lihebi/codepod-ui:v0.1.0
 docker push lihebi/codepod-api:v0.1.0
+docker push lihebi/codepod_kernel_python:v0.1.0
 ```
 
 Create a cloud VM with docker support. Setup TLS, e.g., `app-v1.codepod.io`:
@@ -113,5 +115,12 @@ Now add DNS from domain name to the cloud server. Now go to
 - http://codepod.test:3000 the web app
 - http://codepod.test:3000/graphql the grpahql explorer
 - http://codepod.test:5555 the prisma db viewer
+
+Pull the kernel image:
+
+```
+docker pull lihebi/codepod_kernel_python:v0.1.0
+docker tag lihebi/codepod_kernel_python:v0.1.0 codepod_kernel_python
+```
 
 # (TODO) Architecture
