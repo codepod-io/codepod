@@ -56,7 +56,7 @@ This allows codepod.test to be resolved to your server machine. Then, go to
 - http://codepod.test:3000/graphql the grpahql explorer
 - http://codepod.test:5555 the prisma db viewer
 
-# (TODO) Deployment
+# Deployment
 
 Build the docker images:
 
@@ -74,15 +74,15 @@ docker push lihebi/codepod-api:v0.1.0
 docker push lihebi/codepod_kernel_python:v0.1.0
 ```
 
-Create a cloud VM with docker support. Setup TLS, e.g., `app-v1.codepod.io`:
+Create a cloud VM with docker support. Add DNS from domain name to the cloud
+server. Setup TLS, e.g., `app-v1.codepod.io`:
 
 ```
 ufw allow 80
 certbot certonly --standalone
 ```
 
-Clone this repo on the cloud VM, and go to the production folder, change the
-domain name to your DNS e.g., `app-v1.codepod.io`:
+Clone this repo on the cloud VM, and go to the production folder:
 
 ```
 cd compose/prod
@@ -98,6 +98,8 @@ POSTGRES_DB=<dbname>
 JWT_SECRET=<yoursecret>
 ```
 
+Change the domain name to your DNS in nginx.conf, e.g., `app-v1.codepod.io`:
+
 Start the docker-compose stack:
 
 ```
@@ -110,17 +112,15 @@ Then, initialize a DB by shell into the api container and run:
 npx prisma migrate dev --name init
 ```
 
-Now add DNS from domain name to the cloud server. Now go to
-
-- http://codepod.test:3000 the web app
-- http://codepod.test:3000/graphql the grpahql explorer
-- http://codepod.test:5555 the prisma db viewer
-
 Pull the kernel image:
 
 ```
 docker pull lihebi/codepod_kernel_python:v0.1.0
 docker tag lihebi/codepod_kernel_python:v0.1.0 codepod_kernel_python
 ```
+
+Now go to
+
+- https://app-v1.codepod.io the web app
 
 # (TODO) Architecture
