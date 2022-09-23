@@ -1,1 +1,4 @@
+dist/
+conns/conn-*.json
 prisma/migrations
+prisma/dev.db

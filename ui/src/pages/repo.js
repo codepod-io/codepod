@@ -22,7 +22,7 @@ import useMe from "../lib/me";
 import { Deck } from "../components/repo/pod";
 import { Sidebar } from "../components/repo/sidebar";
 
-import { loadPodQueue, loadGit } from "../lib/remote/load";
+import { loadRepoQueue, loadGit } from "../lib/remote/load";
 
 function RepoWrapper({ children }) {
   // this component is used to provide foldable sidebar
@@ -54,11 +54,13 @@ function RepoWrapper({ children }) {
       </Box>
 
       <Box
-        display="inline-block"
-        verticalAlign="top"
-        height="100%"
-        width={show ? 0.8 : 1}
-        overflow="scroll"
+        sx={{
+          display: "inline-block",
+          verticalAlign: "top",
+          height: "100%",
+          width: show ? 0.8 : 1,
+          overflow: "scroll",
+        }}
       >
         <Box
           style={{
@@ -87,33 +89,31 @@ function RepoWrapper({ children }) {
 }
 
 export default function Repo() {
-  let { username, reponame } = useParams();
+  let { id } = useParams();
   const dispatch = useDispatch();
-  dispatch(repoSlice.actions.setRepo({ username, reponame }));
+
   const { loading, me } = useMe();
   useEffect(() => {
     if (me) {
-      dispatch(
-        repoSlice.actions.setSessionId(
-          `${me?.username}_${username}_${reponame}`
-        )
-      );
+      // TODO
+      dispatch(repoSlice.actions.setSessionId(`user_${me.id}_repo_${id}`));
       // Do not connect on open
       // dispatch(wsActions.wsConnect());
     }
-    return () => {
-      console.log("disconnecting the socket ..");
-      dispatch(wsActions.wsDisconnect());
-    };
+    // return () => {
+    //   console.log("disconnecting the socket ..");
+    //   dispatch(wsActions.wsDisconnect());
+    // };
   }, [me]);
   useEffect(() => {
     dispatch(repoSlice.actions.resetState());
+    dispatch(repoSlice.actions.setRepo({ repoId: id }));
     // load the repo. It is actually not a queue, just an async thunk
-    dispatch(loadPodQueue({ username, reponame }));
-    // dispatch(loadGit({ username, reponame }));
+    dispatch(loadRepoQueue({ id }));
     // this is the queue for remote update
     dispatch(qActions.startQueue());
-    // dispatch(wsActions.wsConnect());
+    console.log("connecting the socket ..");
+    dispatch(wsActions.wsConnect());
   }, []);
 
   // FIXME Removing queueL. This will cause Repo to be re-rendered a lot of

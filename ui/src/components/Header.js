@@ -2,7 +2,7 @@ import { Link as ReactLink } from "react-router-dom";
 
 import { useState } from "react";
 
-import { useHistory } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import Box from "@mui/material/Box";
 import CloseIcon from "@mui/icons-material/Close";
@@ -48,14 +48,11 @@ export function Header() {
     setAnchorElUser(null);
   };
 
+  const { isSignedIn, signOut } = useAuth();
+  let navigate = useNavigate();
+
   return (
-    <AppBar
-      position="fixed"
-      color="inherit"
-      sx={{
-        color: "white",
-      }}
-    >
+    <AppBar position="fixed" color="inherit">
       <Container maxWidth="xl">
         <Toolbar
           disableGutters
@@ -163,35 +160,50 @@ export function Header() {
             </Button>
           </Box>
 
-          <Box sx={{ flexGrow: 0 }}>
-            <Tooltip title="Open settings">
-              <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                <Avatar alt="Remy Sharp" src="/static/images/avatar/2.jpg" />
-              </IconButton>
-            </Tooltip>
-            <Menu
-              sx={{ mt: "45px" }}
-              id="menu-appbar"
-              anchorEl={anchorElUser}
-              anchorOrigin={{
-                vertical: "top",
-                horizontal: "right",
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: "top",
-                horizontal: "right",
-              }}
-              open={Boolean(anchorElUser)}
-              onClose={handleCloseUserMenu}
-            >
-              {settings.map((setting) => (
-                <MenuItem key={setting} onClick={handleCloseNavMenu}>
-                  <Typography textAlign="center">{setting}</Typography>
+          {isSignedIn() ? "yes" : "no"}
+          {isSignedIn() ? (
+            <Box sx={{ flexGrow: 0 }}>
+              <Tooltip title="Open settings">
+                <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
+                  <Avatar alt="Remy Sharp" src="/static/images/avatar/2.jpg" />
+                </IconButton>
+              </Tooltip>
+              <Menu
+                sx={{ mt: "45px" }}
+                id="menu-appbar"
+                anchorEl={anchorElUser}
+                anchorOrigin={{
+                  vertical: "top",
+                  horizontal: "right",
+                }}
+                keepMounted
+                transformOrigin={{
+                  vertical: "top",
+                  horizontal: "right",
+                }}
+                open={Boolean(anchorElUser)}
+                onClose={handleCloseUserMenu}
+              >
+                <MenuItem key="profile" onClick={handleCloseUserMenu}>
+                  {/* <Typography textAlign="center">Profile</Typography> */}
+                  {/* <Box>Hello</Box> */}
+                  <Link to="/profile" component={ReactLink} underline="none">
+                    <Typography textAlign="center">Profile</Typography>
+                  </Link>
                 </MenuItem>
-              ))}
-            </Menu>
-          </Box>
+                <MenuItem
+                  onClick={() => {
+                    signOut();
+                    navigate("/login");
+                  }}
+                >
+                  Logout
+                </MenuItem>
+              </Menu>
+            </Box>
+          ) : (
+            <MyMenuItem to="/login">Login</MyMenuItem>
+          )}
         </Toolbar>
       </Container>
     </AppBar>
@@ -211,109 +223,6 @@ const MyMenuItem = ({ children, isLast, to = "/" }) => {
     </Box>
   );
 };
-
-export function Header2() {
-  const [show, setShow] = useState(false);
-  const toggleMenu = () => setShow(!show);
-  let history = useHistory();
-
-  const { isSignedIn, signOut } = useAuth();
-
-  return (
-    <Box
-      // component="nav"
-      sx={{
-        display: "flex",
-        my: 2,
-        px: 2,
-
-        alignItems: "center",
-        justifyContent: "space-between",
-        textAlign: "center",
-        // position: "fixed",
-        // top: 0,
-        background: "white",
-        zIndex: 1,
-        flexWrap: "wrap",
-        // width: 1,
-      }}
-    >
-      <Box
-        sx={{
-          fontSize: 16,
-          fontWeight: "bold",
-        }}
-      >
-        <Link component={ReactLink} underline="none" to="/">
-          CodePod {!window.codepodio && "(Local)"}
-        </Link>
-      </Box>
-
-      <Box display={{ sm: "block", md: "none" }} onClick={toggleMenu}>
-        {show ? <CloseIcon /> : <MenuIcon />}
-      </Box>
-
-      <Box
-        sx={{
-          display: { xs: show ? "block" : "none", md: "block" },
-          // display: ["none", "block"],
-          // display: { xs: "none", md: "block" },
-        }}
-        // flexBasis={{ base: "100%", md: "auto" }}
-        // display="none"
-        // display={{ sm: "none", xl: "none" }}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: ["center", "space-between", "flex-end", "flex-end"],
-            flexDirection: ["column", "row", "row", "row"],
-            pt: [4, 4, 0, 0],
-            // width: 0.5,
-          }}
-        >
-          <MyMenuItem to="/">Home</MyMenuItem>
-          <MyMenuItem to="/repos">Repos</MyMenuItem>
-          <MyMenuItem to="/test">Test</MyMenuItem>
-          <MyMenuItem to="/docs">Docs</MyMenuItem>
-          <MyMenuItem to="/about">About</MyMenuItem>
-          {window.codepodio &&
-            (isSignedIn() ? (
-              <Menu>
-                <Button
-                // as={Button}
-                // rightIcon={<ChevronDownIcon />}
-                >
-                  <Avatar alt="Dan Abrahmov" src="https://bit.ly/dan-abramov" />
-                </Button>
-                <MenuList>
-                  <ReactLink to="/profile">
-                    <MenuItem>Profile</MenuItem>
-                  </ReactLink>
-                  <ReactLink to="/profile">
-                    <MenuItem>Create a Copy</MenuItem>
-                  </ReactLink>
-                  <MenuItem>Mark as Draft</MenuItem>
-                  <MenuItem>Delete</MenuItem>
-                  <MenuItem
-                    onClick={() => {
-                      signOut();
-                      history.push("/login");
-                    }}
-                  >
-                    Logout
-                  </MenuItem>
-                </MenuList>
-              </Menu>
-            ) : (
-              <MyMenuItem to="/login">Login</MyMenuItem>
-            ))}
-        </Box>
-      </Box>
-    </Box>
-  );
-}
 
 export function Footer() {
   return (

@@ -122,8 +122,7 @@ export function selectChangedIds() {
 }
 
 const initialState = {
-  reponame: null,
-  username: null,
+  repoId: null,
   repoLoaded: false,
   pods: {},
   queue: [],
@@ -134,18 +133,18 @@ const initialState = {
   activeRuntime: ["localhost:14321", ""],
   runtimeConnected: false,
   kernels: {
-    julia: {
-      status: null,
-    },
-    racket: {
-      status: null,
-    },
+    // julia: {
+    //   status: null,
+    // },
+    // racket: {
+    //   status: null,
+    // },
     python: {
       status: null,
     },
-    javascript: {
-      status: null,
-    },
+    // javascript: {
+    //   status: null,
+    // },
     // ts: {
     //   status: "NA",
     // },
@@ -174,9 +173,8 @@ export const repoSlice = createSlice({
       }
     },
     setRepo: (state, action) => {
-      const { reponame, username } = action.payload;
-      state.reponame = reponame;
-      state.username = username;
+      const { repoId } = action.payload;
+      state.repoId = repoId;
     },
     setRepoConfig: (state, action) => {
       state.repoConfig = action.payload;

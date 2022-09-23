@@ -43,7 +43,7 @@ function useProvideAuth() {
 
   function createApolloClient() {
     const link = new HttpLink({
-      uri: !window.codepodio ? `http://localhost:14321/graphql` : `/graphql`,
+      uri: `/graphql`,
       headers: getAuthHeaders(),
     });
 
@@ -61,18 +61,18 @@ function useProvideAuth() {
     localStorage.removeItem("token");
   };
 
-  const signIn = async ({ username, password }) => {
+  const signIn = async ({ email, password }) => {
     const client = createApolloClient();
     const LoginMutation = gql`
-      mutation LoginMutation($username: String!, $password: String!) {
-        login(username: $username, password: $password) {
+      mutation LoginMutation($email: String!, $password: String!) {
+        login(email: $email, password: $password) {
           token
         }
       }
     `;
     const result = await client.mutate({
       mutation: LoginMutation,
-      variables: { username, password },
+      variables: { email, password },
     });
 
     console.log(result);
@@ -84,17 +84,25 @@ function useProvideAuth() {
     }
   };
 
-  const signUp = async ({ username, email, password, invitation }) => {
+  const signUp = async ({
+    firstname,
+    lastname,
+    email,
+    password,
+    invitation,
+  }) => {
     const client = createApolloClient();
     const LoginMutation = gql`
       mutation SignupMutation(
-        $username: String!
+        $firstname: String!
+        $lastname: String!
         $email: String!
         $password: String!
         $invitation: String!
       ) {
         signup(
-          username: $username
+          firstname: $firstname
+          lastname: $lastname
           email: $email
           password: $password
           invitation: $invitation
@@ -105,7 +113,7 @@ function useProvideAuth() {
     `;
     const result = await client.mutate({
       mutation: LoginMutation,
-      variables: { username, password, email, invitation },
+      variables: { firstname, lastname, password, email, invitation },
     });
 
     console.log(result);

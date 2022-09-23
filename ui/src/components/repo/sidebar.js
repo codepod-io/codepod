@@ -38,8 +38,6 @@ import { ClickInputButton } from "./toolbar";
 
 import {
   repoSlice,
-  loadPodQueue,
-  remoteUpdatePod,
   remoteUpdateAllPods,
   selectNumDirty,
   selectNumStaged,
@@ -85,7 +83,7 @@ function Flex(props) {
 }
 
 function SidebarSession() {
-  let { username, reponame } = useParams();
+  let { id } = useParams();
   // const sessionId = useSelector((state) => state.repo.sessionId);
   let sessionId = useSelector((state) => state.repo.sessionId);
   const dispatch = useDispatch();
@@ -93,18 +91,11 @@ function SidebarSession() {
   return (
     <Box>
       <Box>
-        Repo:{" "}
-        <Link to={`/${username}`} component={ReactLink}>
-          {username}
-        </Link>{" "}
-        /{" "}
-        <Link to={`/${username}/${reponame}`} component={ReactLink}>
-          {reponame}
-        </Link>
+        Repo ID: <Box color="blue">{id}</Box>
       </Box>
       {/* <Text>SyncQueue: {queueL}</Text> */}
       <Box>
-        Session ID: <Code>{sessionId}</Code>
+        Session ID: <Box color="blue">{sessionId}</Box>
         {/* <Button
             size="xs"
             onClick={() => {
@@ -118,141 +109,11 @@ function SidebarSession() {
   );
 }
 
-function RuntimeItem({ socketAddress, mqAddress }) {
-  const [edit, setEdit] = useState(false);
-  const [addr1, setAddr1] = useState(socketAddress);
-  const [addr2, setAddr2] = useState(mqAddress);
-  const dispatch = useDispatch();
-  const activeRuntime = useSelector((state) => state.repo.activeRuntime);
-  let reponame = useSelector((state) => state.repo.reponame);
-  const repoConfig = useSelector((state) => state.repo.repoConfig);
-  const [updateRepoConfig, {}] = useMutation(
-    gql`
-      mutation UpdateRepoConfig($reponame: String, $config: String) {
-        updateRepoConfig(name: $reponame, config: $config)
-      }
-    `,
-    { refetchQueries: ["RepoConfig"] }
-  );
-  return (
-    <Stack key={socketAddress} direction="row" alignItems="center">
-      <Radio
-        checked={
-          JSON.stringify([socketAddress, mqAddress]) ==
-          JSON.stringify(activeRuntime)
-        }
-        onChange={() => {
-          dispatch(wsActions.wsDisconnect());
-          dispatch(
-            repoSlice.actions.activateRuntime([socketAddress, mqAddress])
-          );
-          // dispatch(wsActions.wsConnect());
-        }}
-        value="a"
-        name="radio-buttons"
-        inputProps={{ "aria-label": "A" }}
-      />
-      {edit ? (
-        <Box sx={{ display: "flex", flexDirection: "column" }}>
-          <TextField
-            size="small"
-            value={addr1}
-            onChange={(e) => {
-              setAddr1(e.target.value);
-            }}
-          ></TextField>
-          <TextField
-            size="small"
-            value={addr2}
-            onChange={(e) => {
-              setAddr2(e.target.value);
-            }}
-          ></TextField>
-          <Button
-            onClick={() => {
-              updateRepoConfig({
-                variables: {
-                  reponame,
-                  config: JSON.stringify({
-                    runtimes: produce(repoConfig.runtimes, (draft) => {
-                      let idx = draft.findIndex(
-                        ([addr1, addr2]) => addr1 === socketAddress
-                      );
-                      draft[idx] = [addr1, addr2];
-                    }),
-                  }),
-                },
-              });
-              setEdit(false);
-            }}
-          >
-            Save
-          </Button>
-          <Button
-            onClick={() => {
-              setAddr1(socketAddress);
-              setAddr2(mqAddress);
-              setEdit(false);
-            }}
-          >
-            Cancel
-          </Button>
-        </Box>
-      ) : (
-        <Box>
-          <Box fontSize="small">{socketAddress}</Box>
-          {mqAddress && <Box fontSize="small">{mqAddress}</Box>}
-        </Box>
-      )}
-
-      {!edit && socketAddress !== "localhost:14321" && (
-        <Box>
-          <IconButton
-            onClick={() => {
-              updateRepoConfig({
-                variables: {
-                  reponame,
-                  config: JSON.stringify({
-                    runtimes: produce(repoConfig.runtimes, (draft) => {
-                      let idx = draft.findIndex(
-                        ([addr1, addr2]) => addr1 === socketAddress
-                      );
-                      draft.splice(idx, 1);
-                    }),
-                  }),
-                },
-              });
-            }}
-          >
-            <DeleteForeverTwoToneIcon sx={{ fontSize: 15, color: "red" }} />
-          </IconButton>
-          <Button
-            onClick={() => {
-              setEdit(true);
-            }}
-          >
-            Edit
-          </Button>
-        </Box>
-      )}
-    </Stack>
-  );
-}
-
 function SidebarRuntime() {
   const sessionRuntime = useSelector((state) => state.repo.sessionRuntime);
   const runtimeConnected = useSelector((state) => state.repo.runtimeConnected);
   // const runtimes = useSelector((state) => state.repo.runtimes);
 
-  let reponame = useSelector((state) => state.repo.reponame);
-  const [updateRepoConfig, {}] = useMutation(
-    gql`
-      mutation UpdateRepoConfig($reponame: String, $config: String) {
-        updateRepoConfig(name: $reponame, config: $config)
-      }
-    `,
-    { refetchQueries: ["RepoConfig"] }
-  );
   const repoConfig = useSelector((state) => state.repo.repoConfig);
   const dispatch = useDispatch();
   return (
@@ -291,25 +152,6 @@ function SidebarRuntime() {
         >
           Disconnect
         </Button>
-      </Box>
-      <Box>
-        Runtimes:
-        <Button
-          onClick={() => {
-            dispatch(repoSlice.actions.addRuntime());
-          }}
-        >
-          +
-        </Button>
-        {[["localhost:14321", ""]]
-          .concat(repoConfig?.runtimes || [])
-          .map(([address, mqAddress]) => (
-            <RuntimeItem
-              socketAddress={address}
-              mqAddress={mqAddress}
-              key={address + mqAddress}
-            />
-          ))}
       </Box>
     </Box>
   );
@@ -404,22 +246,7 @@ function ApplyAll() {
   }, []);
 
   return (
-    <Flex>
-      <Button
-        size="small"
-        onClick={() => {
-          // run all pods
-          dispatch(wsActions.wsRunAll());
-        }}
-      >
-        Apply All
-      </Button>
-
-      {/* <Prompt
-          when={numDirty > 0}
-          message="You have unsaved changes. Are you sure you want to leave?"
-        /> */}
-
+    <Box>
       <Button
         size="small"
         disabled={numDirty == 0}
@@ -428,20 +255,43 @@ function ApplyAll() {
         }}
       >
         <CloudUploadIcon />
-        <Box as="span" color="blue" mx={1}>
-          {numDirty}
-        </Box>
+        {numDirty > 0 ? (
+          <Box as="span" color="blue" mx={1}>
+            Saving {numDirty} to cloud ..
+          </Box>
+        ) : (
+          <Box as="span" color="grey" mx={1}>
+            Saved to cloud.
+          </Box>
+        )}
       </Button>
 
-      <Button
-        size="small"
-        onClick={() => {
-          dispatch(repoSlice.actions.clearAllResults());
-        }}
-      >
-        Clear All
-      </Button>
-    </Flex>
+      <Flex>
+        <Button
+          size="small"
+          onClick={() => {
+            // run all pods
+            dispatch(wsActions.wsRunAll());
+          }}
+        >
+          Apply All
+        </Button>
+
+        {/* <Prompt
+          when={numDirty > 0}
+          message="You have unsaved changes. Are you sure you want to leave?"
+        /> */}
+
+        <Button
+          size="small"
+          onClick={() => {
+            dispatch(repoSlice.actions.clearAllResults());
+          }}
+        >
+          Clear All
+        </Button>
+      </Flex>
+    </Box>
   );
 }
 
@@ -493,489 +343,6 @@ function ActiveSessions() {
           ))}
         </Box>
       )}
-    </Box>
-  );
-}
-
-function HtmlDiff({ diffstring }) {
-  const diffJson = Diff2Html.parse(diffstring);
-  const diffHtml = Diff2Html.html(diffJson, { drawFileList: true });
-  return <div dangerouslySetInnerHTML={{ __html: diffHtml }} />;
-}
-
-function Diff2({}) {
-  // select the content
-  // compare to ???
-  // or just create a monaco diff editor?
-  const diffJson = Diff2Html.parse(`
-  diff --git a/aaa.txt b/aaa.txt
-  index 3462721..bd23c03 100644
-  --- a/aaa.txt
-  +++ b/aaa.txt
-  @@ -1 +1 @@
-  -hello!
-  \ No newline at end of file
-  +hello!world
-  diff --git a/bbb.txt b/bbb.txt
-  new file mode 100644
-  index 0000000..f761ec1
-  --- /dev/null
-  +++ b/bbb.txt
-  @@ -0,0 +1 @@
-  +bbb
-  diff --git a/ccc.txt b/ccc.txt
-  new file mode 100644
-  index 0000000..b2a7546
-  --- /dev/null
-  +++ b/ccc.txt
-  @@ -0,0 +1 @@
-  +ccc      
-        `);
-  const diffHtml = Diff2Html.html(diffJson, { drawFileList: true });
-  return <div dangerouslySetInnerHTML={{ __html: diffHtml }} />;
-}
-
-function CommitButton({ disabled }) {
-  let reponame = useSelector((state) => state.repo.reponame);
-  let username = useSelector((state) => state.repo.username);
-  let [gitCommit, {}] = useMutation(
-    gql`
-      mutation GitCommit($reponame: String, $username: String, $msg: String) {
-        gitCommit(reponame: $reponame, username: $username, msg: $msg)
-      }
-    `,
-    { refetchQueries: ["GitGetHead", "GitDiff"] }
-  );
-  const dispatch = useDispatch();
-  const anchorEl = useRef(null);
-  const [show, setShow] = useState(false);
-  const [value, setValue] = useState(null);
-  return (
-    <ClickAwayListener
-      onClickAway={() => {
-        setShow(false);
-      }}
-    >
-      <Box>
-        <Button
-          ref={anchorEl}
-          onClick={() => {
-            // pop up a input box for entering exporrt
-            setShow(!show);
-          }}
-          isDisabled={disabled}
-          // size="xs"
-        >
-          Commit
-        </Button>
-        <Popper
-          open={show}
-          anchorEl={anchorEl.current}
-          // need this, otherwise the z-index seems to be berried under Chakra Modal
-          // disablePortal
-          placement="top"
-        >
-          <Paper>
-            <TextField
-              label="Msg (enter to submit)"
-              variant="outlined"
-              // focused={show}
-              autoFocus
-              onChange={(e) => {
-                setValue(e.target.value);
-              }}
-              onKeyDown={(e) => {
-                // enter
-                // keyCode is deprecated in favor of code, but chrome didn't have
-                // it ..
-                if (e.keyCode === 13 && value) {
-                  console.log("enter pressed, commiting with msg", value);
-                  gitCommit({
-                    variables: {
-                      reponame,
-                      username,
-                      msg: value,
-                    },
-                  });
-                  // also set the current
-                  dispatch(repoSlice.actions.gitCommit());
-                  // clear value
-                  setValue(null);
-                  // click away
-                  setShow(false);
-                }
-              }}
-            />
-          </Paper>
-        </Popper>
-      </Box>
-    </ClickAwayListener>
-  );
-}
-
-function exportSingleFile(pods) {
-  // export all pods into a single file
-  function helper(id, level) {
-    if (!pods[id]) {
-      console.log("WARN invalid pod", id);
-      return "";
-    }
-    let code1 = `
-# CODEPOD ${id} ${pods[id].type}
-${pods[id].content}
-`;
-    // add indentation
-    code1 = code1.replaceAll("\n", "\n" + "    ".repeat(level));
-    let code2 = pods[id].children
-      .map(({ id }) => helper(id, level + 1))
-      .join("\n");
-    return code1 + code2;
-  }
-  return helper("ROOT", 0);
-}
-
-function RepoButton({}) {
-  let reponame = useSelector((state) => state.repo.reponame);
-  let username = useSelector((state) => state.repo.username);
-  let url;
-  if (window.location.protocol === "http:") {
-    url = `http://git.${window.location.host}/?p=${username}/${reponame}/.git`;
-  } else {
-    url = `https://git.${window.location.host}/?p=${username}/${reponame}/.git`;
-  }
-  let clonecmd = `git clone ${window.location.protocol}//git.${window.location.host}/${username}/${reponame}/.git`;
-
-  const [hasCopied, setCopied] = useState(false);
-
-  const [open, setOpen] = React.useState(false);
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
-  return (
-    <>
-      <Button size="small" onClick={handleOpen}>
-        Repo
-      </Button>
-
-      <Modal
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
-        <Box sx={modalStyle}>
-          <Typography id="modal-modal-title" variant="h6" component="h2">
-            The Git Repo
-          </Typography>
-          <Box>
-            Clone: <Code>{clonecmd}</Code>
-            <Button
-              onClick={() => {
-                navigator.clipboard.writeText(clonecmd);
-                setCopied(true);
-              }}
-            >
-              {hasCopied ? "Copied" : "Copy"}
-            </Button>
-          </Box>
-          <Box w="100%" h="100%">
-            <iframe src={url} width="100%" height="100%" />
-          </Box>
-          <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-            {/* Duis mollis, est non commodo luctus, nisi erat porttitor ligula. */}
-            <Button mr={3} onClick={handleClose}>
-              Close
-            </Button>
-            <Button>Commit</Button>
-          </Typography>
-        </Box>
-      </Modal>
-    </>
-  );
-}
-
-function genRelJson(pods) {
-  function helper(id) {
-    if (pods[id].type !== "DECK") {
-      return id;
-    }
-    const decks = pods[id].children
-      .filter((x) => x.type === "DECK")
-      .map((x) => x.id);
-    const childPods = pods[id].children
-      .filter((x) => x.type !== "DECK")
-      .map((x) => x.id);
-    return {
-      id: id,
-      pods: childPods.map(helper),
-      decks: decks.map(helper),
-    };
-  }
-  return helper("ROOT");
-}
-
-function RelButton() {
-  const [open, setOpen] = React.useState(false);
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
-  const pods = useSelector((state) => state.repo.pods);
-  return (
-    <>
-      <Button size="small" onClick={handleOpen}>
-        Rel.json
-      </Button>
-
-      <Modal
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
-        <Box sx={modalStyle}>
-          <Typography id="modal-modal-title" variant="h6" component="h2">
-            CodePod Diff
-          </Typography>
-          <Box w="100%" h="100%">
-            <MyMonaco
-              value={JSON.stringify(genRelJson(pods), null, 2)}
-              lang="json"
-            />
-          </Box>
-          <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-            <Button sx={{ mr: 2 }} onClick={handleClose}>
-              Close
-            </Button>
-          </Typography>
-        </Box>
-      </Modal>
-    </>
-  );
-}
-
-function GitExportButton() {
-  let reponame = useSelector((state) => state.repo.reponame);
-  let username = useSelector((state) => state.repo.username);
-  let [gitExport, {}] = useMutation(
-    gql`
-      mutation GitExport($reponame: String, $username: String) {
-        gitExport(reponame: $reponame, username: $username)
-      }
-    `
-    // { refetchQueries: ["GitDiff"] }
-  );
-  return (
-    <Button
-      onClick={() => {
-        gitExport({
-          variables: {
-            reponame,
-            username,
-          },
-        });
-      }}
-      size="small"
-    >
-      GitExport
-    </Button>
-  );
-}
-
-function GitDiffButton({}) {
-  const [open, setOpen] = React.useState(false);
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
-  let reponame = useSelector((state) => state.repo.reponame);
-  let username = useSelector((state) => state.repo.username);
-  let { data, loading, error } = useQuery(
-    gql`
-      query GitDiff {
-        gitDiff(reponame: "${reponame}", username: "${username}")
-      }
-    `
-  );
-  let [gitExport, {}] = useMutation(
-    gql`
-      mutation GitExport($reponame: String, $username: String) {
-        gitExport(reponame: $reponame, username: $username)
-      }
-    `,
-    { refetchQueries: ["GitDiff"] }
-  );
-  return (
-    <>
-      <Button
-        size="small"
-        onClick={() => {
-          // first export
-          gitExport({
-            variables: {
-              reponame,
-              username,
-            },
-          });
-          handleOpen();
-        }}
-      >
-        Diff
-      </Button>
-
-      <Modal
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
-        <Box sx={modalStyle}>
-          <Typography id="modal-modal-title" variant="h6" component="h2">
-            CodePod Diff
-          </Typography>
-          <Box
-            sx={{
-              height: 30,
-              overflow: "scroll",
-            }}
-          >
-            {loading && <Box>Loading ..</Box>}
-            {/* FIXME diff2html cannot be wrapped in a fixed height div
-              with overflow scroll, otherwise the line numbers are floating
-               outside. see https://github.com/rtfpessoa/diff2html/issues/381
-
-               Thus, I'm using Monaco instead.
-                */}
-            {data && data.gitDiff && <HtmlDiff diffstring={data.gitDiff} />}
-
-            {error && (
-              <Box>
-                Error{" "}
-                <Code whiteSpace="pre-wrap">
-                  {JSON.stringify(error, null, 2)}
-                </Code>
-              </Box>
-            )}
-          </Box>
-          <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-            <CommitButton disabled={!(data && data.gitDiff)} />
-            <Button sx={{ mr: 2 }} onClick={handleClose}>
-              Close
-            </Button>
-          </Typography>
-        </Box>
-      </Modal>
-    </>
-  );
-}
-
-function StageAllButton() {
-  // FIXME this is re-rendering all the time
-  let reponame = useSelector((state) => state.repo.reponame);
-  let username = useSelector((state) => state.repo.username);
-  let changed_ids = useSelector(selectChangedIds());
-  let staged_ids = useSelector(selectStagedIds());
-  let dispatch = useDispatch();
-  // let ids = useSelector(selectNumChanged());
-  // console.log("changed ids", ids);
-  let [gitStageMulti, {}] = useMutation(
-    gql`
-      mutation GitStageMulti(
-        $reponame: String
-        $username: String
-        $podIds: [ID]
-      ) {
-        gitStageMulti(reponame: $reponame, username: $username, podIds: $podIds)
-      }
-    `,
-    { refetchQueries: ["GitDiff"] }
-  );
-  let [gitUnstageMulti, {}] = useMutation(
-    gql`
-      mutation GitUnstageMulti(
-        $reponame: String
-        $username: String
-        $podIds: [ID]
-      ) {
-        gitUnstageMulti(
-          reponame: $reponame
-          username: $username
-          podIds: $podIds
-        )
-      }
-    `,
-    { refetchQueries: ["GitDiff"] }
-  );
-  return (
-    <Box>
-      <Button
-        size="small"
-        onClick={() => {
-          gitStageMulti({
-            variables: {
-              podIds: changed_ids,
-              username,
-              reponame,
-            },
-          });
-          for (const id of changed_ids) {
-            dispatch(repoSlice.actions.gitStage(id));
-          }
-        }}
-      >
-        Stage All
-      </Button>
-      <Button
-        size="small"
-        onClick={() => {
-          gitUnstageMulti({
-            variables: {
-              podIds: staged_ids,
-              username,
-              reponame,
-            },
-          });
-          for (const id of staged_ids) {
-            dispatch(repoSlice.actions.gitUnstage(id));
-          }
-        }}
-      >
-        Unstage All
-      </Button>
-    </Box>
-  );
-}
-
-function GitBar() {
-  let reponame = useSelector((state) => state.repo.reponame);
-  let username = useSelector((state) => state.repo.username);
-  let dispatch = useDispatch();
-  let { data, loading } = useQuery(gql`
-    query GitGetHead {
-      gitGetHead(reponame: "${reponame}", username: "${username}")
-    }`);
-  const numChanged = useSelector(selectNumChanged());
-  const numStaged = useSelector(selectNumStaged());
-  let to = useSelector((state) => exportSingleFile(state.repo.pods));
-  if (loading) return <Box>Loading</Box>;
-  let from = data.gitGetHead;
-  return (
-    <Box>
-      <Box>
-        Git{" "}
-        <Box as="span" color="green">
-          {numStaged}
-        </Box>{" "}
-        staged{" "}
-        <Box as="span" color="red">
-          {numChanged}
-        </Box>{" "}
-        changed
-      </Box>
-      {/* <DiffButton from={from} to={to} /> */}
-
-      {/* <RelButton /> */}
-      <Flex wrap="wrap">
-        <StageAllButton />
-        <GitDiffButton />
-        <RepoButton />
-        <GitExportButton />
-      </Flex>
     </Box>
   );
 }
@@ -1179,18 +546,9 @@ export function Sidebar() {
         <SidebarSession />
       </Box>
       <Divider my={2} />
-      <Box
-        sx={{
-          boxShadow: 3,
-          p: 2,
-          borderRadius: 2,
-          background: grey[50],
-        }}
-      >
-        {/* <GitBar /> */}
-        <Flex wrap="wrap">
-          <GitExportButton />
-        </Flex>
+      <Box sx={{ boxShadow: 3, p: 2, borderRadius: 2, bg: grey[50] }}>
+        <ToastError />
+        <ApplyAll />
       </Box>
       <Divider my={2} />
 
@@ -1215,14 +573,11 @@ export function Sidebar() {
       >
         <SidebarRuntime />
         <SidebarKernel />
-        {window.codepodio && <ActiveSessions />}
+        <ActiveSessions />
       </Box>
-      <Box sx={{ boxShadow: 3, p: 2, borderRadius: 2, bg: grey[50] }}>
-        <ToastError />
-        <ApplyAll />
-      </Box>
+
       <Divider my={2} />
-      <ConfigButton />
+      {/* <ConfigButton /> */}
     </Box>
   );
 }

@@ -3,9 +3,10 @@ import { gql, useQuery } from "@apollo/client";
 const PROFILE_QUERY = gql`
   query Me {
     me {
-      username
-      name
+      firstname
+      lastname
       email
+      id
     }
   }
 `;

@@ -1,3 +1,12 @@
+# CP Kernel
+
+This is a package designed for code sharing between codepod API and electron server.
+
+To use the kernel:
+If you use `yarn`, you can run `yarn add link:/path/to/cpkernel`. However, this will not work with npm. For npm, you need to run `npm link` in cpkernel folder to globally register the package, and run `npm link cpkernel` to link. This won't reflect in package.json.
+
+Thus the ideal setup should be to add cpkernel to package.json, but not to install it. Instead, run `npm link cpkernel` during development.
+
 # CodePod Repo Server
 
 # Using Prisma and PostgreSQL
@@ -37,7 +46,15 @@ migrate DB:
 npx prisma migrate dev --name init
 ```
 
-generate client (the migrate will run this, so no need anymore):
+create another migration with just a different name:
+
+```
+prisma migrate dev --name added_job_title
+```
+
+generate client (the migrate will run this, so no need anymore. But do not
+forget to do this after schema change, otherwise you'll end up with debugging
+strange errors):
 
 ```
 npx prisma generate
@@ -54,7 +71,6 @@ When I mess up with the database and want to start from scratch:
 ```
 npx prisma db push --preview-feature
 ```
-
 
 ## Building node-pty
 

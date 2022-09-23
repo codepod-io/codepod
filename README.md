@@ -1,133 +1,126 @@
-# CodePod: A Hierarchical IDE for Interactive Development at Scale
+# CodePod: coding on a canvas, organized.
 
 ![screenshot](./screenshot.png)
 
-# Installation
-
-Binary release available for Linux and MacOS. See release page.
-
-For Debian/Ubuntu:
+# Development
 
 ```
-sudo dpkg -i codepod_0.1.0_amd64.deb
+cd ./compose/dev/
+touch .env
 ```
 
-On Mac, use the `codepod_0.1.0_arm64.dmg` image (for M1 Macs with Apple Sillicon).
-
-You can run `codepod` either in application launcher or through the `codepod` command line tool.
-
-# Install Jupyter kernels
-
-These kernels are Jupyter kernels. CodePod should detect them and work as long
-as they are properly installed to work in Jupyter.
-
-## python
+Add your choice of secrets to the .env file (replace the placeholders):
 
 ```
-sudo apt install python3
+POSTGRES_USER=<username>
+POSTGRES_PASSWORD=<password>
+POSTGRES_DB=<dbname>
+JWT_SECRET=<yoursecret>
 ```
 
-Install ipykernel:
+Start the docker-compose stack:
 
 ```
-python3 -m pip install ipykernel
-python3 -m ipykernel install --user
+docker compose up -d
 ```
 
-## racket
+The docker-compose file declares a set of services:
 
-Install on Ubuntu:
+- api: the backend API server
+- ui: the frontend React app
+- db: postgres DB
+- prisma: prisma db viewer
+- nginx: reverse proxy to use nice URLs
 
-```
-sudo add-apt-repository ppa:plt/racket
-sudo apt-get update
-sudo apt install racket
-```
+You will need to perform a manual installation of node_modules into the api and
+ui containers. Attach a shell and run `yarn`. Without this, the initial api/ui
+contianers will not run. So you likely need to make changes to docker compose to
+do this (add `tty: true` and comment out commands line).
 
-Install zmq:
-
-```
-brew install zmq
-sudo apt install libzmq5
-```
+Then, initialize a DB by shell into the api container and run:
 
 ```
-raco pkg install --auto iracket
-raco iracket install
+npx prisma migrate dev --name init
 ```
 
-On mac, zeromq lib cannot be found by racket due to [a known
-issue](https://github.com/rmculpepper/racket-zeromq/issues/6). To side-step it
-(replace the version numbers with your installation):
+The nginx server expects `codepod.test` as the domain name. You can add a local
+DNS record to your /etc/hosts:
 
 ```
-cp /opt/homebrew/Cellar/zeromq/4.3.4/lib/libzmq.5.dylib ~/Library/Racket/8.2/lib
+10.43.1.148	codepod.test
 ```
 
-## julia
+This allows codepod.test to be resolved to your server machine. Then, go to
 
-Install julia from the official binaries. On Ubuntu:
+- http://codepod.test:3000 the web app
+- http://codepod.test:3000/graphql the grpahql explorer
+- http://codepod.test:5555 the prisma db viewer
 
-```
-curl -O https://julialang-s3.julialang.org/bin/linux/x64/1.6/julia-1.6.4-linux-x86_64.tar.gz
-tar -xvzf julia-1.6.4-linux-x86_64.tar.gz
-sudo mv julia-1.6.4/ /opt/
-sudo ln -s /opt/julia-1.6.4/bin/julia /usr/local/bin/julia
-```
+# Deployment
 
-<!--
-```
-julia
-]add add IJulia
-import IJulia
-IJulia.installkernel("Julia nodeps", "--depwarn=no")
-```
-
-Or just -->
-
-Install kernel:
+Build the docker images:
 
 ```
-julia -e 'import Pkg; Pkg.add("IJulia"); using IJulia; installkernel("Julia nodeps", "--depwarn=no")'
+docker build -t lihebi/codepod-ui:v0.1.0 ./ui
+docker build -t lihebi/codepod-api:v0.1.0 ./api
+docker build -t lihebi/codepod_kernel_python:v0.1.0 ./api/kernels/python
 ```
 
-## Javascript
+Push to registry:
 
 ```
-npm install -g ijavascript
-ijsinstall
+docker push lihebi/codepod-ui:v0.1.0
+docker push lihebi/codepod-api:v0.1.0
+docker push lihebi/codepod_kernel_python:v0.1.0
 ```
 
-# Using remote runtime
-
-In the runtime section in the sidebar, you can add a new runtime. For the runtime, you need to specify the two addresses: the websocket address for sending code to server, and the MQ address for receiving output. If MQ address is empty, the websocket will be used.
-
-The default runtime is the local runtime, which is `localhost:14321`
-
-To start the server, on the server machine, you need to setup the kernels. Then, you need to clone this repo, go into the cpkernel folder, and do:
-
-1. `docker-compose up -d`. This will setup a rabbitmq server. The MQ address is `:15674`
-2. `npm run kernel-server`. This will run the server. The websocket address is `:14321`
-
-So to use this server, enter:
-
-- `<your-server-ip>:14321` for the socket address
-- `<your-server-ip>:15674` for the MQ address
-
-We can spawn a docker container on the server for the kernels. However, it will be tricky to access files and install packages. One has to install packages for every restart of the kernel, and one has to mount a volume to exchange files between the server and the container. Thus we think it is a better experience to use the bare-metal server.
-
-# Development Scripts
-
-Develop
+Create a cloud VM with docker support. Add DNS from domain name to the cloud
+server. Setup TLS, e.g., `app-v1.codepod.io`:
 
 ```
-cd app
-npm run dev
+ufw allow 80
+certbot certonly --standalone
 ```
 
-Build:
+Clone this repo on the cloud VM, and go to the production folder:
 
 ```
-cd app
-npm run build:all
+cd compose/prod
+touch .env
 ```
+
+Add your choice of secrets to the .env file (replace the placeholders):
+
+```
+POSTGRES_USER=<username>
+POSTGRES_PASSWORD=<password>
+POSTGRES_DB=<dbname>
+JWT_SECRET=<yoursecret>
+```
+
+Change the domain name to your DNS in nginx.conf, e.g., `app-v1.codepod.io`:
+
+Start the docker-compose stack:
+
+```
+docker compose up -d
+```
+
+Then, initialize a DB by shell into the api container and run:
+
+```
+npx prisma migrate dev --name init
+```
+
+Pull the kernel image:
+
+```
+docker pull lihebi/codepod_kernel_python:v0.1.0
+docker tag lihebi/codepod_kernel_python:v0.1.0 codepod_kernel_python
+```
+
+Now go to
+
+- https://app-v1.codepod.io the web app
+
+# (TODO) Architecture

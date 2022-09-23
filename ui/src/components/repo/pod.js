@@ -472,6 +472,8 @@ export function Deck(props) {
               parent: pod.id,
               type: "DECK",
               index: pod.children.length,
+              // FIXME hard-coded python. Only support python for now.
+              lang: "python",
             })
           );
         }}
@@ -726,108 +728,11 @@ function WysiwygPod({ pod }) {
   );
 }
 function Pod({ id, draghandle }) {
-  console.log("Rendering pod", id);
+  // console.log("Rendering pod", id);
   return (
     <PodWrapper id={id} draghandle={draghandle}>
       <ThePod id={id} />
     </PodWrapper>
-  );
-}
-
-function PodDiff({ id, setShowDiff }) {
-  let reponame = useSelector((state) => state.repo.reponame);
-  let username = useSelector((state) => state.repo.username);
-  // 1. a button
-  // 2. when the button is clicked, show the modal
-  let pod = useSelector((state) => state.repo.pods[id]);
-  // useMutation
-  let [gitStage, {}] = useMutation(
-    gql`
-      mutation GitStage($reponame: String, $username: String, $podId: ID) {
-        gitStage(reponame: $reponame, username: $username, podId: $podId)
-      }
-    `,
-    { refetchQueries: ["GitDiff"] }
-  );
-  let [gitUnstage, {}] = useMutation(
-    gql`
-      mutation GitUnstage($reponame: String, $username: String, $podId: ID) {
-        gitUnstage(reponame: $reponame, username: $username, podId: $podId)
-      }
-    `,
-    { refetchQueries: ["GitDiff"] }
-  );
-  let dispatch = useDispatch();
-  let theset = new Set([
-    pod.content || "",
-    pod.staged || "",
-    pod.githead || "",
-  ]);
-  if (theset.size == 1) {
-    return <Box></Box>;
-  }
-  return (
-    <>
-      <Box>
-        <Box sx={{ display: "flex" }}>
-          <Button
-            onClick={() => {
-              setShowDiff(false);
-            }}
-          >
-            close
-          </Button>
-          <Button
-            onClick={() => {
-              gitStage({
-                variables: {
-                  podId: id,
-                  username,
-                  reponame,
-                },
-              });
-              dispatch(repoSlice.actions.gitStage(id));
-            }}
-            // disabled={pod.remoteHash !== hashPod(pod)}
-          >
-            Stage
-          </Button>
-          <Button
-            onClick={() => {
-              gitUnstage({
-                variables: {
-                  podId: id,
-                  username,
-                  reponame,
-                },
-              });
-              // FIXME this is not trigering an update
-              dispatch(repoSlice.actions.gitUnstage(id));
-            }}
-            // disabled={pod.remoteHash !== hashPod(pod)}
-          >
-            UnStage
-          </Button>
-        </Box>
-        <Box sx={{ display: "flex" }}>
-          <Box
-            sx={{
-              width: "xs",
-              border: "solid 1px",
-              mx: 2,
-            }}
-          >
-            <Box>Diff</Box>
-            {/* I have to use || "" otherwise it is not updated */}
-            <MyMonacoDiff from={pod.staged} to={pod.content} />
-          </Box>
-          <Box w="xs" border="solid 1px" mx={2}>
-            <Box>Staged</Box>
-            <MyMonacoDiff from={pod.githead} to={pod.staged} />
-          </Box>
-        </Box>
-      </Box>
-    </>
   );
 }
 
@@ -895,35 +800,6 @@ function PodWrapper({ id, draghandle, children }) {
           // <ThePod id={id} />
           <Box>
             <Box ref={anchorEl}>{children}</Box>
-            <Box>
-              <Popper
-                open={showDiff}
-                anchorEl={anchorEl.current}
-                // need this, otherwise the z-index seems to be berried under Chakra Modal
-                // disablePortal={false}
-                placement="right-start"
-                modifiers={[
-                  {
-                    name: "flip",
-                    enabled: false,
-                  },
-                  {
-                    name: "hide",
-                    enabled: false,
-                  },
-                  {
-                    name: "preventOverflow",
-                    enabled: false,
-                  },
-                ]}
-              >
-                <Box bg="gray" w="2xl">
-                  <PodDiff id={id} setShowDiff={setShowDiff} />
-                  {/* Hello */}
-                  {/* <MyMonaco value="hello"></MyMonaco> */}
-                </Box>
-              </Popper>
-            </Box>
           </Box>
         )}
 

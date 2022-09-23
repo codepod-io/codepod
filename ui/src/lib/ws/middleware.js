@@ -735,12 +735,7 @@ const socketMiddleware = () => {
         // I canont use "/ws" for a WS socket. Thus I need to detect what's the
         // protocol used here, so that it supports both dev and prod env.
         let socket_url;
-        if (!window.codepodio) {
-          // socket_url = `ws://localhost:14321`;
-          // socket_url = `ws://192.168.1.142:14321`;
-          // FIXME variable not ready?
-          socket_url = `ws://${store.getState().repo.activeRuntime[0]}`;
-        } else if (window.location.protocol === "http:") {
+        if (window.location.protocol === "http:") {
           socket_url = `ws://${window.location.host}/ws`;
         } else {
           socket_url = `wss://${window.location.host}/ws`;
