@@ -58,6 +58,7 @@ export default {
   },
   [loopPodQueue.rejected]: (state, action) => {
     state.queueProcessing = false;
+    console.log(action.error);
     throw Error("Loop pod queue rejected. Message:" + action.error.message);
   },
 };
