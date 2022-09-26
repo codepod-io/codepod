@@ -367,6 +367,17 @@ export const resolvers = {
         },
         data: {
           ...input,
+          parent:
+            input.parent && input.parent !== "ROOT"
+              ? {
+                  connect: {
+                    id: input.parent,
+                  },
+                }
+              : undefined,
+          children: {
+            connect: input.children.map((id) => ({ id })),
+          },
         },
       });
       console.log("Updated pod", pod);

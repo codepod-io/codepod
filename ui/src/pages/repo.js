@@ -19,7 +19,8 @@ import { repoSlice } from "../lib/store";
 import * as wsActions from "../lib/ws/actions";
 import * as qActions from "../lib/queue/actions";
 import useMe from "../lib/me";
-import { Deck } from "../components/repo/pod";
+// import { Deck } from "../components/repo/pod";
+import { Deck } from "../components/repo/graph";
 import { Sidebar } from "../components/repo/sidebar";
 
 import { loadRepoQueue, loadGit } from "../lib/remote/load";
@@ -130,9 +131,10 @@ export default function Repo() {
       {!repoLoaded && <Box>Repo Loading ...</Box>}
       {repoLoaded && (
         <Box
-          height="100%"
-          //  border="solid 3px"
+          height="90%"
+          border="solid 3px"
           p={2}
+          // m={2}
           overflow="auto"
         >
           <DndContext

@@ -240,7 +240,7 @@ function ApplyAll() {
       update_intervalId = setInterval(() => {
         // websocket resets after 60s of idle by most firewalls
         // console.log("periodically saving ..");
-        dispatch(remoteUpdateAllPods());
+        // dispatch(remoteUpdateAllPods());
       }, 1000);
     }
   }, []);

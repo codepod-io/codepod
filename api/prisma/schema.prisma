@@ -60,16 +60,31 @@ model Repo {
 
 enum PodType {
     CODE
+    SCOPE
     DECK
     WYSIWYG
     MD
     REPL
 }
 
+model Edge {
+    // id     String  @id @default(uuid())
+    from   Pod    @relation("FROM", fields: [fromId], references: [id])
+    fromId String
+    to     Pod    @relation("TO", fields: [toId], references: [id])
+    toId   String
+
+    @@id([fromId, toId])
+}
+
 model Pod {
     id        String  @id @default(uuid())
     parent    Pod?    @relation("PARENT", fields: [parentId], references: [id])
     parentId  String?
+    x         Float   @default(0)
+    y         Float   @default(0)
+    width     Float   @default(0)
+    height    Float   @default(0)
     index     Int
     // TODO how to specify the order of children
     //
@@ -112,6 +127,8 @@ model Pod {
 
     repoId String
     // this is just a place holder. Not useful
+    to     Edge[] @relation("TO")
+    from   Edge[] @relation("FROM")
 }
 
 // model Deck {

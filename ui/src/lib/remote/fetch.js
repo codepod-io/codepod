@@ -32,6 +32,10 @@ export async function doRemoteLoadRepo({ id }) {
           reexports
           midports
           index
+          x
+          y
+          width
+          height
           parent {id}
           children {id}
         }
@@ -59,7 +63,6 @@ export async function doRemoteLoadRepo({ id }) {
 export function normalize(pods) {
   const res = {
     ROOT: {
-      type: "DECK",
       id: "ROOT",
       name: "root",
       children: [],
@@ -154,9 +157,9 @@ function serializePodInput(pod) {
     content,
     column,
     lang,
-    // parent,
+    parent,
     // index,
-    // children,
+    children,
     result,
     stdout,
     fold,
@@ -168,6 +171,10 @@ function serializePodInput(pod) {
     exports,
     reexports,
     midports,
+    x,
+    y,
+    width,
+    height,
   }) => ({
     id,
     type,
@@ -185,6 +192,12 @@ function serializePodInput(pod) {
     exports: JSON.stringify(exports),
     reexports: JSON.stringify(reexports),
     midports: JSON.stringify(midports),
+    x,
+    y,
+    width,
+    height,
+    parent,
+    children: children?.map(({ id }) => id),
   }))(pod);
 }
 

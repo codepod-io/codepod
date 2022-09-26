@@ -92,17 +92,6 @@ function Code(props) {
   );
 }
 
-// FIXME this should be cleared if pods get deleted
-const deckCache = {};
-
-function getDeck({ id, level }) {
-  // avoid re-rendering
-  if (!(id in deckCache)) {
-    deckCache[id] = <Deck id={id} key={id} level={level}></Deck>;
-  }
-  return deckCache[id];
-}
-
 export function DeckTitle({ id }) {
   const [showMenu, setShowMenu] = useState(false);
   const pod = useSelector((state) => state.repo.pods[id]);
