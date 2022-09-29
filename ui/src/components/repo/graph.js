@@ -447,6 +447,8 @@ export function Deck({ props }) {
           onDrop={onDrop}
           onDragOver={onDragOver}
           nodeTypes={nodeTypes}
+          zoomOnScroll={false}
+          panOnScroll={true}
         >
           <Box>
             <MiniMap
