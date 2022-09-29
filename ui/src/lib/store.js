@@ -41,7 +41,6 @@ export function selectIsDirty(id) {
 // FIXME performance
 export function selectNumDirty() {
   return (state) => {
-    console.log("selectNumDirty");
     let res = 0;
     if (state.repo.repoLoaded) {
       for (const id in state.repo.pods) {

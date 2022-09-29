@@ -205,6 +205,11 @@ export default {
     const { id, dirty } = action.payload;
     state.pods[id].dirty = dirty;
   },
+  updatePod: (state, action) => {
+    const { id, data } = action.payload;
+    state.pods[id] = { ...state.pods[id], ...data };
+    state.pods[id].dirty = true;
+  },
   setPodParent: (state, action) => {
     // FIXME I need to modify many pods here.
     const { id, parent } = action.payload;

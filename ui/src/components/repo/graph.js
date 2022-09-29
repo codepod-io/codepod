@@ -1,4 +1,5 @@
 import { useCallback, useState, useRef, useEffect, memo } from "react";
+import * as React from "react";
 import ReactFlow, {
   addEdge,
   applyEdgeChanges,
@@ -12,6 +13,8 @@ import Box from "@mui/material/Box";
 
 import { useDispatch, useSelector } from "react-redux";
 
+import Moveable from "react-moveable";
+
 import { customAlphabet } from "nanoid";
 import { nolookalikes } from "nanoid-dictionary";
 
@@ -24,15 +27,72 @@ import { repoSlice } from "../../lib/store";
 
 import * as qActions from "../../lib/queue/actions";
 
-const ScopeNode = memo(({ data, isConnectable }) => {
+const ScopeNode = ({ data, id, isConnectable, selected }) => {
+  // add resize to the node
+  const dispatch = useDispatch();
+  const ref = useRef(null);
+  const [target, setTarget] = React.useState();
+  const [frame, setFrame] = React.useState({
+    translate: [0, 0],
+  });
+  React.useEffect(() => {
+    setTarget(ref.current);
+  }, []);
   return (
-    <>
+    <Box
+      ref={ref}
+      sx={{
+        width: "100%",
+        height: "100%",
+        border: "1px solid black",
+      }}
+    >
       <Handle type="target" position="top" isConnectable={isConnectable} />
       Scope: {data?.label}
       <Handle type="source" position="bottom" isConnectable={isConnectable} />
-    </>
+      {selected && (
+        <Moveable
+          target={target}
+          resizable={true}
+          keepRatio={false}
+          throttleResize={1}
+          renderDirections={["e", "s", "se"]}
+          edge={false}
+          zoom={1}
+          origin={true}
+          padding={{ left: 0, top: 0, right: 0, bottom: 0 }}
+          onResizeStart={(e) => {
+            e.setOrigin(["%", "%"]);
+            e.dragStart && e.dragStart.set(frame.translate);
+          }}
+          onResize={(e) => {
+            const beforeTranslate = e.drag.beforeTranslate;
+            frame.translate = beforeTranslate;
+            e.target.style.width = `${e.width}px`;
+            e.target.style.height = `${e.height}px`;
+            e.target.style.transform = `translate(${beforeTranslate[0]}px, ${beforeTranslate[1]}px)`;
+            data.onResize({
+              id,
+              width: e.width,
+              height: e.height,
+              offx: beforeTranslate[0],
+              offy: beforeTranslate[1],
+            });
+            dispatch(
+              repoSlice.actions.updatePod({
+                id,
+                data: {
+                  width: e.width,
+                  height: e.height,
+                },
+              })
+            );
+          }}
+        />
+      )}
+    </Box>
   );
-});
+};
 
 const CodeNode = memo(({ data, isConnectable }) => {
   return (
@@ -108,6 +168,24 @@ export function Deck({ props }) {
   // the real pods
   const id2children = useSelector((state) => state.repo.id2children);
   const pods = useSelector((state) => state.repo.pods);
+
+  const onResize = useCallback(
+    ({ id, width, height, offx, offy }) => {
+      setNodes((nds) => {
+        return nds.map((node) => {
+          if (node.id === id) {
+            // CAUTION I have to return a new object here.
+            node.style = { ...node.style, width, height };
+            node.position.x += offx;
+            node.position.y += offy;
+          }
+          return node;
+        });
+      });
+    },
+    [setNodes]
+  );
+
   function getRealNodes(id, level) {
     let res = [];
     let children = id2children[id];
@@ -118,6 +196,7 @@ export function Deck({ props }) {
         data: {
           // label: `ID: ${id}, parent: ${pods[id].parent}, pos: ${pods[id].x}, ${pods[id].y}`,
           label: id,
+          onResize,
         },
         // position: { x: 100, y: 100 },
         position: { x: pods[id].x, y: pods[id].y },
@@ -206,7 +285,10 @@ export function Deck({ props }) {
         type,
         position,
         style,
-        data: { label: id },
+        data: {
+          label: id,
+          onResize,
+        },
         level: 0,
         extent: "parent",
       };
