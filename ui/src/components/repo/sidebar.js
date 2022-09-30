@@ -216,6 +216,8 @@ function ApplyAll() {
     numDirty > 0
   );
 
+  let update_intervalId = null;
+
   useEffect(() => {
     if (!update_intervalId) {
       // clearInterval(update_intervalId);
