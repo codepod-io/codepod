@@ -35,6 +35,7 @@ import * as Diff2Html from "diff2html";
 import "diff2html/bundles/css/diff2html.min.css";
 
 import { ClickInputButton } from "./toolbar";
+import { usePrompt } from "./prompt";
 
 import {
   repoSlice,
@@ -209,30 +210,11 @@ function SidebarKernel() {
 
 function ApplyAll() {
   const dispatch = useDispatch();
-  const { enqueueSnackbar } = useSnackbar();
   const numDirty = useSelector(selectNumDirty());
-
-  function alertUser(e) {
-    // I have to have both of these
-    e.preventDefault();
-    e.returnValue = "";
-    enqueueSnackbar(`ERROR: You have unsaved changes!`, { variant: "error" });
-  }
-
-  let update_intervalId = null;
-
-  useEffect(() => {
-    if (numDirty > 0) {
-      // FIXME doesn't work on mac?
-      // window.onbeforeunload = () => true;
-      window.addEventListener("beforeunload", alertUser);
-    } else {
-      // window.onbeforeunload = undefined;
-    }
-    return () => {
-      window.removeEventListener("beforeunload", alertUser);
-    };
-  }, [numDirty]);
+  usePrompt(
+    `You have unsaved ${numDirty} changes. Are you sure you want to leave?`,
+    numDirty > 0
+  );
 
   useEffect(() => {
     if (!update_intervalId) {
