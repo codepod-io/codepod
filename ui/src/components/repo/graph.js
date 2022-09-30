@@ -409,34 +409,37 @@ export function Deck({ props }) {
         // 1. Put the node into the scope, i.e., set the parentNode field.
         // 2. Use position relative to the scope.
         setNodes((nds) =>
-          nds.map((nd) => {
-            if (nd.id === node.id) {
-              return {
-                ...nd,
-                parentNode: scope.id,
-                level: scope.level + 1,
-                style: {
-                  ...nd.style,
-                  backgroundColor: level2color[scope.level + 1],
-                },
-                position: scope.positionAbsolute
-                  ? {
-                      x: nd.positionAbsolute.x - scope.positionAbsolute.x,
-                      y: nd.positionAbsolute.y - scope.positionAbsolute.y,
-                    }
-                  : // I need to adjust for all the ancestor nodes' position.
-                    // But there's no positionAbsolute field in the nodes.
-                    // So, I need to calculate it.
-                    getAbsolutePos(
-                      nd.positionAbsolute.x,
-                      nd.positionAbsolute.y,
-                      scope,
-                      nds
-                    ),
-              };
-            }
-            return nd;
-          })
+          nds
+            .map((nd) => {
+              if (nd.id === node.id) {
+                return {
+                  ...nd,
+                  parentNode: scope.id,
+                  level: scope.level + 1,
+                  style: {
+                    ...nd.style,
+                    backgroundColor: level2color[scope.level + 1],
+                  },
+                  position: scope.positionAbsolute
+                    ? {
+                        x: nd.positionAbsolute.x - scope.positionAbsolute.x,
+                        y: nd.positionAbsolute.y - scope.positionAbsolute.y,
+                      }
+                    : // I need to adjust for all the ancestor nodes' position.
+                      // But there's no positionAbsolute field in the nodes.
+                      // So, I need to calculate it.
+                      getAbsolutePos(
+                        nd.positionAbsolute.x,
+                        nd.positionAbsolute.y,
+                        scope,
+                        nds
+                      ),
+                };
+              }
+              return nd;
+            })
+            // Sort the nodes by level, so that the scope is rendered first.
+            .sort((a, b) => a.level - b.level)
         );
       }
     },
