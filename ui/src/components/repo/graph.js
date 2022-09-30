@@ -323,8 +323,6 @@ export function Deck({ props }) {
   }
 
   const getScopeAt = (x, y, id) => {
-    // FIXME this nodes is not updated.
-    // console.log("length of nodes", nodes.length);
     const scope = nodes.findLast((node) => {
       let [x1, y1] = getAbsPos(node);
       return (
@@ -339,6 +337,14 @@ export function Deck({ props }) {
     return scope;
   };
 
+  /**
+   * @param {string} node The node to be moved.
+   * @param {string} event The event that triggered the move.
+   *
+   * This function is called when a node is moved. It will do two things:
+   * 1. Update the position of the node in the redux store.
+   * 2. Check if the node is moved into a scope. If so, update the parent of the node.
+   */
   const onNodeDragStop = useCallback(
     (event, node) => {
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
@@ -405,7 +411,8 @@ export function Deck({ props }) {
         );
       }
     },
-    [reactFlowInstance]
+    // We need to monitor nodes, so that getScopeAt can have all the nodes.
+    [reactFlowInstance, nodes]
   );
 
   const onNodesDelete = useCallback(
