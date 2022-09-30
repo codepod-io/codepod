@@ -18,14 +18,11 @@ import Moveable from "react-moveable";
 import { customAlphabet } from "nanoid";
 import { nolookalikes } from "nanoid-dictionary";
 
-const nanoid = customAlphabet(nolookalikes, 10);
-
-import initialNodes from "./nodes.js";
-import initialEdges from "./edges.js";
-
 import { repoSlice } from "../../lib/store";
 
 import * as qActions from "../../lib/queue/actions";
+
+const nanoid = customAlphabet(nolookalikes, 10);
 
 const ScopeNode = ({ data, id, isConnectable, selected }) => {
   // add resize to the node
@@ -326,6 +323,8 @@ export function Deck({ props }) {
   }
 
   const getScopeAt = (x, y, id) => {
+    // FIXME this nodes is not updated.
+    // console.log("length of nodes", nodes.length);
     const scope = nodes.findLast((node) => {
       let [x1, y1] = getAbsPos(node);
       return (
@@ -342,6 +341,13 @@ export function Deck({ props }) {
 
   const onNodeDragStop = useCallback(
     (event, node) => {
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      console.log(event);
+      // This mouse position is absolute within the canvas.
+      const mousePos = reactFlowInstance.project({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
       // first, dispatch this to the store
       dispatch(
         repoSlice.actions.setPodPosition({
@@ -350,12 +356,18 @@ export function Deck({ props }) {
           y: node.position.y,
         })
       );
+      // check if this position is inside parent scope
+      if (
+        mousePos.x < node.positionAbsolute.x ||
+        mousePos.y < node.positionAbsolute.y ||
+        mousePos.x > node.positionAbsolute.x + node.width ||
+        mousePos.y > node.positionAbsolute.y + node.height
+      ) {
+        // console.log("Cannot drop outside parent scope");
+        return;
+      }
       // Check which group is at this position.
-      const scope = getScopeAt(
-        node.positionAbsolute.x,
-        node.positionAbsolute.y,
-        node.id
-      );
+      const scope = getScopeAt(mousePos.x, mousePos.y, node.id);
       if (scope) {
         console.log("dropped into scope:", scope);
         dispatch(
@@ -369,7 +381,8 @@ export function Deck({ props }) {
         // FIXME this is not working, because we will have to enlarge all the ancestor nodes.
         // dispatch(repoSlice.actions.resizeScopeSize({ id: scope.id }));
 
-        // put the node into the scope, i.e., set the parentNode field.
+        // 1. Put the node into the scope, i.e., set the parentNode field.
+        // 2. Use position relative to the scope.
         setNodes((nds) =>
           nds.map((nd) => {
             if (nd.id === node.id) {
@@ -381,35 +394,18 @@ export function Deck({ props }) {
                   ...nd.style,
                   backgroundColor: level2color[scope.level + 1],
                 },
-                // position: {
-                //   x: nd.position.x - scope.position.x,
-                //   y: nd.position.y - scope.position.y,
-                // },
+                position: {
+                  x: nd.positionAbsolute.x - scope.position.x,
+                  y: nd.positionAbsolute.y - scope.position.y,
+                },
               };
             }
             return nd;
           })
         );
-        // set the node's position to be relative to the parent node.
-        let [scope_x, scope_y] = getAbsPos(scope);
-        setNodes((nds) =>
-          applyNodeChanges(
-            [
-              {
-                id: node.id,
-                type: "position",
-                position: {
-                  x: node.positionAbsolute.x - scope_x,
-                  y: node.positionAbsolute.y - scope_y,
-                },
-              },
-            ],
-            nds
-          )
-        );
       }
     },
-    [pods]
+    [reactFlowInstance]
   );
 
   const onNodesDelete = useCallback(
@@ -439,6 +435,7 @@ export function Deck({ props }) {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onInit={setReactFlowInstance}
+          // onNodeDrag={onNodeDrag}
           onNodeDragStop={onNodeDragStop}
           onNodesDelete={onNodesDelete}
           fitView
