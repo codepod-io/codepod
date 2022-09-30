@@ -217,7 +217,6 @@ export default {
     // FXME I'm marking all the pods as dirty here.
     state.pods[id].dirty = true;
     state.pods[parent].children.push(state.pods[id]);
-    state.pods[parent].dirty = true;
     const oldparent = state.pods[state.pods[id].parent];
     if (oldparent) {
       let idx = oldparent.children.findIndex((_id) => _id === id);
