@@ -338,6 +338,25 @@ export function Deck({ props }) {
   };
 
   /**
+   * @param {string} x The position relative to the parent.
+   * @param {string} y
+   * @param {Node} parent The parent node.
+   * @param {list} nodes A list of all nodes.
+   * @returns {x,y} The absolute position of the node.
+   */
+  function getAbsolutePos(x, y, parent, nodes) {
+    x -= parent.position.x;
+    y -= parent.position.y;
+    if (parent.parentNode) {
+      // FIXME performance.
+      parent = nodes.find((n) => n.id === parent.parentNode);
+      return getAbsolutePos(x, y, parent, nodes);
+    } else {
+      return { x, y };
+    }
+  }
+
+  /**
    * @param {string} node The node to be moved.
    * @param {string} event The event that triggered the move.
    *
@@ -400,10 +419,20 @@ export function Deck({ props }) {
                   ...nd.style,
                   backgroundColor: level2color[scope.level + 1],
                 },
-                position: {
-                  x: nd.positionAbsolute.x - scope.position.x,
-                  y: nd.positionAbsolute.y - scope.position.y,
-                },
+                position: scope.positionAbsolute
+                  ? {
+                      x: nd.positionAbsolute.x - scope.positionAbsolute.x,
+                      y: nd.positionAbsolute.y - scope.positionAbsolute.y,
+                    }
+                  : // I need to adjust for all the ancestor nodes' position.
+                    // But there's no positionAbsolute field in the nodes.
+                    // So, I need to calculate it.
+                    getAbsolutePos(
+                      nd.positionAbsolute.x,
+                      nd.positionAbsolute.y,
+                      scope,
+                      nds
+                    ),
               };
             }
             return nd;
