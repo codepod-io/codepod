@@ -54,29 +54,12 @@ export default (storeAPI) => (next) => (action) => {
             index += shift | 0;
             draft.index = index;
           }
-          const id = "CP" + nanoid();
-          draft.id = id;
         });
         // do local update immediately
         let action1 = repoSlice.actions.addPod(payload);
         storeAPI.dispatch(action1);
         // do remote update, but in a queue
         storeAPI.dispatch(repoSlice.actions.addPodQueue(action1));
-        if (payload.type === "DECK") {
-          // if it is a new deck, we also add a new pod to it
-          // CAUTION I cannot use the same name payload
-          let payload2 = produce(payload, (draft) => {
-            draft.parent = draft.id;
-            draft.id = "CP" + nanoid();
-            draft.type = "CODE";
-            draft.index = 0;
-          });
-          let action2 = repoSlice.actions.addPod(payload2);
-          // do local update immediately
-          storeAPI.dispatch(action2);
-          // add a remote queue
-          storeAPI.dispatch(repoSlice.actions.addPodQueue(action2));
-        }
       }
       break;
     case "REMOTE_DELETE":

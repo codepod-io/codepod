@@ -160,7 +160,6 @@ export function Header() {
             </Button>
           </Box>
 
-          {isSignedIn() ? "yes" : "no"}
           {isSignedIn() ? (
             <Box sx={{ flexGrow: 0 }}>
               <Tooltip title="Open settings">

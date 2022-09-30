@@ -38,84 +38,16 @@ export function selectIsDirty(id) {
   };
 }
 
-function mapPods(pods, func) {
-  function helper(id) {
-    let pod = pods[id];
-    if (id !== "ROOT") {
-      func(pod);
-    }
-    pod.children.map(({ id }) => helper(id));
-  }
-  helper("ROOT");
-}
-
 // FIXME performance
 export function selectNumDirty() {
   return (state) => {
-    // console.log("selectNumDirty");
     let res = 0;
     if (state.repo.repoLoaded) {
-      mapPods(state.repo.pods, (pod) => {
-        if (pod.dirty) {
+      for (const id in state.repo.pods) {
+        if (state.repo.pods[id].dirty) {
           res += 1;
         }
-      });
-    }
-    return res;
-  };
-}
-
-export function selectNumStaged() {
-  return (state) => {
-    let res = 0;
-    if (state.repo.repoLoaded) {
-      mapPods(state.repo.pods, (pod) => {
-        if ((pod.staged || "") !== (pod.githead || "")) {
-          res += 1;
-        }
-      });
-    }
-    return res;
-  };
-}
-
-export function selectNumChanged() {
-  return (state) => {
-    let res = 0;
-    if (state.repo.repoLoaded) {
-      mapPods(state.repo.pods, (pod) => {
-        if ((pod.staged || "") !== (pod.content || "")) {
-          res += 1;
-        }
-      });
-    }
-    return res;
-  };
-}
-
-export function selectStagedIds() {
-  return (state) => {
-    let res = [];
-    if (state.repo.repoLoaded) {
-      mapPods(state.repo.pods, (pod) => {
-        if ((pod.staged || "") !== (pod.githead || "")) {
-          res.push(pod.id);
-        }
-      });
-    }
-    return res;
-  };
-}
-
-export function selectChangedIds() {
-  return (state) => {
-    let res = [];
-    if (state.repo.repoLoaded) {
-      mapPods(state.repo.pods, (pod) => {
-        if ((pod.staged || "") !== (pod.content || "")) {
-          res.push(pod.id);
-        }
-      });
+      }
     }
     return res;
   };
@@ -125,6 +57,8 @@ const initialState = {
   repoId: null,
   repoLoaded: false,
   pods: {},
+  id2parent: {},
+  id2children: {},
   queue: [],
   showdiff: false,
   // sessionId: nanoid(),
@@ -244,11 +178,40 @@ export const userSlice = createSlice({
   reducers: {},
 });
 
+// This is a middleware to set pod dirty status after certain pod operations.
+const hashMiddleware = (storeAPI) => (next) => (action) => {
+  // modify addPod action
+  switch (action.type) {
+    case repoSlice.actions.setPodPosition.type:
+    case repoSlice.actions.setPodLang.type:
+    case repoSlice.actions.setPodContent.type:
+      // case repoSlice.actions.setPodParent.type:
+      const result = next(action);
+      // console.log("hashMiddleware", action.payload);
+      let { id } = action.payload;
+      let pod = storeAPI.getState().repo.pods[id];
+      // console.log(pod);
+      if (pod.remoteHash === hashPod(pod)) {
+        storeAPI.dispatch(repoSlice.actions.setPodDirty({ id, dirty: false }));
+      } else {
+        storeAPI.dispatch(repoSlice.actions.setPodDirty({ id, dirty: true }));
+      }
+      return result;
+      break;
+    default:
+      return next(action);
+  }
+};
+
 export default configureStore({
   reducer: {
     repo: repoSlice.reducer,
     users: userSlice.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(podQueueMiddleware, wsMiddleware),
+    getDefaultMiddleware().concat(
+      hashMiddleware,
+      podQueueMiddleware,
+      wsMiddleware
+    ),
 });

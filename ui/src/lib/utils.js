@@ -32,6 +32,10 @@ export function hashPod(pod) {
       thundar: pod.thundar,
       utility: pod.utility,
       name: pod.name,
+      x: pod.x,
+      y: pod.y,
+      width: pod.width,
+      height: pod.height,
     })
   ).toString();
 }

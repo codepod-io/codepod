@@ -18,6 +18,14 @@ export default {
     }
     // TODO the children ordered by index
     state.pods = normalize(action.payload.data.repo.pods);
+    // fill in the parent/children relationships
+    for (const id in state.pods) {
+      let pod = state.pods[id];
+      if (pod.parent) {
+        state.id2parent[pod.id] = pod.parent.id;
+      }
+      state.id2children[pod.id] = pod.children.map((child) => child.id);
+    }
     state.repoLoaded = true;
   },
   [loadRepoQueue.rejected]: (state, action) => {

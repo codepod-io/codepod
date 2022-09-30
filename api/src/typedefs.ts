@@ -42,6 +42,10 @@ export const typeDefs = gql`
     thundar: Boolean
     utility: Boolean
     name: String
+    x: Float
+    y: Float
+    width: Float
+    height: Float
   }
 
   input PodInput {
@@ -61,6 +65,12 @@ export const typeDefs = gql`
     thundar: Boolean
     utility: Boolean
     name: String
+    x: Float
+    y: Float
+    width: Float
+    height: Float
+    parent: ID
+    children: [ID]
   }
 
   type Query {

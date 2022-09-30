@@ -196,4 +196,49 @@ export default {
       (state.pods[action.payload].column || 1) - 1
     );
   },
+  setPodPosition: (state, action) => {
+    const { id, x, y } = action.payload;
+    state.pods[id].x = x;
+    state.pods[id].y = y;
+  },
+  setPodDirty: (state, action) => {
+    const { id, dirty } = action.payload;
+    state.pods[id].dirty = dirty;
+  },
+  updatePod: (state, action) => {
+    const { id, data } = action.payload;
+    state.pods[id] = { ...state.pods[id], ...data };
+    state.pods[id].dirty = true;
+  },
+  setPodParent: (state, action) => {
+    // FIXME I need to modify many pods here.
+    const { id, parent } = action.payload;
+    state.pods[id].parent = parent;
+    // FXME I'm marking all the pods as dirty here.
+    state.pods[id].dirty = true;
+    state.pods[parent].children.push(state.pods[id]);
+    const oldparent = state.pods[state.pods[id].parent];
+    if (oldparent) {
+      let idx = oldparent.children.findIndex((_id) => _id === id);
+      if (idx >= 0) {
+        oldparent.children.splice(idx, 1);
+        oldparent.dirty = true;
+      }
+    }
+    // return [id, parent, oldparent];
+  },
+  resizeScopeSize: (state, action) => {
+    // Use the children pod size to compute the new size of the scope.
+    const { id } = action.payload;
+    // I would simply add the children size together, and add a margin.
+    let width = 0;
+    let height = 0;
+    state.pods[id].children?.forEach((child) => {
+      width += state.pods[child.id].width;
+      height += state.pods[child.id].height;
+    });
+    state.pods[id].width = Math.max(state.pods[id].width, width + 20);
+    state.pods[id].height = Math.max(state.pods[id].height, height + 20);
+    state.pods[id].dirty = true;
+  },
 };
