@@ -22,6 +22,8 @@ import { repoSlice } from "../../lib/store";
 
 import * as qActions from "../../lib/queue/actions";
 
+import { MyMonaco } from "../MyMonaco";
+
 const nanoid = customAlphabet(nolookalikes, 10);
 
 const ScopeNode = ({ data, id, isConnectable, selected }) => {
@@ -43,6 +45,7 @@ const ScopeNode = ({ data, id, isConnectable, selected }) => {
         height: "100%",
         border: "1px solid black",
       }}
+      className="custom-drag-handle"
     >
       <Handle type="target" position="top" isConnectable={isConnectable} />
       Scope: {data?.label}
@@ -91,7 +94,17 @@ const ScopeNode = ({ data, id, isConnectable, selected }) => {
   );
 };
 
-const CodeNode = memo(({ data, isConnectable }) => {
+const CodeNode = memo(({ data, id, isConnectable, selected }) => {
+  const pod = useSelector((state) => state.repo.pods[id]);
+  const dispatch = useDispatch();
+  const ref = useRef(null);
+  const [target, setTarget] = React.useState();
+  const [frame, setFrame] = React.useState({
+    translate: [0, 0],
+  });
+  React.useEffect(() => {
+    setTarget(ref.current);
+  }, []);
   return (
     <Box
       sx={{
@@ -100,10 +113,105 @@ const CodeNode = memo(({ data, isConnectable }) => {
         height: "100%",
         backgroundColor: "white",
       }}
+      ref={ref}
     >
       <Handle type="target" position="top" isConnectable={isConnectable} />
-      Code: {data?.label}
+      <Box className="custom-drag-handle">Code: {data?.label}</Box>
+      <Box
+        sx={{
+          height: "90%",
+        }}
+        onClick={(e) => {
+          // If the node is selected (for resize), the cursor is not shown. So
+          // we need to deselect it when we re-focus on the editor.
+          data.setNodes((nds) =>
+            applyNodeChanges(
+              [
+                {
+                  id,
+                  type: "select",
+                  selected: false,
+                },
+              ],
+              nds
+            )
+          );
+        }}
+      >
+        <MyMonaco
+          value={pod.content || ""}
+          gitvalue={pod.staged}
+          // pod={pod}
+          onChange={(value) => {
+            dispatch(
+              repoSlice.actions.setPodContent({ id: pod.id, content: value })
+            );
+          }}
+          lang={pod.lang || "javascript"}
+          onExport={(name, isActive) => {
+            if (isActive) {
+              dispatch(repoSlice.actions.deletePodExport({ id: pod.id, name }));
+            } else {
+              dispatch(repoSlice.actions.addPodExport({ id: pod.id, name }));
+            }
+          }}
+          onMidport={(name, isActive) => {
+            if (isActive) {
+              dispatch(
+                repoSlice.actions.deletePodMidport({ id: pod.id, name })
+              );
+            } else {
+              dispatch(repoSlice.actions.addPodMidport({ id: pod.id, name }));
+            }
+          }}
+          onRun={() => {
+            dispatch(repoSlice.actions.clearResults(pod.id));
+            dispatch(wsActions.wsRun(pod.id));
+          }}
+        />
+      </Box>
+
       <Handle type="source" position="bottom" isConnectable={isConnectable} />
+      {selected && (
+        <Moveable
+          target={target}
+          resizable={true}
+          keepRatio={false}
+          throttleResize={1}
+          renderDirections={["e", "s", "se"]}
+          edge={false}
+          zoom={1}
+          origin={true}
+          padding={{ left: 0, top: 0, right: 0, bottom: 0 }}
+          onResizeStart={(e) => {
+            e.setOrigin(["%", "%"]);
+            e.dragStart && e.dragStart.set(frame.translate);
+          }}
+          onResize={(e) => {
+            const beforeTranslate = e.drag.beforeTranslate;
+            frame.translate = beforeTranslate;
+            e.target.style.width = `${e.width}px`;
+            e.target.style.height = `${e.height}px`;
+            e.target.style.transform = `translate(${beforeTranslate[0]}px, ${beforeTranslate[1]}px)`;
+            data.onResize({
+              id,
+              width: e.width,
+              height: e.height,
+              offx: beforeTranslate[0],
+              offy: beforeTranslate[1],
+            });
+            dispatch(
+              repoSlice.actions.updatePod({
+                id,
+                data: {
+                  width: e.width,
+                  height: e.height,
+                },
+              })
+            );
+          }}
+        />
+      )}
     </Box>
   );
 });
@@ -194,11 +302,13 @@ export function Deck({ props }) {
           // label: `ID: ${id}, parent: ${pods[id].parent}, pos: ${pods[id].x}, ${pods[id].y}`,
           label: id,
           onResize,
+          setNodes,
         },
         // position: { x: 100, y: 100 },
         position: { x: pods[id].x, y: pods[id].y },
         parentNode: pods[id].parent !== "ROOT" ? pods[id].parent : undefined,
         extent: "parent",
+        dragHandle: ".custom-drag-handle",
         level,
         style: {
           backgroundColor:
@@ -262,13 +372,13 @@ export function Deck({ props }) {
       if (type === "scope") {
         style = {
           backgroundColor: level2color[0],
-          width: 300,
-          height: 300,
+          width: 600,
+          height: 600,
         };
       } else {
         style = {
-          width: 100,
-          height: 100,
+          width: 300,
+          height: 300,
         };
       }
 
@@ -285,6 +395,7 @@ export function Deck({ props }) {
         data: {
           label: id,
           onResize,
+          setNodes,
         },
         level: 0,
         extent: "parent",
@@ -367,7 +478,6 @@ export function Deck({ props }) {
   const onNodeDragStop = useCallback(
     (event, node) => {
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-      console.log(event);
       // This mouse position is absolute within the canvas.
       const mousePos = reactFlowInstance.project({
         x: event.clientX - reactFlowBounds.left,

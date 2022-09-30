@@ -416,6 +416,7 @@ export function MyMonaco({
         autoIndent: "full",
         // autoIndent: true,
         overviewRulerLanes: 0,
+        automaticLayout: true,
         scrollbar: {
           alwaysConsumeMouseWheel: false,
           vertical: "hidden",
