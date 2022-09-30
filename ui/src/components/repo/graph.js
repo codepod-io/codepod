@@ -10,10 +10,15 @@ import ReactFlow, {
   Handle,
 } from "react-flow-renderer";
 import Box from "@mui/material/Box";
+import CircularProgress from "@mui/material/CircularProgress";
+import Tooltip from "@mui/material/Tooltip";
+import IconButton from "@mui/material/IconButton";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 
 import { useDispatch, useSelector } from "react-redux";
 
 import Moveable from "react-moveable";
+import Ansi from "ansi-to-react";
 
 import { customAlphabet } from "nanoid";
 import { nolookalikes } from "nanoid-dictionary";
@@ -21,6 +26,7 @@ import { nolookalikes } from "nanoid-dictionary";
 import { repoSlice } from "../../lib/store";
 
 import * as qActions from "../../lib/queue/actions";
+import * as wsActions from "../../lib/ws/actions";
 
 import { MyMonaco } from "../MyMonaco";
 
@@ -169,6 +175,85 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
             dispatch(wsActions.wsRun(pod.id));
           }}
         />
+        <Box
+          sx={{
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            width: "100px",
+            height: "100px",
+            backgroundColor: "white",
+            border: "solid 1px blue",
+            zIndex: 100,
+          }}
+        >
+          <Box sx={{ display: "flex" }}>
+            <Tooltip title="Run (shift-enter)">
+              <IconButton
+                size="small"
+                sx={{ color: "green" }}
+                onClick={() => {
+                  dispatch(wsActions.wsRun(id));
+                }}
+              >
+                <PlayArrowIcon sx={{ fontSize: 15 }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+          {pod.stdout && (
+            <Box overflow="scroll" maxHeight="200px" border="1px">
+              {/* TODO separate stdout and stderr */}
+              <Box>Stdout/Stderr:</Box>
+              <Box whiteSpace="pre-wrap" fontSize="sm">
+                <Ansi>{pod.stdout}</Ansi>
+              </Box>
+            </Box>
+          )}
+          {pod.running && <CircularProgress />}
+          {pod.result && (
+            <Box
+              sx={{ display: "flex" }}
+              direction="column"
+              overflow="scroll"
+              maxHeight="200px"
+            >
+              {pod.result.html ? (
+                <div
+                  dangerouslySetInnerHTML={{ __html: pod.result.html }}
+                ></div>
+              ) : (
+                pod.result.text && (
+                  <Box>
+                    <Box sx={{ display: "flex" }} color="gray" mr="1rem">
+                      Result: [{pod.result.count}]:
+                    </Box>
+                    <Box>
+                      <Box component="pre" whiteSpace="pre-wrap">
+                        {pod.result.text}
+                      </Box>
+                    </Box>
+                  </Box>
+                )
+              )}
+              {pod.result.image && (
+                <img src={`data:image/png;base64,${pod.result.image}`} />
+              )}
+            </Box>
+          )}
+          {pod.error && (
+            <Box overflow="scroll" maxHeight="3xs" border="1px" bg="gray.50">
+              <Box color="red">Error: {pod.error.evalue}</Box>
+              {pod.error.stacktrace && (
+                <Box>
+                  <Box>StackTrace</Box>
+                  <Box whiteSpace="pre-wrap" fontSize="sm">
+                    <Ansi>{pod.error.stacktrace.join("\n")}</Ansi>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          )}
+        </Box>
       </Box>
 
       <Handle type="source" position="bottom" isConnectable={isConnectable} />
@@ -399,6 +484,7 @@ export function Deck({ props }) {
         },
         level: 0,
         extent: "parent",
+        dragHandle: ".custom-drag-handle",
       };
 
       setNodes((nds) => nds.concat(newNode));
