@@ -422,15 +422,15 @@ export function Deck({ props }) {
                   },
                   position: scope.positionAbsolute
                     ? {
-                        x: nd.positionAbsolute.x - scope.positionAbsolute.x,
-                        y: nd.positionAbsolute.y - scope.positionAbsolute.y,
+                        x: node.positionAbsolute.x - scope.positionAbsolute.x,
+                        y: node.positionAbsolute.y - scope.positionAbsolute.y,
                       }
                     : // I need to adjust for all the ancestor nodes' position.
                       // But there's no positionAbsolute field in the nodes.
                       // So, I need to calculate it.
                       getAbsolutePos(
-                        nd.positionAbsolute.x,
-                        nd.positionAbsolute.y,
+                        node.positionAbsolute.x,
+                        node.positionAbsolute.y,
                         scope,
                         nds
                       ),
