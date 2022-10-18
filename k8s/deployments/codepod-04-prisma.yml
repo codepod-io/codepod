@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prisma
+  labels:
+    app: prisma
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prisma
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: prisma
+    spec:
+      containers:
+        - name: data-migrations
+          image: lihebi/codepod-api:v0.2.0
+          # Run this manually on-demand: npx prisma migrate dev --name init
+          command: ["npx", "prisma", "studio"]
+          ports:
+            - containerPort: 5555
+          env:
+            - name: DATABASE_URL
+              value: "YOUR_DATABASE_URL"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prisma-service
+spec:
+  ports:
+    - port: 5555
+      targetPort: 5555
+      protocol: TCP
+  selector:
+    app: prisma
