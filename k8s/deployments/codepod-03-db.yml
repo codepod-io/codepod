@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:10.1
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - containerPort: 5432
+          env:
+            # FIXME the valueFromSecrete is not working, and the PVC will not
+            # update unless delete the /mnt/data on agent node.
+            - name: POSTGRES_USER
+              value: YOUR_USERNAME
+              # valueFrom:
+              #   secretKeyRef:
+              #     name: mysecret
+              #     key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              value: YOUR_PASSWD
+              # valueFrom:
+              #   secretKeyRef:
+              #     name: mysecret
+              #     key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              value: YOUR_DBNAME
+              # valueFrom:
+              #   secretKeyRef:
+              #     name: mysecret
+              #     key: POSTGRES_DB
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              name: postgredb
+              readOnly: false
+      volumes:
+        - name: postgredb
+          persistentVolumeClaim:
+            claimName: postgres-pv-claim
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+  selector:
+    app: postgres
