@@ -14,6 +14,8 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import Stack from "@mui/material/Stack";
+import Button from "@mui/material/Button";
 
 import { useDispatch, useSelector } from "react-redux";
 
@@ -32,7 +34,7 @@ import { MyMonaco } from "../MyMonaco";
 
 const nanoid = customAlphabet(nolookalikes, 10);
 
-const ScopeNode = ({ data, id, isConnectable, selected }) => {
+const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
   // add resize to the node
   const dispatch = useDispatch();
   const ref = useRef(null);
@@ -98,7 +100,7 @@ const ScopeNode = ({ data, id, isConnectable, selected }) => {
       )}
     </Box>
   );
-};
+});
 
 const CodeNode = memo(({ data, id, isConnectable, selected }) => {
   const pod = useSelector((state) => state.repo.pods[id]);
@@ -306,44 +308,6 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
 
 const nodeTypes = { scope: ScopeNode, code: CodeNode };
 
-const NodeBar = () => {
-  const onDragStart = (event, nodeType) => {
-    event.dataTransfer.setData("application/reactflow", nodeType);
-    event.dataTransfer.effectAllowed = "move";
-  };
-
-  return (
-    <Box
-      sx={{
-        zIndex: 4,
-        display: "flex",
-        flexDirection: "row",
-      }}
-    >
-      <Box
-        className="dndnode input"
-        sx={{
-          cursor: "grab",
-          zIndex: 4,
-          border: "1px solid #aaa",
-        }}
-        onDragStart={(event) => onDragStart(event, "code")}
-        draggable
-      >
-        Code
-      </Box>
-      <Box
-        className="dndnode output"
-        sx={{ cursor: "grab", ml: 2, border: "1px solid #aaa" }}
-        onDragStart={(event) => onDragStart(event, "scope")}
-        draggable
-      >
-        Scope
-      </Box>
-    </Box>
-  );
-};
-
 const level2color = {
   0: "rgba(255, 0, 0, 0.2)",
   1: "rgba(255, 0, 255, 0.2)",
@@ -437,27 +401,13 @@ export function Deck({ props }) {
     [setEdges]
   );
 
-  const onDragOver = useCallback((event) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-  }, []);
-
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const reactFlowWrapper = useRef(null);
 
   const dispatch = useDispatch();
-  const onDrop = useCallback(
-    (event) => {
-      event.preventDefault();
-
+  const addNode = useCallback(
+    (x, y, type) => {
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-      let type = event.dataTransfer.getData("application/reactflow");
-
-      // check if the dropped element is valid
-      if (typeof type === "undefined" || !type) {
-        return;
-      }
-
       let style;
 
       // if (type === "code") type = "default";
@@ -475,8 +425,8 @@ export function Deck({ props }) {
       }
 
       const position = reactFlowInstance.project({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
+        x: x - reactFlowBounds.left,
+        y: y - reactFlowBounds.top,
       });
       let id = "CP" + nanoid();
       const newNode = {
@@ -511,7 +461,7 @@ export function Deck({ props }) {
         })
       );
     },
-    [reactFlowInstance, dispatch, onResize]
+    [dispatch, onResize, reactFlowInstance, setNodes]
   );
 
   const getAbsPos = useCallback(
@@ -666,6 +616,23 @@ export function Deck({ props }) {
     [dispatch]
   );
 
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [points, setPoints] = useState({ x: 0, y: 0 });
+  const [client, setClient] = useState({ x: 0, y: 0 });
+
+  const onPaneContextMenu = (event) => {
+    event.preventDefault();
+    setShowContextMenu(true);
+    setPoints({ x: event.pageX, y: event.pageY });
+    setClient({ x: event.clientX, y: event.clientY });
+  };
+
+  useEffect(() => {
+    const handleClick = () => setShowContextMenu(false);
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, []);
+
   return (
     <Box
       style={{
@@ -674,7 +641,6 @@ export function Deck({ props }) {
         flexDirection: "column",
       }}
     >
-      <NodeBar />
       <Box sx={{ height: "100%" }} ref={reactFlowWrapper}>
         <ReactFlow
           nodes={nodes}
@@ -683,14 +649,12 @@ export function Deck({ props }) {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onInit={setReactFlowInstance}
-          // onNodeDrag={onNodeDrag}
           onNodeDragStop={onNodeDragStop}
           onNodesDelete={onNodesDelete}
           fitView
           attributionPosition="top-right"
           maxZoom={5}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
+          onPaneContextMenu={onPaneContextMenu}
           nodeTypes={nodeTypes}
           zoomOnScroll={false}
           panOnScroll={true}
@@ -716,6 +680,38 @@ export function Deck({ props }) {
             <Background />
           </Box>
         </ReactFlow>
+        {showContextMenu && (
+          <Box
+            sx={{
+              left: `${points.x}px`,
+              top: `${points.y}px`,
+              zIndex: 100,
+              position: "absolute",
+              boxShadow: "0px 1px 8px 0px rgba(0, 0, 0, 0.1)",
+              // width: '200px',
+              backgroundColor: "#fff",
+              borderRadius: "5px",
+              boxSizing: "border-box",
+            }}
+          >
+            <Stack>
+              <Button
+                onClick={() => {
+                  addNode(client.x, client.y, "code");
+                }}
+              >
+                New Code{" "}
+              </Button>
+              <Button
+                onClick={() => {
+                  addNode(client.x, client.y, "scope");
+                }}
+              >
+                New Scope{" "}
+              </Button>
+            </Stack>
+          </Box>
+        )}
       </Box>
     </Box>
   );
