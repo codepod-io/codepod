@@ -1,9 +1,14 @@
-FROM node:18
+FROM node:18 AS builder
 
 WORKDIR /app
-COPY ./package.json package.json
-RUN yarn
+COPY package.json .
+COPY yarn.lock .
+RUN yarn install --frozen-lockfile
 
+# FIXME would this copy node_modules?
 COPY . .
 
-CMD ["yarn", "start"]
+RUN yarn build
+
+FROM nginx:1.19-alpine AS server
+COPY --from=builder ./app/build /usr/share/nginx/html

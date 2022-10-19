@@ -1,11 +1,18 @@
-FROM node:18
-
+FROM node:18 AS builder
 WORKDIR /app
 COPY package.json .
-RUN yarn
-
+COPY yarn.lock .
+RUN yarn install --frozen-lockfile
 COPY . .
-# this will modify node_modules/@prisma/client
-RUN yarn run prisma generate
+RUN yarn build
 
-CMD ["yarn", "dev"]
+FROM node:18 AS server
+WORKDIR /app
+COPY package.json .
+COPY yarn.lock .
+RUN yarn install --production
+COPY prisma .
+RUN yarn run prisma generate
+COPY --from=builder ./app/build ./build
+EXPOSE 4000
+CMD ["yarn", "start"]

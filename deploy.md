@@ -3,16 +3,16 @@
 Build the docker images:
 
 ```
-docker build -t lihebi/codepod-ui:v0.1.0 ./ui
-docker build -t lihebi/codepod-api:v0.1.0 ./api
+docker build -t lihebi/codepod-ui:v0.4.1 ./ui
+docker build -t lihebi/codepod-api:v0.4.1 ./api
 docker build -t lihebi/codepod_kernel_python:v0.1.0 ./api/kernels/python
 ```
 
 Push to registry:
 
 ```
-docker push lihebi/codepod-ui:v0.1.0
-docker push lihebi/codepod-api:v0.1.0
+docker push lihebi/codepod-ui:v0.4.1
+docker push lihebi/codepod-api:v0.4.1
 docker push lihebi/codepod_kernel_python:v0.1.0
 ```
 
