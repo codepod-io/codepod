@@ -1,11 +1,11 @@
-import { configureStore, createAsyncThunk } from "@reduxjs/toolkit";
+import { createAsyncThunk } from "@reduxjs/toolkit";
 import { hashPod } from "../utils";
 import { repoSlice } from "../store";
 import { doRemoteUpdatePod } from "./fetch";
 
 export const remoteUpdateAllPods = createAsyncThunk(
   "remoteUpdateAllPods",
-  (action, { dispatch, getState }) => {
+  (_, { dispatch, getState }) => {
     function helper(id) {
       let pod = getState().repo.pods[id];
       pod.children.map(({ id }) => helper(id));
@@ -35,7 +35,7 @@ export const remoteUpdatePod = createAsyncThunk(
   }
 );
 
-export default {
+const myReducers = {
   [remoteUpdatePod.pending]: (state, action) => {
     // CAUTION the payload is in action.meta.arg !! this is so weird
     //
@@ -56,7 +56,8 @@ export default {
     // TODO use enum instead of string?
     // state.pods[action.payload.id].status = "dirty";
     console.log(action.payload);
-    throw new Error("updatePod rejected");
     throw new Error("updatePod rejected" + action.payload.errors[0].message);
   },
 };
+
+export default myReducers;

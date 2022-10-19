@@ -7,6 +7,8 @@ import {
   gql,
 } from "@apollo/client";
 
+import { GRAPHQL_ENDPOINT } from "./vars";
+
 const authContext = createContext();
 
 export function AuthProvider({ children }) {
@@ -43,7 +45,7 @@ function useProvideAuth() {
 
   function createApolloClient() {
     const link = new HttpLink({
-      uri: `/graphql`,
+      uri: GRAPHQL_ENDPOINT,
       headers: getAuthHeaders(),
     });
 

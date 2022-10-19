@@ -6,7 +6,7 @@ import { monaco } from "react-monaco-editor";
 monaco.languages.setLanguageConfiguration("julia", {
   indentationRules: {
     increaseIndentPattern:
-      /^(\s*|.*=\s*|.*@\w*\s*)[\w\s]*(?:["'`][^"'`]*["'`])*[\w\s]*\b(if|while|for|function|macro|(mutable\s+)?struct|abstract\s+type|primitive\s+type|let|quote|try|begin|.*\)\s*do|else|elseif|catch|finally)\b(?!(?:.*\bend\b[^\]]*)|(?:[^\[]*\].*)$).*$/,
+      /^(\s*|.*=\s*|.*@\w*\s*)[\w\s]*(?:["'`][^"'`]*["'`])*[\w\s]*\b(if|while|for|function|macro|(mutable\s+)?struct|abstract\s+type|primitive\s+type|let|quote|try|begin|.*\)\s*do|else|elseif|catch|finally)\b(?!(?:.*\bend\b[^\]]*)|(?:[^[]*\].*)$).*$/,
     decreaseIndentPattern: /^\s*(end|else|elseif|catch|finally)\b.*$/,
   },
 });
@@ -30,11 +30,11 @@ monaco.languages.registerOnTypeFormattingEditProvider("scheme", {
     // get the first non-empty line
     let line = "";
     let linum = position.lineNumber - 1;
-    while (line.trim().length == 0 && linum > 0) {
+    while (line.trim().length === 0 && linum > 0) {
       line = model.getLineContent(linum);
       linum -= 1;
     }
-    if (line.trim().length == 0) return [];
+    if (line.trim().length === 0) return [];
     /* 
 
     (aaa (bbb (ccc
@@ -51,7 +51,7 @@ monaco.languages.registerOnTypeFormattingEditProvider("scheme", {
     */
     let n_open = (line.match(/\(/g) || []).length;
     let n_close = (line.match(/\)/g) || []).length;
-    if (n_open == n_close) {
+    if (n_open === n_close) {
       // 1. If previous line has equal number of open and close, use that indentation
       return construct_indent(position, line.length - line.trimLeft().length);
     } else if (n_open > n_close) {
@@ -60,17 +60,17 @@ monaco.languages.registerOnTypeFormattingEditProvider("scheme", {
       //   - else, use ('s indentation + 2
       let ct = 0;
       for (let i = line.length - 1; i >= 0; i--) {
-        if (line[i] == ")") {
+        if (line[i] === ")") {
           ct += 1;
-        } else if (line[i] == "(") {
+        } else if (line[i] === "(") {
           ct -= 1;
         }
-        if (ct == -1) {
+        if (ct === -1) {
           // check the pattern
           if (line.substring(i).match(/^\((define|lambda|let|for[^*]).*/)) {
             return construct_indent(position, i + 2);
           }
-          if (line.substring(i).match(/^\([\(\[]/)) {
+          if (line.substring(i).match(/^\([([]/)) {
             // this is (let ([xxx]
             //               []))
             return construct_indent(position, i + 1);
@@ -114,19 +114,19 @@ function decide_indent_open(line) {
   // Assume line has more (. Decide the indent
   let ct = 0;
   for (let i = line.length - 1; i >= 0; i--) {
-    if (line[i] == ")" || line[i] == "]") {
+    if (line[i] === ")" || line[i] === "]") {
       ct += 1;
-    } else if (line[i] == "(" || line[i] == "[") {
+    } else if (line[i] === "(" || line[i] === "[") {
       ct -= 1;
     }
-    if (ct == -1) {
+    if (ct === -1) {
       // check the pattern
       if (
         line.substring(i).match(/^\((define|lambda|let|for|match|case|when).*/)
       ) {
         return i + 2;
       }
-      if (line.substring(i).match(/^[\(\[]{2}/)) {
+      if (line.substring(i).match(/^[([]{2}/)) {
         return i + 1;
       }
       // trim right, and find " "
@@ -152,18 +152,18 @@ function racket_format(model) {
   let shifts = {};
   for (let linum = 1; linum <= model.getLineCount(); linum += 1) {
     let line = model.getLineContent(linum);
-    if (line.trim().length == 0) {
+    if (line.trim().length === 0) {
       // console.log("line empty");
       continue;
     }
     // console.log("indent:", linum, indent);
     let old_indent = line.length - line.trimLeft().length;
-    if (indent != old_indent) {
+    if (indent !== old_indent) {
       shifts[linum] = indent - old_indent;
     }
     let n_open = (line.match(/\(|\[/g) || []).length;
     let n_close = (line.match(/\)|\]/g) || []).length;
-    if (n_open == n_close) {
+    if (n_open === n_close) {
       // console.log("equal open/close parens");
       continue;
     } else if (n_open > n_close) {
@@ -446,7 +446,7 @@ export function MyMonaco({
         };
         editor.onDidContentSizeChange(updateHeight);
         // FIXME clean up?
-        var myBinding = editor.addCommand(
+        editor.addCommand(
           [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
           function () {
             onRun();

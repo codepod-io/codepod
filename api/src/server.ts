@@ -15,6 +15,10 @@ import { typeDefs } from "./typedefs";
 import { resolvers } from "./resolver";
 import { listenOnMessage } from "./socket.js";
 
+interface TokenInterface {
+  id: string;
+}
+
 export async function startServer() {
   const apollo = new ApolloServer({
     typeDefs,
@@ -24,7 +28,10 @@ export async function startServer() {
       let userId;
 
       if (token) {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const decoded = jwt.verify(
+          token,
+          process.env.JWT_SECRET as string
+        ) as TokenInterface;
         userId = decoded.id;
       }
       return {
@@ -55,7 +62,8 @@ export async function startServer() {
     listenOnMessage(socket);
   });
 
-  http_server.listen({ port: 4000 }, () => {
-    console.log(`🚀 Server ready at http://localhost:4000`);
+  const port = process.env.PORT || 4000;
+  http_server.listen({ port }, () => {
+    console.log(`🚀 Server ready at http://localhost:${port}`);
   });
 }

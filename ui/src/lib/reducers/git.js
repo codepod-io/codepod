@@ -1,4 +1,4 @@
-export default {
+const myReducers = {
   gitStage: (state, action) => {
     let id = action.payload;
     state.pods[id].staged = state.pods[id].content;
@@ -14,3 +14,5 @@ export default {
     }
   },
 };
+
+export default myReducers;

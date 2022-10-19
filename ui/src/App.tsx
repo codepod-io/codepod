@@ -1,4 +1,4 @@
-import "./App.css";
+import './App.css';
 
 import { HashRouter as Router, Routes, Route } from "react-router-dom";
 
@@ -16,14 +16,13 @@ import { Header, Footer } from "./components/Header";
 
 import Box from "@mui/material/Box";
 import { SnackbarProvider } from "notistack";
-import Button from "@mui/material/Button";
 
 import { Provider } from "react-redux";
 
 import store from "./lib/store";
 import Docs from "./pages/docs";
 
-import { createTheme, ThemeProvider, styled } from "@mui/material/styles";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 
 const theme = createTheme({
   typography: {
@@ -33,7 +32,7 @@ const theme = createTheme({
   },
 });
 
-function NormalLayout({ children }) {
+function NormalLayout({ children }: any) {
   return (
     <Box>
       <Header />
@@ -136,3 +135,27 @@ function App() {
 }
 
 export default App;
+
+
+// function App() {
+//   return (
+//     <div className="App">
+//       <header className="App-header">
+//         <img src={logo} className="App-logo" alt="logo" />
+//         <p>
+//           Edit <code>src/App.tsx</code> and save to reload.
+//         </p>
+//         <a
+//           className="App-link"
+//           href="https://reactjs.org"
+//           target="_blank"
+//           rel="noopener noreferrer"
+//         >
+//           Learn React
+//         </a>
+//       </header>
+//     </div>
+//   );
+// }
+
+// export default App;

@@ -5,14 +5,9 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Box from "@mui/material/Box";
-import CloseIcon from "@mui/icons-material/Close";
 import MenuIcon from "@mui/icons-material/Menu";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
-import MenuList from "@mui/material/MenuList";
-import ListItemText from "@mui/material/ListItemText";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import Button from "@mui/material/Button";
 import Avatar from "@mui/material/Avatar";
 import Link from "@mui/material/Link";
 
@@ -25,9 +20,6 @@ import Tooltip from "@mui/material/Tooltip";
 import AppBar from "@mui/material/AppBar";
 
 import { useAuth } from "../lib/auth";
-
-const pages = ["Products", "Pricing", "Blog"];
-const settings = ["Profile", "Account", "Dashboard", "Logout"];
 
 export function Header() {
   const [anchorElNav, setAnchorElNav] = useState(null);
@@ -138,26 +130,38 @@ export function Header() {
 
           {/* The navigation on desktop */}
           <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
-            <Button sx={{ my: 2, color: "white", display: "block" }}>
-              <Link to="/repos" component={ReactLink} underline="none">
-                Repos
-              </Link>
-            </Button>
-            <Button sx={{ my: 2, color: "white", display: "block" }}>
-              <Link to="/test" component={ReactLink} underline="none">
-                Test
-              </Link>
-            </Button>
-            <Button sx={{ my: 2, color: "white", display: "block" }}>
-              <Link to="/docs" component={ReactLink} underline="none">
-                Docs
-              </Link>
-            </Button>
-            <Button sx={{ my: 2, color: "white", display: "block" }}>
-              <Link to="/about" component={ReactLink} underline="none">
-                About
-              </Link>
-            </Button>
+            <Link
+              to="/repos"
+              component={ReactLink}
+              underline="none"
+              sx={{ mx: 2 }}
+            >
+              Repos
+            </Link>
+            <Link
+              to="/test"
+              component={ReactLink}
+              underline="none"
+              sx={{ mx: 2 }}
+            >
+              Test
+            </Link>
+            <Link
+              to="/docs"
+              component={ReactLink}
+              underline="none"
+              sx={{ mx: 2 }}
+            >
+              Docs
+            </Link>
+            <Link
+              to="/about"
+              component={ReactLink}
+              underline="none"
+              sx={{ mx: 2 }}
+            >
+              About
+            </Link>
           </Box>
 
           {isSignedIn() ? (

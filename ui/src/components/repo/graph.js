@@ -37,7 +37,7 @@ const ScopeNode = ({ data, id, isConnectable, selected }) => {
   const dispatch = useDispatch();
   const ref = useRef(null);
   const [target, setTarget] = React.useState();
-  const [frame, setFrame] = React.useState({
+  const [frame] = React.useState({
     translate: [0, 0],
   });
   React.useEffect(() => {
@@ -105,7 +105,7 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
   const dispatch = useDispatch();
   const ref = useRef(null);
   const [target, setTarget] = React.useState();
-  const [frame, setFrame] = React.useState({
+  const [frame] = React.useState({
     translate: [0, 0],
   });
   React.useEffect(() => {
@@ -236,7 +236,10 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
                 )
               )}
               {pod.result.image && (
-                <img src={`data:image/png;base64,${pod.result.image}`} />
+                <img
+                  src={`data:image/png;base64,${pod.result.image}`}
+                  alt="output"
+                />
               )}
             </Box>
           )}
@@ -376,44 +379,47 @@ export function Deck({ props }) {
     [setNodes]
   );
 
-  function getRealNodes(id, level) {
-    let res = [];
-    let children = id2children[id];
-    if (id !== "ROOT") {
-      res.push({
-        id: id,
-        type: pods[id].type === "CODE" ? "code" : "scope",
-        data: {
-          // label: `ID: ${id}, parent: ${pods[id].parent}, pos: ${pods[id].x}, ${pods[id].y}`,
-          label: id,
-          onResize,
-          setNodes,
-        },
-        // position: { x: 100, y: 100 },
-        position: { x: pods[id].x, y: pods[id].y },
-        parentNode: pods[id].parent !== "ROOT" ? pods[id].parent : undefined,
-        extent: "parent",
-        dragHandle: ".custom-drag-handle",
-        level,
-        style: {
-          backgroundColor:
-            pods[id].type == "CODE"
-              ? undefined
-              : level2color[level] || level2color["default"],
-          width: pods[id].width,
-          height: pods[id].height,
-        },
-      });
-    }
-    for (const child of children) {
-      res = res.concat(getRealNodes(child, level + 1));
-    }
-    return res;
-  }
+  const getRealNodes = useCallback(
+    (id, level) => {
+      let res = [];
+      let children = id2children[id];
+      if (id !== "ROOT") {
+        res.push({
+          id: id,
+          type: pods[id].type === "CODE" ? "code" : "scope",
+          data: {
+            // label: `ID: ${id}, parent: ${pods[id].parent}, pos: ${pods[id].x}, ${pods[id].y}`,
+            label: id,
+            onResize,
+            setNodes,
+          },
+          // position: { x: 100, y: 100 },
+          position: { x: pods[id].x, y: pods[id].y },
+          parentNode: pods[id].parent !== "ROOT" ? pods[id].parent : undefined,
+          extent: "parent",
+          dragHandle: ".custom-drag-handle",
+          level,
+          style: {
+            backgroundColor:
+              pods[id].type === "CODE"
+                ? undefined
+                : level2color[level] || level2color["default"],
+            width: pods[id].width,
+            height: pods[id].height,
+          },
+        });
+      }
+      for (const child of children) {
+        res = res.concat(getRealNodes(child, level + 1));
+      }
+      return res;
+    },
+    [id2children, onResize, pods]
+  );
   useEffect(() => {
     let nodes = getRealNodes("ROOT", -1);
     setNodes(nodes);
-  }, []);
+  }, [getRealNodes]);
 
   const onNodesChange = useCallback(
     (changes) => {
@@ -504,35 +510,41 @@ export function Deck({ props }) {
         })
       );
     },
-    [reactFlowInstance]
+    [reactFlowInstance, dispatch, onResize]
   );
 
-  function getAbsPos(node) {
-    let x = node.position.x;
-    let y = node.position.y;
-    let parent = pods[node.parentNode];
-    while (parent) {
-      x += parent.x;
-      y += parent.y;
-      parent = pods[parent.parentNode];
-    }
-    return [x, y];
-  }
+  const getAbsPos = useCallback(
+    (node) => {
+      let x = node.position.x;
+      let y = node.position.y;
+      let parent = pods[node.parentNode];
+      while (parent) {
+        x += parent.x;
+        y += parent.y;
+        parent = pods[parent.parentNode];
+      }
+      return [x, y];
+    },
+    [pods]
+  );
 
-  const getScopeAt = (x, y, id) => {
-    const scope = nodes.findLast((node) => {
-      let [x1, y1] = getAbsPos(node);
-      return (
-        node.type === "scope" &&
-        node.id !== id &&
-        x >= x1 &&
-        x <= x1 + node.style.width &&
-        y >= y1 &&
-        y <= y1 + node.style.height
-      );
-    });
-    return scope;
-  };
+  const getScopeAt = useCallback(
+    (x, y, id) => {
+      const scope = nodes.findLast((node) => {
+        let [x1, y1] = getAbsPos(node);
+        return (
+          node.type === "scope" &&
+          node.id !== id &&
+          x >= x1 &&
+          x <= x1 + node.style.width &&
+          y >= y1 &&
+          y <= y1 + node.style.height
+        );
+      });
+      return scope;
+    },
+    [getAbsPos, nodes]
+  );
 
   /**
    * @param {string} x The position relative to the parent.
@@ -541,7 +553,7 @@ export function Deck({ props }) {
    * @param {list} nodes A list of all nodes.
    * @returns {x,y} The absolute position of the node.
    */
-  function getAbsolutePos(x, y, parent, nodes) {
+  const getAbsolutePos = useCallback((x, y, parent, nodes) => {
     x -= parent.position.x;
     y -= parent.position.y;
     if (parent.parentNode) {
@@ -551,7 +563,7 @@ export function Deck({ props }) {
     } else {
       return { x, y };
     }
-  }
+  }, []);
 
   /**
    * @param {string} node The node to be moved.
@@ -640,7 +652,7 @@ export function Deck({ props }) {
       }
     },
     // We need to monitor nodes, so that getScopeAt can have all the nodes.
-    [reactFlowInstance, nodes]
+    [reactFlowInstance, dispatch, getAbsolutePos, getScopeAt]
   );
 
   const onNodesDelete = useCallback(
@@ -650,7 +662,7 @@ export function Deck({ props }) {
         dispatch(qActions.remoteDelete({ id: node.id }));
       }
     },
-    [reactFlowInstance]
+    [dispatch]
   );
 
   return (

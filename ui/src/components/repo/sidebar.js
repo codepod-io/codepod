@@ -1,79 +1,32 @@
-import { useParams, Link as ReactLink, Prompt } from "react-router-dom";
-import Link from "@mui/material/Link";
+import { useEffect, useState } from "react";
+
+import { useParams } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
-import Stack from "@mui/material/Stack";
 import Tooltip from "@mui/material/Tooltip";
-import Typography from "@mui/material/Typography";
-import Modal from "@mui/material/Modal";
-import Switch from "@mui/material/Switch";
 import IconButton from "@mui/material/IconButton";
 
-import Radio from "@mui/material/Radio";
-import RadioGroup from "@mui/material/RadioGroup";
-import DeleteForeverTwoToneIcon from "@mui/icons-material/DeleteForeverTwoTone";
-
-import { purple, red, grey } from "@mui/material/colors";
+import { grey } from "@mui/material/colors";
 
 import { useSnackbar } from "notistack";
 
 import { gql, useQuery, useMutation } from "@apollo/client";
 
 import StopIcon from "@mui/icons-material/Stop";
-import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import Paper from "@mui/material/Paper";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
-import Popper from "@mui/material/Popper";
-import TextField from "@mui/material/TextField";
-import ClickAwayListener from "@mui/base/ClickAwayListener";
-// const Diff2html = require("diff2html");
-// import { Diff2html } from "diff2html";
-import * as Diff2Html from "diff2html";
-import "diff2html/bundles/css/diff2html.min.css";
 
-import { ClickInputButton } from "./toolbar";
 import { usePrompt } from "./prompt";
 
 import {
   repoSlice,
   remoteUpdateAllPods,
   selectNumDirty,
-  selectNumStaged,
-  selectNumChanged,
-  selectChangedIds,
-  selectStagedIds,
 } from "../../lib/store";
-import { MyMonaco, MyMonacoDiff } from "../MyMonaco";
 
 import * as wsActions from "../../lib/ws/actions";
-import produce from "immer";
-
-const modalStyle = {
-  position: "absolute",
-  top: "50%",
-  left: "50%",
-  transform: "translate(-50%, -50%)",
-  width: 400,
-  bgcolor: "background.paper",
-  border: "2px solid #000",
-  boxShadow: 24,
-  p: 4,
-};
-
-function Code(props) {
-  return (
-    <Box component="pre" {...props}>
-      {props.children}
-    </Box>
-  );
-}
-
-function HStack(props) {
-  return <Stack {...props}>{props.children}</Stack>;
-}
 
 function Flex(props) {
   return (
@@ -87,7 +40,6 @@ function SidebarSession() {
   let { id } = useParams();
   // const sessionId = useSelector((state) => state.repo.sessionId);
   let sessionId = useSelector((state) => state.repo.sessionId);
-  const dispatch = useDispatch();
 
   return (
     <Box>
@@ -115,7 +67,6 @@ function SidebarRuntime() {
   const runtimeConnected = useSelector((state) => state.repo.runtimeConnected);
   // const runtimes = useSelector((state) => state.repo.runtimes);
 
-  const repoConfig = useSelector((state) => state.repo.repoConfig);
   const dispatch = useDispatch();
   return (
     <Box>
@@ -160,7 +111,6 @@ function SidebarRuntime() {
 
 function SidebarKernel() {
   const kernels = useSelector((state) => state.repo.kernels);
-  const sessionId = useSelector((state) => state.repo.sessionId);
   const runtimeConnected = useSelector((state) => state.repo.runtimeConnected);
   const dispatch = useDispatch();
   return (
@@ -216,24 +166,27 @@ function ApplyAll() {
     numDirty > 0
   );
 
-  let update_intervalId = null;
+  let [intervalId, setIntervalId] = useState(null);
 
   useEffect(() => {
-    if (!update_intervalId) {
-      // clearInterval(update_intervalId);
-      update_intervalId = setInterval(() => {
+    if (intervalId) {
+      clearInterval(intervalId);
+    }
+    setIntervalId(
+      setInterval(() => {
         // websocket resets after 60s of idle by most firewalls
         // console.log("periodically saving ..");
         // dispatch(remoteUpdateAllPods());
-      }, 1000);
-    }
+      }, 1000)
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <Box>
       <Button
         size="small"
-        disabled={numDirty == 0}
+        disabled={numDirty === 0}
         onClick={() => {
           dispatch(remoteUpdateAllPods());
         }}
@@ -289,8 +242,8 @@ function ActiveSessions() {
   useEffect(() => {
     console.log("----- refetching active sessions ..");
     refetch();
-  }, [runtimeConnected]);
-  const [killSession, { data: _data }] = useMutation(
+  }, [runtimeConnected, refetch]);
+  const [killSession] = useMutation(
     gql`
       mutation KillSession($sessionId: String!) {
         killSession(sessionId: $sessionId)
@@ -341,7 +294,7 @@ function ToastError() {
       // I'll need to clear this msg once it is displayed
       dispatch(repoSlice.actions.clearError());
     }
-  }, [error]);
+  }, [error, dispatch, enqueueSnackbar]);
   return <Box></Box>;
 }
 
@@ -376,135 +329,6 @@ function SidebarTest() {
         ClearExports
       </Button>
     </Box>
-  );
-}
-
-function ConfigButton() {
-  let reponame = useSelector((state) => state.repo.reponame);
-  const dispatch = useDispatch();
-  // let username = useSelector((state) => state.repo.username);
-  const { data, loading, error } = useQuery(gql`
-    query RepoConfig {
-      repoConfig(name: "${reponame}")
-    }
-  `);
-  const [updateRepoConfig, {}] = useMutation(
-    gql`
-      mutation UpdateRepoConfig($reponame: String, $config: String) {
-        updateRepoConfig(name: $reponame, config: $config)
-      }
-    `,
-    { refetchQueries: ["RepoConfig"] }
-  );
-  const [str, setStr] = useState("");
-
-  useEffect(() => {
-    // console.log(data);
-    if (data) {
-      dispatch(repoSlice.actions.setRepoConfig(JSON.parse(data.repoConfig)));
-      setStr(data.repoConfig);
-    }
-  }, [data]);
-  const repoConfig = useSelector((state) => state.repo.repoConfig);
-  // console.log("repoConfig", repoConfig);
-  // console.log("ConfigButton", data);
-  // const [open, setOpen] = React.useState(false);
-  // const handleOpen = () => setOpen(true);
-  // const handleClose = () => setOpen(false);
-  // const { isOpen, onOpen, onClose } = useDisclosure();
-  const [open, setOpen] = React.useState(false);
-  const handleOpen = () => setOpen(true);
-  const handleClose = () => setOpen(false);
-  const style = {
-    position: "absolute",
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: 400,
-    bgcolor: "background.paper",
-    border: "2px solid #000",
-    boxShadow: 24,
-    p: 4,
-  };
-  return (
-    <div>
-      <Button onClick={handleOpen}>Config</Button>
-
-      <Modal
-        open={open}
-        onClose={handleClose}
-        aria-labelledby="modal-modal-title"
-        aria-describedby="modal-modal-description"
-      >
-        <Box sx={style}>
-          <Typography id="modal-modal-title" variant="h6" component="h2">
-            Config
-          </Typography>
-          <Box>
-            <Box>Double Click to Edit</Box>
-            <Switch
-              defaultChecked={repoConfig && repoConfig.doubleClickToEdit}
-              onChange={(e) => {
-                // dispatch(repoSlice.actions.setDevMode(e.target.checked));
-                updateRepoConfig({
-                  variables: {
-                    reponame,
-                    config: JSON.stringify({
-                      doubleClickToEdit: e.target.checked,
-                    }),
-                  },
-                });
-              }}
-            ></Switch>
-          </Box>
-
-          <Box>
-            Dev Mode{" "}
-            <Switch
-              defaultChecked={repoConfig && repoConfig.devMode}
-              onChange={(e) => {
-                // console.log(e.target.checked);
-                // dispatch(repoSlice.actions.setDevMode(e.target.checked));
-                updateRepoConfig({
-                  variables: {
-                    reponame,
-                    config: JSON.stringify({
-                      devMode: e.target.checked,
-                    }),
-                  },
-                });
-              }}
-            ></Switch>
-          </Box>
-
-          <Button mr={3} onClick={handleClose}>
-            Close
-          </Button>
-          <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-            Duis mollis, est non commodo luctus, nisi erat porttitor ligula.
-          </Typography>
-          <MyMonaco
-            onChange={(value) => {
-              // dispatch(repoSlice.actions.setRepoConfig(value));
-              setStr(value);
-            }}
-            value={str}
-          ></MyMonaco>
-          <Button
-            onClick={() => {
-              updateRepoConfig({
-                variables: {
-                  reponame,
-                  config: JSON.stringify(JSON.parse(str)),
-                },
-              });
-            }}
-          >
-            Save
-          </Button>
-        </Box>
-      </Modal>
-    </div>
   );
 }
 

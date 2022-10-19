@@ -30,10 +30,7 @@ export const loopPodQueue = createAsyncThunk(
       }
 
       case "REMOTE_PASTE":
-        {
-          return await doRemotePastePod({ repoId, ...action.payload });
-        }
-        break;
+        return await doRemotePastePod({ repoId, ...action.payload });
 
       default:
         throw new Error("Invaid action in podQueue:" + action.type);
@@ -41,7 +38,7 @@ export const loopPodQueue = createAsyncThunk(
   }
 );
 
-export default {
+const myReducers = {
   [loopPodQueue.pending]: (state, action) => {
     state.queueProcessing = true;
   },
@@ -62,3 +59,5 @@ export default {
     throw Error("Loop pod queue rejected. Message:" + action.error.message);
   },
 };
+
+export default myReducers;

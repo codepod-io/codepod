@@ -1,19 +1,11 @@
-import { useParams, Link as ReactLink, Prompt } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  useDroppable,
-} from "@dnd-kit/core";
+import { DndContext } from "@dnd-kit/core";
 
 import { repoSlice } from "../lib/store";
 import * as wsActions from "../lib/ws/actions";
@@ -23,7 +15,7 @@ import useMe from "../lib/me";
 import { Deck } from "../components/repo/graph";
 import { Sidebar } from "../components/repo/sidebar";
 
-import { loadRepoQueue, loadGit } from "../lib/remote/load";
+import { loadRepoQueue } from "../lib/remote/load";
 
 function RepoWrapper({ children }) {
   // this component is used to provide foldable sidebar
@@ -105,7 +97,7 @@ export default function Repo() {
     //   console.log("disconnecting the socket ..");
     //   dispatch(wsActions.wsDisconnect());
     // };
-  }, [me]);
+  }, [me, dispatch, id]);
   useEffect(() => {
     dispatch(repoSlice.actions.resetState());
     dispatch(repoSlice.actions.setRepo({ repoId: id }));
@@ -115,7 +107,7 @@ export default function Repo() {
     dispatch(qActions.startQueue());
     console.log("connecting the socket ..");
     dispatch(wsActions.wsConnect());
-  }, []);
+  }, [dispatch, id]);
 
   // FIXME Removing queueL. This will cause Repo to be re-rendered a lot of
   // times, particularly the delete pod action would cause syncstatus and repo
