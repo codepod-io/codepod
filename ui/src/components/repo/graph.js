@@ -419,7 +419,8 @@ export function Deck({ props }) {
   useEffect(() => {
     let nodes = getRealNodes("ROOT", -1);
     setNodes(nodes);
-  }, [getRealNodes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onNodesChange = useCallback(
     (changes) => {
