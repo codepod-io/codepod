@@ -532,14 +532,6 @@ export function Deck({ props }) {
         x: event.clientX - reactFlowBounds.left,
         y: event.clientY - reactFlowBounds.top,
       });
-      // first, dispatch this to the store
-      dispatch(
-        repoSlice.actions.setPodPosition({
-          id: node.id,
-          x: node.position.x,
-          y: node.position.y,
-        })
-      );
       // check if this position is inside parent scope
       if (
         mousePos.x < node.positionAbsolute.x ||
@@ -552,8 +544,30 @@ export function Deck({ props }) {
       }
       // Check which group is at this position.
       const scope = getScopeAt(mousePos.x, mousePos.y, node.id);
+      let absX = node.position.x;
+      let absY = node.position.y;
       if (scope) {
         console.log("dropped into scope:", scope);
+        // compute the actual position
+        let { x: _absX, y: _absY } = getAbsolutePos(
+          node.positionAbsolute.x,
+          node.positionAbsolute.y,
+          scope,
+          nodes
+        );
+        absX = _absX;
+        absY = _absY;
+      }
+      // first, dispatch this to the store
+      dispatch(
+        repoSlice.actions.setPodPosition({
+          id: node.id,
+          x: absX,
+          y: absY,
+        })
+      );
+
+      if (scope) {
         dispatch(
           repoSlice.actions.setPodParent({
             id: node.id,
@@ -579,20 +593,10 @@ export function Deck({ props }) {
                     ...nd.style,
                     backgroundColor: level2color[scope.level + 1],
                   },
-                  position: scope.positionAbsolute
-                    ? {
-                        x: node.positionAbsolute.x - scope.positionAbsolute.x,
-                        y: node.positionAbsolute.y - scope.positionAbsolute.y,
-                      }
-                    : // I need to adjust for all the ancestor nodes' position.
-                      // But there's no positionAbsolute field in the nodes.
-                      // So, I need to calculate it.
-                      getAbsolutePos(
-                        node.positionAbsolute.x,
-                        node.positionAbsolute.y,
-                        scope,
-                        nds
-                      ),
+                  position: {
+                    x: absX,
+                    y: absY,
+                  },
                 };
               }
               return nd;
