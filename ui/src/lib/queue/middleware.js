@@ -1,12 +1,7 @@
 import store, { repoSlice } from "../store";
 import produce from "immer";
 
-import { customAlphabet } from "nanoid";
-import { nolookalikes } from "nanoid-dictionary";
-
 import { loopPodQueue } from "./queueActions";
-
-const nanoid = customAlphabet(nolookalikes, 10);
 
 let intervalId = null;
 
@@ -31,7 +26,7 @@ function stop() {
   }
 }
 
-export default (storeAPI) => (next) => (action) => {
+const myMiddleware = (storeAPI) => (next) => (action) => {
   // modify addPod action
   switch (action.type) {
     case "START_QUEUE":
@@ -49,7 +44,7 @@ export default (storeAPI) => (next) => (action) => {
             index = storeAPI
               .getState()
               .repo.pods[parent].children.findIndex(({ id }) => id === anchor);
-            if (index == -1)
+            if (index === -1)
               throw new Error("Cannot find anchoar pod:", anchor);
             index += shift | 0;
             draft.index = index;
@@ -79,25 +74,8 @@ export default (storeAPI) => (next) => (action) => {
       }
       break;
     case "MOVE_POD":
-      {
-        throw new Error("MOVE_POD is deprecated");
-        let { from, to } = action.payload;
-        let from_pod = storeAPI.getState().repo.pods[from];
-        let to_pod = storeAPI.getState().repo.pods[to];
-        let new_pod = produce(from_pod, (draft) => {
-          draft.parent = to_pod.parent;
-          draft.index = to_pod.index + 1;
-        });
-        // this will assign a new ID
-        // FIXME this won't assign new ID
-        let action1 = repoSlice.actions.addPod(new_pod);
-        storeAPI.dispatch(action1);
-        storeAPI.dispatch(repoSlice.actions.addPodQueue(action1));
-        let action2 = repoSlice.actions.deletePod({ id: from });
-        storeAPI.dispatch(action2);
-        storeAPI.dispatch(repoSlice.actions.addPodQueue(action2));
-      }
-      break;
+      throw new Error("MOVE_POD is deprecated");
+
     case "REMOTE_PASTE":
       {
         let { parent, index, anchor, shift, column } = action.payload;
@@ -106,7 +84,7 @@ export default (storeAPI) => (next) => (action) => {
         let clip = Object.entries(pods)
           .filter(([id, pod]) => pod.clipped)
           .map(([id, pod]) => id);
-        if (clip.length == 0) {
+        if (clip.length === 0) {
           console.log("No clipped");
           return;
         }
@@ -117,7 +95,7 @@ export default (storeAPI) => (next) => (action) => {
           index = storeAPI
             .getState()
             .repo.pods[parent].children.findIndex(({ id }) => id === anchor);
-          if (index == -1) throw new Error("Cannot find anchoar pod:", anchor);
+          if (index === -1) throw new Error("Cannot find anchoar pod:", anchor);
           index += shift | 0;
         }
         let tmpindex = index;
@@ -144,3 +122,5 @@ export default (storeAPI) => (next) => (action) => {
       return next(action);
   }
 };
+
+export default myMiddleware;

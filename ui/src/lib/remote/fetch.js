@@ -1,9 +1,8 @@
-import { createAsyncThunk } from "@reduxjs/toolkit";
-
 import { getAuthHeaders, hashPod, computeNamespace } from "../utils";
-import { repoSlice } from "../store";
 
-const graphql_url = "/graphql";
+import { GRAPHQL_ENDPOINT } from "../vars";
+
+const graphql_url = GRAPHQL_ENDPOINT;
 
 export async function doRemoteLoadRepo({ id }) {
   // load from remote

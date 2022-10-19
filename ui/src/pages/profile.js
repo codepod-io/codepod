@@ -4,8 +4,6 @@ import Typography from "@mui/material/Typography";
 
 import Paper from "@mui/material/Paper";
 
-import React, { useEffect, useState } from "react";
-
 import useMe from "../lib/me";
 
 export default function Profile() {

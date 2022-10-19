@@ -1,16 +1,15 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
-import { doRemoteLoadRepo, doRemoteLoadGit } from "./fetch";
-import { repoSlice } from "../store";
+import { doRemoteLoadRepo } from "./fetch";
 import { normalize } from "./fetch";
 
 export const loadRepoQueue = createAsyncThunk(
   "loadRepoQueue",
-  async ({ id }, {}) => {
+  async ({ id }) => {
     return await doRemoteLoadRepo({ id });
   }
 );
 
-export default {
+const myReducers = {
   [loadRepoQueue.pending]: (state, action) => {},
   [loadRepoQueue.fulfilled]: (state, action) => {
     if (action.payload.errors) {
@@ -32,3 +31,5 @@ export default {
     throw Error(`ERROR: repo loading rejected ${action.error.message}`);
   },
 };
+
+export default myReducers;

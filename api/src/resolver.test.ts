@@ -36,7 +36,7 @@ describe("sum module", () => {
       resolvers,
     });
 
-    let result = null;
+    let result;
 
     // remove this user
     result = await testServer.executeOperation({

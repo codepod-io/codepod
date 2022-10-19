@@ -4,123 +4,59 @@
 
 # Development
 
-```
-cd ./compose/dev/
-touch .env
+Add a .env file to `./api/.env`, `./dev/.env` with the following:
+
+```shell
+POSTGRES_USER=YOUR_USERNAME
+POSTGRES_PASSWORD=YOUR_PASSWORD
+POSTGRES_DB=YOUR_DBNAME
+JWT_SECRET=YOUR_SUPER_SECRET_KEY
+DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:5432/$POSTGRES_DB?schema=public"
 ```
 
-Add your choice of secrets to the .env file (replace the placeholders):
+Then, start the DB service on localhost:5432
 
 ```
-POSTGRES_USER=<username>
-POSTGRES_PASSWORD=<password>
-POSTGRES_DB=<dbname>
-JWT_SECRET=<yoursecret>
-```
-
-Start the docker-compose stack:
-
-```
+cd ./dev
 docker compose up -d
 ```
 
-The docker-compose file declares a set of services:
-
-- api: the backend API server
-- ui: the frontend React app
-- db: postgres DB
-- prisma: prisma db viewer
-- nginx: reverse proxy to use nice URLs
-
-You will need to perform a manual installation of node_modules into the api and
-ui containers. Attach a shell and run `yarn`. Without this, the initial api/ui
-contianers will not run. So you likely need to make changes to docker compose to
-do this (add `tty: true` and comment out commands line).
-
-Then, initialize a DB by shell into the api container and run:
+If you haven't initialized the DB for the first time, do the initialization:
 
 ```
+cd ./api
 npx prisma migrate dev --name init
 ```
 
-The nginx server expects `codepod.test` as the domain name. You can add a local
-DNS record to your /etc/hosts:
+Start the API server on http://localhost:4000:
 
 ```
-10.43.1.148	codepod.test
+cd ./api
+yarn dev
 ```
 
-This allows codepod.test to be resolved to your server machine. Then, go to
-
-- http://codepod.test:3000 the web app
-- http://codepod.test:3000/graphql the grpahql explorer
-- http://codepod.test:5555 the prisma db viewer
-
-# Deployment
-
-Build the docker images:
+Start the UI server on http://localhost:3000:
 
 ```
-docker build -t lihebi/codepod-ui:v0.1.0 ./ui
-docker build -t lihebi/codepod-api:v0.1.0 ./api
-docker build -t lihebi/codepod_kernel_python:v0.1.0 ./api/kernels/python
+cd ./ui
+yarn dev
 ```
 
-Push to registry:
+Now you should be able to see the app running on http://localhost:3000.
+
+Configuration:
+
+- `ui/src/lib/vars.js`: this file defines the api URL, default for http://localhost:4000.
+
+## Additional tools
+
+The graphql debugger is at http://localhost:3000/graphql.
+
+There's also a prisma DB viewer, you can start it by:
 
 ```
-docker push lihebi/codepod-ui:v0.1.0
-docker push lihebi/codepod-api:v0.1.0
-docker push lihebi/codepod_kernel_python:v0.1.0
+cd api
+yarn run prisma studio
 ```
 
-Create a cloud VM with docker support. Add DNS from domain name to the cloud
-server. Setup TLS, e.g., `app-v1.codepod.io`:
-
-```
-ufw allow 80
-certbot certonly --standalone
-```
-
-Clone this repo on the cloud VM, and go to the production folder:
-
-```
-cd compose/prod
-touch .env
-```
-
-Add your choice of secrets to the .env file (replace the placeholders):
-
-```
-POSTGRES_USER=<username>
-POSTGRES_PASSWORD=<password>
-POSTGRES_DB=<dbname>
-JWT_SECRET=<yoursecret>
-```
-
-Change the domain name to your DNS in nginx.conf, e.g., `app-v1.codepod.io`:
-
-Start the docker-compose stack:
-
-```
-docker compose up -d
-```
-
-Then, initialize a DB by shell into the api container and run:
-
-```
-npx prisma migrate dev --name init
-```
-
-Pull the kernel image:
-
-```
-docker pull lihebi/codepod_kernel_python:v0.1.0
-docker tag lihebi/codepod_kernel_python:v0.1.0 codepod_kernel_python
-```
-
-Now go to
-
-- https://app-v1.codepod.io the web app
-
-# (TODO) Architecture
+By default it is at http://localhost:5555

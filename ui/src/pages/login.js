@@ -4,12 +4,7 @@ import Divider from "@mui/material/Divider";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
-import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
-import Input from "@mui/material/Input";
-import InputLabel from "@mui/material/InputLabel";
-
-import FormControlLabel from "@mui/material/FormControlLabel";
 import FormControl from "@mui/material/FormControl";
 import FormLabel from "@mui/material/FormLabel";
 
@@ -22,7 +17,6 @@ import { Link as ReactLink } from "react-router-dom";
 
 import React, { useEffect, useState } from "react";
 import { FaFacebook, FaGithub, FaGoogle } from "react-icons/fa";
-import { HiEye, HiEyeOff } from "react-icons/hi";
 import { Formik } from "formik";
 
 import { useAuth } from "../lib/auth";
@@ -218,7 +212,7 @@ export default function Login() {
     if (isSignedIn()) {
       navigate("/");
     }
-  }, [isSignedIn]);
+  }, [isSignedIn, navigate]);
   return (
     <Box
       sx={{

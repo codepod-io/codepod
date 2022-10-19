@@ -1,5 +1,5 @@
 import { useQuery, useMutation, gql } from "@apollo/client";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import useMe from "../lib/me";
 
 import Link from "@mui/material/Link";
@@ -12,19 +12,10 @@ import Typography from "@mui/material/Typography";
 import Alert from "@mui/material/Alert";
 import TextField from "@mui/material/TextField";
 
-import FormControlLabel from "@mui/material/FormControlLabel";
 import FormControl from "@mui/material/FormControl";
 import FormLabel from "@mui/material/FormLabel";
 
 import { Formik } from "formik";
-
-function Text(props) {
-  return (
-    <Box component="span" {...props}>
-      {props.children}
-    </Box>
-  );
-}
 
 const FETCH_REPOS = gql`
   query GetRepos {
@@ -90,7 +81,7 @@ function Repos() {
 
 function CreateRepoForm(props) {
   const [error, setError] = useState(null);
-  const [createRepo, {}] = useMutation(
+  const [createRepo] = useMutation(
     gql`
       mutation CreateRepo($name: String!) {
         createRepo(name: $name) {

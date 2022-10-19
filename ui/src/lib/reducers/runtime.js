@@ -1,4 +1,4 @@
-export default {
+const myReducers = {
   clearResults: (state, action) => {
     const id = action.payload;
     state.pods[id].result = null;
@@ -22,8 +22,10 @@ export default {
   addRuntime: (state, action) => {
     // socket address, MQ address, editing
     if (!state.repoConfig.runtimes) {
-      state.repoConfig.runtimes = []
+      state.repoConfig.runtimes = [];
     }
     state.repoConfig.runtimes.push(["", ""]);
   },
 };
+
+export default myReducers;

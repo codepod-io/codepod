@@ -6,8 +6,8 @@ const { PrismaClient } = Prisma;
 
 const prisma = new PrismaClient();
 
-export function computeNamespace(pods, id) {
-  let res = [];
+export function computeNamespace(pods, id: string) {
+  let res: string[] = [];
   // if the pod is a pod, do not include its id
   if (pods[id].type !== "DECK") {
     id = pods[id].parentId;
@@ -26,6 +26,9 @@ async function pastePod({ id, parentId, index, column }) {
       id,
     },
   });
+  if (!pod) {
+    throw new Error("Pod not exists.");
+  }
   // 2. decrease current index
   await prisma.pod.updateMany({
     where: {
@@ -163,27 +166,10 @@ export const resolvers = {
         },
       });
       return {
-        token: jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+        token: jwt.sign({ id: user.id }, process.env.JWT_SECRET as string, {
           expiresIn: "7d",
         }),
       };
-    },
-    deleteUserCCC: async (_, {}, {}) => {
-      // I'm deleting the userId, not that email. FIXME I probably want to check
-      // to ensure that the email matches the userId.
-      let user = await prisma.user.findFirst({
-        where: {
-          email: "ccc@ccc.com",
-        },
-      });
-      if (user) {
-        let deleteUser = await prisma.user.delete({
-          where: {
-            email: "ccc@ccc.com",
-          },
-        });
-      }
-      return true;
     },
     updateUser: async (_, { email, firstname, lastname }, { userId }) => {
       if (!userId) throw Error("Unauthenticated");
@@ -192,6 +178,7 @@ export const resolvers = {
           id: userId,
         },
       });
+      if (!user) throw Error("User not found.");
       if (user.id !== userId) {
         throw new Error("You do not have access to the user.");
       }
@@ -223,7 +210,7 @@ export const resolvers = {
         return {
           id: user.id,
           email: user.email,
-          token: jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+          token: jwt.sign({ id: user.id }, process.env.JWT_SECRET as string, {
             expiresIn: "30d",
           }),
         };
@@ -296,6 +283,7 @@ export const resolvers = {
           owner: true,
         },
       });
+      if (!repo) throw new Error("Repo not found");
       // check ownership
       if (repo.owner.id != userId) {
         throw new Error("You do not have access to the repo.");
@@ -397,6 +385,7 @@ export const resolvers = {
           parent: true,
         },
       });
+      if (!pod) throw new Error("Pod not found");
 
       // 4. update all siblings index
       await prisma.pod.updateMany({
@@ -431,7 +420,6 @@ export const resolvers = {
 };
 
 async function ensurePodAccess({ id, userId }) {
-  return true;
   let pod = await prisma.pod.findFirst({
     where: { id },
     // HEBI: select is used to select a subset of fields

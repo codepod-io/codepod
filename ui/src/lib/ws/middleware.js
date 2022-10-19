@@ -2,7 +2,6 @@ import * as actions from "./actions";
 
 import { repoSlice } from "../store";
 import Stomp from "stompjs";
-import pod from "../reducers/pod";
 
 function getReexports({ id, pods }) {
   // Get the reexports available for the deck id. Those are from this deck's subdecks
@@ -150,10 +149,6 @@ function powerRun_julia({ id, storeAPI, socket }) {
     `
     )
     .join("\n");
-
-  function ns2jlmod(ns) {
-    return "Main." + ns.replaceAll("/", ".");
-  }
 
   // Much better!!!
   let code = `
@@ -338,7 +333,7 @@ function handlePowerRun({ id, doEval, storeAPI, socket }) {
     // run all children pods
     pod.children
       .filter(({ id }) => pods[id].type !== "DECK")
-      .map(({ id }) => {
+      .forEach(({ id }) => {
         let pod = pods[id];
         if (pod.type === "CODE" && pod.content && pod.lang && !pod.thundar) {
           storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
@@ -404,13 +399,14 @@ CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${pod.ns}").__dict__["${name}"]\n0""",
         });
       }
       // if the deck of this pod contains testing decks, update there as well
-      pods[pod.parent].children
+      code += pods[pod.parent].children
         .filter(({ id, type }) => type === "DECK" && pods[id].thundar)
-        .map(({ id }) => {
-          code += `
+        .map(
+          ({ id }) => `
 CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${pod.ns}").__dict__["${name}"]\n0""", "${pods[id].ns}")
-`;
-        });
+`
+        )
+        .join("\n");
 
       console.log("==", name, uses);
       if (uses) {
@@ -429,13 +425,15 @@ CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${pod.ns}").__dict__["${name}"]\n0""",
               ns: pod.ns,
             });
           }
-          pods[pods[use].parent].children
+          code += pods[pods[use].parent].children
             .filter(({ id, type }) => type === "DECK" && pods[id].thundar)
-            .map(({ id }) => {
-              code += `
+            .map(
+              ({ id }) =>
+                `
 CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${pod.ns}").__dict__["${name}"]\n0""", "${pods[id].ns}")
-`;
-            });
+`
+            )
+            .join("\n");
         }
       }
     }
@@ -498,7 +496,7 @@ function getExports(content) {
   while (content.startsWith("@export ") || content.startsWith("@reexport ")) {
     let idx = content.indexOf("\n");
     let line;
-    if (idx == -1) {
+    if (idx === -1) {
       line = content;
       content = "";
     } else {
@@ -637,66 +635,48 @@ function onMessage(store) {
     // console.log("got message", type, payload);
     switch (type) {
       case "output":
-        {
-          console.log("output:", payload);
-        }
+        console.log("output:", payload);
+
         break;
       case "stdout":
-        {
-          store.dispatch(actions.wsStdout(payload));
-        }
+        store.dispatch(actions.wsStdout(payload));
+
         break;
       case "execute_result":
-        {
-          store.dispatch(actions.wsResult(payload));
-        }
+        store.dispatch(actions.wsResult(payload));
+
         break;
       case "display_data":
-        {
-          store.dispatch(actions.wsDisplayData(payload));
-        }
+        store.dispatch(actions.wsDisplayData(payload));
+
         break;
       case "execute_reply":
-        {
-          store.dispatch(actions.wsExecuteReply(payload));
-        }
+        store.dispatch(actions.wsExecuteReply(payload));
+
         break;
       case "error":
-        {
-          store.dispatch(actions.wsError(payload));
-        }
+        store.dispatch(actions.wsError(payload));
+
         break;
       case "stream":
-        {
-          store.dispatch(actions.wsStream(payload));
-        }
+        store.dispatch(actions.wsStream(payload));
         break;
       case "IO:execute_result":
-        {
-          store.dispatch(actions.wsIOResult(payload));
-        }
+        store.dispatch(actions.wsIOResult(payload));
         break;
       case "IO:execute_reply":
-        {
-          // CAUTION ignore
-        }
+        // CAUTION ignore
         break;
       case "IO:error":
-        {
-          store.dispatch(actions.wsIOError(payload));
-        }
+        store.dispatch(actions.wsIOError(payload));
         break;
       case "status":
-        {
-          // console.log("Received status:", payload);
-          store.dispatch(actions.wsStatus(payload));
-        }
+        // console.log("Received status:", payload);
+        store.dispatch(actions.wsStatus(payload));
         break;
       case "interrupt_reply":
-        {
-          // console.log("got interrupt_reply", payload);
-          store.dispatch(actions.wsRequestStatus({ lang: payload.lang }));
-        }
+        // console.log("got interrupt_reply", payload);
+        store.dispatch(actions.wsRequestStatus({ lang: payload.lang }));
         break;
       default:
         console.log("WARNING unhandled message", { type, payload });
@@ -813,7 +793,7 @@ const socketMiddleware = () => {
           }, 30000);
 
           // request kernel status after connection
-          Object.keys(store.getState().repo.kernels).map((k) => {
+          Object.keys(store.getState().repo.kernels).forEach((k) => {
             store.dispatch(
               actions.wsRequestStatus({
                 lang: k,
@@ -909,74 +889,6 @@ const socketMiddleware = () => {
       }
       case "WS_RUN_ALL": {
         throw new Error("WS_RUN_ALL deprecated");
-        if (!socket) {
-          store.dispatch(
-            repoSlice.actions.addError({
-              type: "error",
-              msg: "Runtime not connected",
-            })
-          );
-          break;
-        }
-        // get all pods
-        let pods = store.getState().repo.pods;
-        function helper(id) {
-          let pod = pods[id];
-          pod.children.map(({ id }) => helper(id));
-          // evaluate child first, then parent
-          if (id !== "ROOT") {
-            // if the pod content code
-            // FIXME check validity, i.e. have code, etc
-            // import
-            if (pod.imports) {
-              for (const [k, v] of Object.entries(pod.imports)) {
-                // store.dispatch(actions.wsToggleImport);
-                // console.log("???", k, v);
-                //
-                // I don't need to check v, because v means whether this is
-                // further exported to parent ns. As long as it is shown here,
-                // it is exported from child.
-                // console.log("addImport", k, v);
-                socket.send(
-                  JSON.stringify({
-                    type: "addImport",
-                    payload: {
-                      lang: pod.lang,
-                      // this is the child's ns, actually only related to current
-                      // parent CAUTION but i'm computing it here. Should be
-                      // extracted to somewhere
-                      // from: pod.ns,
-                      from: `${pod.ns}/${pod.id}`,
-                      to: pod.ns,
-                      id: pod.id,
-                      name: k,
-                      sessionId: store.getState().repo.sessionId,
-                    },
-                  })
-                );
-              }
-            }
-
-            if (pod.type === "CODE" && pod.content && pod.lang) {
-              store.dispatch(repoSlice.actions.clearResults(pod.id));
-              socket.send(
-                JSON.stringify({
-                  type: "runCode",
-                  payload: {
-                    lang: pod.lang,
-                    code: pod.content,
-                    namespace: pod.ns,
-                    podId: pod.id,
-                    sessionId: store.getState().repo.sessionId,
-                  },
-                })
-              );
-            }
-          }
-        }
-        helper("ROOT");
-        // run each one in order
-        break;
       }
       case "WS_REQUEST_STATUS":
         if (socket) {
@@ -996,26 +908,25 @@ const socketMiddleware = () => {
         }
         break;
       case "WS_INTERRUPT_KERNEL":
-        {
-          if (!socket) {
-            store.dispatch(
-              repoSlice.actions.addError({
-                type: "error",
-                msg: "Runtime not connected",
-              })
-            );
-            break;
-          }
-          socket.send(
-            JSON.stringify({
-              type: "interruptKernel",
-              payload: {
-                sessionId: store.getState().repo.sessionId,
-                ...action.payload,
-              },
+        if (!socket) {
+          store.dispatch(
+            repoSlice.actions.addError({
+              type: "error",
+              msg: "Runtime not connected",
             })
           );
+          break;
         }
+        socket.send(
+          JSON.stringify({
+            type: "interruptKernel",
+            payload: {
+              sessionId: store.getState().repo.sessionId,
+              ...action.payload,
+            },
+          })
+        );
+
         break;
 
       case "WS_TOGGLE_MIDPORT": {
@@ -1032,7 +943,6 @@ const socketMiddleware = () => {
         store.dispatch(repoSlice.actions.togglePodMidport({ id, name }));
         let pods = store.getState().repo.pods;
         let pod = pods[id];
-        let parent = pods[pod.parent];
         // just send socket
         if (pod.midports[name]) {
           // this name is then ready to be exported!

@@ -64,7 +64,7 @@ export function pastePod(state, action) {
   // 1. remove the clipped pod
   let oldparent = state.pods[pod.parent];
   let oldindex = oldparent.children.map(({ id }) => id).indexOf(pod.id);
-  if (oldindex == -1) {
+  if (oldindex === -1) {
     throw new Error("Pod not found", pod.id);
   }
   oldparent.children.splice(oldindex, 1);
@@ -113,7 +113,7 @@ function setPodType(state, action) {
   pod.dirty = pod.remoteHash !== hashPod(pod);
 }
 
-export default {
+const myReducers = {
   addPod,
   deletePod,
   pastePod,
@@ -130,7 +130,7 @@ export default {
     pod.dirty = pod.remoteHash !== hashPod(pod);
   },
   foldAll: (state, action) => {
-    for (const [id, pod] of Object.entries(state.pods)) {
+    for (const [, pod] of Object.entries(state.pods)) {
       if (pod) {
         pod.fold = true;
         pod.dirty = pod.remoteHash !== hashPod(pod);
@@ -138,7 +138,7 @@ export default {
     }
   },
   unfoldAll: (state, action) => {
-    for (const [id, pod] of Object.entries(state.pods)) {
+    for (const [, pod] of Object.entries(state.pods)) {
       pod.fold = false;
       pod.dirty = pod.remoteHash !== hashPod(pod);
     }
@@ -242,3 +242,5 @@ export default {
     state.pods[id].dirty = true;
   },
 };
+
+export default myReducers;

@@ -1,4 +1,4 @@
-import { configureStore, createAsyncThunk } from "@reduxjs/toolkit";
+import { configureStore } from "@reduxjs/toolkit";
 
 import { createSlice } from "@reduxjs/toolkit";
 import { io } from "socket.io-client";
@@ -119,12 +119,12 @@ export const repoSlice = createSlice({
       pod.clipped = pod.clipped ? false : true;
     },
     clearClip: (state, action) => {
-      for (let [id, pod] of Object.entries(state.pods)) {
+      for (let [, pod] of Object.entries(state.pods)) {
         pod.clipped = false;
       }
     },
     clearLastClip: (state, action) => {
-      for (let [id, pod] of Object.entries(state.pods)) {
+      for (let [, pod] of Object.entries(state.pods)) {
         pod.lastclip = false;
       }
     },
@@ -160,14 +160,6 @@ export const repoSlice = createSlice({
   },
 });
 
-function isPodQueueAction(action) {
-  const types = [
-    repoSlice.actions.addPod.type,
-    repoSlice.actions.deletePod.type,
-  ];
-  return types.includes(action.type);
-}
-
 // placeholder for now
 export const userSlice = createSlice({
   name: "user",
@@ -197,7 +189,6 @@ const hashMiddleware = (storeAPI) => (next) => (action) => {
         storeAPI.dispatch(repoSlice.actions.setPodDirty({ id, dirty: true }));
       }
       return result;
-      break;
     default:
       return next(action);
   }

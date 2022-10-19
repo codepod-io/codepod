@@ -36,21 +36,3 @@
     transform: rotate(360deg);
   }
 }
-
-.myLineDecoration-modified {
-  background: lightblue;
-  width: 5px !important;
-  margin-left: 3px;
-}
-
-.myLineDecoration-add {
-  background: green;
-  width: 5px !important;
-  margin-left: 3px;
-}
-
-.myLineDecoration-delete {
-  background: red;
-  width: 5px !important;
-  margin-left: 3px;
-}

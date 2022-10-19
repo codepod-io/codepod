@@ -1,5 +1,3 @@
-import { useParams, Link as ReactLink, Prompt } from "react-router-dom";
-
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Tooltip from "@mui/material/Tooltip";
@@ -7,7 +5,6 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Stack from "@mui/material/Stack";
 import Select from "@mui/material/Select";
 import MenuItem from "@mui/material/MenuItem";
-import { purple, red, grey, blue } from "@mui/material/colors";
 
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
@@ -19,7 +16,7 @@ import InfoIcon from "@mui/icons-material/Info";
 import DeleteIcon from "@mui/icons-material/Delete";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 import Popover from "@mui/material/Popover";
@@ -42,13 +39,6 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import FastForwardIcon from "@mui/icons-material/FastForward";
 import PlaylistPlayIcon from "@mui/icons-material/PlaylistPlay";
 import { AiOutlineFunction } from "react-icons/ai";
-import Ansi from "ansi-to-react";
-import { FcAddColumn, FcDeleteColumn } from "react-icons/fc";
-import { v4 as uuidv4 } from "uuid";
-// const Diff2html = require("diff2html");
-// import { Diff2html } from "diff2html";
-import * as Diff2Html from "diff2html";
-import "diff2html/bundles/css/diff2html.min.css";
 
 import { repoSlice, remoteUpdatePod, selectIsDirty } from "../../lib/store";
 import * as wsActions from "../../lib/ws/actions";

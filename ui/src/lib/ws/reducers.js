@@ -1,4 +1,4 @@
-export default {
+const myReducers = {
   WS_STATUS: (state, action) => {
     const { lang, status, id } = action.payload;
     // console.log("WS_STATUS", { lang, status });
@@ -139,3 +139,5 @@ export default {
     };
   },
 };
+
+export default myReducers;

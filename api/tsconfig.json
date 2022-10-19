@@ -1,8 +1,26 @@
 {
-    "extends": "./tsconfig-base.json",
     "compilerOptions": {
         "module": "esnext",
-        "outDir": "dist/mjs",
-        "target": "esnext"
-    }
+        "outDir": "./build",
+        "target": "esnext",
+        "allowJs": true,
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "lib": ["esnext"],
+        "moduleResolution": "node",
+        "noFallthroughCasesInSwitch": true,
+        "resolveJsonModule": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "isolatedModules": true,
+        "noImplicitAny": false,
+    },
+    "ts-node": {
+        // these options are overrides used only by ts-node
+        // same as the --compilerOptions flag and the TS_NODE_COMPILER_OPTIONS environment variable
+        "compilerOptions": {
+          "module": "commonjs"
+        }
+      },
+    "include": ["src"]
 }

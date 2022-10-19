@@ -1,4 +1,4 @@
-export default {
+const myReducers = {
   addPodExport: (state, action) => {
     let { id, name } = action.payload;
     // XXX at pod creation, remote pod in db gets null in exports/imports.
@@ -10,7 +10,7 @@ export default {
     pod.exports[name] = false;
   },
   clearAllExports: (state, action) => {
-    for (let [id, pod] of Object.entries(state.pods)) {
+    for (let [, pod] of Object.entries(state.pods)) {
       pod.exports = {};
       pod.reexports = {};
     }
@@ -25,7 +25,7 @@ export default {
     pod.reexports = reexports;
     // add the reexports use reference to the origin
     for (let [name, origid] of Object.entries(reexports)) {
-      if (state.pods[origid].exports[name].indexOf(id) == -1) {
+      if (state.pods[origid].exports[name].indexOf(id) === -1) {
         state.pods[origid].exports[name].push(id);
       }
     }
@@ -98,3 +98,5 @@ export default {
     pod.midports[name] = !pod.midports[name];
   },
 };
+
+export default myReducers;

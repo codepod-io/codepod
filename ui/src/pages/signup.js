@@ -1,4 +1,3 @@
-import * as React from "react";
 import { useEffect, useState } from "react";
 
 import { useNavigate } from "react-router-dom";
@@ -41,24 +40,15 @@ function Copyright(props) {
 }
 
 export default function SignUp() {
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    console.log({
-      email: data.get("email"),
-      password: data.get("password"),
-    });
-  };
-
   const { signUp, isSignedIn } = useAuth();
   const [error, setError] = useState(null);
 
-  let navigate = useNavigate()
+  let navigate = useNavigate();
   useEffect(() => {
     if (isSignedIn()) {
-      navigate("/")
+      navigate("/");
     }
-  }, [isSignedIn]);
+  }, [isSignedIn, navigate]);
 
   const formik = useFormik({
     initialValues: {
@@ -145,7 +135,7 @@ export default function SignUp() {
                 value={formik.values.email}
                 onChange={formik.handleChange}
                 error={formik.touched.email && Boolean(formik.errors.email)}
-              // helperText={formik.touched.email && formik.errors.email}
+                // helperText={formik.touched.email && formik.errors.email}
               />
             </Grid>
             <Grid item xs={12}>
@@ -162,7 +152,7 @@ export default function SignUp() {
                 error={
                   formik.touched.password && Boolean(formik.errors.password)
                 }
-              // helperText={formik.touched.password && formik.errors.password}
+                // helperText={formik.touched.password && formik.errors.password}
               />
             </Grid>
             <Grid item xs={12}>

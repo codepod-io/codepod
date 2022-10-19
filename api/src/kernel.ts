@@ -53,7 +53,7 @@ function serializeMsg(msg, key) {
 
 function deserializeMsg(frames, key = null) {
   var i = 0;
-  var idents = [];
+  var idents: any[] = [];
   for (i = 0; i < frames.length; i++) {
     var frame = frames[i];
     // console.log(i);
@@ -289,7 +289,7 @@ async function removeContainer(name) {
         console.log("removeContainer: container seems not exist.");
         return resolve(null);
       }
-      if (data.State.Running) {
+      if (data?.State.Running) {
         old.stop((err, data) => {
           // FIXME If the container is stopped but not removed, will there be errors
           // if I call stop?
@@ -349,7 +349,7 @@ async function loadContainer(name, network) {
         console.log("removeContainer: container seems not exist.");
         return resolve(null);
       }
-      if (data.State.Running) {
+      if (data?.State.Running) {
         // console.log(data.NetworkSettings.Networks);
         let ip = data.NetworkSettings.Networks[network].IPAddress;
         console.log("IP:", ip);
@@ -404,7 +404,7 @@ async function createContainer(image, name, network) {
           console.log("ERR:", err);
           return;
         }
-        container.start((err, data) => {
+        container?.start((err, data) => {
           console.log("Container started!");
           // console.log(container);
           container.inspect((err, data) => {
@@ -412,7 +412,7 @@ async function createContainer(image, name, network) {
             // let ip = data.NetworkSettings.IPAddress
             //
             // If created using codepod network bridge, the IP is here:
-            let ip = data.NetworkSettings.Networks[network].IPAddress;
+            let ip = data?.NetworkSettings.Networks[network].IPAddress;
             console.log("IP:", ip);
             resolve(ip);
           });
@@ -583,7 +583,7 @@ function handleIOPub_stream({ msgs, socket }) {
   }
 }
 
-let mq_client = null;
+let mq_client: Stomp.Client;
 export class CodePodKernel {
   lang;
   startupFile;
