@@ -18,9 +18,9 @@ spec:
     spec:
       containers:
         - name: codepod-ui
-          image: lihebi/codepod-ui:v0.2.0
+          image: lihebi/codepod-ui:v0.4.2
           ports:
-            - containerPort: 3000
+            - containerPort: 80
 
 ---
 apiVersion: v1
@@ -33,7 +33,7 @@ spec:
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 3000
+      targetPort: 80
 
 # API
 ---
@@ -55,7 +55,7 @@ spec:
     spec:
       containers:
         - name: codepod-api
-          image: lihebi/codepod-api:v0.2.0
+          image: lihebi/codepod-api:v0.4.2
           ports:
             - containerPort: 4000
           env:
