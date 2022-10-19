@@ -56,7 +56,14 @@ There's also a prisma DB viewer, you can start it by:
 
 ```
 cd api
-yarn run prisma studio
+npx prisma studio
 ```
 
 By default it is at http://localhost:5555
+
+Storybook is a tool for easier development of React components. You can start it on http://localhost:5555 by:
+
+```
+cd ui
+yarn storybook
+```
