@@ -9,9 +9,9 @@ import {
   doRemoteUpdatePod,
   doRemoteAddPod,
   doRemoteDeletePod,
-} from "./remote/fetch";
+} from "./fetch";
 
-import { createRuntimeSlice } from "./ws/middleware";
+import { createRuntimeSlice } from "./runtime";
 
 // TODO use a selector to compute and retrieve the status
 // TODO this need to cooperate with syncing indicator

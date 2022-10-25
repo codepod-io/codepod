@@ -1,6 +1,6 @@
-import { getAuthHeaders, hashPod, computeNamespace } from "../utils";
+import { getAuthHeaders, hashPod, computeNamespace } from "./utils";
 
-import { GRAPHQL_ENDPOINT } from "../vars";
+import { GRAPHQL_ENDPOINT } from "./vars";
 
 const graphql_url = GRAPHQL_ENDPOINT;
 
