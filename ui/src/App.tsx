@@ -1,4 +1,4 @@
-import './App.css';
+import "./App.css";
 
 import { HashRouter as Router, Routes, Route } from "react-router-dom";
 
@@ -17,9 +17,6 @@ import { Header, Footer } from "./components/Header";
 import Box from "@mui/material/Box";
 import { SnackbarProvider } from "notistack";
 
-import { Provider } from "react-redux";
-
-import store from "./lib/store";
 import Docs from "./pages/docs";
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
@@ -45,97 +42,94 @@ function NormalLayout({ children }: any) {
 function App() {
   return (
     <Router>
-      <Provider store={store}>
-        <ThemeProvider theme={theme}>
-          <AuthProvider>
-            <SnackbarProvider maxSnack={5}>
-              <Routes>
-                <Route
-                  path="/about"
-                  element={
-                    <NormalLayout>
-                      <About />
-                    </NormalLayout>
-                  }
-                />
-                <Route
-                  path="/docs"
-                  element={
-                    <NormalLayout>
-                      <Docs />
-                    </NormalLayout>
-                  }
-                ></Route>
-                <Route
-                  path="/repos"
-                  element={
-                    <NormalLayout>
-                      <Repos />
-                    </NormalLayout>
-                  }
-                ></Route>
-                <Route
-                  path="/repo/:id"
-                  element={
-                    <Box height="100vh">
-                      <Header />
-                      <Box height="100%" pt="50px">
-                        <Repo />
-                      </Box>
+      <ThemeProvider theme={theme}>
+        <AuthProvider>
+          <SnackbarProvider maxSnack={5}>
+            <Routes>
+              <Route
+                path="/about"
+                element={
+                  <NormalLayout>
+                    <About />
+                  </NormalLayout>
+                }
+              />
+              <Route
+                path="/docs"
+                element={
+                  <NormalLayout>
+                    <Docs />
+                  </NormalLayout>
+                }
+              ></Route>
+              <Route
+                path="/repos"
+                element={
+                  <NormalLayout>
+                    <Repos />
+                  </NormalLayout>
+                }
+              ></Route>
+              <Route
+                path="/repo/:id"
+                element={
+                  <Box height="100vh">
+                    <Header />
+                    <Box height="100%" pt="50px">
+                      <Repo />
                     </Box>
-                  }
-                ></Route>
-                <Route
-                  path="/test"
-                  element={
-                    <NormalLayout>
-                      <Test />
-                    </NormalLayout>
-                  }
-                ></Route>
-                <Route
-                  path="/login"
-                  element={
-                    <NormalLayout>
-                      <Login />
-                    </NormalLayout>
-                  }
-                ></Route>
-                <Route
-                  path="/signup"
-                  element={
-                    <NormalLayout>
-                      <Signup />
-                    </NormalLayout>
-                  }
-                ></Route>
-                <Route
-                  path="/profile"
-                  element={
-                    <NormalLayout>
-                      <Profile />
-                    </NormalLayout>
-                  }
-                ></Route>
-                <Route
-                  path="/"
-                  element={
-                    <NormalLayout>
-                      <Home />
-                    </NormalLayout>
-                  }
-                ></Route>
-              </Routes>
-            </SnackbarProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </Provider>
+                  </Box>
+                }
+              ></Route>
+              <Route
+                path="/test"
+                element={
+                  <NormalLayout>
+                    <Test />
+                  </NormalLayout>
+                }
+              ></Route>
+              <Route
+                path="/login"
+                element={
+                  <NormalLayout>
+                    <Login />
+                  </NormalLayout>
+                }
+              ></Route>
+              <Route
+                path="/signup"
+                element={
+                  <NormalLayout>
+                    <Signup />
+                  </NormalLayout>
+                }
+              ></Route>
+              <Route
+                path="/profile"
+                element={
+                  <NormalLayout>
+                    <Profile />
+                  </NormalLayout>
+                }
+              ></Route>
+              <Route
+                path="/"
+                element={
+                  <NormalLayout>
+                    <Home />
+                  </NormalLayout>
+                }
+              ></Route>
+            </Routes>
+          </SnackbarProvider>
+        </AuthProvider>
+      </ThemeProvider>
     </Router>
   );
 }
 
 export default App;
-
 
 // function App() {
 //   return (

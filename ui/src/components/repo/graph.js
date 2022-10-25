@@ -17,18 +17,13 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 
-import { useDispatch, useSelector } from "react-redux";
-
 import Moveable from "react-moveable";
 import Ansi from "ansi-to-react";
 
 import { customAlphabet } from "nanoid";
 import { nolookalikes } from "nanoid-dictionary";
 
-import { repoSlice } from "../../lib/store";
-
-import * as qActions from "../../lib/queue/actions";
-import * as wsActions from "../../lib/ws/actions";
+import { useRepoStore } from "../../lib/store";
 
 import { MyMonaco } from "../MyMonaco";
 
@@ -36,8 +31,8 @@ const nanoid = customAlphabet(nolookalikes, 10);
 
 const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
   // add resize to the node
-  const dispatch = useDispatch();
   const ref = useRef(null);
+  const updatePod = useRepoStore((state) => state.updatePod);
   const [target, setTarget] = React.useState();
   const [frame] = React.useState({
     translate: [0, 0],
@@ -86,15 +81,13 @@ const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
               offx: beforeTranslate[0],
               offy: beforeTranslate[1],
             });
-            dispatch(
-              repoSlice.actions.updatePod({
-                id,
-                data: {
-                  width: e.width,
-                  height: e.height,
-                },
-              })
-            );
+            updatePod({
+              id,
+              data: {
+                width: e.width,
+                height: e.height,
+              },
+            });
           }}
         />
       )}
@@ -103,8 +96,11 @@ const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
 });
 
 const CodeNode = memo(({ data, id, isConnectable, selected }) => {
-  const pod = useSelector((state) => state.repo.pods[id]);
-  const dispatch = useDispatch();
+  const pod = useRepoStore((state) => state.pods[id]);
+  const setPodContent = useRepoStore((state) => state.setPodContent);
+  const updatePod = useRepoStore((state) => state.updatePod);
+  const clearResults = useRepoStore((s) => s.clearResults);
+  const wsRun = useRepoStore((state) => state.wsRun);
   const ref = useRef(null);
   const [target, setTarget] = React.useState();
   const [frame] = React.useState({
@@ -151,30 +147,12 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
           gitvalue={pod.staged}
           // pod={pod}
           onChange={(value) => {
-            dispatch(
-              repoSlice.actions.setPodContent({ id: pod.id, content: value })
-            );
+            setPodContent({ id: pod.id, content: value });
           }}
           lang={pod.lang || "javascript"}
-          onExport={(name, isActive) => {
-            if (isActive) {
-              dispatch(repoSlice.actions.deletePodExport({ id: pod.id, name }));
-            } else {
-              dispatch(repoSlice.actions.addPodExport({ id: pod.id, name }));
-            }
-          }}
-          onMidport={(name, isActive) => {
-            if (isActive) {
-              dispatch(
-                repoSlice.actions.deletePodMidport({ id: pod.id, name })
-              );
-            } else {
-              dispatch(repoSlice.actions.addPodMidport({ id: pod.id, name }));
-            }
-          }}
           onRun={() => {
-            dispatch(repoSlice.actions.clearResults(pod.id));
-            dispatch(wsActions.wsRun(pod.id));
+            clearResults(pod.id);
+            wsRun(pod.id);
           }}
         />
         <Box
@@ -195,7 +173,7 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
                 size="small"
                 sx={{ color: "green" }}
                 onClick={() => {
-                  dispatch(wsActions.wsRun(id));
+                  wsRun(id);
                 }}
               >
                 <PlayArrowIcon sx={{ fontSize: 15 }} />
@@ -290,15 +268,13 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
               offx: beforeTranslate[0],
               offy: beforeTranslate[1],
             });
-            dispatch(
-              repoSlice.actions.updatePod({
-                id,
-                data: {
-                  width: e.width,
-                  height: e.height,
-                },
-              })
-            );
+            updatePod({
+              id,
+              data: {
+                width: e.width,
+                height: e.height,
+              },
+            });
           }}
         />
       )}
@@ -323,8 +299,8 @@ export function Deck({ props }) {
   const [edges, setEdges] = useState([]);
 
   // the real pods
-  const id2children = useSelector((state) => state.repo.id2children);
-  const pods = useSelector((state) => state.repo.pods);
+  const id2children = useRepoStore((state) => state.id2children);
+  const pods = useRepoStore((state) => state.pods);
 
   const onResize = useCallback(
     ({ id, width, height, offx, offy }) => {
@@ -404,7 +380,11 @@ export function Deck({ props }) {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const reactFlowWrapper = useRef(null);
 
-  const dispatch = useDispatch();
+  const addPod = useRepoStore((state) => state.addPod);
+  const setPodPosition = useRepoStore((state) => state.setPodPosition);
+  const setPodParent = useRepoStore((state) => state.setPodParent);
+  const remoteDelete = useRepoStore((state) => state.remoteDelete);
+
   const addNode = useCallback(
     (x, y, type) => {
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
@@ -447,21 +427,19 @@ export function Deck({ props }) {
       setNodes((nds) => nds.concat(newNode));
 
       // add to pods
-      dispatch(
-        qActions.remoteAdd({
-          id,
-          parent: "ROOT",
-          index: 0,
-          type: type === "code" ? "CODE" : "DECK",
-          lang: "python",
-          x: position.x,
-          y: position.y,
-          width: style.width,
-          height: style.height,
-        })
-      );
+      addPod({
+        id,
+        parent: "ROOT",
+        index: 0,
+        type: type === "code" ? "CODE" : "DECK",
+        lang: "python",
+        x: position.x,
+        y: position.y,
+        width: style.width,
+        height: style.height,
+      });
     },
-    [dispatch, onResize, reactFlowInstance, setNodes]
+    [addPod, onResize, reactFlowInstance]
   );
 
   const getAbsPos = useCallback(
@@ -559,21 +537,17 @@ export function Deck({ props }) {
         absY = _absY;
       }
       // first, dispatch this to the store
-      dispatch(
-        repoSlice.actions.setPodPosition({
-          id: node.id,
-          x: absX,
-          y: absY,
-        })
-      );
+      setPodPosition({
+        id: node.id,
+        x: absX,
+        y: absY,
+      });
 
       if (scope) {
-        dispatch(
-          repoSlice.actions.setPodParent({
-            id: node.id,
-            parent: scope.id,
-          })
-        );
+        setPodParent({
+          id: node.id,
+          parent: scope.id,
+        });
 
         // enlarge the parent node
         // FIXME this is not working, because we will have to enlarge all the ancestor nodes.
@@ -607,17 +581,24 @@ export function Deck({ props }) {
       }
     },
     // We need to monitor nodes, so that getScopeAt can have all the nodes.
-    [reactFlowInstance, dispatch, getAbsolutePos, getScopeAt]
+    [
+      reactFlowInstance,
+      getScopeAt,
+      setPodPosition,
+      getAbsolutePos,
+      nodes,
+      setPodParent,
+    ]
   );
 
   const onNodesDelete = useCallback(
     (nodes) => {
       // remove from pods
       for (const node of nodes) {
-        dispatch(qActions.remoteDelete({ id: node.id }));
+        remoteDelete({ id: node.id });
       }
     },
-    [dispatch]
+    [remoteDelete]
   );
 
   const [showContextMenu, setShowContextMenu] = useState(false);

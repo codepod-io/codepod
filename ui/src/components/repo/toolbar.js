@@ -17,7 +17,6 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutline";
 
 import React, { useRef, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
 
 import Popover from "@mui/material/Popover";
 import Paper from "@mui/material/Paper";
@@ -40,8 +39,7 @@ import FastForwardIcon from "@mui/icons-material/FastForward";
 import PlaylistPlayIcon from "@mui/icons-material/PlaylistPlay";
 import { AiOutlineFunction } from "react-icons/ai";
 
-import { repoSlice, remoteUpdatePod, selectIsDirty } from "../../lib/store";
-import * as wsActions from "../../lib/ws/actions";
+import { useRepoStore, remoteUpdatePod, selectIsDirty } from "../../lib/store";
 import * as qActions from "../../lib/queue/actions";
 
 function Code(props) {
@@ -85,8 +83,7 @@ function HStack(props) {
 }
 
 export function SyncStatus({ pod }) {
-  const dispatch = useDispatch();
-  const isDirty = useSelector(selectIsDirty(pod.id));
+  const isDirty = useRepoStore(selectIsDirty(pod.id));
   if (pod.isSyncing) {
     return (
       <Box>
@@ -100,7 +97,7 @@ export function SyncStatus({ pod }) {
           size="small"
           // variant="ghost"
           onClick={() => {
-            dispatch(remoteUpdatePod(pod));
+            remoteUpdatePod(pod);
           }}
         >
           <ReplayIcon />
@@ -239,12 +236,12 @@ export function ClickInputButton({ callback, children, defvalue }) {
 }
 
 export function ExportButton({ id }) {
-  const dispatch = useDispatch();
+  const addPodExport = useRepoStore((state) => state.addPodExport);
   return (
     <ClickInputButton
       callback={(value) => {
         if (value) {
-          dispatch(repoSlice.actions.addPodExport({ id, name: value }));
+          addPodExport({ id, name: value });
         }
       }}
     >
@@ -254,49 +251,32 @@ export function ExportButton({ id }) {
 }
 
 export function UpButton({ pod }) {
-  const dispatch = useDispatch();
+  const remoteAdd = useRepoStore((state) => state.remoteAdd);
   return (
     <HoverButton
       btn1={
         <IconButton
           size="small"
           onClick={() => {
-            dispatch(
-              qActions.remoteAdd({
-                parent: pod.parent,
-                anchor: pod.id,
-                type: pod.type === "DECK" ? "DECK" : pod.type,
-                lang: pod.lang,
-                column: pod.column,
-              })
-            );
+            remoteAdd({
+              parent: pod.parent,
+              anchor: pod.id,
+              type: pod.type === "DECK" ? "DECK" : pod.type,
+              lang: pod.lang,
+              column: pod.column,
+            });
           }}
         >
           <ArrowUpwardIcon sx={{ fontSize: 15 }} />
         </IconButton>
       }
-      btn2={
-        <IconButton
-          size="small"
-          onClick={() => {
-            dispatch(
-              qActions.remotePaste({
-                parent: pod.parent,
-                anchor: pod.id,
-                column: pod.column,
-              })
-            );
-          }}
-        >
-          <FaPaste />
-        </IconButton>
-      }
+      btn2={<Box>DEPRECATED</Box>}
     />
   );
 }
 
 export function DownButton({ pod }) {
-  const dispatch = useDispatch();
+  const remoteAdd = useRepoStore((state) => state.remoteAdd);
   return (
     <HoverButton
       btn1={
@@ -304,62 +284,38 @@ export function DownButton({ pod }) {
           // variant="ghost"
           size="small"
           onClick={() => {
-            dispatch(
-              qActions.remoteAdd({
-                parent: pod.parent,
-                anchor: pod.id,
-                shift: 1,
-                type: pod.type === "DECK" ? "DECK" : pod.type,
-                lang: pod.lang,
-                column: pod.column,
-              })
-            );
+            remoteAdd({
+              parent: pod.parent,
+              anchor: pod.id,
+              shift: 1,
+              type: pod.type === "DECK" ? "DECK" : pod.type,
+              lang: pod.lang,
+              column: pod.column,
+            });
           }}
         >
           <ArrowDownwardIcon sx={{ fontSize: 15 }} />
         </IconButton>
       }
-      btn2={
-        <IconButton
-          size="small"
-          // I have to use Buttons from material UI when I use disabled
-          // together with onMouseLeave, otherwise, when the button is
-          // disabled, the onMouseLeave is not called!
-          // disabled={clip.length == 0}
-          onClick={() => {
-            dispatch(
-              qActions.remotePaste({
-                parent: pod.parent,
-                anchor: pod.id,
-                shift: 1,
-                column: pod.column,
-              })
-            );
-          }}
-        >
-          <FaPaste />
-        </IconButton>
-      }
+      btn2={<Box>DEPRECATED</Box>}
     />
   );
 }
 
 export function RightButton({ pod }) {
   // This is only used in deck
-  const dispatch = useDispatch();
+  const remoteAdd = useRepoStore((state) => state.remoteAdd);
   return (
     <IconButton
       size="small"
       onClick={() => {
         // 1. add a dec
-        dispatch(
-          qActions.remoteAdd({
-            parent: pod.id,
-            type: "DECK",
-            index: pod.children.length,
-            lang: pod.lang,
-          })
-        );
+        remoteAdd({
+          parent: pod.id,
+          type: "DECK",
+          index: pod.children.length,
+          lang: pod.lang,
+        });
       }}
     >
       <ArrowForwardIcon sx={{ fontSize: 15 }} />
@@ -368,13 +324,13 @@ export function RightButton({ pod }) {
 }
 
 export function FoldButton({ pod }) {
-  const dispatch = useDispatch();
+  const toggleFold = useRepoStore((s) => s.toggleFold);
   return (
     <IconButton
       size="small"
       // variant="ghost"
       onClick={() => {
-        dispatch(repoSlice.actions.toggleFold(pod.id));
+        toggleFold(pod.id);
       }}
     >
       {pod.fold ? (
@@ -399,7 +355,7 @@ export function ThundarMark({ pod }) {
 }
 
 export function RunButton({ id }) {
-  const dispatch = useDispatch();
+  const wsRun = useRepoStore((state) => state.wsRun);
   return (
     <Flex>
       <Tooltip title="Run (shift-enter)">
@@ -407,7 +363,7 @@ export function RunButton({ id }) {
           size="small"
           sx={{ color: "green" }}
           onClick={() => {
-            dispatch(wsActions.wsRun(id));
+            wsRun(id);
           }}
         >
           <PlayArrowIcon sx={{ fontSize: 15 }} />
@@ -418,7 +374,8 @@ export function RunButton({ id }) {
 }
 
 export function DeckRunButton({ id }) {
-  const dispatch = useDispatch();
+  const wsRun = useRepoStore((state) => state.wsRun);
+  const wsPowerRun = useRepoStore((state) => state.wsPowerRun);
   return (
     <HoverButton
       btn1={
@@ -428,7 +385,7 @@ export function DeckRunButton({ id }) {
           }}
           size="small"
           onClick={() => {
-            dispatch(wsActions.wsRun(id));
+            wsRun(id);
           }}
         >
           <PlayArrowIcon fontSize="small" />
@@ -443,7 +400,7 @@ export function DeckRunButton({ id }) {
             }}
             size="small"
             onClick={() => {
-              dispatch(wsActions.wsPowerRun({ id }));
+              wsPowerRun({ id });
             }}
           >
             <FastForwardIcon fontSize="small" />
@@ -454,7 +411,7 @@ export function DeckRunButton({ id }) {
             }}
             size="small"
             onClick={() => {
-              dispatch(wsActions.wsPowerRun({ id, doEval: true }));
+              wsPowerRun({ id, doEval: true });
             }}
           >
             <PlaylistPlayIcon fontSize="small" />
@@ -468,13 +425,13 @@ export function DeckRunButton({ id }) {
 export function ThundarButton({ pod }) {
   // this button is used for indicating side-effect. Side-effect pods are not
   // executed by run all button or run deck.
-  const dispatch = useDispatch();
+  const toggleThundar = useRepoStore((state) => state.toggleThundar);
   return (
     <IconButton
       size="small"
       bg={pod.thundar ? "teal.300" : "default"}
       onClick={() => {
-        dispatch(repoSlice.actions.toggleThundar(pod.id));
+        toggleThundar(pod.id);
       }}
     >
       {pod.thundar ? (
@@ -503,13 +460,13 @@ export function UtilityMark({ pod }) {
   );
 }
 export function UtilityButton({ pod }) {
-  const dispatch = useDispatch();
+  const toggleUtility = useRepoStore((s) => s.toggleUtility);
   return (
     <IconButton
       size="small"
       bg={pod.utility ? "green.200" : "default"}
       onClick={() => {
-        dispatch(repoSlice.actions.toggleUtility(pod.id));
+        toggleUtility(pod.id);
       }}
     >
       {pod.utility ? (
@@ -527,7 +484,7 @@ export function UtilityButton({ pod }) {
 }
 
 export function DeleteButton({ pod }) {
-  const dispatch = useDispatch();
+  const remoteDelete = useRepoStore((s) => s.remoteDelete);
   return (
     <HoverButton
       btn1={
@@ -538,32 +495,13 @@ export function DeleteButton({ pod }) {
             color: "red",
           }}
           onClick={() => {
-            dispatch(qActions.remoteDelete({ id: pod.id }));
+            remoteDelete({ id: pod.id });
           }}
         >
           <DeleteIcon sx={{ fontSize: 15 }} />
         </IconButton>
       }
-      btn2={
-        <Flex direction="column">
-          <Button
-            size="small"
-            onClick={() => {
-              dispatch(repoSlice.actions.clearClip());
-            }}
-          >
-            CLR
-          </Button>
-          <IconButton
-            size="small"
-            onClick={() => {
-              dispatch(repoSlice.actions.markClip({ id: pod.id }));
-            }}
-          >
-            <FaCut fontSize={15} />
-          </IconButton>
-        </Flex>
-      }
+      btn2={<Box>DEPRECATED</Box>}
     />
   );
 }
@@ -596,7 +534,7 @@ export function HoverButton({ btn1, btn2 }) {
 }
 
 function LanguageMenu({ pod }) {
-  const dispatch = useDispatch();
+  const setPodLang = useRepoStore((s) => s.setPodLang);
   return (
     <Box>
       <Select
@@ -604,12 +542,10 @@ function LanguageMenu({ pod }) {
         placeholder="Select option"
         value={pod.lang || ""}
         onChange={(e) =>
-          dispatch(
-            repoSlice.actions.setPodLang({
-              id: pod.id,
-              lang: e.target.value,
-            })
-          )
+          setPodLang({
+            id: pod.id,
+            lang: e.target.value,
+          })
         }
       >
         <MenuItem value="python">Python</MenuItem>
@@ -630,7 +566,7 @@ function LanguageMenu({ pod }) {
 }
 
 function TypeMenu({ pod }) {
-  const dispatch = useDispatch();
+  const setPodType = useRepoStore((s) => s.setPodType);
   return (
     <Box>
       <Select
@@ -638,12 +574,10 @@ function TypeMenu({ pod }) {
         placeholder="Select option"
         value={pod.type || ""}
         onChange={(e) =>
-          dispatch(
-            repoSlice.actions.setPodType({
-              id: pod.id,
-              type: e.target.value,
-            })
-          )
+          setPodType({
+            id: pod.id,
+            type: e.target.value,
+          })
         }
       >
         <MenuItem value="CODE">CODE</MenuItem>
@@ -657,7 +591,7 @@ function TypeMenu({ pod }) {
 
 function IOStatus({ id, name }) {
   const [anchorEl, setAnchorEl] = React.useState(null);
-  const status = useSelector((state) => state.repo.pods[id].io[name]);
+  const status = useRepoStore((state) => state.pods[id].io[name]);
   if (!status) {
     return (
       <Box as="span" size="xs" variant="ghost">
@@ -715,11 +649,11 @@ function IOStatus({ id, name }) {
 }
 
 export function HoveringMenu({ pod, showMenu, draghandle, children }) {
-  let dispatch = useDispatch();
   // const [anchorEl, setAnchorEl] = React.useState(null);
   const [show, setShow] = useState(false);
   const anchorEl = useRef(null);
   const [showForce, setShowForce] = useState(false);
+  const toggleRaw = useRepoStore((s) => s.toggleRaw);
   return (
     <Flex>
       {/* <Button
@@ -768,28 +702,6 @@ export function HoveringMenu({ pod, showMenu, draghandle, children }) {
           // rounded="md"
           // boxShadow="md"
         >
-          <HStack>
-            {/* <Button
-              size="small"
-              // variant="ghost"
-              onClick={() => {
-                dispatch(repoSlice.actions.addColumn({ id: pod.id }));
-              }}
-            >
-              <FcAddColumn />
-            </Button> */}
-
-            {/* <Button
-              size="small"
-              // variant="ghost"
-              onClick={() => {
-                dispatch(repoSlice.actions.deleteColumn({ id: pod.id }));
-              }}
-            >
-              <FcDeleteColumn />
-            </Button> */}
-            {/* <Text as="span">col:{pod.column}</Text> */}
-          </HStack>
           <HStack my={2}>
             <InfoBar pod={pod} />
             {pod.type !== "DECK" && <TypeMenu pod={pod} />}
@@ -797,7 +709,7 @@ export function HoveringMenu({ pod, showMenu, draghandle, children }) {
             <Button
               size="small"
               onClick={() => {
-                dispatch(repoSlice.actions.toggleRaw(pod.id));
+                toggleRaw(pod.id);
               }}
             >
               {pod.raw ? "raw" : "wrapped"}
@@ -811,7 +723,6 @@ export function HoveringMenu({ pod, showMenu, draghandle, children }) {
 }
 
 export function ExportList({ pod }) {
-  const dispatch = useDispatch();
   if (Array.isArray(pod.exports)) {
     return (
       <Box>
@@ -863,7 +774,7 @@ export function ExportList({ pod }) {
 }
 
 export function ImportList({ pod }) {
-  const dispatch = useDispatch();
+  const wsToggleImport = useRepoStore((s) => s.wsToggleImport);
   return (
     <Box>
       {pod.imports && Object.keys(pod.imports).length > 0 && (
@@ -878,7 +789,7 @@ export function ImportList({ pod }) {
                 size="small"
                 checked={v}
                 onChange={() => {
-                  dispatch(wsActions.wsToggleImport({ id: pod.id, name: k }));
+                  wsToggleImport({ id: pod.id, name: k });
                 }}
               />
               <IOStatus id={pod.id} name={k} />
@@ -891,7 +802,7 @@ export function ImportList({ pod }) {
 }
 
 function MidportList({ pod }) {
-  const dispatch = useDispatch();
+  const wsToggleMidport = useRepoStore((s) => s.wsToggleMidport);
   return (
     <Box>
       {pod.midports && Object.keys(pod.midports).length > 0 && (
@@ -905,13 +816,11 @@ function MidportList({ pod }) {
                 size="small"
                 checked={v}
                 onChange={() => {
-                  dispatch(
-                    wsActions.wsToggleMidport({ id: pod.id, name: k })
-                    // repoSlice.actions.togglePodMidport({
-                    //   id: pod.id,
-                    //   name: k,
-                    // })
-                  );
+                  wsToggleMidport({ id: pod.id, name: k });
+                  // repoSlice.actions.togglePodMidport({
+                  //   id: pod.id,
+                  //   name: k,
+                  // })
                 }}
               />
               <Code>{k}</Code>
