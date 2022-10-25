@@ -42,7 +42,7 @@ export async function doRemoteLoadRepo({ id }) {
     }
   `;
   // return res
-  const res = await fetch(graphql_url, {
+  let res = await fetch(graphql_url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -56,7 +56,11 @@ export async function doRemoteLoadRepo({ id }) {
       },
     }),
   });
-  return res.json();
+  res = await res.json();
+  if (res.errors) {
+    throw Error(`Error: ${res.errors[0].message}`);
+  }
+  return res;
 }
 
 export function normalize(pods) {
@@ -216,7 +220,7 @@ export async function doRemoteAddPod({ repoId, parent, index, pod }) {
       )
     }
   `;
-  const res = await fetch(graphql_url, {
+  let res = await fetch(graphql_url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -233,7 +237,11 @@ export async function doRemoteAddPod({ repoId, parent, index, pod }) {
       },
     }),
   });
-  return res.json();
+  res = await res.json();
+  if (res.errors) {
+    throw Error(`Error: ${res.errors[0].message}`);
+  }
+  return res;
 }
 
 export async function doRemoteDeletePod({ id, toDelete }) {
@@ -242,7 +250,7 @@ export async function doRemoteDeletePod({ id, toDelete }) {
       deletePod(id: $id, toDelete: $toDelete)
     }
   `;
-  const res = await fetch(graphql_url, {
+  let res = await fetch(graphql_url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -257,7 +265,11 @@ export async function doRemoteDeletePod({ id, toDelete }) {
       },
     }),
   });
-  return res.json();
+  res = await res.json();
+  if (res.errors) {
+    throw Error(`Error: ${res.errors[0].message}`);
+  }
+  return res;
 }
 
 export async function doRemoteUpdatePod({ pod }) {
@@ -295,7 +307,7 @@ export async function doRemotePastePod({
   index,
   column,
 }) {
-  const res = await fetch(graphql_url, {
+  let res = await fetch(graphql_url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -330,5 +342,9 @@ export async function doRemotePastePod({
       },
     }),
   });
-  return res.json();
+  res = await res.json();
+  if (res.errors) {
+    throw Error(`Error: ${res.errors[0].message}`);
+  }
+  return res;
 }

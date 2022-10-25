@@ -14,7 +14,6 @@ import { gql, useQuery, useMutation } from "@apollo/client";
 import { GoDiff } from "react-icons/go";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { FaCut, FaPaste } from "react-icons/fa";
 
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -44,13 +43,12 @@ import Popper from "@mui/material/Popper";
 
 import { FcAddColumn, FcDeleteColumn } from "react-icons/fc";
 
-import { repoSlice } from "../../lib/store";
+import { repoSlice, useRepoStore } from "../../lib/store";
 import { MySlate } from "../MySlate";
 import { MyMonaco, MyMonacoDiff } from "../MyMonaco";
 import { hashPod } from "../../lib/utils";
 
 import { XTerm, DummyTerm } from "../MyXTerm";
-import * as wsActions from "../../lib/ws/actions";
 import * as qActions from "../../lib/queue/actions";
 import useMe from "../../lib/me";
 import {
@@ -94,9 +92,14 @@ function Code(props) {
 
 export function DeckTitle({ id }) {
   const [showMenu, setShowMenu] = useState(false);
-  const pod = useSelector((state) => state.repo.pods[id]);
-  const devmode = useSelector((state) => state.repo.repoConfig?.devMode);
-  const dispatch = useDispatch();
+  const pod = useRepoStore((state) => state.pods[id]);
+  const devmode = useRepoStore((state) => state.repoConfig?.devMode);
+  const addColumn = useRepoStore((state) => state.addColumn);
+  const wsRun = useRepoStore((state) => state.wsRun);
+  const wsPowerRun = useRepoStore((state) => state.wsPowerRun);
+  const deleteColumn = useRepoStore((state) => state.deleteColumn);
+  const setName = useRepoStore((s) => s.setName);
+  const addPod = useRepoStore((s) => s.addPod);
   return (
     <Box
       position="relative"
@@ -136,7 +139,7 @@ export function DeckTitle({ id }) {
               }}
               size="small"
               onClick={() => {
-                dispatch(wsActions.wsRun(id));
+                wsRun(id);
               }}
             >
               <PlayArrowIcon sx={{ fontSize: 15 }} />
@@ -152,7 +155,7 @@ export function DeckTitle({ id }) {
               size="small"
               // variant="ghost"
               onClick={() => {
-                dispatch(repoSlice.actions.addColumn(pod.id));
+                addColumn(pod.id);
               }}
             >
               <FcAddColumn />
@@ -162,7 +165,7 @@ export function DeckTitle({ id }) {
               size="small"
               // variant="ghost"
               onClick={() => {
-                dispatch(repoSlice.actions.deleteColumn(pod.id));
+                deleteColumn(pod.id);
               }}
             >
               <FcDeleteColumn />
@@ -294,9 +297,7 @@ export function DeckTitle({ id }) {
           {pod.id !== "ROOT" && (
             <ClickInputButton
               callback={(value) => {
-                dispatch(
-                  repoSlice.actions.setName({ id: pod.id, name: value })
-                );
+                setName({ id: pod.id, name: value });
               }}
             >
               <AiOutlineFunction />
@@ -311,15 +312,13 @@ export function DeckTitle({ id }) {
                 variant="ghost"
                 size="xs"
                 onClick={() => {
-                  dispatch(
-                    qActions.remoteAdd({
-                      parent: pod.id,
-                      index: 0,
-                      type: "CODE",
-                      lang: pod.lang,
-                      column: pod.column,
-                    })
-                  );
+                  addPod({
+                    parent: pod.id,
+                    index: 0,
+                    type: "CODE",
+                    lang: pod.lang,
+                    column: pod.column,
+                  });
                 }}
               >
                 +
@@ -331,15 +330,13 @@ export function DeckTitle({ id }) {
             variant="ghost"
             size="xs"
             onClick={() => {
-              dispatch(
-                qActions.remoteAdd({
-                  parent: pod.id,
-                  index: 0,
-                  type: "CODE",
-                  lang: pod.lang,
-                  column: pod.column,
-                })
-              );
+              addPod({
+                parent: pod.id,
+                index: 0,
+                type: "CODE",
+                lang: pod.lang,
+                column: pod.column,
+              });
             }}
           >
             +
@@ -356,7 +353,7 @@ export function DeckTitle({ id }) {
             }}
             size="small"
             onClick={() => {
-              dispatch(wsActions.wsPowerRun({ id }));
+              wsPowerRun({ id });
             }}
           >
             <FastForwardIcon fontSize="small" />
@@ -368,7 +365,7 @@ export function DeckTitle({ id }) {
 }
 
 function PodSummary({ id }) {
-  let pod = useSelector((state) => state.repo.pods[id]);
+  let pod = useRepoStore((state) => state.pods[id]);
   // console.log("PodSummary", id, pod.running);
   return (
     <Box>
@@ -417,7 +414,7 @@ function PodSummary({ id }) {
 
 function DeckSummary({ id }) {
   // recursively go down and get pod sum
-  const pod = useSelector((state) => state.repo.pods[id]);
+  const pod = useRepoStore((state) => state.pods[id]);
   if (pod.exports && pod.exports["self"]) {
     return (
       <Box>
@@ -446,8 +443,8 @@ function DeckSummary({ id }) {
 export function Deck(props) {
   const { id, level = 0 } = props;
   // console.log("rendering deck", id);
-  const dispatch = useDispatch();
-  const pod = useSelector((state) => state.repo.pods[id]);
+  const pod = useRepoStore((state) => state.pods[id]);
+  const remoteAdd = useRepoStore((state) => state.remoteAdd);
   let numPods = pod.children.filter(({ type }) => type !== "DECK").length;
   if (pod.type !== "DECK") return <Pod id={id}></Pod>;
   if (pod.children.length == 0 && pod.id === "ROOT") {
@@ -456,15 +453,13 @@ export function Deck(props) {
         size="xs"
         variant="ghost"
         onClick={() => {
-          dispatch(
-            qActions.remoteAdd({
-              parent: pod.id,
-              type: "DECK",
-              index: pod.children.length,
-              // FIXME hard-coded python. Only support python for now.
-              lang: "python",
-            })
-          );
+          remoteAdd({
+            parent: pod.id,
+            type: "DECK",
+            index: pod.children.length,
+            // FIXME hard-coded python. Only support python for now.
+            lang: "python",
+          });
         }}
       >
         <AddIcon />
@@ -592,8 +587,10 @@ function SortablePod({ id }) {
 function CodePod(props) {
   // FIXME performance
   const { id } = props;
-  let pod = useSelector((state) => state.repo.pods[id]);
-  let dispatch = useDispatch();
+  let pod = useRepoStore((state) => state.pods[id]);
+  const clearResults = useRepoStore((state) => state.clearResults);
+  const wsRun = useRepoStore((state) => state.wsRun);
+  const setPodContent = useRepoStore((state) => state.setPodContent);
 
   return (
     // FIXME using VStack will cause some strange padding
@@ -615,32 +612,12 @@ function CodePod(props) {
             gitvalue={pod.staged}
             // pod={pod}
             onChange={(value) => {
-              dispatch(
-                repoSlice.actions.setPodContent({ id: pod.id, content: value })
-              );
+              setPodContent({ id: pod.id, content: value });
             }}
             lang={pod.lang || "javascript"}
-            onExport={(name, isActive) => {
-              if (isActive) {
-                dispatch(
-                  repoSlice.actions.deletePodExport({ id: pod.id, name })
-                );
-              } else {
-                dispatch(repoSlice.actions.addPodExport({ id: pod.id, name }));
-              }
-            }}
-            onMidport={(name, isActive) => {
-              if (isActive) {
-                dispatch(
-                  repoSlice.actions.deletePodMidport({ id: pod.id, name })
-                );
-              } else {
-                dispatch(repoSlice.actions.addPodMidport({ id: pod.id, name }));
-              }
-            }}
             onRun={() => {
-              dispatch(repoSlice.actions.clearResults(pod.id));
-              dispatch(wsActions.wsRun(pod.id));
+              clearResults(pod.id);
+              wsRun(pod.id);
             }}
           />
         </Box>
@@ -650,7 +627,7 @@ function CodePod(props) {
 }
 
 function ReplPod({ pod }) {
-  const sessionId = useSelector((state) => state.repo.sessionId);
+  const sessionId = useRepoStore((state) => state.sessionId);
   const [term, setTerm] = useState(null);
   useEffect(() => {
     // setTerm(getNewTerm(sessionId, pod.lang));
@@ -688,7 +665,7 @@ function ReplPod({ pod }) {
 }
 
 function WysiwygPod({ pod }) {
-  let dispatch = useDispatch();
+  const setPodContent = useRepoStore((s) => s.setPodContent);
   return (
     <Stack align="start">
       <Box border="1px" w="100%" p="1rem">
@@ -706,9 +683,7 @@ function WysiwygPod({ pod }) {
             ]
           }
           onChange={(value) => {
-            dispatch(
-              repoSlice.actions.setPodContent({ id: pod.id, content: value })
-            );
+            setPodContent({ id: pod.id, content: value });
           }}
           placeholder="Write some rich text"
         />
@@ -727,9 +702,9 @@ function Pod({ id, draghandle }) {
 
 function PodWrapper({ id, draghandle, children }) {
   // console.log("PodWrapper", id);
-  const pod = useSelector((state) => state.repo.pods[id]);
-  const devmode = useSelector((state) => state.repo.repoConfig?.devMode);
-  const dispatch = useDispatch();
+  const pod = useRepoStore((state) => state.pods[id]);
+  const toggleRaw = useRepoStore((s) => s.toggleRaw);
+  const devmode = useRepoStore((state) => state.repoConfig?.devMode);
   const [showMenu, setShowMenu] = useState(false);
   const [showDiff, setShowDiff] = useState(false);
   const anchorEl = useRef(null);
@@ -859,7 +834,7 @@ function PodWrapper({ id, draghandle, children }) {
                   fontSize: 10,
                 }}
                 onClick={() => {
-                  dispatch(repoSlice.actions.toggleRaw(pod.id));
+                  toggleRaw(pod.id);
                 }}
               >
                 {pod.raw ? (
@@ -973,11 +948,13 @@ function PodWrapper({ id, draghandle, children }) {
 
 function ThePod({ id }) {
   // console.log("rendinering thepod", id);
-  const pod = useSelector((state) => state.repo.pods[id]);
-  const dispatch = useDispatch();
-  const doubleClickToEdit = useSelector(
-    (state) => state.repo.repoConfig?.doubleClickToEdit
+  const pod = useRepoStore((state) => state.pods[id]);
+  const doubleClickToEdit = useRepoStore(
+    (state) => state.repoConfig?.doubleClickToEdit
   );
+  const addPod = useRepoStore((s) => s.addPod);
+  const setPodContent = useRepoStore((s) => s.setPodContent);
+  const setPodRender = useRepoStore((s) => s.setPodRender);
   if (pod.type === "WYSIWYG") {
     return <WysiwygPod pod={pod} />;
   } else if (pod.type === "MD") {
@@ -985,9 +962,7 @@ function ThePod({ id }) {
       <TextField
         w="md"
         onChange={(e) => {
-          dispatch(
-            repoSlice.actions.setPodContent({ id, content: e.target.value })
-          );
+          setPodContent({ id, content: e.target.value });
         }}
         value={pod.content || ""}
         placeholder="Markdown here"
@@ -1001,7 +976,7 @@ function ThePod({ id }) {
         <Code
           onDoubleClick={() => {
             // console.log("Double clicked!");
-            dispatch(repoSlice.actions.setPodRender({ id, value: true }));
+            setPodRender({ id, value: true });
           }}
           sx={{
             whiteSpace: "pre-wrap",
@@ -1022,13 +997,11 @@ function ThePod({ id }) {
           <Button
             size="sm"
             onClick={() => {
-              dispatch(
-                qActions.remoteAdd({
-                  parent: pod.id,
-                  type: "CODE",
-                  index: 0,
-                })
-              );
+              addPod({
+                parent: pod.id,
+                type: "CODE",
+                index: 0,
+              });
             }}
           >
             <AddIcon />

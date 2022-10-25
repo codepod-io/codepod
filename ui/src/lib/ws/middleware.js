@@ -1,189 +1,4 @@
-import * as actions from "./actions";
-
-import { repoSlice } from "../store";
-import Stomp from "stompjs";
-
-function getReexports({ id, pods }) {
-  // Get the reexports available for the deck id. Those are from this deck's subdecks
-  let reexports = Object.assign(
-    {},
-    ...pods[id].children
-      .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
-      .map(({ id, type }) => pods[id])
-      .map((deck) =>
-        Object.assign(
-          {},
-          ...deck.children
-            .filter(({ id }) => pods[id].type !== "DECK")
-            .map(({ id }) => pods[id])
-            .map((pod) => pod.reexports)
-        )
-      )
-  );
-
-  // change reexport from name=>id to ns=>names
-  let res = {};
-  for (let [name, id] of Object.entries(reexports)) {
-    if (!res[pods[id].ns]) {
-      res[pods[id].ns] = [];
-    }
-    res[pods[id].ns].push(name);
-  }
-  return res;
-}
-
-function powerRun_racket({ id, storeAPI, socket }) {
-  let pods = storeAPI.getState().repo.pods;
-  let pod = pods[id];
-  let names = pod.children
-    .filter(({ id }) => pods[id].type !== "DECK")
-    .filter(({ id }) => pods[id].exports)
-    .map(({ id }) => Object.keys(pods[id].exports));
-  names = [].concat(...names);
-  let struct_codes = pod.children
-    .filter(
-      ({ id }) =>
-        pods[id].type === "DECK" && !pods[id].thundar && pods[id].exports
-    )
-    .filter(
-      ({ id }) =>
-        pods[id].exports.filter((k) => k.startsWith("struct:")).length > 0
-    )
-    .map(({ id }) => pods[id].content);
-  // FIXME reset-module is problematic! it is equivalanet to the following expansion. Why??
-  // let code = `(enter! #f) (reset-module ${ns} ${names.join(" ")})`;
-  let struct_names = names
-    .filter((s) => s.startsWith("struct:"))
-    .map((s) => s.split(" ")[1]);
-  // FIXME will the struct-out support update?
-  //
-  // UPDATE this does not work. Instead, I could insert the real content for
-  // all exported names maybe?
-  names = names.filter((s) => !s.startsWith("struct:"));
-
-  // also I need to require for struct:parent
-  let nses = getUtilNs({ id, pods });
-  // console.log("nses", nses);
-  // child deck's
-  const child_deck_nses = pods[id].children
-    .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
-    .map(({ id, type }) => pods[id].ns);
-  // console.log("child_deck_nses", child_deck_nses);
-  nses = nses.concat(child_deck_nses);
-  // if it is a test desk, get parent
-  if (pod.thundar) {
-    nses.push(pods[pod.parent].ns);
-  }
-
-  let reexports = getReexports({ id, pods });
-  let reexport_code = Object.keys(reexports)
-    .map(
-      (ns) => `
-      (require (only-in '${ns} ${reexports[ns]
-        .map((name) => `${name}`)
-        .join(" ")}))
-      (provide ${reexports[ns].map((name) => `${name}`).join(" ")})
-      `
-    )
-    .join("\n");
-
-  let code = `
-(enter! #f)
-(module ${pod.ns} racket 
-(require rackunit 'CODEPOD ${nses.map((s) => "'" + s).join(" ")})
-${reexport_code}
-(provide ${names.join(" ")}
-${struct_names.map((s) => `(struct-out ${s})`).join("\n")}
-)
-${names.map((name) => `(define ${name} "PLACEHOLDER-${name}")`).join("\n")}
-${struct_codes.join("\n")}
-)
-`;
-  // ${struct_names.map((name) => `(struct ${name} ())`)}
-
-  storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
-  storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
-  socket.send(
-    JSON.stringify({
-      type: "runCode",
-      payload: {
-        lang: pod.lang,
-        code,
-        namespace: pod.ns,
-        raw: true,
-        // FIXME this is deck's ID
-        podId: pod.id,
-        sessionId: storeAPI.getState().repo.sessionId,
-      },
-    })
-  );
-}
-
-function powerRun_julia({ id, storeAPI, socket }) {
-  let pods = storeAPI.getState().repo.pods;
-  let pod = pods[id];
-  let names = pod.children
-    .filter(({ id }) => pods[id].type !== "DECK")
-    .filter(({ id }) => pods[id].exports)
-    .map(({ id }) => Object.keys(pods[id].exports));
-  names = [].concat(...names);
-  let nses = getUtilNs({ id, pods });
-  const child_deck_nses = pods[id].children
-    .filter(({ id }) => pods[id].type === "DECK" && !pods[id].thundar)
-    .map(({ id, type }) => pods[id].ns);
-  nses = nses.concat(child_deck_nses);
-  // if it is a test desk, get parent
-  if (pod.thundar) {
-    nses.push(pods[pod.parent].ns);
-  }
-
-  let reexports = getReexports({ id, pods });
-
-  let reexport_code = Object.keys(reexports)
-    .map(
-      (ns) =>
-        `
-    eval(:(@reexport using $(:Main).$(Symbol("${ns}")): ${reexports[ns]
-          .map((name) => `${name}`)
-          .join(",")}))
-    `
-    )
-    .join("\n");
-
-  // Much better!!!
-  let code = `
-    ${nses
-      .map(
-        (ns) => `
-    eval(:(using $(:Main).$(Symbol("${ns}"))))
-    `
-      )
-      .join("\n")}
-    
-    ${reexport_code}
-
-    ${names.length > 0 ? `export ${names.join(",")}` : ""}
-    `;
-  // console.log("code:", code);
-  // ${struct_names.map((name) => `(struct ${name} ())`)}
-
-  storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
-  storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
-  socket.send(
-    JSON.stringify({
-      type: "runCode",
-      payload: {
-        lang: pod.lang,
-        code,
-        namespace: pod.ns,
-        // raw: true,
-        // FIXME this is deck's ID
-        podId: pod.id,
-        sessionId: storeAPI.getState().repo.sessionId,
-      },
-    })
-  );
-}
+import produce from "immer";
 
 function getChildExports({ id, pods }) {
   // get all the exports and reexports. The return would be:
@@ -259,8 +74,8 @@ function getUtilExports({ id, pods }) {
   return res;
 }
 
-function powerRun_python({ id, storeAPI, socket }) {
-  let pods = storeAPI.getState().repo.pods;
+function powerRun_python({ id, socket, set, get }) {
+  let pods = get().pods;
   let pod = pods[id];
   // python powerrun
   // 1. create the module
@@ -298,8 +113,8 @@ function powerRun_python({ id, storeAPI, socket }) {
     .join("\n");
 
   // console.log("==== PYTHON CODE", code);
-  storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
-  storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
+  get().clearResults(pod.id);
+  get().setRunning(pod.id);
   socket.send(
     JSON.stringify({
       type: "runCode",
@@ -310,23 +125,22 @@ function powerRun_python({ id, storeAPI, socket }) {
         raw: true,
         // FIXME this is deck's ID
         podId: pod.id,
-        sessionId: storeAPI.getState().repo.sessionId,
+        sessionId: get().sessionId,
       },
     })
   );
 }
 
-function handlePowerRun({ id, doEval, storeAPI, socket }) {
+function handlePowerRun({ id, doEval, socket, set, get }) {
   // assume id is a deck
   // this is used to init or reset the deck with all exported names
-  let pods = storeAPI.getState().repo.pods;
+  let pods = get().pods;
   let pod = pods[id];
-  if (pod.lang === "racket") {
-    powerRun_racket({ id, storeAPI, socket });
-  } else if (pod.lang === "julia") {
-    powerRun_julia({ id, storeAPI, socket });
-  } else if (pod.lang === "python") {
-    powerRun_python({ id, storeAPI, socket });
+  if (pod.lang === "python") {
+    powerRun_python({ id, socket, set, get });
+  } else {
+    console.log("Error: only python runtime is supported.");
+    return;
   }
 
   if (doEval) {
@@ -336,8 +150,8 @@ function handlePowerRun({ id, doEval, storeAPI, socket }) {
       .forEach(({ id }) => {
         let pod = pods[id];
         if (pod.type === "CODE" && pod.content && pod.lang && !pod.thundar) {
-          storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
-          storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
+          get().clearResults(pod.id);
+          get().setRunning(pod.id);
           socket.send(
             JSON.stringify({
               type: "runCode",
@@ -347,7 +161,7 @@ function handlePowerRun({ id, doEval, storeAPI, socket }) {
                 namespace: pod.ns,
                 raw: pod.raw,
                 podId: pod.id,
-                sessionId: storeAPI.getState().repo.sessionId,
+                sessionId: get().sessionId,
               },
             })
           );
@@ -376,8 +190,8 @@ CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${ns}").__dict__["${name}"]\n0""", "${
   return res;
 }
 
-function handleUpdateDef({ id, storeAPI, socket }) {
-  let pods = storeAPI.getState().repo.pods;
+function handleUpdateDef({ id, socket, get, set }) {
+  let pods = get().pods;
   let pod = pods[id];
   if (pod.lang === "python") {
     let code = "";
@@ -446,7 +260,7 @@ CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${pod.ns}").__dict__["${name}"]\n0""",
 
     // send for evaluation
     console.log("sending for handleUpdateDef ..");
-    storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
+    get().setRunning(pod.id);
     socket.send(
       JSON.stringify({
         type: "runCode",
@@ -459,22 +273,11 @@ CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${pod.ns}").__dict__["${name}"]\n0""",
           // FIXME TODO podId?
           // podId: "NULL",
           podId: pod.parent,
-          sessionId: storeAPI.getState().repo.sessionId,
+          sessionId: get().sessionId,
         },
       })
     );
   }
-}
-
-function getUtilNs({ id, pods, exclude }) {
-  // get all utils for id
-  // get children utils nodes
-  if (!id) return [];
-  let res = pods[id].children
-    .filter(({ id }) => id !== exclude && pods[id].utility)
-    .map(({ id, type }) => pods[id].ns);
-  // keep to go to parents
-  return res.concat(getUtilNs({ id: pods[id].parent, pods, exclude: id }));
 }
 
 function getUtilIds({ id, pods, exclude }) {
@@ -527,11 +330,10 @@ function getExports(content) {
   return { exports, reexports, content };
 }
 
-function handleRunTree({ id, storeAPI, socket }) {
+function handleRunTree({ id, socket, set, get }) {
   // get all pods
-  console.log("handleRunTree", { id, storeAPI, socket });
   function helper(id) {
-    let pods = storeAPI.getState().repo.pods;
+    let pods = get().pods;
     let pod = pods[id];
     // - if it is test deck, it should be evaluated after the parent
     // - if it is a utility deck, it should be evaluated first and import to
@@ -556,7 +358,7 @@ function handleRunTree({ id, storeAPI, socket }) {
       .map(({ id }) => helper(id));
     // 3. init this deck
     if (pod.type === "DECK") {
-      handlePowerRun({ id, storeAPI, socket });
+      handlePowerRun({ id, socket, set, get });
       // require parent
     }
     // 4. evaluate all child pods
@@ -567,7 +369,7 @@ function handleRunTree({ id, storeAPI, socket }) {
     if (id !== "ROOT") {
       // actually run the code
       if (pod.type === "CODE" && pod.content && pod.lang && !pod.thundar) {
-        storeAPI.dispatch(repoSlice.actions.clearResults(pod.id));
+        get().clearResults(pod.id);
 
         let { exports, reexports, content } = getExports(pod.content);
         // console.log("resolving ..", reexports);
@@ -577,7 +379,7 @@ function handleRunTree({ id, storeAPI, socket }) {
           .filter(({ id }) => !pods[id].utility && !pods[id].thundar)
           .map(({ id }) => id)) {
           // console.log("trying", subdeckid);
-          let subdeck = storeAPI.getState().repo.pods[subdeckid];
+          let subdeck = get().pods[subdeckid];
           let subpods = subdeck.children
             .filter(({ id }) => pods[id].type !== "DECK")
             .map(({ id }) => pods[id]);
@@ -596,15 +398,13 @@ function handleRunTree({ id, storeAPI, socket }) {
           }
         }
 
-        storeAPI.dispatch(
-          repoSlice.actions.setPodExport({
-            id,
-            exports,
-            reexports,
-          })
-        );
+        get().setPodExport({
+          id,
+          exports,
+          reexports,
+        });
         if (content) {
-          storeAPI.dispatch(repoSlice.actions.setRunning(pod.id));
+          get().setRunning(pod.id);
           socket.send(
             JSON.stringify({
               type: "runCode",
@@ -614,11 +414,11 @@ function handleRunTree({ id, storeAPI, socket }) {
                 namespace: pod.ns,
                 raw: pod.raw,
                 podId: pod.id,
-                sessionId: storeAPI.getState().repo.sessionId,
+                sessionId: get().sessionId,
               },
             })
           );
-          handleUpdateDef({ id, storeAPI, socket });
+          handleUpdateDef({ id, socket, set, get });
         }
       }
     }
@@ -626,57 +426,193 @@ function handleRunTree({ id, storeAPI, socket }) {
   helper(id);
 }
 
-function onMessage(store) {
+function onMessage(set, get) {
   return (msg) => {
     // console.log("onMessage", msg.data || msg.body || undefined);
     // msg.data for websocket
     // msg.body for rabbitmq
     let { type, payload } = JSON.parse(msg.data || msg.body || undefined);
-    // console.log("got message", type, payload);
+    console.log("got message", type, payload);
     switch (type) {
       case "output":
         console.log("output:", payload);
 
         break;
-      case "stdout":
-        store.dispatch(actions.wsStdout(payload));
-
+      case "stdout": {
+        let { podId, stdout } = payload;
+        set(
+          produce((state) => {
+            state.pods[podId].stdout = stdout;
+          })
+        );
         break;
+      }
       case "execute_result":
-        store.dispatch(actions.wsResult(payload));
-
+        {
+          let { podId, content, count } = payload;
+          set(
+            produce((state) => {
+              if (podId in state.pods) {
+                let text = content.data["text/plain"];
+                let html = content.data["text/html"];
+                let file;
+                if (text) {
+                  let match = text.match(/CODEPOD-link\s+(.*)"/);
+                  if (match) {
+                    let fname = match[1].substring(
+                      match[1].lastIndexOf("/") + 1
+                    );
+                    let url = `${window.location.protocol}//api.${window.location.host}/static/${match[1]}`;
+                    console.log("url", url);
+                    html = `<a target="_blank" style="color:blue" href="${url}" download>${fname}</a>`;
+                    file = url;
+                  }
+                  // http:://api.codepod.test:3000/static/30eea3b1-e767-4fa8-8e3f-a23774eef6c6/ccc.txt
+                  // http:://api.codepod.test:3000/static/30eea3b1-e767-4fa8-8e3f-a23774eef6c6/ccc.txt
+                }
+                state.pods[podId].result = {
+                  text,
+                  html,
+                  file,
+                  count,
+                };
+                // state.pods[podId].running = false;
+              } else {
+                // most likely this podId is "CODEPOD", which is for startup code and
+                // should not be send to the browser
+                console.log("WARNING podId not recognized", podId);
+              }
+            })
+          );
+        }
         break;
       case "display_data":
-        store.dispatch(actions.wsDisplayData(payload));
-
+        {
+          let { podId, content, count } = payload;
+          set(
+            produce((state) => {
+              // console.log("WS_DISPLAY_DATA", content);
+              state.pods[podId].result = {
+                text: content.data["text/plain"],
+                // FIXME hard coded MIME
+                image: content.data["image/png"],
+                count: count,
+              };
+            })
+          );
+        }
         break;
       case "execute_reply":
-        store.dispatch(actions.wsExecuteReply(payload));
+        set(
+          produce((state) => {
+            let { podId, result, count } = payload;
+            // console.log("WS_EXECUTE_REPLY", action.payload);
+            if (podId in state.pods) {
+              // state.pods[podId].execute_reply = {
+              //   text: result,
+              //   count: count,
+              // };
+              // console.log("WS_EXECUTE_REPLY", result);
+              state.pods[podId].running = false;
+              if (!state.pods[podId].result) {
+                state.pods[podId].result = {
+                  text: result,
+                  count: count,
+                };
+              }
+            } else {
+              // most likely this podId is "CODEPOD", which is for startup code and
+              // should not be send to the browser
+              console.log("WARNING podId not recognized", podId);
+            }
+          })
+        );
 
         break;
       case "error":
-        store.dispatch(actions.wsError(payload));
+        set(
+          produce((state) => {
+            let { podId, ename, evalue, stacktrace } = payload;
+            if (podId === "CODEPOD") return;
+            state.pods[podId].error = {
+              ename,
+              evalue,
+              stacktrace,
+            };
+          })
+        );
 
         break;
       case "stream":
-        store.dispatch(actions.wsStream(payload));
+        set(
+          produce((state) => {
+            let { podId, content } = payload;
+            if (!(podId in state.pods)) {
+              console.log("WARNING podId is not found:", podId);
+              return;
+            }
+            // append
+            let pod = state.pods[podId];
+            if (content.name === "stderr" && pod.lang === "racket") {
+              // if (!pod.result) {
+              //   pod.result = {};
+              // }
+              // pod.result.stderr = true;
+              pod.error = {
+                ename: "stderr",
+                evalue: "stderr",
+                stacktrace: "",
+              };
+            }
+            pod.stdout += content.text;
+          })
+        );
         break;
       case "IO:execute_result":
-        store.dispatch(actions.wsIOResult(payload));
+        set(
+          produce((state) => {
+            let { podId, result, name } = payload;
+            // if (!("io" in state.pods[podId])) {
+            //   state.pods[podId].io = {};
+            // }
+            state.pods[podId].io[name] = { result };
+          })
+        );
         break;
       case "IO:execute_reply":
         // CAUTION ignore
         break;
       case "IO:error":
-        store.dispatch(actions.wsIOError(payload));
+        set(
+          produce((state) => {
+            let { podId, name, ename, evalue, stacktrace } = payload;
+            console.log("IOERROR", { podId, name, ename, evalue, stacktrace });
+            state.pods[podId].io[name] = {
+              error: {
+                ename,
+                evalue,
+                stacktrace,
+              },
+            };
+          })
+        );
         break;
       case "status":
-        // console.log("Received status:", payload);
-        store.dispatch(actions.wsStatus(payload));
+        set(
+          produce((state) => {
+            const { lang, status, id } = payload;
+            // console.log("WS_STATUS", { lang, status });
+            state.kernels[lang].status = status;
+            // this is for racket kernel, which does not have a execute_reply
+            if (lang === "racket" && status === "idle" && state.pods[id]) {
+              state.pods[id].running = false;
+            }
+          })
+        );
         break;
       case "interrupt_reply":
         // console.log("got interrupt_reply", payload);
-        store.dispatch(actions.wsRequestStatus({ lang: payload.lang }));
+        get().wsRequestStatus({ lang: payload.lang });
         break;
       default:
         console.log("WARNING unhandled message", { type, payload });
@@ -684,413 +620,169 @@ function onMessage(store) {
   };
 }
 
-const socketMiddleware = () => {
-  let socket = null;
-  let socket_intervalId = null;
-  let mq_client = null;
+const onOpen = (set, get) => {
+  return () => {
+    console.log("connected");
+    set({ runtimeConnected: true });
+    // call connect kernel
 
-  // the middleware part of this function
-  return (store) => (next) => (action) => {
-    switch (action.type) {
-      case "WS_CONNECT":
-        console.log("WS_CONNECT");
-        if (socket !== null) {
-          console.log("already connected, skip");
-          // store.dispatch(
-          //   repoSlice.actions.addError({
-          //     type: "warning",
-          //     msg: "Already connected.",
-          //   })
-          // );
-          // socket.close();
-          break;
-        }
-        // reset kernel status
-        store.dispatch(repoSlice.actions.resetKernelStatus());
-        console.log("connecting ..");
-
-        // connect to the remote host
-        // socket = new WebSocket(action.host);
-        //
-        // I canont use "/ws" for a WS socket. Thus I need to detect what's the
-        // protocol used here, so that it supports both dev and prod env.
-        let socket_url;
-        if (window.location.protocol === "http:") {
-          socket_url = `ws://${window.location.host}/ws`;
-        } else {
-          socket_url = `wss://${window.location.host}/ws`;
-        }
-        console.log("socket_url", socket_url);
-        socket = new WebSocket(socket_url);
-        // socket.emit("spawn", state.sessionId, lang);
-
-        if (!store.getState().repo.activeRuntime[1]) {
-          // If the mqAddress is not supplied, use the websocket
-          socket.onmessage = onMessage(store);
-        } else {
-          // otherwise, use the mqAddress
-
-          // if (mq_client) {
-          //   mq_client.disconnect()
-          // }
-          console.log("connecting to stomp ..");
-          // TODO for production
-          let mq_url;
-          if (window.location.protocol === "http:") {
-            // "ws://codepod.test/ws"
-            // "ws://mq.codepod.test/ws"
-            // FIXME why have to use /ws suffix?
-            // mq_url = `ws://mq.${window.location.host}/ws`;
-            // mq_url = `ws://192.168.1.142:15674/ws`;
-            mq_url = `ws://${store.getState().repo.activeRuntime[1]}/ws`;
-          } else {
-            mq_url = `wss://mq.${window.location.host}/ws`;
-          }
-          console.log("connecting to MQ:", mq_url);
-          mq_client = Stomp.over(new WebSocket(mq_url));
-          // remove debug messages
-          mq_client.debug = () => {};
-          mq_client.connect(
-            "guest",
-            "guest",
-            function () {
-              console.log("connected to rabbitmq");
-              mq_client.subscribe(
-                store.getState().repo.sessionId,
-                onMessage(store)
-              );
-            },
-            function () {
-              console.log("error connecting RabbitMQ");
-            },
-            "/"
-          );
-        }
-
-        // websocket handlers
-        // socket.onmessage = onMessage(store);
-        // socket.onclose = onClose(store);
-        // socket.onopen = onOpen(store);
-
-        // well, since it is already opened, this won't be called
-        //
-        // UPDATE it works, this will be called even after connection
-
-        socket.onopen = () => {
-          console.log("connected");
-          store.dispatch(actions.wsConnected());
-          // call connect kernel
-
-          if (socket_intervalId) {
-            clearInterval(socket_intervalId);
-          }
-          socket_intervalId = setInterval(() => {
-            if (socket) {
-              console.log("sending ping ..");
-              socket.send(JSON.stringify({ type: "ping" }));
-            }
-            // websocket resets after 60s of idle by most firewalls
-          }, 30000);
-
-          // request kernel status after connection
-          Object.keys(store.getState().repo.kernels).forEach((k) => {
-            store.dispatch(
-              actions.wsRequestStatus({
-                lang: k,
-                sessionId: store.getState().repo.sessionId,
-              })
-            );
-            // wait 1s and resend. The kernel needs to rebind the socket to
-            // IOPub, which takes sometime and the status result might not send
-            // back. This will ensure the browser gets a fairly consistent
-            // status report upon connection.
-            // [100, 1000, 5000].map((t) => {
-            //   setTimeout(() => {
-            //     console.log(`Resending after ${t} ms ..`);
-            //     store.dispatch(
-            //       actions.wsRequestStatus({
-            //         lang: k,
-            //         sessionId: store.getState().repo.sessionId,
-            //       })
-            //     );
-            //   }, t);
-            // });
-          });
-        };
-        // so I'm setting this
-        // Well, I should probably not dispatch action inside another action
-        // (even though it is in a middleware)
-        //
-        // I probably can dispatch the action inside the middleware, because
-        // this is not a dispatch. It will not modify the store.
-        //
-        // store.dispatch(actions.wsConnected());
-        socket.onclose = () => {
-          console.log("Disconnected ..");
-          store.dispatch(actions.wsDisconnected());
-          socket = null;
-        };
-        // TODO log other unhandled messages
-        // socket.onMessage((msg)=>{
-        //   console.log("received", msg)
-        // })
-
-        break;
-      case "WS_DISCONNECT":
-        if (socket !== null) {
-          socket.close();
-        }
-        // socket = null;
-        // console.log("websocket closed");
-        break;
-      case "NEW_MESSAGE":
-        console.log("sending a message", action.msg);
-        socket.send(
-          JSON.stringify({ command: "NEW_MESSAGE", message: action.msg })
-        );
-        break;
-      case "WS_RUN": {
-        if (!socket) {
-          store.dispatch(
-            repoSlice.actions.addError({
-              type: "error",
-              msg: "Runtime not connected",
-            })
-          );
-          break;
-        }
-        handleRunTree({
-          id: action.payload,
-          storeAPI: store,
-          socket: {
-            send: (payload) => {
-              console.log("sending", payload);
-              socket.send(payload);
-            },
-          },
-        });
-        break;
-      }
-      case "WS_POWER_RUN": {
-        if (!socket) {
-          store.dispatch(
-            repoSlice.actions.addError({
-              type: "error",
-              msg: "Runtime not connected",
-            })
-          );
-          break;
-        }
-        let { id, doEval } = action.payload;
-
-        // This is used to evaluate the current deck and init the namespace
-        handlePowerRun({ id, doEval, storeAPI: store, socket });
-        break;
-      }
-      case "WS_RUN_ALL": {
-        throw new Error("WS_RUN_ALL deprecated");
-      }
-      case "WS_REQUEST_STATUS":
-        if (socket) {
-          // set to unknown
-          store.dispatch(actions.wsStatus({ status: null, ...action.payload }));
-          socket.send(
-            JSON.stringify({
-              type: "requestKernelStatus",
-              payload: {
-                sessionId: store.getState().repo.sessionId,
-                ...action.payload,
-              },
-            })
-          );
-        } else {
-          console.log("ERROR: not connected");
-        }
-        break;
-      case "WS_INTERRUPT_KERNEL":
-        if (!socket) {
-          store.dispatch(
-            repoSlice.actions.addError({
-              type: "error",
-              msg: "Runtime not connected",
-            })
-          );
-          break;
-        }
-        socket.send(
-          JSON.stringify({
-            type: "interruptKernel",
-            payload: {
-              sessionId: store.getState().repo.sessionId,
-              ...action.payload,
-            },
-          })
-        );
-
-        break;
-
-      case "WS_TOGGLE_MIDPORT": {
-        let { id, name } = action.payload;
-        if (!socket) {
-          store.dispatch(
-            repoSlice.actions.addError({
-              type: "error",
-              msg: "Runtime not connected",
-            })
-          );
-          break;
-        }
-        store.dispatch(repoSlice.actions.togglePodMidport({ id, name }));
-        let pods = store.getState().repo.pods;
-        let pod = pods[id];
-        // just send socket
-        if (pod.midports[name]) {
-          // this name is then ready to be exported!
-          store.dispatch(repoSlice.actions.addPodExport({ id, name }));
-          // it is exported, then run the pod again
-          socket.send(
-            JSON.stringify({
-              type: "runCode",
-              payload: {
-                lang: pod.lang,
-                code: pod.content,
-                namespace: pod.ns,
-                podId: pod.id,
-                sessionId: store.getState().repo.sessionId,
-                midports:
-                  pod.midports &&
-                  Object.keys(pod.midports).filter((k) => pod.midports[k]),
-              },
-            })
-          );
-        } else {
-          // FIXME should call removePodExport and update all parents
-          // store.dispatch(actions.wsToggleExport)
-          //
-          // FIXME also, the Slate editor action should do some toggle as well
-          store.dispatch(repoSlice.actions.deletePodExport({ id, name }));
-          // it is deleted, run delete
-          socket.send(
-            JSON.stringify({
-              type: "deleteMidport",
-              payload: {
-                lang: pod.lang,
-                id: pod.id,
-                ns: pod.ns,
-                name,
-                sessionId: store.getState().repo.sessionId,
-              },
-            })
-          );
-        }
-        break;
-      }
-      case "WS_TOGGLE_EXPORT": {
-        let { id, name } = action.payload;
-        if (!socket) {
-          store.dispatch(
-            // FIXME this shoudl be warning
-            repoSlice.actions.addError({
-              type: "warning",
-              msg: "Runtime not connected. Not evaluated.",
-            })
-          );
-          // break;
-        }
-        store.dispatch(repoSlice.actions.togglePodExport({ id, name }));
-        store.dispatch(repoSlice.actions.clearIO({ id, name }));
-        let pods = store.getState().repo.pods;
-        let pod = pods[id];
-        // toggle for its parent
-        if (pod.exports[name]) {
-          console.log("sending addImport ..");
-          socket.send(
-            JSON.stringify({
-              type: "addImport",
-              payload: {
-                lang: pod.lang,
-                from: pod.ns,
-                to: pods[pod.parent].ns,
-                id: id,
-                sessionId: store.getState().repo.sessionId,
-                name,
-              },
-            })
-          );
-        } else {
-          socket?.send(
-            JSON.stringify({
-              type: "deleteImport",
-              payload: {
-                lang: pod.lang,
-                id,
-                ns: pods[pod.parent].ns,
-                sessionId: store.getState().repo.sessionId,
-                name,
-              },
-            })
-          );
-        }
-        break;
-      }
-      case "WS_TOGGLE_IMPORT": {
-        let { id, name } = action.payload;
-        if (!socket) {
-          store.dispatch(
-            repoSlice.actions.addError({
-              type: "warning",
-              msg: "Runtime not connected. Not evaluated.",
-            })
-          );
-          // break;
-        }
-        store.dispatch(repoSlice.actions.togglePodImport({ id, name }));
-        let pods = store.getState().repo.pods;
-        let pod = pods[id];
-        let parent = pods[pod.parent];
-        // toggle for its parent
-        if (pod.imports[name]) {
-          store.dispatch(
-            repoSlice.actions.addPodImport({ id: parent.id, name })
-          );
-          socket?.send(
-            JSON.stringify({
-              type: "addImport",
-              payload: {
-                lang: pod.lang,
-                from: pod.ns,
-                to: parent.ns,
-                id: parent.id,
-                name,
-              },
-            })
-          );
-        } else {
-          // delete for all its parents
-          while (parent && parent.imports && name in parent.imports) {
-            store.dispatch(
-              repoSlice.actions.deletePodImport({ id: parent.id, name })
-            );
-            socket?.send(
-              JSON.stringify({
-                type: "deleteImport",
-                payload: {
-                  lang: pod.lang,
-                  ns: parent.ns,
-                  id: parent.id,
-                  name,
-                },
-              })
-            );
-            parent = pods[parent.parent];
-          }
-        }
-        break;
-      }
-      default:
-        return next(action);
+    if (socket_intervalId) {
+      clearInterval(socket_intervalId);
     }
+    socket_intervalId = setInterval(() => {
+      if (socket) {
+        console.log("sending ping ..");
+        socket.send(JSON.stringify({ type: "ping" }));
+      }
+      // websocket resets after 60s of idle by most firewalls
+    }, 30000);
+    console.log("get()", get());
+
+    // request kernel status after connection
+    Object.keys(get().kernels).forEach((k) => {
+      get().wsRequestStatus({
+        lang: k,
+        sessionId: get().sessionId,
+      });
+    });
   };
 };
 
-export default socketMiddleware();
+let socket = null;
+let socket_intervalId = null;
+
+export const createRuntimeSlice = (set, get) => ({
+  wsConnect: () => {
+    // 1. get the socket
+    console.log("WS_CONNECT");
+    if (socket !== null) {
+      console.log("already connected, skip");
+      return;
+    }
+    // reset kernel status
+    set({
+      kernels: {
+        python: {
+          status: null,
+        },
+      },
+    });
+    console.log("connecting ..");
+
+    // connect to the remote host
+    // socket = new WebSocket(action.host);
+    //
+    // I canont use "/ws" for a WS socket. Thus I need to detect what's the
+    // protocol used here, so that it supports both dev and prod env.
+    let socket_url;
+    if (process.env.NODE_ENV === "development") {
+      socket_url = `ws://localhost:4000`;
+    } else if (window.location.protocol === "http:") {
+      socket_url = `ws://${window.location.host}/ws`;
+    } else {
+      socket_url = `wss://${window.location.host}/ws`;
+    }
+    console.log("socket_url", socket_url);
+    socket = new WebSocket(socket_url);
+    // socket.emit("spawn", state.sessionId, lang);
+
+    // If the mqAddress is not supplied, use the websocket
+    socket.onmessage = onMessage(set, get);
+
+    // well, since it is already opened, this won't be called
+    //
+    // UPDATE it works, this will be called even after connection
+
+    socket.onopen = onOpen(set, get);
+    // so I'm setting this
+    // Well, I should probably not dispatch action inside another action
+    // (even though it is in a middleware)
+    //
+    // I probably can dispatch the action inside the middleware, because
+    // this is not a dispatch. It will not modify the store.
+    //
+    // store.dispatch(actions.wsConnected());
+    socket.onclose = () => {
+      console.log("Disconnected ..");
+      set({ runtimeConnected: false });
+      socket = null;
+    };
+  },
+  wsDisconnect: () => {
+    if (socket !== null) {
+      socket.close();
+    }
+  },
+  wsRequestStatus: ({ lang }) => {
+    if (socket) {
+      // set to unknown
+      set(
+        produce((state) => {
+          state.kernels[lang].status = null;
+        })
+      );
+      console.log("Sending requestKernelStatus ..");
+      socket.send(
+        JSON.stringify({
+          type: "requestKernelStatus",
+          payload: {
+            sessionId: get().sessionId,
+            lang,
+          },
+        })
+      );
+    } else {
+      console.log("ERROR: not connected");
+    }
+  },
+  wsRun: async ({ id, doEval }) => {
+    if (!socket) {
+      get().addError({
+        type: "error",
+        msg: "Runtime not connected",
+      });
+      return;
+    }
+    handleRunTree({
+      id,
+      socket: {
+        send: (payload) => {
+          console.log("sending", payload);
+          socket.send(payload);
+        },
+      },
+    });
+  },
+  wsPowerRun: ({ id, doEval }) => {
+    if (!socket) {
+      get().addError({
+        type: "error",
+        msg: "Runtime not connected",
+      });
+
+      return;
+    }
+    // This is used to evaluate the current deck and init the namespace
+    handlePowerRun({ id, doEval, socket, set, get });
+  },
+  wsInterruptKernel: ({ lang }) => {
+    if (!socket) {
+      get().addError({
+        type: "error",
+        msg: "Runtime not connected",
+      });
+
+      return;
+    }
+    socket.send(
+      JSON.stringify({
+        type: "interruptKernel",
+        payload: {
+          sessionId: get().sessionId,
+          lang,
+        },
+      })
+    );
+  },
+  // clearAllResults: () => {},
+});

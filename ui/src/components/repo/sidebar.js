@@ -14,19 +14,12 @@ import { useSnackbar } from "notistack";
 import { gql, useQuery, useMutation } from "@apollo/client";
 
 import StopIcon from "@mui/icons-material/Stop";
-import { useDispatch, useSelector } from "react-redux";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
 import { usePrompt } from "./prompt";
 
-import {
-  repoSlice,
-  remoteUpdateAllPods,
-  selectNumDirty,
-} from "../../lib/store";
-
-import * as wsActions from "../../lib/ws/actions";
+import { useRepoStore, selectNumDirty } from "../../lib/store";
 
 function Flex(props) {
   return (
@@ -38,36 +31,25 @@ function Flex(props) {
 
 function SidebarSession() {
   let { id } = useParams();
-  // const sessionId = useSelector((state) => state.repo.sessionId);
-  let sessionId = useSelector((state) => state.repo.sessionId);
+  let sessionId = useRepoStore((state) => state.sessionId);
+  const repoName = useRepoStore((state) => state.repoName);
+
+  console.log(`Repo ID: ${id} Session ID: ${sessionId}`);
 
   return (
     <Box>
       <Box>
-        Repo ID: <Box color="blue">{id}</Box>
-      </Box>
-      {/* <Text>SyncQueue: {queueL}</Text> */}
-      <Box>
-        Session ID: <Box color="blue">{sessionId}</Box>
-        {/* <Button
-            size="xs"
-            onClick={() => {
-              dispatch(repoSlice.actions.resetSessionId());
-            }}
-          >
-            <RefreshIcon />
-          </Button> */}
+        Project Name: <Box color="blue">{repoName || "Untitled"}</Box>
       </Box>
     </Box>
   );
 }
 
 function SidebarRuntime() {
-  const sessionRuntime = useSelector((state) => state.repo.sessionRuntime);
-  const runtimeConnected = useSelector((state) => state.repo.runtimeConnected);
-  // const runtimes = useSelector((state) => state.repo.runtimes);
-
-  const dispatch = useDispatch();
+  const sessionRuntime = useRepoStore((state) => state.sessionRuntime);
+  const runtimeConnected = useRepoStore((state) => state.runtimeConnected);
+  const wsConnect = useRepoStore((state) => state.wsConnect);
+  const wsDisconnect = useRepoStore((state) => state.wsDisconnect);
   return (
     <Box>
       <Box>
@@ -90,7 +72,7 @@ function SidebarRuntime() {
         <Button
           size="small"
           onClick={() => {
-            dispatch(wsActions.wsConnect());
+            wsConnect();
           }}
         >
           Connect
@@ -99,7 +81,7 @@ function SidebarRuntime() {
         <Button
           size="small"
           onClick={() => {
-            dispatch(wsActions.wsDisconnect());
+            wsDisconnect();
           }}
         >
           Disconnect
@@ -110,9 +92,10 @@ function SidebarRuntime() {
 }
 
 function SidebarKernel() {
-  const kernels = useSelector((state) => state.repo.kernels);
-  const runtimeConnected = useSelector((state) => state.repo.runtimeConnected);
-  const dispatch = useDispatch();
+  const kernels = useRepoStore((state) => state.kernels);
+  const runtimeConnected = useRepoStore((state) => state.runtimeConnected);
+  const wsRequestStatus = useRepoStore((state) => state.wsRequestStatus);
+  const wsInterruptKernel = useRepoStore((state) => state.wsInterruptKernel);
   return (
     <Box>
       {/* CAUTION Object.entries is very tricky. Must use for .. of, and the destructure must be [k,v] LIST */}
@@ -135,7 +118,7 @@ function SidebarKernel() {
               <IconButton
                 size="small"
                 onClick={() => {
-                  dispatch(wsActions.wsRequestStatus({ lang }));
+                  wsRequestStatus({ lang });
                 }}
               >
                 <RefreshIcon />
@@ -145,7 +128,7 @@ function SidebarKernel() {
               <IconButton
                 size="small"
                 onClick={() => {
-                  dispatch(wsActions.wsInterruptKernel({ lang }));
+                  wsInterruptKernel({ lang });
                 }}
               >
                 <StopIcon />
@@ -159,8 +142,10 @@ function SidebarKernel() {
 }
 
 function ApplyAll() {
-  const dispatch = useDispatch();
-  const numDirty = useSelector(selectNumDirty());
+  const numDirty = useRepoStore(selectNumDirty());
+  const wsRunAll = useRepoStore((s) => s.wsRunAll);
+  const clearAllResults = useRepoStore((s) => s.clearAllResults);
+  const remoteUpdateAllPods = useRepoStore((s) => s.remoteUpdateAllPods);
   usePrompt(
     `You have unsaved ${numDirty} changes. Are you sure you want to leave?`,
     numDirty > 0
@@ -188,13 +173,13 @@ function ApplyAll() {
         size="small"
         disabled={numDirty === 0}
         onClick={() => {
-          dispatch(remoteUpdateAllPods());
+          remoteUpdateAllPods();
         }}
       >
         <CloudUploadIcon />
         {numDirty > 0 ? (
           <Box as="span" color="blue" mx={1}>
-            Saving {numDirty} to cloud ..
+            save {numDirty} to cloud
           </Box>
         ) : (
           <Box as="span" color="grey" mx={1}>
@@ -208,7 +193,7 @@ function ApplyAll() {
           size="small"
           onClick={() => {
             // run all pods
-            dispatch(wsActions.wsRunAll());
+            wsRunAll();
           }}
         >
           Apply All
@@ -222,7 +207,7 @@ function ApplyAll() {
         <Button
           size="small"
           onClick={() => {
-            dispatch(repoSlice.actions.clearAllResults());
+            clearAllResults();
           }}
         >
           Clear All
@@ -238,7 +223,7 @@ function ActiveSessions() {
       activeSessions
     }
   `);
-  const runtimeConnected = useSelector((state) => state.repo.runtimeConnected);
+  const runtimeConnected = useRepoStore((state) => state.runtimeConnected);
   useEffect(() => {
     console.log("----- refetching active sessions ..");
     refetch();
@@ -286,20 +271,23 @@ function ActiveSessions() {
 
 function ToastError() {
   const { enqueueSnackbar } = useSnackbar();
-  const error = useSelector((state) => state.repo.error);
-  const dispatch = useDispatch();
+  const error = useRepoStore((state) => state.error);
+  const clearError = useRepoStore((state) => state.clearError);
   useEffect(() => {
     if (error) {
       enqueueSnackbar(`ERROR: ${error.msg}`, { variant: error.type });
       // I'll need to clear this msg once it is displayed
-      dispatch(repoSlice.actions.clearError());
+      clearError();
     }
-  }, [error, dispatch, enqueueSnackbar]);
+  }, [error, enqueueSnackbar, clearError]);
   return <Box></Box>;
 }
 
 function SidebarTest() {
-  const dispatch = useDispatch();
+  const foldAll = useRepoStore((state) => state.foldAll);
+  const unfoldAll = useRepoStore((state) => state.unfoldAll);
+  const clearAllExports = useRepoStore((state) => state.clearAllExports);
+
   return (
     <Box>
       SidebarTest
@@ -307,7 +295,7 @@ function SidebarTest() {
         variant="outlined"
         size="small"
         onClick={() => {
-          dispatch(repoSlice.actions.foldAll());
+          foldAll();
         }}
       >
         Fold All
@@ -316,14 +304,14 @@ function SidebarTest() {
         variant="outlined"
         size="small"
         onClick={() => {
-          dispatch(repoSlice.actions.unfoldAll());
+          unfoldAll();
         }}
       >
         Unfold All
       </Button>
       <Button
         onClick={() => {
-          dispatch(repoSlice.actions.clearAllExports());
+          clearAllExports();
         }}
       >
         ClearExports
