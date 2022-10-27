@@ -5,8 +5,8 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "start": "node build/start-server.js",
-    "dev": "ts-node-dev src/start-server.ts",
+    "start": "node build/server.js",
+    "dev": "ts-node-dev src/server.ts",
     "test": "jest --config jest.config.js"
   },
   "dependencies": {

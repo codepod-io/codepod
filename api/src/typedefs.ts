@@ -105,6 +105,5 @@ export const typeDefs = gql`
     clearUser: Boolean
     clearRepo: Boolean
     clearPod: Boolean
-    killSession(sessionId: String): Boolean
   }
 `;

@@ -676,7 +676,8 @@ export const createRuntimeSlice = (set, get) => ({
     // protocol used here, so that it supports both dev and prod env.
     let socket_url;
     if (process.env.NODE_ENV === "development") {
-      socket_url = `ws://localhost:4000`;
+      // socket_url = `ws://localhost:4000`;
+      socket_url = `ws://localhost:4020`;
     } else if (window.location.protocol === "http:") {
       socket_url = `ws://${window.location.host}/ws`;
     } else {
@@ -735,7 +736,7 @@ export const createRuntimeSlice = (set, get) => ({
       console.log("ERROR: not connected");
     }
   },
-  wsRun: async ({ id, doEval }) => {
+  wsRun: async (id) => {
     if (!socket) {
       get().addError({
         type: "error",
@@ -751,6 +752,8 @@ export const createRuntimeSlice = (set, get) => ({
           socket.send(payload);
         },
       },
+      set,
+      get,
     });
   },
   wsPowerRun: ({ id, doEval }) => {
@@ -784,5 +787,174 @@ export const createRuntimeSlice = (set, get) => ({
       })
     );
   },
-  // clearAllResults: () => {},
+  clearResults: (id) => {
+    set(
+      produce((state) => {
+        state.pods[id].result = null;
+        state.pods[id].stdout = null;
+        state.pods[id].error = null;
+      })
+    );
+  },
+  clearAllResults: () => {
+    set(
+      produce((state) => {
+        Object.keys(state.pods).forEach((id) => {
+          state.pods[id].result = null;
+          state.pods[id].stdout = "";
+          state.pods[id].error = null;
+        });
+      })
+    );
+  },
+  setRunning: (id) => {
+    set(
+      produce((state) => {
+        state.pods[id].running = true;
+      })
+    );
+  },
+  // ==========
+  // exports
+  addPodExport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        // XXX at pod creation, remote pod in db gets null in exports/imports.
+        // Thus this might be null. So create here to avoid errors.
+        let pod = state.pods[id];
+        if (!pod.exports) {
+          pod.exports = {};
+        }
+        pod.exports[name] = false;
+      })
+    );
+  },
+  clearAllExports: () => {
+    set(
+      produce((state) => {
+        for (let [, pod] of Object.entries(state.pods)) {
+          pod.exports = {};
+          pod.reexports = {};
+        }
+      })
+    );
+  },
+  setPodExport: ({ id, exports, reexports }) => {
+    set(
+      produce((state) => {
+        let pod = state.pods[id];
+        pod.exports = Object.assign(
+          {},
+          ...exports.map((name) => ({ [name]: pod.exports[name] || [] }))
+        );
+        pod.reexports = reexports;
+        // add the reexports use reference to the origin
+        for (let [name, origid] of Object.entries(reexports)) {
+          if (state.pods[origid].exports[name].indexOf(id) === -1) {
+            state.pods[origid].exports[name].push(id);
+          }
+        }
+      })
+    );
+  },
+  clearIO: ({ id, name }) => {
+    set(
+      produce((state) => {
+        delete state.pods[id].io[name];
+      })
+    );
+  },
+  deletePodExport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        delete state.pods[id].exports[name];
+      })
+    );
+  },
+  clearPodExport: ({ id }) => {
+    set(
+      produce((state) => {
+        state.pods[id].exports = null;
+      })
+    );
+  },
+  togglePodExport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        let pod = state.pods[id];
+        pod.exports[name] = !pod.exports[name];
+      })
+    );
+  },
+  toggleDeckExport: ({ id }) => {
+    set(
+      produce((state) => {
+        let pod = state.pods[id];
+        // this is only for deck
+        // state.pods[id].exports = {};
+        if (!pod.exports) {
+          pod.exports = {};
+        }
+        if (!state.pods[id].exports["self"]) {
+          pod.exports["self"] = true;
+        } else {
+          pod.exports["self"] = false;
+        }
+      })
+    );
+  },
+  addPodImport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        let pod = state.pods[id];
+        if (!pod.imports) {
+          pod.imports = {};
+        }
+        pod.imports[name] = false;
+      })
+    );
+  },
+  deletePodImport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        delete state.pods[id].imports[name];
+      })
+    );
+  },
+  togglePodImport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        let pod = state.pods[id];
+        pod.imports[name] = !pod.imports[name];
+      })
+    );
+  },
+  addPodMidport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        let pod = state.pods[id];
+        if (!pod.midports) {
+          pod.midports = {};
+        }
+        pod.midports[name] = false;
+      })
+    );
+  },
+  deletePodMidport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        if (state.pods[id].midports) {
+          delete state.pods[id].midports[name];
+        }
+      })
+    );
+  },
+  togglePodMidport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        let pod = state.pods[id];
+        pod.midports[name] = !pod.midports[name];
+      })
+    );
+  },
 });
