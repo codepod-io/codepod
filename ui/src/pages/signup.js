@@ -56,7 +56,6 @@ export default function SignUp() {
       lastname: "",
       email: "",
       password: "",
-      invitation: "",
     },
     // validationSchema: validationSchema,
     onSubmit: (values) => {
@@ -67,7 +66,6 @@ export default function SignUp() {
         firstname: values.firstname,
         lastname: values.lastname,
         password: values.password,
-        invitation: values.invitation,
       }).catch((err) => {
         // TODO use more user friendly error message
         setError(err.message);
@@ -153,17 +151,6 @@ export default function SignUp() {
                   formik.touched.password && Boolean(formik.errors.password)
                 }
                 // helperText={formik.touched.password && formik.errors.password}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                required
-                fullWidth
-                name="invitation"
-                label="Invitation code"
-                id="invitation"
-                value={formik.values.invitation}
-                onChange={formik.handleChange}
               />
             </Grid>
             <Grid item xs={12}>

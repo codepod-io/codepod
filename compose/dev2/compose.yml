@@ -1,0 +1,98 @@
+# Use postgres/example user/password credentials
+version: "3.5"
+
+services:
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  prisma:
+    image: node:18
+    restart: always
+    ports:
+      - 5555:5555
+    # command: npm config set unsafe-perm true && npx prisma studio
+    command: yarn run prisma studio
+    working_dir: /app
+    volumes:
+      - ../../api:/app
+      - api-node-modules:/app/node_modules
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
+
+  api:
+    image: node:18
+    working_dir: /app
+    # restart: always
+    ports:
+      - 4000:4000
+    volumes:
+      - ../../api:/app
+      - api-node-modules:/app/node_modules
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: yarn dev
+    # command: yarn
+    # tty: true
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
+      JWT_SECRET: ${JWT_SECRET}
+      KERNEL_NETWORK: "codepod"
+      PROXY_API_URL: "http://proxy:4011/graphql"
+      ZMQ_KERNEL_IMAGE: "lihebi/codepod_kernel_python:v0.1.0"
+      WS_RUNTIME_IMAGE: "lihebi/codepod_runtime:v0.0.2"
+
+  ui:
+    image: node:18
+    working_dir: /app
+    restart: always
+    ports:
+      - 3000:3000
+    volumes:
+      - ../../ui:/app
+      - ui-node-modules:/app/node_modules
+    command: yarn dev
+    # command: yarn
+    # tty: true
+    environment:
+    # This must be public facing URL because it is the request from frontend.
+    # FIXME would this be compile-time URL or runtime URL?
+    #
+    # NOTE: This variable must starts with REACT_APP_, otherwise it is not
+    # picked up to process.env.XXX by React.
+      - REACT_APP_RUNTIME_PROXY=localhost:4010
+      # NOTE: I might need to set this in production: NODE_ENV=production node App.tsx
+      # https://nodejs.dev/en/learn/nodejs-the-difference-between-development-and-production/
+      - REACT_APP_GRAPHQL_ENDPOINT=localhost:4000/graphql
+
+  proxy:
+    image: node:18
+    working_dir: /app
+    restart: always
+    volumes:
+      - ../../proxy:/app
+      - proxy-node-modules:/app/node_modules
+    ports:
+      - 4010:4010 # proxy listening port
+      - 4011:4011 # API port http://localhost:4011/graphql
+    command: yarn dev
+    # command: yarn
+
+volumes:
+  db-data:
+  api-node-modules:
+  ui-node-modules:
+  proxy-node-modules:
+
+
+networks:
+  default:
+    name: codepod
+    driver: bridge

@@ -23,9 +23,11 @@ function ensureZmqConnected() {
   if (!wire) {
     // estabilish a ZMQ connection
     console.log("connecting to zmq ..");
+    let host = process.env.ZMQ_HOST;
+    console.log("Host: ", host);
     wire = new ZmqWire(
       JSON.parse(readFileSync("./kernel/conn.json").toString()),
-      "localhost"
+      host
     );
     // FIXME the path
     console.log("executing startup code ..");

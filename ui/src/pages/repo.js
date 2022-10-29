@@ -87,7 +87,7 @@ export default function Repo() {
   const { loading, me } = useMe();
   useEffect(() => {
     if (me) {
-      setSessionId(`user_${me.id}_repo_${id}`);
+      setSessionId(`${me.id}_${id}`);
     }
   }, [me, id, setSessionId]);
   useEffect(() => {

@@ -408,7 +408,7 @@ export function Deck({ props }) {
         x: x - reactFlowBounds.left,
         y: y - reactFlowBounds.top,
       });
-      let id = "CP" + nanoid();
+      let id = "pod_" + nanoid();
       const newNode = {
         id,
         type,

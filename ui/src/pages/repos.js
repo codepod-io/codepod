@@ -1,6 +1,5 @@
 import { useQuery, useMutation, gql } from "@apollo/client";
 import React, { useState } from "react";
-import useMe from "../lib/me";
 
 import Link from "@mui/material/Link";
 import { Link as ReactLink } from "react-router-dom";
@@ -16,6 +15,12 @@ import FormControl from "@mui/material/FormControl";
 import FormLabel from "@mui/material/FormLabel";
 
 import { Formik } from "formik";
+
+import { customAlphabet } from "nanoid";
+import { nolookalikes } from "nanoid-dictionary";
+
+import useMe from "../lib/me";
+const nanoid = customAlphabet(nolookalikes, 10);
 
 const FETCH_REPOS = gql`
   query GetRepos {
@@ -83,8 +88,8 @@ function CreateRepoForm(props) {
   const [error, setError] = useState(null);
   const [createRepo] = useMutation(
     gql`
-      mutation CreateRepo($name: String!) {
-        createRepo(name: $name) {
+      mutation CreateRepo($name: String!, $id: ID!) {
+        createRepo(name: $name, id: $id) {
           name
         }
       }
@@ -117,6 +122,7 @@ function CreateRepoForm(props) {
         createRepo({
           variables: {
             name: values.reponame,
+            id: "repo_" + nanoid(),
           },
         });
         setSubmitting(false);

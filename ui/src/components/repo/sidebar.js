@@ -46,16 +46,11 @@ function SidebarSession() {
 }
 
 function SidebarRuntime() {
-  const sessionRuntime = useRepoStore((state) => state.sessionRuntime);
   const runtimeConnected = useRepoStore((state) => state.runtimeConnected);
   const wsConnect = useRepoStore((state) => state.wsConnect);
   const wsDisconnect = useRepoStore((state) => state.wsDisconnect);
   return (
     <Box>
-      <Box>
-        Session Runtime:
-        <Box>{Object.keys(sessionRuntime)}</Box>
-      </Box>
       <Box>
         Runtime connected?{" "}
         {runtimeConnected ? (

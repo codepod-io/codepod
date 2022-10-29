@@ -82,20 +82,20 @@ export const typeDefs = gql`
     pod(id: ID!): Pod
     myRepos: [Repo]
     activeSessions: [String]
+    getRuntimes: [String]
   }
 
   type Mutation {
     login(email: String, password: String): AuthData
     signup(
+      id: ID
       email: String
       password: String
       firstname: String
       lastname: String
-      invitation: String
     ): AuthData
-    deleteUserCCC: Boolean
     updateUser(email: String, firstname: String, lastname: String): Boolean
-    createRepo(name: String): Repo
+    createRepo(name: String, id: ID): Repo
     deleteRepo(name: String): Boolean
     addPod(repoId: String, parent: String, index: Int, input: PodInput): Boolean
     deletePod(id: String, toDelete: [String]): Boolean
@@ -105,5 +105,7 @@ export const typeDefs = gql`
     clearUser: Boolean
     clearRepo: Boolean
     clearPod: Boolean
+    spawnRuntime(sessionId: String): Boolean
+    killRuntime(url: String): Boolean
   }
 `;

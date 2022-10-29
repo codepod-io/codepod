@@ -7,7 +7,6 @@
     "build": "tsc",
     "start": "node build/server.js",
     "dev": "ts-node-dev src/server.ts",
-    "devws": "ts-node-dev src/server-ws.ts",
     "test": "jest --config jest.config.js"
   },
   "dependencies": {

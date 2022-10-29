@@ -16,7 +16,7 @@ generator studio-client {
 }
 
 model Post {
-    id        String   @id @default(uuid())
+    id        String   @id
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
     title     String   @db.VarChar(255)
@@ -27,14 +27,14 @@ model Post {
 }
 
 model Profile {
-    id     String  @id @default(uuid())
+    id     String  @id
     bio    String?
     user   User    @relation(fields: [userId], references: [id])
     userId String  @unique
 }
 
 model User {
-    id             String   @id @default(uuid())
+    id             String   @id
     email          String   @unique
     // username is an optional value, because it might create barrier when user signup.
     username       String?  @unique
@@ -47,7 +47,7 @@ model User {
 }
 
 model Repo {
-    id     String   @id @default(uuid())
+    id     String   @id
     name   String
     // fullname String  @unique
     owner  User     @relation(fields: [userId], references: [id])
@@ -68,7 +68,6 @@ enum PodType {
 }
 
 model Edge {
-    // id     String  @id @default(uuid())
     from   Pod    @relation("FROM", fields: [fromId], references: [id])
     fromId String
     to     Pod    @relation("TO", fields: [toId], references: [id])
@@ -78,7 +77,7 @@ model Edge {
 }
 
 model Pod {
-    id        String  @id @default(uuid())
+    id        String  @id
     parent    Pod?    @relation("PARENT", fields: [parentId], references: [id])
     parentId  String?
     x         Float   @default(0)
@@ -130,17 +129,3 @@ model Pod {
     to     Edge[] @relation("TO")
     from   Edge[] @relation("FROM")
 }
-
-// model Deck {
-//   id         String       @id @default(uuid())
-//   children   Pod[]
-//   Repo       Repo[]
-//   DeckOrDock DeckOrDock[]
-// }
-
-// model Pod {
-//   id      String @id @default(uuid())
-//   parent  Deck   @relation(fields: [deckId], references: [id])
-//   deckId  String
-//   content String
-// }

@@ -1,4 +1,5 @@
 import produce from "immer";
+import { spawnRuntime } from "./fetch";
 
 function getChildExports({ id, pods }) {
   // get all the exports and reexports. The return would be:
@@ -652,7 +653,14 @@ let socket = null;
 let socket_intervalId = null;
 
 export const createRuntimeSlice = (set, get) => ({
-  wsConnect: () => {
+  wsConnect: async () => {
+    // 0. ensure the runtime is created
+    let sessionId = get().sessionId;
+    console.log("sessionId", sessionId);
+    let runtimeCreated = await spawnRuntime({ sessionId });
+    if (!runtimeCreated) {
+      throw Error("ERROR: runtime not ready");
+    }
     // 1. get the socket
     console.log("WS_CONNECT");
     if (socket !== null) {
@@ -674,15 +682,7 @@ export const createRuntimeSlice = (set, get) => ({
     //
     // I canont use "/ws" for a WS socket. Thus I need to detect what's the
     // protocol used here, so that it supports both dev and prod env.
-    let socket_url;
-    if (process.env.NODE_ENV === "development") {
-      // socket_url = `ws://localhost:4000`;
-      socket_url = `ws://localhost:4020`;
-    } else if (window.location.protocol === "http:") {
-      socket_url = `ws://${window.location.host}/ws`;
-    } else {
-      socket_url = `wss://${window.location.host}/ws`;
-    }
+    let socket_url = `ws://${process.env.REACT_APP_RUNTIME_PROXY}/${sessionId}`;
     console.log("socket_url", socket_url);
     socket = new WebSocket(socket_url);
     // socket.emit("spawn", state.sessionId, lang);

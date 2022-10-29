@@ -5,7 +5,8 @@ Build the docker images:
 ```
 docker build -t lihebi/codepod-ui:v0.4.2 ./ui
 docker build -t lihebi/codepod-api:v0.4.2 ./api
-docker build -t lihebi/codepod_kernel_python:v0.1.0 ./api/kernels/python
+docker build -t lihebi/codepod_kernel_python:v0.1.0 ./runtime/kernel
+docker build -t lihebi/codepod_runtime:v0.0.1 ./runtime
 ```
 
 Push to registry:

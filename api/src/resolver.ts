@@ -1,10 +1,18 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+import { ApolloClient, InMemoryCache, gql } from "@apollo/client/core";
+
 import Prisma from "@prisma/client";
+import { loadOrCreateContainer } from "./spawner-docker";
 const { PrismaClient } = Prisma;
 
 const prisma = new PrismaClient();
+
+const apollo_client = new ApolloClient({
+  cache: new InMemoryCache({}),
+  uri: process.env.PROXY_API_URL,
+});
 
 export function computeNamespace(pods, id: string) {
   let res: string[] = [];
@@ -148,17 +156,18 @@ export const resolvers = {
         },
       });
     },
+    getRuntimes: async () => {
+      // TODO
+      return [];
+    },
   },
   Mutation: {
-    signup: async (_, { email, password, invitation, firstname, lastname }) => {
-      if (invitation !== "CPFOUNDERS") {
-        console.log("Invalid signup with invalid code", invitation);
-        throw Error(`Invalid signup with invalid code: ${invitation}`);
-      }
+    signup: async (_, { id, email, password, firstname, lastname }) => {
       const salt = await bcrypt.genSalt(10);
       const hashed = await bcrypt.hash(password, salt);
       const user = await prisma.user.create({
         data: {
+          id,
           email,
           firstname,
           lastname,
@@ -216,7 +225,7 @@ export const resolvers = {
         };
       }
     },
-    createRepo: async (_, { name }, { userId }) => {
+    createRepo: async (_, { id, name }, { userId }) => {
       if (!userId) throw Error("Unauthenticated");
       const user = await prisma.user.findFirst({
         where: {
@@ -226,7 +235,8 @@ export const resolvers = {
       // create repo $name under userId
       const repo = await prisma.repo.create({
         data: {
-          name: name,
+          id,
+          name,
           owner: {
             connect: {
               id: userId,
@@ -316,6 +326,8 @@ export const resolvers = {
         data: {
           id: podId,
           ...input,
+          // In case of [], create will throw an error. Thus I have to pass undefined.
+          children: input.children.length > 0 ? input.children : undefined,
           index,
           repo: {
             connect: {
@@ -364,7 +376,7 @@ export const resolvers = {
                 }
               : undefined,
           children: {
-            connect: input.children.map((id) => ({ id })),
+            connect: input.children?.map((id) => ({ id })),
           },
         },
       });
@@ -415,6 +427,49 @@ export const resolvers = {
         },
       });
       return true;
+    },
+    spawnRuntime: async (_, { sessionId }) => {
+      // launch the kernel
+      console.log("Spawning ");
+      let url = `/${sessionId}`;
+      console.log("spawning kernel");
+      let zmq_host = `cpkernel_${sessionId}`;
+      await loadOrCreateContainer(
+        process.env.ZMQ_KERNEL_IMAGE,
+        zmq_host,
+        // "cpkernel1_hello_world-foo",
+        "codepod"
+      );
+      console.log("spawning ws");
+      let ws_host = `cpruntime_${sessionId}`;
+      await loadOrCreateContainer(
+        process.env.WS_RUNTIME_IMAGE,
+        ws_host,
+        // "cpruntime1_hello_world-foo",
+        "codepod",
+        [`ZMQ_HOST=${zmq_host}`]
+      );
+      console.log("adding route", url, ws_host);
+      // add to routing table
+      let res = await apollo_client.mutate({
+        mutation: gql`
+          mutation addRoute($url: String, $target: String) {
+            addRoute(url: $url, target: $target)
+          }
+        `,
+        variables: {
+          url,
+          // This 4020 is the WS listening port in WS_RUNTIME_IMAGE
+          target: `${ws_host}:4020`,
+        },
+      });
+      console.log(res);
+      console.log("returning");
+      // console.log("res", res);
+      return true;
+    },
+    killRuntime: async (_, { url }) => {
+      // kill the runtime server.
     },
   },
 };
