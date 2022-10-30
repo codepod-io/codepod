@@ -82,7 +82,7 @@ export const typeDefs = gql`
     pod(id: ID!): Pod
     myRepos: [Repo]
     activeSessions: [String]
-    getRuntimes: [String]
+    listAllRuntimes: [String]
   }
 
   type Mutation {
@@ -106,6 +106,6 @@ export const typeDefs = gql`
     clearRepo: Boolean
     clearPod: Boolean
     spawnRuntime(sessionId: String): Boolean
-    killRuntime(url: String): Boolean
+    killRuntime(sessionId: String!): Boolean
   }
 `;

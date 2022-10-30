@@ -1,5 +1,5 @@
 import produce from "immer";
-import { spawnRuntime } from "./fetch";
+import { gql } from "@apollo/client";
 
 function getChildExports({ id, pods }) {
   // get all the exports and reexports. The return would be:
@@ -649,20 +649,59 @@ const onOpen = (set, get) => {
   };
 };
 
+async function spawnRuntime({ client, sessionId }) {
+  // load from remote
+  console.log("spawnRuntime");
+  let res = await client.mutate({
+    mutation: gql`
+      mutation spawnRuntime($sessionId: String!) {
+        spawnRuntime(sessionId: $sessionId)
+      }
+    `,
+    variables: {
+      sessionId,
+    },
+    // refetchQueries with array of strings are known not to work in many
+    // situations, ref:
+    // https://lightrun.com/answers/apollographql-apollo-client-refetchqueries-not-working-when-using-string-array-after-mutation
+    //
+    // refetchQueries: ["listAllRuntimes"],
+    refetchQueries: [
+      {
+        query: gql`
+          query {
+            listAllRuntimes
+          }
+        `,
+      },
+    ],
+  });
+  console.log("spawnRuntime res", res);
+  if (res.errors) {
+    throw Error(
+      `Error: ${
+        res.errors[0].message
+      }\n ${res.errors[0].extensions.exception.stacktrace.join("\n")}`
+    );
+  }
+  return res.data.spawnRuntime;
+}
+
 let socket = null;
 let socket_intervalId = null;
 
 export const createRuntimeSlice = (set, get) => ({
-  wsConnect: async () => {
+  wsConnect: async (client, sessionId) => {
     // 0. ensure the runtime is created
-    let sessionId = get().sessionId;
+    // let sessionId = get().sessionId;
     console.log("sessionId", sessionId);
-    let runtimeCreated = await spawnRuntime({ sessionId });
+    let runtimeCreated = await spawnRuntime({ client, sessionId });
     if (!runtimeCreated) {
       throw Error("ERROR: runtime not ready");
     }
     // 1. get the socket
     console.log("WS_CONNECT");
+    // FIXME socket should be disconnected when leaving the repo page.
     if (socket !== null) {
       console.log("already connected, skip");
       return;

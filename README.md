@@ -57,3 +57,12 @@ Now you are all set. Go to
 - http://localhost:3000: the UI of the web app
 - http://localhost:4000/graphql: the app API server
 - http://localhost:5555: the prisma DB viewer
+
+# Runtime spawners
+
+The API server needs to spawn runtime containers. There are two images (configured in the docker-compose file):
+
+```
+docker build -t lihebi/codepod_kernel_python:v0.1.0 ./runtime/kernel
+docker build -t lihebi/codepod_runtime:v0.0.1 ./runtime
+```

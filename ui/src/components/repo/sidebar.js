@@ -11,7 +11,7 @@ import { grey } from "@mui/material/colors";
 
 import { useSnackbar } from "notistack";
 
-import { gql, useQuery, useMutation } from "@apollo/client";
+import { gql, useQuery, useMutation, useApolloClient } from "@apollo/client";
 
 import StopIcon from "@mui/icons-material/Stop";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -20,6 +20,8 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { usePrompt } from "./prompt";
 
 import { useRepoStore, selectNumDirty } from "../../lib/store";
+
+import useMe from "../../lib/me";
 
 function Flex(props) {
   return (
@@ -48,7 +50,15 @@ function SidebarSession() {
 function SidebarRuntime() {
   const runtimeConnected = useRepoStore((state) => state.runtimeConnected);
   const wsConnect = useRepoStore((state) => state.wsConnect);
+  const client = useApolloClient();
   const wsDisconnect = useRepoStore((state) => state.wsDisconnect);
+  const { loading, me } = useMe();
+  let { id: repoId } = useParams();
+  useEffect(() => {
+    console.log("Connecting to runtime at the beginning ..");
+    wsConnect(client, `${me.id}_${repoId}`);
+  }, []);
+  if (loading) return <Box>loading</Box>;
   return (
     <Box>
       <Box>
@@ -67,7 +77,7 @@ function SidebarRuntime() {
         <Button
           size="small"
           onClick={() => {
-            wsConnect();
+            wsConnect(client, `${me.id}_${repoId}`);
           }}
         >
           Connect

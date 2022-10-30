@@ -255,6 +255,7 @@ async function startAPIServer() {
           }
         },
         deleteRoute: async (_, { url }) => {
+          console.log("Delete route", url);
           await _routes.remove(url);
           return true;
         },
