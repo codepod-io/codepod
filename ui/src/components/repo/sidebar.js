@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 
 import { useParams } from "react-router-dom";
 import Box from "@mui/material/Box";
@@ -17,9 +17,11 @@ import StopIcon from "@mui/icons-material/Stop";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
+import { useStore } from "zustand";
+
 import { usePrompt } from "./prompt";
 
-import { useRepoStore, selectNumDirty } from "../../lib/store";
+import { RepoContext, selectNumDirty } from "../../lib/store";
 
 import useMe from "../../lib/me";
 
@@ -33,8 +35,10 @@ function Flex(props) {
 
 function SidebarSession() {
   let { id } = useParams();
-  let sessionId = useRepoStore((state) => state.sessionId);
-  const repoName = useRepoStore((state) => state.repoName);
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  let sessionId = useStore(store, (state) => state.sessionId);
+  const repoName = useStore(store, (state) => state.repoName);
 
   console.log(`Repo ID: ${id} Session ID: ${sessionId}`);
 
@@ -48,10 +52,12 @@ function SidebarSession() {
 }
 
 function SidebarRuntime() {
-  const runtimeConnected = useRepoStore((state) => state.runtimeConnected);
-  const wsConnect = useRepoStore((state) => state.wsConnect);
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
+  const wsConnect = useStore(store, (state) => state.wsConnect);
   const client = useApolloClient();
-  const wsDisconnect = useRepoStore((state) => state.wsDisconnect);
+  const wsDisconnect = useStore(store, (state) => state.wsDisconnect);
   const { loading, me } = useMe();
   let { id: repoId } = useParams();
   useEffect(() => {
@@ -97,10 +103,12 @@ function SidebarRuntime() {
 }
 
 function SidebarKernel() {
-  const kernels = useRepoStore((state) => state.kernels);
-  const runtimeConnected = useRepoStore((state) => state.runtimeConnected);
-  const wsRequestStatus = useRepoStore((state) => state.wsRequestStatus);
-  const wsInterruptKernel = useRepoStore((state) => state.wsInterruptKernel);
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const kernels = useStore(store, (state) => state.kernels);
+  const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
+  const wsRequestStatus = useStore(store, (state) => state.wsRequestStatus);
+  const wsInterruptKernel = useStore(store, (state) => state.wsInterruptKernel);
   return (
     <Box>
       {/* CAUTION Object.entries is very tricky. Must use for .. of, and the destructure must be [k,v] LIST */}
@@ -147,10 +155,12 @@ function SidebarKernel() {
 }
 
 function ApplyAll() {
-  const numDirty = useRepoStore(selectNumDirty());
-  const wsRunAll = useRepoStore((s) => s.wsRunAll);
-  const clearAllResults = useRepoStore((s) => s.clearAllResults);
-  const remoteUpdateAllPods = useRepoStore((s) => s.remoteUpdateAllPods);
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const numDirty = useStore(store, selectNumDirty());
+  const wsRunAll = useStore(store, (s) => s.wsRunAll);
+  const clearAllResults = useStore(store, (s) => s.clearAllResults);
+  const remoteUpdateAllPods = useStore(store, (s) => s.remoteUpdateAllPods);
   usePrompt(
     `You have unsaved ${numDirty} changes. Are you sure you want to leave?`,
     numDirty > 0
@@ -228,7 +238,9 @@ function ActiveSessions() {
       activeSessions
     }
   `);
-  const runtimeConnected = useRepoStore((state) => state.runtimeConnected);
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
   useEffect(() => {
     console.log("----- refetching active sessions ..");
     refetch();
@@ -275,9 +287,11 @@ function ActiveSessions() {
 }
 
 function ToastError() {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const { enqueueSnackbar } = useSnackbar();
-  const error = useRepoStore((state) => state.error);
-  const clearError = useRepoStore((state) => state.clearError);
+  const error = useStore(store, (state) => state.error);
+  const clearError = useStore(store, (state) => state.clearError);
   useEffect(() => {
     if (error) {
       enqueueSnackbar(`ERROR: ${error.msg}`, { variant: error.type });
@@ -289,9 +303,11 @@ function ToastError() {
 }
 
 function SidebarTest() {
-  const foldAll = useRepoStore((state) => state.foldAll);
-  const unfoldAll = useRepoStore((state) => state.unfoldAll);
-  const clearAllExports = useRepoStore((state) => state.clearAllExports);
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const foldAll = useStore(store, (state) => state.foldAll);
+  const unfoldAll = useStore(store, (state) => state.unfoldAll);
+  const clearAllExports = useStore(store, (state) => state.clearAllExports);
 
   return (
     <Box>

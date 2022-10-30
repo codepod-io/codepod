@@ -1,4 +1,11 @@
-import { useCallback, useState, useRef, useEffect, memo } from "react";
+import {
+  useCallback,
+  useState,
+  useRef,
+  useContext,
+  useEffect,
+  memo,
+} from "react";
 import * as React from "react";
 import ReactFlow, {
   addEdge,
@@ -23,7 +30,9 @@ import Ansi from "ansi-to-react";
 import { customAlphabet } from "nanoid";
 import { nolookalikes } from "nanoid-dictionary";
 
-import { useRepoStore } from "../../lib/store";
+import { useStore } from "zustand";
+
+import { RepoContext } from "../../lib/store";
 
 import { MyMonaco } from "../MyMonaco";
 
@@ -32,7 +41,9 @@ const nanoid = customAlphabet(nolookalikes, 10);
 const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
   // add resize to the node
   const ref = useRef(null);
-  const updatePod = useRepoStore((state) => state.updatePod);
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const updatePod = useStore(store, (state) => state.updatePod);
   const [target, setTarget] = React.useState();
   const [frame] = React.useState({
     translate: [0, 0],
@@ -96,11 +107,13 @@ const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
 });
 
 const CodeNode = memo(({ data, id, isConnectable, selected }) => {
-  const pod = useRepoStore((state) => state.pods[id]);
-  const setPodContent = useRepoStore((state) => state.setPodContent);
-  const updatePod = useRepoStore((state) => state.updatePod);
-  const clearResults = useRepoStore((s) => s.clearResults);
-  const wsRun = useRepoStore((state) => state.wsRun);
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const pod = useStore(store, (state) => state.pods[id]);
+  const setPodContent = useStore(store, (state) => state.setPodContent);
+  const updatePod = useStore(store, (state) => state.updatePod);
+  const clearResults = useStore(store, (s) => s.clearResults);
+  const wsRun = useStore(store, (state) => state.wsRun);
   const ref = useRef(null);
   const [target, setTarget] = React.useState();
   const [frame] = React.useState({
@@ -298,9 +311,11 @@ export function Deck({ props }) {
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
 
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
   // the real pods
-  const id2children = useRepoStore((state) => state.id2children);
-  const pods = useRepoStore((state) => state.pods);
+  const id2children = useStore(store, (state) => state.id2children);
+  const pods = useStore(store, (state) => state.pods);
 
   const onResize = useCallback(
     ({ id, width, height, offx, offy }) => {
@@ -380,10 +395,10 @@ export function Deck({ props }) {
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
   const reactFlowWrapper = useRef(null);
 
-  const addPod = useRepoStore((state) => state.addPod);
-  const setPodPosition = useRepoStore((state) => state.setPodPosition);
-  const setPodParent = useRepoStore((state) => state.setPodParent);
-  const remoteDelete = useRepoStore((state) => state.remoteDelete);
+  const addPod = useStore(store, (state) => state.addPod);
+  const setPodPosition = useStore(store, (state) => state.setPodPosition);
+  const setPodParent = useStore(store, (state) => state.setPodParent);
+  const remoteDelete = useStore(store, (state) => state.remoteDelete);
 
   const addNode = useCallback(
     (x, y, type) => {

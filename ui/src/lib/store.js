@@ -1,5 +1,6 @@
-import create from "zustand";
+import { createStore } from "zustand";
 import produce from "immer";
+import { createContext } from "react";
 
 import { hashPod, computeNamespace } from "./utils";
 
@@ -12,6 +13,8 @@ import {
 } from "./fetch";
 
 import { createRuntimeSlice } from "./runtime";
+
+export const RepoContext = createContext(null);
 
 // TODO use a selector to compute and retrieve the status
 // TODO this need to cooperate with syncing indicator
@@ -60,6 +63,8 @@ const initialState = {
     },
   },
   queueProcessing: false,
+  socket: null,
+  socketIntervalId: null,
 };
 
 const createRepoSlice = (set, get) => ({
@@ -397,7 +402,8 @@ const createRepoSlice = (set, get) => ({
   },
 });
 
-export const useRepoStore = create((...a) => ({
-  ...createRepoSlice(...a),
-  ...createRuntimeSlice(...a),
-}));
+export const createRepoStore = () =>
+  createStore((...a) => ({
+    ...createRepoSlice(...a),
+    ...createRuntimeSlice(...a),
+  }));

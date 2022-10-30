@@ -627,16 +627,17 @@ const onOpen = (set, get) => {
     set({ runtimeConnected: true });
     // call connect kernel
 
-    if (socket_intervalId) {
-      clearInterval(socket_intervalId);
+    if (get().socketIntervalId) {
+      clearInterval(get().socketIntervalId);
     }
-    socket_intervalId = setInterval(() => {
-      if (socket) {
+    let id = setInterval(() => {
+      if (get().socket) {
         console.log("sending ping ..");
-        socket.send(JSON.stringify({ type: "ping" }));
+        get().socket.send(JSON.stringify({ type: "ping" }));
       }
       // websocket resets after 60s of idle by most firewalls
     }, 30000);
+    set({ socketIntervalId: id });
     console.log("get()", get());
 
     // request kernel status after connection
@@ -687,9 +688,6 @@ async function spawnRuntime({ client, sessionId }) {
   return res.data.spawnRuntime;
 }
 
-let socket = null;
-let socket_intervalId = null;
-
 export const createRuntimeSlice = (set, get) => ({
   wsConnect: async (client, sessionId) => {
     // 0. ensure the runtime is created
@@ -702,7 +700,7 @@ export const createRuntimeSlice = (set, get) => ({
     // 1. get the socket
     console.log("WS_CONNECT");
     // FIXME socket should be disconnected when leaving the repo page.
-    if (socket !== null) {
+    if (get().socket !== null) {
       console.log("already connected, skip");
       return;
     }
@@ -723,7 +721,8 @@ export const createRuntimeSlice = (set, get) => ({
     // protocol used here, so that it supports both dev and prod env.
     let socket_url = `ws://${process.env.REACT_APP_RUNTIME_PROXY}/${sessionId}`;
     console.log("socket_url", socket_url);
-    socket = new WebSocket(socket_url);
+    let socket = new WebSocket(socket_url);
+    set({ socket });
     // socket.emit("spawn", state.sessionId, lang);
 
     // If the mqAddress is not supplied, use the websocket
@@ -745,16 +744,16 @@ export const createRuntimeSlice = (set, get) => ({
     socket.onclose = () => {
       console.log("Disconnected ..");
       set({ runtimeConnected: false });
-      socket = null;
+      set({ socket: null });
     };
   },
   wsDisconnect: () => {
-    if (socket !== null) {
-      socket.close();
+    if (get().socket !== null) {
+      get().socket.close();
     }
   },
   wsRequestStatus: ({ lang }) => {
-    if (socket) {
+    if (get().socket) {
       // set to unknown
       set(
         produce((state) => {
@@ -762,7 +761,7 @@ export const createRuntimeSlice = (set, get) => ({
         })
       );
       console.log("Sending requestKernelStatus ..");
-      socket.send(
+      get().socket.send(
         JSON.stringify({
           type: "requestKernelStatus",
           payload: {
@@ -776,7 +775,7 @@ export const createRuntimeSlice = (set, get) => ({
     }
   },
   wsRun: async (id) => {
-    if (!socket) {
+    if (!get().socket) {
       get().addError({
         type: "error",
         msg: "Runtime not connected",
@@ -788,7 +787,7 @@ export const createRuntimeSlice = (set, get) => ({
       socket: {
         send: (payload) => {
           console.log("sending", payload);
-          socket.send(payload);
+          get().socket.send(payload);
         },
       },
       set,
@@ -796,7 +795,7 @@ export const createRuntimeSlice = (set, get) => ({
     });
   },
   wsPowerRun: ({ id, doEval }) => {
-    if (!socket) {
+    if (!get().socket) {
       get().addError({
         type: "error",
         msg: "Runtime not connected",
@@ -805,10 +804,10 @@ export const createRuntimeSlice = (set, get) => ({
       return;
     }
     // This is used to evaluate the current deck and init the namespace
-    handlePowerRun({ id, doEval, socket, set, get });
+    handlePowerRun({ id, doEval, socket: get().socket, set, get });
   },
   wsInterruptKernel: ({ lang }) => {
-    if (!socket) {
+    if (!get().socket) {
       get().addError({
         type: "error",
         msg: "Runtime not connected",
@@ -816,7 +815,7 @@ export const createRuntimeSlice = (set, get) => ({
 
       return;
     }
-    socket.send(
+    get().socket.send(
       JSON.stringify({
         type: "interruptKernel",
         payload: {
