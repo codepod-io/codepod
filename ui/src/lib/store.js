@@ -1,5 +1,6 @@
-import create from "zustand";
+import { createStore } from "zustand";
 import produce from "immer";
+import { createContext } from "react";
 
 import { hashPod, computeNamespace } from "./utils";
 
@@ -12,6 +13,8 @@ import {
 } from "./fetch";
 
 import { createRuntimeSlice } from "./runtime";
+
+export const RepoContext = createContext(null);
 
 // TODO use a selector to compute and retrieve the status
 // TODO this need to cooperate with syncing indicator
@@ -53,8 +56,6 @@ const initialState = {
   queue: [],
   showdiff: false,
   sessionId: null,
-  sessionRuntime: {},
-  activeRuntime: ["localhost:14321", ""],
   runtimeConnected: false,
   kernels: {
     python: {
@@ -62,6 +63,8 @@ const initialState = {
     },
   },
   queueProcessing: false,
+  socket: null,
+  socketIntervalId: null,
 };
 
 const createRepoSlice = (set, get) => ({
@@ -115,7 +118,11 @@ const createRepoSlice = (set, get) => ({
       isSyncing: false,
       lastPosUpdate: Date.now(),
       // Prisma seems to throw error when I pass an empty list.
-      // children: [],
+      //
+      // UPDATE: the front-end checks children a lot. Thus I need to have this
+      // field to avoid front-end crashes. I'm handling the empty list case in
+      // the backend instead.
+      children: [],
       io: {},
       // from payload
       parent,
@@ -368,24 +375,19 @@ const createRepoSlice = (set, get) => ({
   remoteUpdateAllPods: async () => {
     async function helper(id) {
       let pod = get().pods[id];
-      pod.children.map(({ id }) => helper(id));
+      pod.children?.map(({ id }) => helper(id));
       if (id !== "ROOT") {
         // console.log("hashPod at remoteUpdateAllPods");
         if (pod.remoteHash !== hashPod(pod)) {
-          await doRemoteUpdatePod({ pod })
-            .catch((err) => {
-              console.log("ERROR: doRemoteUpdatePod:" + err.message);
+          await doRemoteUpdatePod({ pod });
+          set(
+            produce((state) => {
+              let pod = state.pods[id];
+              pod.remoteHash = hashPod(pod);
+              pod.isSyncing = false;
+              pod.dirty = false;
             })
-            .then(() =>
-              set(
-                produce((state) => {
-                  let pod = state.pods[id];
-                  pod.remoteHash = hashPod(pod);
-                  pod.isSyncing = false;
-                  pod.dirty = false;
-                })
-              )
-            );
+          );
         }
       }
     }
@@ -400,7 +402,8 @@ const createRepoSlice = (set, get) => ({
   },
 });
 
-export const useRepoStore = create((...a) => ({
-  ...createRepoSlice(...a),
-  ...createRuntimeSlice(...a),
-}));
+export const createRepoStore = () =>
+  createStore((...a) => ({
+    ...createRepoSlice(...a),
+    ...createRuntimeSlice(...a),
+  }));

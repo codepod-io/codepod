@@ -1,8 +1,6 @@
 import { getAuthHeaders, hashPod, computeNamespace } from "./utils";
 
-import { GRAPHQL_ENDPOINT } from "./vars";
-
-const graphql_url = GRAPHQL_ENDPOINT;
+const graphql_url = `http://${process.env.REACT_APP_GRAPHQL_ENDPOINT}`;
 
 export async function doRemoteLoadRepo({ id }) {
   // load from remote
@@ -294,8 +292,12 @@ export async function doRemoteUpdatePod({ pod }) {
   });
   const result = await res.json();
   if (result["errors"]) {
-    console.log(result["errors"][0].message);
-    throw new Error("fetch error. See console for detail.");
+    console.log();
+    throw new Error(
+      result["errors"][0].message +
+        "\n" +
+        result["errors"][0].extensions.exception.stacktrace.join("\n")
+    );
   }
   return result;
 }

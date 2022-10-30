@@ -4,5 +4,7 @@ RUN pip install ipykernel
 
 COPY ./conn.json /conn.json
 
+# For development:
+# python3 -m ipykernel_launcher -f ./conn.json
 CMD ["python3", "-m", "ipykernel_launcher", "-f", "/conn.json"]
 # ENTRYPOINT ["tail", "-f", "/dev/null"]

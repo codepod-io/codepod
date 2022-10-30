@@ -1,6 +1,5 @@
 import { useQuery, useMutation, gql } from "@apollo/client";
 import React, { useState } from "react";
-import useMe from "../lib/me";
 
 import Link from "@mui/material/Link";
 import { Link as ReactLink } from "react-router-dom";
@@ -14,8 +13,15 @@ import TextField from "@mui/material/TextField";
 
 import FormControl from "@mui/material/FormControl";
 import FormLabel from "@mui/material/FormLabel";
+import CircularProgress from "@mui/material/CircularProgress";
 
 import { Formik } from "formik";
+
+import { customAlphabet } from "nanoid";
+import { nolookalikes } from "nanoid-dictionary";
+
+import useMe from "../lib/me";
+const nanoid = customAlphabet(nolookalikes, 10);
 
 const FETCH_REPOS = gql`
   query GetRepos {
@@ -26,8 +32,8 @@ const FETCH_REPOS = gql`
   }
 `;
 
-function Repos() {
-  const { loading, error, data } = useQuery(FETCH_REPOS);
+function RepoLine({ repo }) {
+  const { me } = useMe();
   const [deleteRepo] = useMutation(
     gql`
       mutation deleteRepo($name: String) {
@@ -38,6 +44,86 @@ function Repos() {
       refetchQueries: ["GetRepos"],
     }
   );
+  const [killRuntime] = useMutation(
+    gql`
+      mutation killRuntime($sessionId: String!) {
+        killRuntime(sessionId: $sessionId)
+      }
+    `,
+    {
+      refetchQueries: [
+        {
+          query: gql`
+            query {
+              listAllRuntimes
+            }
+          `,
+        },
+      ],
+    }
+  );
+  const { loading: rt_loading, data: rt_data } = useQuery(gql`
+    query {
+      listAllRuntimes
+    }
+  `);
+  const [killing, setKilling] = useState(false);
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        // flexDirection: "column"
+        alignItems: "center",
+      }}
+    >
+      The link:{" "}
+      <Link
+        component={ReactLink}
+        to={`/repo/${repo.id}`}
+      >{`${repo.name}`}</Link>
+      <Button
+        size="xs"
+        sx={{
+          color: "red",
+        }}
+        onClick={async () => {
+          // FIXME ensure the runtime is killed
+          deleteRepo({
+            variables: {
+              name: repo.name,
+            },
+          });
+        }}
+      >
+        Delete
+      </Button>
+      {!rt_loading && rt_data.listAllRuntimes.includes(repo.id) && (
+        <Box>
+          Runtime Active{" "}
+          <Button
+            size="xs"
+            disabled={killing}
+            sx={{ color: "red" }}
+            onClick={() => {
+              // FIXME when to set killing=false?
+              setKilling(true);
+              killRuntime({
+                variables: {
+                  sessionId: `${me.id}_${repo.id}`,
+                },
+              });
+            }}
+          >
+            kill {killing && <CircularProgress />}
+          </Button>
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+function Repos() {
+  const { loading, error, data } = useQuery(FETCH_REPOS);
   const { me } = useMe();
   if (loading) return <p>Loading...</p>;
   if (error) return <Alert severity="error">{error.message}</Alert>;
@@ -52,28 +138,7 @@ function Repos() {
         Your repos {repos.length}:
       </Typography>
       {repos.map((repo) => (
-        <div key={repo.id}>
-          The link:{" "}
-          <Link
-            component={ReactLink}
-            to={`/repo/${repo.id}`}
-          >{`${repo.name}`}</Link>
-          <Button
-            size="xs"
-            sx={{
-              color: "red",
-            }}
-            onClick={() => {
-              deleteRepo({
-                variables: {
-                  name: repo.name,
-                },
-              });
-            }}
-          >
-            Delete
-          </Button>
-        </div>
+        <RepoLine repo={repo} key={repo.id} />
       ))}
     </Box>
   );
@@ -83,8 +148,8 @@ function CreateRepoForm(props) {
   const [error, setError] = useState(null);
   const [createRepo] = useMutation(
     gql`
-      mutation CreateRepo($name: String!) {
-        createRepo(name: $name) {
+      mutation CreateRepo($name: String!, $id: ID!) {
+        createRepo(name: $name, id: $id) {
           name
         }
       }
@@ -117,6 +182,7 @@ function CreateRepoForm(props) {
         createRepo({
           variables: {
             name: values.reponame,
+            id: "repo_" + nanoid(),
           },
         });
         setSubmitting(false);

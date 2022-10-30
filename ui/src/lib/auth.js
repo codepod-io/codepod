@@ -7,7 +7,10 @@ import {
   gql,
 } from "@apollo/client";
 
-import { GRAPHQL_ENDPOINT } from "./vars";
+import { customAlphabet } from "nanoid";
+import { nolookalikes } from "nanoid-dictionary";
+
+const nanoid = customAlphabet(nolookalikes, 10);
 
 const authContext = createContext();
 
@@ -45,7 +48,7 @@ function useProvideAuth() {
 
   function createApolloClient() {
     const link = new HttpLink({
-      uri: GRAPHQL_ENDPOINT,
+      uri: `http://${process.env.REACT_APP_GRAPHQL_ENDPOINT}`,
       headers: getAuthHeaders(),
     });
 
@@ -86,13 +89,7 @@ function useProvideAuth() {
     }
   };
 
-  const signUp = async ({
-    firstname,
-    lastname,
-    email,
-    password,
-    invitation,
-  }) => {
+  const signUp = async ({ firstname, lastname, email, password }) => {
     const client = createApolloClient();
     const LoginMutation = gql`
       mutation SignupMutation(
@@ -100,14 +97,14 @@ function useProvideAuth() {
         $lastname: String!
         $email: String!
         $password: String!
-        $invitation: String!
+        $id: ID
       ) {
         signup(
           firstname: $firstname
           lastname: $lastname
           email: $email
           password: $password
-          invitation: $invitation
+          id: $id
         ) {
           token
         }
@@ -115,10 +112,22 @@ function useProvideAuth() {
     `;
     const result = await client.mutate({
       mutation: LoginMutation,
-      variables: { firstname, lastname, password, email, invitation },
+      variables: {
+        firstname,
+        lastname,
+        password,
+        email,
+        id: "user_" + nanoid(),
+      },
     });
 
-    console.log(result);
+    if (result.errors) {
+      throw Error(
+        result.errors[0].message +
+          "\n" +
+          result.errors[0].extensions.exception.stacktrace.join("\n")
+      );
+    }
 
     if (result?.data?.signup?.token) {
       const token = result.data.signup.token;

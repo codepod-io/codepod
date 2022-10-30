@@ -3,9 +3,11 @@ import { useParams } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useContext } from "react";
 
-import { useRepoStore } from "../lib/store";
+import { useStore } from "zustand";
+
+import { createRepoStore, RepoContext } from "../lib/store";
 
 import useMe from "../lib/me";
 // import { Deck } from "../components/repo/pod";
@@ -76,18 +78,20 @@ function RepoWrapper({ children }) {
   );
 }
 
-export default function Repo() {
+function RepoImpl() {
   let { id } = useParams();
-  const resetState = useRepoStore((state) => state.resetState);
-  const setRepo = useRepoStore((state) => state.setRepo);
-  const loadRepo = useRepoStore((state) => state.loadRepo);
-  const setSessionId = useRepoStore((state) => state.setSessionId);
-  const repoLoaded = useRepoStore((state) => state.repoLoaded);
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const resetState = useStore(store, (state) => state.resetState);
+  const setRepo = useStore(store, (state) => state.setRepo);
+  const loadRepo = useStore(store, (state) => state.loadRepo);
+  const setSessionId = useStore(store, (state) => state.setSessionId);
+  const repoLoaded = useStore(store, (state) => state.repoLoaded);
 
   const { loading, me } = useMe();
   useEffect(() => {
     if (me) {
-      setSessionId(`user_${me.id}_repo_${id}`);
+      setSessionId(`${me.id}_${id}`);
     }
   }, [me, id, setSessionId]);
   useEffect(() => {
@@ -118,5 +122,14 @@ export default function Repo() {
         </Box>
       )}
     </RepoWrapper>
+  );
+}
+
+export default function Repo() {
+  const store = useRef(createRepoStore()).current;
+  return (
+    <RepoContext.Provider value={store}>
+      <RepoImpl />
+    </RepoContext.Provider>
   );
 }

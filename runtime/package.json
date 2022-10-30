@@ -1,0 +1,27 @@
+{
+  "name": "runtime",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/server.js",
+    "dev": "ts-node-dev src/server.ts",
+    "test": "jest --config jest.config.js"
+  },
+  "dependencies": {
+    "@apollo/client": "^3.7.1",
+    "apollo-server-core": "^3.10.3",
+    "apollo-server-express": "^3.10.3",
+    "express": "^4.18.2",
+    "graphql": "^16.6.0",
+    "ws": "^8.10.0",
+    "zeromq": "6.0.0-beta.6"
+  },
+  "devDependencies": {
+    "@types/node": "^18.11.7",
+    "@types/ws": "^8.5.3",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^4.8.4"
+  }
+}

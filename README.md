@@ -4,87 +4,65 @@
 
 # Development
 
-## Setup DB credentials
+The development environment is managed in docker compose file, because we have many components talking to each other. The up-to-date compose file is `./compose/dev2/compose.yml`.
 
-Add a .env file to `./api/.env`, `./dev/.env` with the following credentials:
+First, create a file `./compose/dev2/.env` to setup DB credentials with your choice of values:
 
 ```shell
-POSTGRES_USER=YOUR_USERNAME
-POSTGRES_PASSWORD=YOUR_PASSWORD
-POSTGRES_DB=YOUR_DBNAME
-JWT_SECRET=YOUR_SUPER_SECRET_KEY
-DATABASE_URL="postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:5432/$POSTGRES_DB?schema=public"
+POSTGRES_USER=<YOUR_USERNAME>
+POSTGRES_PASSWORD=<YOUR_PASSWORD>
+POSTGRES_DB=<YOUR_DBNAME>
+JWT_SECRET=<YOUR_SUPER_SECRET_KEY>
 ```
 
-- `dev/.env` is used to setup the DB with correct credentials
-- `api/.env` is used by the backend API to talk to the DB.
-
-## Setup DB
-
-Note: to avoid installing docker on your local machine, you could launch the DB
-service on a remote Linux server. You'll need to change the DATABASE_URL in the .env files.
-
-To start the DB service on localhost:5432, install docker and run:
+Then, we need to run `docker compose up -d` to start the stack. But before that,
+we need to install the node packages for the ui/api/proxy containers. To do
+that, modify the command and tty like this:
 
 ```
-cd dev
+api:
+    # ...
+    command: yarn
+    tty: true
+ui:
+    # ...
+    command: yarn
+    tty: true
+proxy:
+    # ...
+    command: yarn
+    tty: true
+```
+
+Then run:
+
+```
 docker compose up -d
 ```
 
-If you haven't initialized the DB for the first time, do the initialization:
+Now the node_modules are installed for the containers. Then **revert** those modifications, and run again:
 
-```shell
-cd api
+```
+docker compose up -d
+```
+
+One last thing: initialize the DB: Attach a terminal to the `api` container and run:
+
+```
 npx prisma migrate dev --name init
 ```
 
-You might also need to generate the prisma client (the above command will generate the client. You only need this if you are using a remote DB):
+Now you are all set. Go to
 
-```shell
-cd api
-npx prisma generate
-```
+- http://localhost:3000: the UI of the web app
+- http://localhost:4000/graphql: the app API server
+- http://localhost:5555: the prisma DB viewer
 
-## Start the app
+# Runtime spawners
 
-Start the API server on http://localhost:4000:
-
-```shell
-cd api
-yarn # install deps
-yarn dev
-```
-
-Start the UI server on http://localhost:3000:
-
-```shell
-cd ui
-yarn # install deps
-yarn dev
-```
-
-Now you should be able to see the app running on http://localhost:3000.
-
-Configuration:
-
-- `ui/src/lib/vars.js`: this file defines the api URL, default for http://localhost:4000.
-
-## Additional tools
-
-The graphql debugger is at http://localhost:3000/graphql.
-
-There's also a prisma DB viewer, you can start it by:
+The API server needs to spawn runtime containers. There are two images (configured in the docker-compose file):
 
 ```
-cd api
-npx prisma studio
-```
-
-By default it is at http://localhost:5555
-
-Storybook is a tool for easier development of React components. You can start it on http://localhost:5555 by:
-
-```
-cd ui
-yarn storybook
+docker build -t lihebi/codepod_kernel_python:v0.1.0 ./runtime/kernel
+docker build -t lihebi/codepod_runtime:v0.0.1 ./runtime
 ```

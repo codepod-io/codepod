@@ -13,13 +13,12 @@ import {
 
 import { typeDefs } from "./typedefs";
 import { resolvers } from "./resolver";
-import { listenOnMessage } from "./socket.js";
 
 interface TokenInterface {
   id: string;
 }
 
-export async function startServer() {
+async function startServer() {
   const apollo = new ApolloServer({
     typeDefs,
     resolvers,
@@ -48,22 +47,10 @@ export async function startServer() {
   await apollo.start();
   apollo.applyMiddleware({ app: expapp });
 
-  wss.on("connection", (socket) => {
-    console.log("a user connected");
-    // CAUTION should listen to message on this socket instead of io
-    socket.on("close", () => {
-      console.log("user disconnected");
-    });
-
-    // listenOnRepl(socket);
-    // listenOnKernelManagement(socket);
-    // listenOnSessionManagement(socket);
-    // listenOnRunCode(socket);
-    listenOnMessage(socket);
-  });
-
   const port = process.env.PORT || 4000;
   http_server.listen({ port }, () => {
     console.log(`🚀 Server ready at http://localhost:${port}`);
   });
 }
+
+startServer();

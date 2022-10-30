@@ -1,4 +1,5 @@
 import produce from "immer";
+import { gql } from "@apollo/client";
 
 function getChildExports({ id, pods }) {
   // get all the exports and reexports. The return would be:
@@ -626,16 +627,17 @@ const onOpen = (set, get) => {
     set({ runtimeConnected: true });
     // call connect kernel
 
-    if (socket_intervalId) {
-      clearInterval(socket_intervalId);
+    if (get().socketIntervalId) {
+      clearInterval(get().socketIntervalId);
     }
-    socket_intervalId = setInterval(() => {
-      if (socket) {
+    let id = setInterval(() => {
+      if (get().socket) {
         console.log("sending ping ..");
-        socket.send(JSON.stringify({ type: "ping" }));
+        get().socket.send(JSON.stringify({ type: "ping" }));
       }
       // websocket resets after 60s of idle by most firewalls
     }, 30000);
+    set({ socketIntervalId: id });
     console.log("get()", get());
 
     // request kernel status after connection
@@ -648,14 +650,57 @@ const onOpen = (set, get) => {
   };
 };
 
-let socket = null;
-let socket_intervalId = null;
+async function spawnRuntime({ client, sessionId }) {
+  // load from remote
+  console.log("spawnRuntime");
+  let res = await client.mutate({
+    mutation: gql`
+      mutation spawnRuntime($sessionId: String!) {
+        spawnRuntime(sessionId: $sessionId)
+      }
+    `,
+    variables: {
+      sessionId,
+    },
+    // refetchQueries with array of strings are known not to work in many
+    // situations, ref:
+    // https://lightrun.com/answers/apollographql-apollo-client-refetchqueries-not-working-when-using-string-array-after-mutation
+    //
+    // refetchQueries: ["listAllRuntimes"],
+    refetchQueries: [
+      {
+        query: gql`
+          query {
+            listAllRuntimes
+          }
+        `,
+      },
+    ],
+  });
+  console.log("spawnRuntime res", res);
+  if (res.errors) {
+    throw Error(
+      `Error: ${
+        res.errors[0].message
+      }\n ${res.errors[0].extensions.exception.stacktrace.join("\n")}`
+    );
+  }
+  return res.data.spawnRuntime;
+}
 
 export const createRuntimeSlice = (set, get) => ({
-  wsConnect: () => {
+  wsConnect: async (client, sessionId) => {
+    // 0. ensure the runtime is created
+    // let sessionId = get().sessionId;
+    console.log("sessionId", sessionId);
+    let runtimeCreated = await spawnRuntime({ client, sessionId });
+    if (!runtimeCreated) {
+      throw Error("ERROR: runtime not ready");
+    }
     // 1. get the socket
     console.log("WS_CONNECT");
-    if (socket !== null) {
+    // FIXME socket should be disconnected when leaving the repo page.
+    if (get().socket !== null) {
       console.log("already connected, skip");
       return;
     }
@@ -674,16 +719,10 @@ export const createRuntimeSlice = (set, get) => ({
     //
     // I canont use "/ws" for a WS socket. Thus I need to detect what's the
     // protocol used here, so that it supports both dev and prod env.
-    let socket_url;
-    if (process.env.NODE_ENV === "development") {
-      socket_url = `ws://localhost:4000`;
-    } else if (window.location.protocol === "http:") {
-      socket_url = `ws://${window.location.host}/ws`;
-    } else {
-      socket_url = `wss://${window.location.host}/ws`;
-    }
+    let socket_url = `ws://${process.env.REACT_APP_RUNTIME_PROXY}/${sessionId}`;
     console.log("socket_url", socket_url);
-    socket = new WebSocket(socket_url);
+    let socket = new WebSocket(socket_url);
+    set({ socket });
     // socket.emit("spawn", state.sessionId, lang);
 
     // If the mqAddress is not supplied, use the websocket
@@ -705,16 +744,16 @@ export const createRuntimeSlice = (set, get) => ({
     socket.onclose = () => {
       console.log("Disconnected ..");
       set({ runtimeConnected: false });
-      socket = null;
+      set({ socket: null });
     };
   },
   wsDisconnect: () => {
-    if (socket !== null) {
-      socket.close();
+    if (get().socket !== null) {
+      get().socket.close();
     }
   },
   wsRequestStatus: ({ lang }) => {
-    if (socket) {
+    if (get().socket) {
       // set to unknown
       set(
         produce((state) => {
@@ -722,7 +761,7 @@ export const createRuntimeSlice = (set, get) => ({
         })
       );
       console.log("Sending requestKernelStatus ..");
-      socket.send(
+      get().socket.send(
         JSON.stringify({
           type: "requestKernelStatus",
           payload: {
@@ -735,8 +774,8 @@ export const createRuntimeSlice = (set, get) => ({
       console.log("ERROR: not connected");
     }
   },
-  wsRun: async ({ id, doEval }) => {
-    if (!socket) {
+  wsRun: async (id) => {
+    if (!get().socket) {
       get().addError({
         type: "error",
         msg: "Runtime not connected",
@@ -748,13 +787,15 @@ export const createRuntimeSlice = (set, get) => ({
       socket: {
         send: (payload) => {
           console.log("sending", payload);
-          socket.send(payload);
+          get().socket.send(payload);
         },
       },
+      set,
+      get,
     });
   },
   wsPowerRun: ({ id, doEval }) => {
-    if (!socket) {
+    if (!get().socket) {
       get().addError({
         type: "error",
         msg: "Runtime not connected",
@@ -763,10 +804,10 @@ export const createRuntimeSlice = (set, get) => ({
       return;
     }
     // This is used to evaluate the current deck and init the namespace
-    handlePowerRun({ id, doEval, socket, set, get });
+    handlePowerRun({ id, doEval, socket: get().socket, set, get });
   },
   wsInterruptKernel: ({ lang }) => {
-    if (!socket) {
+    if (!get().socket) {
       get().addError({
         type: "error",
         msg: "Runtime not connected",
@@ -774,7 +815,7 @@ export const createRuntimeSlice = (set, get) => ({
 
       return;
     }
-    socket.send(
+    get().socket.send(
       JSON.stringify({
         type: "interruptKernel",
         payload: {
@@ -784,5 +825,174 @@ export const createRuntimeSlice = (set, get) => ({
       })
     );
   },
-  // clearAllResults: () => {},
+  clearResults: (id) => {
+    set(
+      produce((state) => {
+        state.pods[id].result = null;
+        state.pods[id].stdout = null;
+        state.pods[id].error = null;
+      })
+    );
+  },
+  clearAllResults: () => {
+    set(
+      produce((state) => {
+        Object.keys(state.pods).forEach((id) => {
+          state.pods[id].result = null;
+          state.pods[id].stdout = "";
+          state.pods[id].error = null;
+        });
+      })
+    );
+  },
+  setRunning: (id) => {
+    set(
+      produce((state) => {
+        state.pods[id].running = true;
+      })
+    );
+  },
+  // ==========
+  // exports
+  addPodExport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        // XXX at pod creation, remote pod in db gets null in exports/imports.
+        // Thus this might be null. So create here to avoid errors.
+        let pod = state.pods[id];
+        if (!pod.exports) {
+          pod.exports = {};
+        }
+        pod.exports[name] = false;
+      })
+    );
+  },
+  clearAllExports: () => {
+    set(
+      produce((state) => {
+        for (let [, pod] of Object.entries(state.pods)) {
+          pod.exports = {};
+          pod.reexports = {};
+        }
+      })
+    );
+  },
+  setPodExport: ({ id, exports, reexports }) => {
+    set(
+      produce((state) => {
+        let pod = state.pods[id];
+        pod.exports = Object.assign(
+          {},
+          ...exports.map((name) => ({ [name]: pod.exports[name] || [] }))
+        );
+        pod.reexports = reexports;
+        // add the reexports use reference to the origin
+        for (let [name, origid] of Object.entries(reexports)) {
+          if (state.pods[origid].exports[name].indexOf(id) === -1) {
+            state.pods[origid].exports[name].push(id);
+          }
+        }
+      })
+    );
+  },
+  clearIO: ({ id, name }) => {
+    set(
+      produce((state) => {
+        delete state.pods[id].io[name];
+      })
+    );
+  },
+  deletePodExport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        delete state.pods[id].exports[name];
+      })
+    );
+  },
+  clearPodExport: ({ id }) => {
+    set(
+      produce((state) => {
+        state.pods[id].exports = null;
+      })
+    );
+  },
+  togglePodExport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        let pod = state.pods[id];
+        pod.exports[name] = !pod.exports[name];
+      })
+    );
+  },
+  toggleDeckExport: ({ id }) => {
+    set(
+      produce((state) => {
+        let pod = state.pods[id];
+        // this is only for deck
+        // state.pods[id].exports = {};
+        if (!pod.exports) {
+          pod.exports = {};
+        }
+        if (!state.pods[id].exports["self"]) {
+          pod.exports["self"] = true;
+        } else {
+          pod.exports["self"] = false;
+        }
+      })
+    );
+  },
+  addPodImport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        let pod = state.pods[id];
+        if (!pod.imports) {
+          pod.imports = {};
+        }
+        pod.imports[name] = false;
+      })
+    );
+  },
+  deletePodImport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        delete state.pods[id].imports[name];
+      })
+    );
+  },
+  togglePodImport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        let pod = state.pods[id];
+        pod.imports[name] = !pod.imports[name];
+      })
+    );
+  },
+  addPodMidport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        let pod = state.pods[id];
+        if (!pod.midports) {
+          pod.midports = {};
+        }
+        pod.midports[name] = false;
+      })
+    );
+  },
+  deletePodMidport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        if (state.pods[id].midports) {
+          delete state.pods[id].midports[name];
+        }
+      })
+    );
+  },
+  togglePodMidport: ({ id, name }) => {
+    set(
+      produce((state) => {
+        let pod = state.pods[id];
+        pod.midports[name] = !pod.midports[name];
+      })
+    );
+  },
 });
