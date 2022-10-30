@@ -70,7 +70,6 @@ function RepoLine({ repo }) {
   const [killing, setKilling] = useState(false);
   return (
     <Box
-      key={repo.id}
       sx={{
         display: "flex",
         // flexDirection: "column"
@@ -139,7 +138,7 @@ function Repos() {
         Your repos {repos.length}:
       </Typography>
       {repos.map((repo) => (
-        <RepoLine repo={repo} />
+        <RepoLine repo={repo} key={repo.id} />
       ))}
     </Box>
   );
