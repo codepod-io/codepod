@@ -48,6 +48,14 @@ export async function removeContainer(name) {
   });
 }
 
+/**
+ * Load or create a docker container.
+ * @param image image name
+ * @param name name of container
+ * @param network which docker network to use
+ * @param Env additional optional env for the container
+ * @returns Boolean for whether a new container is created.
+ */
 export async function loadOrCreateContainer(
   image,
   name,
@@ -56,11 +64,12 @@ export async function loadOrCreateContainer(
 ) {
   console.log("loading container", name);
   let ip = await loadContainer(name, network);
-  if (ip) return ip;
+  if (ip) return false;
   console.log("beforing creating container, removing just in case ..");
   await removeContainer(name);
   console.log("creating container ..");
-  return await createContainer(image, name, network, Env);
+  await createContainer(image, name, network, Env);
+  return true;
 }
 
 async function loadContainer(name, network) {

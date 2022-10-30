@@ -48,13 +48,16 @@ export async function listAllRuntimes(_, {}, { userId }) {
   return res;
 }
 
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export async function spawnRuntime(_, { sessionId }) {
   // launch the kernel
   console.log("Spawning ");
   let url = `/${sessionId}`;
   console.log("spawning kernel");
   let zmq_host = `cpkernel_${sessionId}`;
-  await loadOrCreateContainer(
+  let need_wait = false;
+  let created = await loadOrCreateContainer(
     process.env.ZMQ_KERNEL_IMAGE,
     zmq_host,
     // "cpkernel1_hello_world-foo",
@@ -62,16 +65,18 @@ export async function spawnRuntime(_, { sessionId }) {
   );
   console.log("spawning ws");
   let ws_host = `cpruntime_${sessionId}`;
-  await loadOrCreateContainer(
+  need_wait ||= created;
+  created = await loadOrCreateContainer(
     process.env.WS_RUNTIME_IMAGE,
     ws_host,
     // "cpruntime1_hello_world-foo",
     "codepod",
     [`ZMQ_HOST=${zmq_host}`]
   );
+  need_wait ||= created;
   console.log("adding route", url, ws_host);
   // add to routing table
-  let res = await apollo_client.mutate({
+  await apollo_client.mutate({
     mutation: gql`
       mutation addRoute($url: String, $target: String) {
         addRoute(url: $url, target: $target)
@@ -85,7 +90,10 @@ export async function spawnRuntime(_, { sessionId }) {
     // refetchQueries: ["getUrls"],
     refetchQueries: [{ query: GET_URLS_QUERY }],
   });
-  console.log(res);
+  if (need_wait) {
+    console.log("Waiting for 2 seconds for the container to startup.");
+    await delay(1000);
+  }
   console.log("returning");
   // console.log("res", res);
   return true;
