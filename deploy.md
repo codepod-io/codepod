@@ -3,18 +3,19 @@
 Build the docker images:
 
 ```
-docker build -t lihebi/codepod-ui:v0.4.2 ./ui
-docker build -t lihebi/codepod-api:v0.4.2 ./api
-docker build -t lihebi/codepod_kernel_python:v0.1.0 ./runtime/kernel
-docker build -t lihebi/codepod_runtime:v0.0.1 ./runtime
+docker build -t lihebi/codepod-ui:v0.4.3-alpha.1 ./ui
+docker build -t lihebi/codepod-api:v0.4.3-alpha.1 ./api
+docker build -t lihebi/codepod_kernel_python:v0.4.3-alpha.1 ./runtime/kernel
+docker build -t lihebi/codepod_runtime:v0.4.3-alpha.1 ./runtime
 ```
 
 Push to registry:
 
 ```
-docker push lihebi/codepod-ui:v0.4.2
-docker push lihebi/codepod-api:v0.4.2
-docker push lihebi/codepod_kernel_python:v0.1.0
+docker push lihebi/codepod-ui:v0.4.3-alpha.1
+docker push lihebi/codepod-api:v0.4.3-alpha.1
+docker push lihebi/codepod_kernel_python:v0.4.3-alpha.1
+docker push lihebi/codepod_runtime:v0.4.3-alpha.1
 ```
 
 Create a cloud VM with docker support. Add DNS from domain name to the cloud
@@ -65,3 +66,9 @@ docker tag lihebi/codepod_kernel_python:v0.1.0 codepod_kernel_python
 Now go to
 
 - https://app-v1.codepod.io the web app
+
+# Cross platform build on M1
+
+```
+codepod % docker buildx build --platform=linux/amd64 -t test64 ./api
+```

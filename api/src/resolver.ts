@@ -10,7 +10,11 @@ import {
   repos,
   updatePod,
 } from "./resolver_repo";
-import { killRuntime, listAllRuntimes, spawnRuntime } from "./resolver_runtime";
+import { listAllRuntimes } from "./resolver_runtime";
+
+// chooes between docker and k8s spawners
+import { spawnRuntime, killRuntime } from "./spawner-docker";
+// import { spawnRuntime, killRuntime } from "./spawner-k8s";
 
 export const resolvers = {
   Query: {

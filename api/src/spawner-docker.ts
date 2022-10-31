@@ -1,5 +1,14 @@
 import Docker from "dockerode";
 
+import { ApolloClient, InMemoryCache, gql } from "@apollo/client/core";
+
+const apollo_client = new ApolloClient({
+  cache: new InMemoryCache({}),
+  uri: process.env.PROXY_API_URL,
+});
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export async function removeContainer(name) {
   return new Promise((resolve, reject) => {
     var docker = new Docker();
@@ -166,4 +175,88 @@ async function createContainer(image, name, network, Env) {
       }
     );
   });
+}
+
+export async function spawnRuntime(_, { sessionId }) {
+  // launch the kernel
+  console.log("Spawning ");
+  let url = `/${sessionId}`;
+  console.log("spawning kernel");
+  let zmq_host = `cpkernel_${sessionId}`;
+  let need_wait = false;
+  let created = await loadOrCreateContainer(
+    process.env.ZMQ_KERNEL_IMAGE,
+    zmq_host,
+    // "cpkernel1_hello_world-foo",
+    "codepod"
+  );
+  console.log("spawning ws");
+  let ws_host = `cpruntime_${sessionId}`;
+  need_wait ||= created;
+  created = await loadOrCreateContainer(
+    process.env.WS_RUNTIME_IMAGE,
+    ws_host,
+    // "cpruntime1_hello_world-foo",
+    "codepod",
+    [`ZMQ_HOST=${zmq_host}`]
+  );
+  need_wait ||= created;
+  console.log("adding route", url, ws_host);
+  // add to routing table
+  await apollo_client.mutate({
+    mutation: gql`
+      mutation addRoute($url: String, $target: String) {
+        addRoute(url: $url, target: $target)
+      }
+    `,
+    variables: {
+      url,
+      // This 4020 is the WS listening port in WS_RUNTIME_IMAGE
+      target: `${ws_host}:4020`,
+    },
+    // refetchQueries: ["getUrls"],
+    refetchQueries: [
+      {
+        query: gql`
+          query getUrls {
+            getUrls
+          }
+        `,
+      },
+    ],
+  });
+
+  if (need_wait) {
+    console.log("Waiting for 2 seconds for the container to startup.");
+    await delay(1000);
+  }
+  console.log("returning");
+  // console.log("res", res);
+  return true;
+}
+
+export async function killRuntime(_, { sessionId }) {
+  // TODO kill the runtime server.
+  // FIXME handle exception, and kill zombie containers
+  let url = `/${sessionId!}`;
+  let zmq_host = `cpkernel_${sessionId}`;
+  await removeContainer(zmq_host);
+  let ws_host = `cpruntime_${sessionId}`;
+  await removeContainer(ws_host);
+  // remote route
+  console.log("Removing route ..");
+  await apollo_client.mutate({
+    mutation: gql`
+      mutation deleteRoute($url: String) {
+        deleteRoute(url: $url)
+      }
+    `,
+    variables: {
+      url,
+    },
+    // FIMXE why name doesn't work? Actually the refetchQueries doesn't work
+    // refetchQueries: ["getUrls"],
+    // refetchQueries: [{ query: GET_URLS_QUERY }],
+  });
+  return true;
 }

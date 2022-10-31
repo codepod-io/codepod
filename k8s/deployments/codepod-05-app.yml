@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: codepod-ui
-          image: lihebi/codepod-ui:v0.4.2
+          image: lihebi/codepod-ui:v0.4.3-alpha.1
           ports:
             - containerPort: 80
 
@@ -55,7 +55,7 @@ spec:
     spec:
       containers:
         - name: codepod-api
-          image: lihebi/codepod-api:v0.4.2
+          image: lihebi/codepod-api:v0.4.3-alpha.1
           ports:
             - containerPort: 4000
           env:
@@ -81,7 +81,12 @@ spec:
                 secretKeyRef:
                   name: mysecret
                   key: JWT_SECRET
-            # - KERNEL_NETWORK: "codepod-prod"
+            - name: PROXY_API_URL
+              value: "http://codepod-proxy-service:4011/graphql"
+            - name: ZMQ_KERNEL_IMAGE
+              value: "lihebi/codepod_kernel_python:v0.4.3-alpha.1"
+            - name: WS_RUNTIME_IMAGE
+              value: "lihebi/codepod_runtime:v0.4.3-alpha.1"
 
 ---
 apiVersion: v1
@@ -95,3 +100,44 @@ spec:
     - protocol: TCP
       port: 4000
       targetPort: 4000
+
+# Proxy
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codepod-proxy-deployment
+  labels:
+    app: codepod-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codepod-proxy
+  template:
+    metadata:
+      labels:
+        app: codepod-proxy
+    spec:
+      containers:
+        - name: codepod-proxy
+          image: lihebi/codepod-proxy:v0.4.3-alpha.1
+          ports:
+            - containerPort: 4010
+            - containerPort: 4011
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codepod-proxy-service
+spec:
+  selector:
+    app: codepod-proxy
+  ports:
+    - protocol: TCP
+      port: 4010
+      targetPort: 4010
+    - protocol: TCP
+      port: 4011
+      targetPort: 4011
