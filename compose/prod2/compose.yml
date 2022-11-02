@@ -1,0 +1,51 @@
+# Run: docker compose up -d --build
+version: "3.5"
+
+services:
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+
+  api:
+    build: ../../api
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
+      JWT_SECRET: ${JWT_SECRET}
+      KERNEL_NETWORK: "codepod"
+      PROXY_API_URL: "http://proxy:4011/graphql"
+      ZMQ_KERNEL_IMAGE: "lihebi/codepod_kernel_python:v0.4.3-alpha.1"
+      WS_RUNTIME_IMAGE: "lihebi/codepod_runtime:v0.4.3-alpha.1"
+
+  ui:
+    build: ../../ui
+    restart: always
+
+  proxy:
+    build: ../../proxy
+    restart: always
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/nginx.conf
+
+volumes:
+  db-data:
+
+networks:
+  default:
+    name: codepod
+    driver: bridge

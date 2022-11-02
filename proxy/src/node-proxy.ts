@@ -167,13 +167,9 @@ class MemoryStore {
   }
 
   add(path, data) {
-    console.log("111");
     path = this.cleanPath(path);
-    console.log("222");
     this.routes[path] = data;
-    console.log("333");
     this.urls.add(path, data);
-    console.log("444");
     return Promise.resolve(null);
   }
 
@@ -293,7 +289,7 @@ function startProxyServer() {
   });
 
   server.on("upgrade", async (req, socket, head) => {
-    console.log("proxy ws req");
+    console.log("proxy ws req", req.url);
     let match = await getRouteTarget(req);
     if (!match) {
       return;

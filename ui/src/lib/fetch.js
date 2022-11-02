@@ -1,6 +1,9 @@
 import { getAuthHeaders, hashPod, computeNamespace } from "./utils";
 
-const graphql_url = `http://${process.env.REACT_APP_GRAPHQL_ENDPOINT}`;
+const graphql_url =
+  process.env.NODE_ENV === "development"
+    ? `http://${process.env.REACT_APP_GRAPHQL_ENDPOINT}`
+    : "/graphql";
 
 export async function doRemoteLoadRepo({ id }) {
   // load from remote
