@@ -48,10 +48,7 @@ function useProvideAuth() {
 
   function createApolloClient() {
     const link = new HttpLink({
-      uri:
-        process.env.NODE_ENV === "development"
-          ? `http://${process.env.REACT_APP_GRAPHQL_ENDPOINT}`
-          : "/graphql",
+      uri: "/graphql",
       headers: getAuthHeaders(),
     });
 
