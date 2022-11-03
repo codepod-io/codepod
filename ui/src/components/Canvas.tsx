@@ -15,7 +15,7 @@ import ReactFlow, {
   MiniMap,
   Controls,
   Handle,
-  useReactFlow
+  useReactFlow,
 } from "react-flow-renderer";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -33,9 +33,9 @@ import { nolookalikes } from "nanoid-dictionary";
 
 import { useStore } from "zustand";
 
-import { RepoContext } from "../../lib/store";
+import { RepoContext } from "../lib/store";
 
-import { MyMonaco } from "../MyMonaco";
+import { MyMonaco } from "./MyMonaco";
 
 const nanoid = customAlphabet(nolookalikes, 10);
 
@@ -52,7 +52,7 @@ const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
   const { setNodes } = useReactFlow();
 
   const onResize = useCallback(
-    ({width, height, offx, offy }) => {
+    ({ width, height, offx, offy }) => {
       setNodes((nds) => {
         return nds.map((node) => {
           if (node.id === id) {
@@ -142,7 +142,7 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
   const { setNodes } = useReactFlow();
 
   const onResize = useCallback(
-    ({width, height, offx, offy }) => {
+    ({ width, height, offx, offy }) => {
       setNodes((nds) => {
         return nds.map((node) => {
           if (node.id === id) {

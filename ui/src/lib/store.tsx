@@ -67,6 +67,30 @@ const initialState = {
   socketIntervalId: null,
 };
 
+type Pod = {
+  id: string;
+  name: string;
+  type: string;
+  content: string;
+  remoteHash: string;
+  dirty: boolean;
+  children: string[];
+  parent: string;
+  result: string;
+  status: string;
+  stdout: string;
+  stderr: string;
+  error: string | null;
+  lang: string;
+  runtime: string;
+  runtimeStatus: string;
+};
+
+interface BearState {
+  pods: Record<string, Pod>;
+  id2parent: Record<string, string>;
+}
+
 const createRepoSlice = (set, get) => ({
   ...initialState,
   // FIXME should reset to inital state, not completely empty.
@@ -99,7 +123,7 @@ const createRepoSlice = (set, get) => ({
     }
     // update all other siblings' index
     // FIXME this might cause other pods to be re-rendered
-    const pod = {
+    const pod: Pod = {
       content: "",
       column: 1,
       result: "",
@@ -403,7 +427,7 @@ const createRepoSlice = (set, get) => ({
 });
 
 export const createRepoStore = () =>
-  createStore((...a) => ({
+  createStore<BearState>((...a) => ({
     ...createRepoSlice(...a),
     ...createRuntimeSlice(...a),
   }));

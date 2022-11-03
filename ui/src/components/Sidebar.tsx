@@ -19,11 +19,11 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
 import { useStore } from "zustand";
 
-import { usePrompt } from "./prompt";
+import { usePrompt } from "../lib/prompt";
 
-import { RepoContext, selectNumDirty } from "../../lib/store";
+import { RepoContext, selectNumDirty } from "../lib/store";
 
-import useMe from "../../lib/me";
+import useMe from "../lib/me";
 
 function Flex(props) {
   return (

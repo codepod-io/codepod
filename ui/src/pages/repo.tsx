@@ -11,8 +11,8 @@ import { createRepoStore, RepoContext } from "../lib/store";
 
 import useMe from "../lib/me";
 // import { Deck } from "../components/repo/pod";
-import { Deck } from "../components/repo/graph";
-import { Sidebar } from "../components/repo/sidebar";
+import { Deck } from "../components/Canvas";
+import { Sidebar } from "../components/Sidebar";
 
 function RepoWrapper({ children }) {
   // this component is used to provide foldable sidebar

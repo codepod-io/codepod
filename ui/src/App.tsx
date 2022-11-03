@@ -11,7 +11,7 @@ import Login from "./pages/login";
 import Signup from "./pages/signup";
 import Profile from "./pages/profile";
 
-import { AuthProvider } from "./lib/auth.js";
+import { AuthProvider } from "./lib/auth";
 import { Header, Footer } from "./components/Header";
 
 import Box from "@mui/material/Box";
