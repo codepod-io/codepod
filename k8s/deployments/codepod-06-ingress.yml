@@ -16,28 +16,20 @@ metadata:
   name: codepod-ingress
 spec:
   routes:
-  - match: Host(`staging.codepod.208.87.130.238.sslip.io`) && PathPrefix(`/`)
+  - match: Host(`app.codepod.io`) && PathPrefix(`/`)
     kind: Rule
     services:
       - name: codepod-ui-service
         port: 80
-  - match: Host(`staging.codepod.208.87.130.238.sslip.io`) && PathPrefix(`/graphql`)
+  - match: Host(`app.codepod.io`) && PathPrefix(`/graphql`)
     kind: Rule
     services:
       - name: codepod-api-service
         port: 4000
-  - match: Host(`staging.codepod.208.87.130.238.sslip.io`) && PathPrefix(`/runtime`)
+  - match: Host(`app.codepod.io`) && PathPrefix(`/runtime`)
     kind: Rule
     middlewares:
       - name: stripprefix
     services:
       - name: codepod-proxy-service
         port: 4010
-  # CAUTION: This is for debugging only. Do not enable prisma studio in production.
-  # - match: Host(`prisma.staging.codepod.208.87.130.238.sslip.io`) # && PathPrefix(`/prisma`)
-  #   kind: Rule
-  #   # middlewares:
-  #   #   - name: stripprefix
-  #   services:
-  #     - name: prisma-service
-  #       port: 80

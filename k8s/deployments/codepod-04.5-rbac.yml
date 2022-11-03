@@ -43,7 +43,7 @@ subjects:
   # apiGroup: rbac.authorization.k8s.io
   # This should be optional if I'm already in this namespace.
   # CAUTION: Well, this is not optional.
-  namespace: codepod-staging
+  namespace: codepod-prod
 roleRef:
   # "roleRef" specifies the binding to a Role / ClusterRole
   kind: Role #this must be Role or ClusterRole
