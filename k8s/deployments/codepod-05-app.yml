@@ -18,9 +18,16 @@ spec:
     spec:
       containers:
         - name: codepod-ui
-          image: lihebi/codepod-ui:v0.4.3-alpha.1
+          image: lihebi/codepod-ui:v0.4.3-alpha.3
           ports:
             - containerPort: 80
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.2"
 
 ---
 apiVersion: v1
@@ -53,9 +60,10 @@ spec:
       labels:
         app: codepod-api
     spec:
+      serviceAccountName: api-account
       containers:
         - name: codepod-api
-          image: lihebi/codepod-api:v0.4.3-alpha.1
+          image: lihebi/codepod-api:v0.4.3-alpha.3
           ports:
             - containerPort: 4000
           env:
@@ -84,9 +92,18 @@ spec:
             - name: PROXY_API_URL
               value: "http://codepod-proxy-service:4011/graphql"
             - name: ZMQ_KERNEL_IMAGE
-              value: "lihebi/codepod_kernel_python:v0.4.3-alpha.1"
+              value: "lihebi/codepod-kernel-python:v0.4.3-alpha.3"
             - name: WS_RUNTIME_IMAGE
-              value: "lihebi/codepod_runtime:v0.4.3-alpha.1"
+              value: "lihebi/codepod-runtime:v0.4.3-alpha.3"
+            - name: RUNTIME_SPAWNER
+              value: k8s
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.2"
 
 ---
 apiVersion: v1
@@ -121,10 +138,17 @@ spec:
     spec:
       containers:
         - name: codepod-proxy
-          image: lihebi/codepod-proxy:v0.4.3-alpha.1
+          image: lihebi/codepod-proxy:v0.4.3-alpha.3
           ports:
             - containerPort: 4010
             - containerPort: 4011
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.2"
 
 ---
 apiVersion: v1
@@ -135,9 +159,11 @@ spec:
   selector:
     app: codepod-proxy
   ports:
-    - protocol: TCP
+    - name: proxy-port
+      protocol: TCP
       port: 4010
       targetPort: 4010
-    - protocol: TCP
+    - name: api-port
+      protocol: TCP
       port: 4011
       targetPort: 4011
