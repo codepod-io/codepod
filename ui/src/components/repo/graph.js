@@ -15,6 +15,7 @@ import ReactFlow, {
   MiniMap,
   Controls,
   Handle,
+  useReactFlow
 } from "react-flow-renderer";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -48,6 +49,25 @@ const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
   const [frame] = React.useState({
     translate: [0, 0],
   });
+  const { setNodes } = useReactFlow();
+
+  const onResize = useCallback(
+    ({width, height, offx, offy }) => {
+      setNodes((nds) => {
+        return nds.map((node) => {
+          if (node.id === id) {
+            // CAUTION I have to return a new object here.
+            node.style = { ...node.style, width, height };
+            node.position.x += offx;
+            node.position.y += offy;
+          }
+          return node;
+        });
+      });
+    },
+    [setNodes]
+  );
+
   React.useEffect(() => {
     setTarget(ref.current);
   }, []);
@@ -85,7 +105,7 @@ const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
             e.target.style.width = `${e.width}px`;
             e.target.style.height = `${e.height}px`;
             e.target.style.transform = `translate(${beforeTranslate[0]}px, ${beforeTranslate[1]}px)`;
-            data.onResize({
+            onResize({
               id,
               width: e.width,
               height: e.height,
@@ -119,6 +139,25 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
   const [frame] = React.useState({
     translate: [0, 0],
   });
+  const { setNodes } = useReactFlow();
+
+  const onResize = useCallback(
+    ({width, height, offx, offy }) => {
+      setNodes((nds) => {
+        return nds.map((node) => {
+          if (node.id === id) {
+            // CAUTION I have to return a new object here.
+            node.style = { ...node.style, width, height };
+            node.position.x += offx;
+            node.position.y += offy;
+          }
+          return node;
+        });
+      });
+    },
+    [setNodes]
+  );
+
   React.useEffect(() => {
     setTarget(ref.current);
   }, []);
@@ -141,7 +180,7 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
         onClick={(e) => {
           // If the node is selected (for resize), the cursor is not shown. So
           // we need to deselect it when we re-focus on the editor.
-          data.setNodes((nds) =>
+          setNodes((nds) =>
             applyNodeChanges(
               [
                 {
@@ -274,8 +313,7 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
             e.target.style.width = `${e.width}px`;
             e.target.style.height = `${e.height}px`;
             e.target.style.transform = `translate(${beforeTranslate[0]}px, ${beforeTranslate[1]}px)`;
-            data.onResize({
-              id,
+            onResize({
               width: e.width,
               height: e.height,
               offx: beforeTranslate[0],
@@ -317,23 +355,6 @@ export function Deck({ props }) {
   const id2children = useStore(store, (state) => state.id2children);
   const pods = useStore(store, (state) => state.pods);
 
-  const onResize = useCallback(
-    ({ id, width, height, offx, offy }) => {
-      setNodes((nds) => {
-        return nds.map((node) => {
-          if (node.id === id) {
-            // CAUTION I have to return a new object here.
-            node.style = { ...node.style, width, height };
-            node.position.x += offx;
-            node.position.y += offy;
-          }
-          return node;
-        });
-      });
-    },
-    [setNodes]
-  );
-
   const getRealNodes = useCallback(
     (id, level) => {
       let res = [];
@@ -345,8 +366,6 @@ export function Deck({ props }) {
           data: {
             // label: `ID: ${id}, parent: ${pods[id].parent}, pos: ${pods[id].x}, ${pods[id].y}`,
             label: id,
-            onResize,
-            setNodes,
           },
           // position: { x: 100, y: 100 },
           position: { x: pods[id].x, y: pods[id].y },
@@ -369,7 +388,7 @@ export function Deck({ props }) {
       }
       return res;
     },
-    [id2children, onResize, pods]
+    [id2children, pods]
   );
   useEffect(() => {
     let nodes = getRealNodes("ROOT", -1);
@@ -431,8 +450,6 @@ export function Deck({ props }) {
         style,
         data: {
           label: id,
-          onResize,
-          setNodes,
         },
         level: 0,
         extent: "parent",
@@ -454,7 +471,7 @@ export function Deck({ props }) {
         height: style.height,
       });
     },
-    [addPod, onResize, reactFlowInstance]
+    [addPod, reactFlowInstance]
   );
 
   const getAbsPos = useCallback(
