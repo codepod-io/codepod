@@ -1,66 +1,35 @@
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: stripprefix
+spec:
+  stripPrefix:
+    prefixes:
+      - /runtime
+      - /prisma
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
 metadata:
   name: codepod-ingress
-  annotations:
-    traefik.ingress.kubernetes.io/rewrite-target: /$1
 spec:
-  rules:
-    - host: codepod.10.43.1.180.sslip.io
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: codepod-ui-service
-                port:
-                  number: 80
-          - path: /graphql
-            pathType: Prefix
-            backend:
-              service:
-                name: codepod-api-service
-                port:
-                  number: 4000
-          - path: /ws
-            pathType: Prefix
-            backend:
-              service:
-                name: codepod-api-serice
-                port:
-                  number: 4000
-    - host: prisma.10.43.1.180.sslip.io
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: prisma-service
-                port:
-                  number: 5555
-    - host: edge.codepod.io
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: codepod-ui-service
-                port:
-                  number: 80
-          - path: /graphql
-            pathType: Prefix
-            backend:
-              service:
-                name: codepod-api-service
-                port:
-                  number: 4000
-          - path: /ws
-            pathType: Prefix
-            backend:
-              service:
-                name: codepod-api-serice
-                port:
-                  number: 4000
+  routes:
+  - match: Host(`app.codepod.io`) && PathPrefix(`/`)
+    kind: Rule
+    services:
+      - name: codepod-ui-service
+        port: 80
+  - match: Host(`app.codepod.io`) && PathPrefix(`/graphql`)
+    kind: Rule
+    services:
+      - name: codepod-api-service
+        port: 4000
+  - match: Host(`app.codepod.io`) && PathPrefix(`/runtime`)
+    kind: Rule
+    middlewares:
+      - name: stripprefix
+    services:
+      - name: codepod-proxy-service
+        port: 4010

@@ -719,7 +719,12 @@ export const createRuntimeSlice = (set, get) => ({
     //
     // I canont use "/ws" for a WS socket. Thus I need to detect what's the
     // protocol used here, so that it supports both dev and prod env.
-    let socket_url = `ws://${process.env.REACT_APP_RUNTIME_PROXY}/${sessionId}`;
+    let socket_url;
+    if (window.location.protocol === "http:") {
+      socket_url = `ws://${window.location.host}/runtime/${sessionId}`;
+    } else {
+      socket_url = `wss://${window.location.host}/runtime/${sessionId}`;
+    }
     console.log("socket_url", socket_url);
     let socket = new WebSocket(socket_url);
     set({ socket });

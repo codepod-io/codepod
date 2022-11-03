@@ -18,9 +18,16 @@ spec:
     spec:
       containers:
         - name: codepod-ui
-          image: lihebi/codepod-ui:v0.4.2
+          image: lihebi/codepod-ui:v0.4.3-alpha.3
           ports:
             - containerPort: 80
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.2"
 
 ---
 apiVersion: v1
@@ -53,9 +60,10 @@ spec:
       labels:
         app: codepod-api
     spec:
+      serviceAccountName: api-account
       containers:
         - name: codepod-api
-          image: lihebi/codepod-api:v0.4.2
+          image: lihebi/codepod-api:v0.4.3-alpha.3
           ports:
             - containerPort: 4000
           env:
@@ -81,7 +89,21 @@ spec:
                 secretKeyRef:
                   name: mysecret
                   key: JWT_SECRET
-            # - KERNEL_NETWORK: "codepod-prod"
+            - name: PROXY_API_URL
+              value: "http://codepod-proxy-service:4011/graphql"
+            - name: ZMQ_KERNEL_IMAGE
+              value: "lihebi/codepod-kernel-python:v0.4.3-alpha.3"
+            - name: WS_RUNTIME_IMAGE
+              value: "lihebi/codepod-runtime:v0.4.3-alpha.3"
+            - name: RUNTIME_SPAWNER
+              value: k8s
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.2"
 
 ---
 apiVersion: v1
@@ -95,3 +117,53 @@ spec:
     - protocol: TCP
       port: 4000
       targetPort: 4000
+
+# Proxy
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codepod-proxy-deployment
+  labels:
+    app: codepod-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codepod-proxy
+  template:
+    metadata:
+      labels:
+        app: codepod-proxy
+    spec:
+      containers:
+        - name: codepod-proxy
+          image: lihebi/codepod-proxy:v0.4.3-alpha.3
+          ports:
+            - containerPort: 4010
+            - containerPort: 4011
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.2"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codepod-proxy-service
+spec:
+  selector:
+    app: codepod-proxy
+  ports:
+    - name: proxy-port
+      protocol: TCP
+      port: 4010
+      targetPort: 4010
+    - name: api-port
+      protocol: TCP
+      port: 4011
+      targetPort: 4011

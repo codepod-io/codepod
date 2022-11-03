@@ -18,14 +18,21 @@ spec:
     spec:
       containers:
         - name: data-migrations
-          image: lihebi/codepod-api:v0.2.0
+          image: lihebi/codepod-api:v0.4.3-alpha.3
           # Run this manually on-demand: npx prisma migrate dev --name init
+          # Or do a reset: npx prisma db push
           command: ["npx", "prisma", "studio"]
           ports:
             - containerPort: 5555
           env:
             - name: DATABASE_URL
-              value: "YOUR_DATABASE_URL"
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.2"
 
 ---
 apiVersion: v1
@@ -34,7 +41,7 @@ metadata:
   name: prisma-service
 spec:
   ports:
-    - port: 5555
+    - port: 80
       targetPort: 5555
       protocol: TCP
   selector:

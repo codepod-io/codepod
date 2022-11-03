@@ -88,12 +88,6 @@ export async function pod(_, { id }) {
 
 export async function createRepo(_, { id, name }, { userId }) {
   if (!userId) throw Error("Unauthenticated");
-  const user = await prisma.user.findFirst({
-    where: {
-      id: userId,
-    },
-  });
-  // create repo $name under userId
   const repo = await prisma.repo.create({
     data: {
       id,
