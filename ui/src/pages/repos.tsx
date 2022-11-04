@@ -82,7 +82,7 @@ function RepoLine({ repo }) {
         to={`/repo/${repo.id}`}
       >{`${repo.name}`}</Link>
       <Button
-        size="xs"
+        size="small"
         sx={{
           color: "red",
         }}
@@ -101,7 +101,7 @@ function RepoLine({ repo }) {
         <Box>
           Runtime Active{" "}
           <Button
-            size="xs"
+            size="small"
             disabled={killing}
             sx={{ color: "red" }}
             onClick={() => {
@@ -166,11 +166,10 @@ function CreateRepoForm(props) {
     <Formik
       initialValues={{ reponame: "" }}
       validate={(values) => {
-        const errors = {};
         if (!values.reponame) {
-          errors.reponame = "Required";
+          return { reponame: "Required" };
         }
-        return errors;
+        return {};
       }}
       onSubmit={(values, { setSubmitting, resetForm }) => {
         console.log("...");
@@ -216,12 +215,7 @@ function CreateRepoForm(props) {
                 />
               </FormControl>
 
-              <Button
-                type="submit"
-                size="lg"
-                fontSize="md"
-                disabled={isSubmitting}
-              >
+              <Button type="submit" size="large" disabled={isSubmitting}>
                 Create New Repo
               </Button>
               {error && <Alert severity="error">{error}</Alert>}

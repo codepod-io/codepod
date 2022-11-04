@@ -12,7 +12,9 @@ import { nolookalikes } from "nanoid-dictionary";
 
 const nanoid = customAlphabet(nolookalikes, 10);
 
-const authContext = createContext();
+type AuthContextType = ReturnType<typeof useProvideAuth>;
+
+const authContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }) {
   const auth = useProvideAuth();
@@ -27,11 +29,11 @@ export function AuthProvider({ children }) {
 }
 
 export const useAuth = () => {
-  return useContext(authContext);
+  return useContext(authContext)!;
 };
 
 function useProvideAuth() {
-  const [authToken, setAuthToken] = useState(null);
+  const [authToken, setAuthToken] = useState<String | null>(null);
 
   useEffect(() => {
     // load initial state from local storage
@@ -122,11 +124,7 @@ function useProvideAuth() {
     });
 
     if (result.errors) {
-      throw Error(
-        result.errors[0].message +
-          "\n" +
-          result.errors[0].extensions.exception.stacktrace.join("\n")
-      );
+      throw Error(result.errors[0].message);
     }
 
     if (result?.data?.signup?.token) {

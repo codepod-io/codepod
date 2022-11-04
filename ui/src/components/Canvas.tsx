@@ -15,7 +15,8 @@ import ReactFlow, {
   MiniMap,
   Controls,
   Handle,
-  useReactFlow
+  useReactFlow,
+  Position,
 } from "react-flow-renderer";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -33,26 +34,33 @@ import { nolookalikes } from "nanoid-dictionary";
 
 import { useStore } from "zustand";
 
-import { RepoContext } from "../../lib/store";
+import { RepoContext } from "../lib/store";
 
-import { MyMonaco } from "../MyMonaco";
+import { MyMonaco } from "./MyMonaco";
 
 const nanoid = customAlphabet(nolookalikes, 10);
 
-const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
+interface Props {
+  data: any;
+  id: string;
+  isConnectable: boolean;
+  selected: boolean;
+}
+
+const ScopeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
   // add resize to the node
   const ref = useRef(null);
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const updatePod = useStore(store, (state) => state.updatePod);
-  const [target, setTarget] = React.useState();
+  const [target, setTarget] = React.useState<any>();
   const [frame] = React.useState({
     translate: [0, 0],
   });
   const { setNodes } = useReactFlow();
 
   const onResize = useCallback(
-    ({width, height, offx, offy }) => {
+    ({ width, height, offx, offy }) => {
       setNodes((nds) => {
         return nds.map((node) => {
           if (node.id === id) {
@@ -81,9 +89,17 @@ const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
       }}
       className="custom-drag-handle"
     >
-      <Handle type="target" position="top" isConnectable={isConnectable} />
+      <Handle
+        type="target"
+        position={Position.Top}
+        isConnectable={isConnectable}
+      />
       Scope: {data?.label}
-      <Handle type="source" position="bottom" isConnectable={isConnectable} />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        isConnectable={isConnectable}
+      />
       {selected && (
         <Moveable
           target={target}
@@ -106,7 +122,6 @@ const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
             e.target.style.height = `${e.height}px`;
             e.target.style.transform = `translate(${beforeTranslate[0]}px, ${beforeTranslate[1]}px)`;
             onResize({
-              id,
               width: e.width,
               height: e.height,
               offx: beforeTranslate[0],
@@ -126,7 +141,7 @@ const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
   );
 });
 
-const CodeNode = memo(({ data, id, isConnectable, selected }) => {
+const CodeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const pod = useStore(store, (state) => state.pods[id]);
@@ -135,14 +150,14 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
   const clearResults = useStore(store, (s) => s.clearResults);
   const wsRun = useStore(store, (state) => state.wsRun);
   const ref = useRef(null);
-  const [target, setTarget] = React.useState();
+  const [target, setTarget] = React.useState<any>(null);
   const [frame] = React.useState({
     translate: [0, 0],
   });
   const { setNodes } = useReactFlow();
 
   const onResize = useCallback(
-    ({width, height, offx, offy }) => {
+    ({ width, height, offx, offy }) => {
       setNodes((nds) => {
         return nds.map((node) => {
           if (node.id === id) {
@@ -161,175 +176,183 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
   React.useEffect(() => {
     setTarget(ref.current);
   }, []);
-  return ((pod!==undefined) &&
-    <Box
-      sx={{
-        border: "solid 1px black",
-        width: "100%",
-        height: "100%",
-        backgroundColor: "white",
-      }}
-      ref={ref}
-    >
-      <Handle type="target" position="top" isConnectable={isConnectable} />
-      <Box className="custom-drag-handle">Code: {data?.label}</Box>
+  return (
+    pod !== undefined && (
       <Box
         sx={{
-          height: "90%",
+          border: "solid 1px black",
+          width: "100%",
+          height: "100%",
+          backgroundColor: "white",
         }}
-        onClick={(e) => {
-          // If the node is selected (for resize), the cursor is not shown. So
-          // we need to deselect it when we re-focus on the editor.
-          setNodes((nds) =>
-            applyNodeChanges(
-              [
-                {
-                  id,
-                  type: "select",
-                  selected: false,
-                },
-              ],
-              nds
-            )
-          );
-        }}
+        ref={ref}
       >
-        <MyMonaco
-          value={pod.content || ""}
-          gitvalue={pod.staged}
-          // pod={pod}
-          onChange={(value) => {
-            setPodContent({ id: pod.id, content: value });
-          }}
-          lang={pod.lang || "javascript"}
-          onRun={() => {
-            clearResults(pod.id);
-            wsRun(pod.id);
-          }}
+        <Handle
+          type="target"
+          position={Position.Top}
+          isConnectable={isConnectable}
         />
+        <Box className="custom-drag-handle">Code: {data?.label}</Box>
         <Box
           sx={{
-            position: "absolute",
-            bottom: 0,
-            right: 0,
-            width: "100px",
-            height: "100px",
-            backgroundColor: "white",
-            border: "solid 1px blue",
-            zIndex: 100,
+            height: "90%",
+          }}
+          onClick={(e) => {
+            // If the node is selected (for resize), the cursor is not shown. So
+            // we need to deselect it when we re-focus on the editor.
+            setNodes((nds) =>
+              applyNodeChanges(
+                [
+                  {
+                    id,
+                    type: "select",
+                    selected: false,
+                  },
+                ],
+                nds
+              )
+            );
           }}
         >
-          <Box sx={{ display: "flex" }}>
-            <Tooltip title="Run (shift-enter)">
-              <IconButton
-                size="small"
-                sx={{ color: "green" }}
-                onClick={() => {
-                  wsRun(id);
-                }}
-              >
-                <PlayArrowIcon sx={{ fontSize: 15 }} />
-              </IconButton>
-            </Tooltip>
-          </Box>
-          {pod.stdout && (
-            <Box overflow="scroll" maxHeight="200px" border="1px">
-              {/* TODO separate stdout and stderr */}
-              <Box>Stdout/Stderr:</Box>
-              <Box whiteSpace="pre-wrap" fontSize="sm">
-                <Ansi>{pod.stdout}</Ansi>
-              </Box>
+          <MyMonaco
+            value={pod.content || ""}
+            // pod={pod}
+            onChange={(value) => {
+              setPodContent({ id: pod.id, content: value });
+            }}
+            lang={pod.lang || "javascript"}
+            onRun={() => {
+              clearResults(pod.id);
+              wsRun(pod.id);
+            }}
+          />
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: 0,
+              right: 0,
+              width: "100px",
+              height: "100px",
+              backgroundColor: "white",
+              border: "solid 1px blue",
+              zIndex: 100,
+            }}
+          >
+            <Box sx={{ display: "flex" }}>
+              <Tooltip title="Run (shift-enter)">
+                <IconButton
+                  size="small"
+                  sx={{ color: "green" }}
+                  onClick={() => {
+                    wsRun(id);
+                  }}
+                >
+                  <PlayArrowIcon sx={{ fontSize: 15 }} />
+                </IconButton>
+              </Tooltip>
             </Box>
-          )}
-          {pod.running && <CircularProgress />}
-          {pod.result && (
-            <Box
-              sx={{ display: "flex" }}
-              direction="column"
-              overflow="scroll"
-              maxHeight="200px"
-            >
-              {pod.result.html ? (
-                <div
-                  dangerouslySetInnerHTML={{ __html: pod.result.html }}
-                ></div>
-              ) : (
-                pod.result.text && (
-                  <Box>
-                    <Box sx={{ display: "flex" }} color="gray" mr="1rem">
-                      Result: [{pod.result.count}]:
-                    </Box>
+            {pod.stdout && (
+              <Box overflow="scroll" maxHeight="200px" border="1px">
+                {/* TODO separate stdout and stderr */}
+                <Box>Stdout/Stderr:</Box>
+                <Box whiteSpace="pre-wrap" fontSize="sm">
+                  <Ansi>{pod.stdout}</Ansi>
+                </Box>
+              </Box>
+            )}
+            {pod.running && <CircularProgress />}
+            {pod.result && (
+              <Box
+                sx={{ display: "flex", flexDirection: "column" }}
+                overflow="scroll"
+                maxHeight="200px"
+              >
+                {pod.result.html ? (
+                  <div
+                    dangerouslySetInnerHTML={{ __html: pod.result.html }}
+                  ></div>
+                ) : (
+                  pod.result.text && (
                     <Box>
-                      <Box component="pre" whiteSpace="pre-wrap">
-                        {pod.result.text}
+                      <Box sx={{ display: "flex" }} color="gray" mr="1rem">
+                        Result: [{pod.result.count}]:
+                      </Box>
+                      <Box>
+                        <Box component="pre" whiteSpace="pre-wrap">
+                          {pod.result.text}
+                        </Box>
                       </Box>
                     </Box>
+                  )
+                )}
+                {pod.result.image && (
+                  <img
+                    src={`data:image/png;base64,${pod.result.image}`}
+                    alt="output"
+                  />
+                )}
+              </Box>
+            )}
+            {pod.error && (
+              <Box overflow="scroll" maxHeight="3xs" border="1px">
+                <Box color="red">Error: {pod.error.evalue}</Box>
+                {pod.error.stacktrace && (
+                  <Box>
+                    <Box>StackTrace</Box>
+                    <Box whiteSpace="pre-wrap" fontSize="sm">
+                      <Ansi>{pod.error.stacktrace.join("\n")}</Ansi>
+                    </Box>
                   </Box>
-                )
-              )}
-              {pod.result.image && (
-                <img
-                  src={`data:image/png;base64,${pod.result.image}`}
-                  alt="output"
-                />
-              )}
-            </Box>
-          )}
-          {pod.error && (
-            <Box overflow="scroll" maxHeight="3xs" border="1px" bg="gray.50">
-              <Box color="red">Error: {pod.error.evalue}</Box>
-              {pod.error.stacktrace && (
-                <Box>
-                  <Box>StackTrace</Box>
-                  <Box whiteSpace="pre-wrap" fontSize="sm">
-                    <Ansi>{pod.error.stacktrace.join("\n")}</Ansi>
-                  </Box>
-                </Box>
-              )}
-            </Box>
-          )}
+                )}
+              </Box>
+            )}
+          </Box>
         </Box>
-      </Box>
 
-      <Handle type="source" position="bottom" isConnectable={isConnectable} />
-      {selected && (
-        <Moveable
-          target={target}
-          resizable={true}
-          keepRatio={false}
-          throttleResize={1}
-          renderDirections={["e", "s", "se"]}
-          edge={false}
-          zoom={1}
-          origin={true}
-          padding={{ left: 0, top: 0, right: 0, bottom: 0 }}
-          onResizeStart={(e) => {
-            e.setOrigin(["%", "%"]);
-            e.dragStart && e.dragStart.set(frame.translate);
-          }}
-          onResize={(e) => {
-            const beforeTranslate = e.drag.beforeTranslate;
-            frame.translate = beforeTranslate;
-            e.target.style.width = `${e.width}px`;
-            e.target.style.height = `${e.height}px`;
-            e.target.style.transform = `translate(${beforeTranslate[0]}px, ${beforeTranslate[1]}px)`;
-            onResize({
-              width: e.width,
-              height: e.height,
-              offx: beforeTranslate[0],
-              offy: beforeTranslate[1],
-            });
-            updatePod({
-              id,
-              data: {
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          isConnectable={isConnectable}
+        />
+        {selected && (
+          <Moveable
+            target={target}
+            resizable={true}
+            keepRatio={false}
+            throttleResize={1}
+            renderDirections={["e", "s", "se"]}
+            edge={false}
+            zoom={1}
+            origin={true}
+            padding={{ left: 0, top: 0, right: 0, bottom: 0 }}
+            onResizeStart={(e) => {
+              e.setOrigin(["%", "%"]);
+              e.dragStart && e.dragStart.set(frame.translate);
+            }}
+            onResize={(e) => {
+              const beforeTranslate = e.drag.beforeTranslate;
+              frame.translate = beforeTranslate;
+              e.target.style.width = `${e.width}px`;
+              e.target.style.height = `${e.height}px`;
+              e.target.style.transform = `translate(${beforeTranslate[0]}px, ${beforeTranslate[1]}px)`;
+              onResize({
                 width: e.width,
                 height: e.height,
-              },
-            });
-          }}
-        />
-      )}
-    </Box>
+                offx: beforeTranslate[0],
+                offy: beforeTranslate[1],
+              });
+              updatePod({
+                id,
+                data: {
+                  width: e.width,
+                  height: e.height,
+                },
+              });
+            }}
+          />
+        )}
+      </Box>
+    )
   );
 });
 
@@ -345,9 +368,9 @@ const level2color = {
   default: "rgba(240,240,240,0.25)",
 };
 
-export function Deck({ props }) {
-  const [nodes, setNodes] = useState([]);
-  const [edges, setEdges] = useState([]);
+export function Canvas() {
+  const [nodes, setNodes] = useState<any[]>([]);
+  const [edges, setEdges] = useState<any[]>([]);
 
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -357,7 +380,7 @@ export function Deck({ props }) {
 
   const getRealNodes = useCallback(
     (id, level) => {
-      let res = [];
+      let res: any[] = [];
       let children = id2children[id];
       if (id !== "ROOT") {
         res.push({
@@ -411,13 +434,13 @@ export function Deck({ props }) {
     [setEdges]
   );
 
-  const [reactFlowInstance, setReactFlowInstance] = useState(null);
-  const reactFlowWrapper = useRef(null);
+  const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  const reactFlowWrapper = useRef<any>(null);
 
   const addPod = useStore(store, (state) => state.addPod);
   const setPodPosition = useStore(store, (state) => state.setPodPosition);
   const setPodParent = useStore(store, (state) => state.setPodParent);
-  const remoteDelete = useStore(store, (state) => state.deletePod);
+  const deletePod = useStore(store, (state) => state.deletePod);
 
   const addNode = useCallback(
     (x, y, type) => {
@@ -478,11 +501,15 @@ export function Deck({ props }) {
     (node) => {
       let x = node.position.x;
       let y = node.position.y;
-      let parent = pods[node.parentNode];
+      let parent = pods[node.parent];
       while (parent) {
         x += parent.x;
         y += parent.y;
-        parent = pods[parent.parentNode];
+        if (parent.parent) {
+          parent = pods[parent.parent];
+        } else {
+          break;
+        }
       }
       return [x, y];
     },
@@ -491,7 +518,8 @@ export function Deck({ props }) {
 
   const getScopeAt = useCallback(
     (x, y, id) => {
-      const scope = nodes.findLast((node) => {
+      // FIXME should be fineLast, but findLast cannot pass TS compiler.
+      const scope = nodes.find((node) => {
         let [x1, y1] = getAbsPos(node);
         return (
           node.type === "scope" &&
@@ -627,10 +655,10 @@ export function Deck({ props }) {
     (nodes) => {
       // remove from pods
       for (const node of nodes) {
-        remoteDelete({ id: node.id });
+        deletePod({ id: node.id, toDelete: [] });
       }
     },
-    [remoteDelete]
+    [deletePod]
   );
 
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -679,7 +707,7 @@ export function Deck({ props }) {
           <Box>
             <MiniMap
               nodeStrokeColor={(n) => {
-                if (n.style?.background) return n.style.background;
+                if (n.style?.background) return n.style.background as string;
                 if (n.type === "code") return "#0041d0";
                 if (n.type === "scope") return "#ff0072";
 

@@ -1,4 +1,4 @@
-import { createStore } from "zustand";
+import { createStore, StateCreator, StoreApi } from "zustand";
 import produce from "immer";
 import { createContext } from "react";
 
@@ -12,9 +12,10 @@ import {
   doRemoteDeletePod,
 } from "./fetch";
 
-import { createRuntimeSlice } from "./runtime";
+import { createRuntimeSlice, RuntimeSlice } from "./runtime";
 
-export const RepoContext = createContext(null);
+export const RepoContext =
+  createContext<StoreApi<RepoSlice & RuntimeSlice> | null>(null);
 
 // TODO use a selector to compute and retrieve the status
 // TODO this need to cooperate with syncing indicator
@@ -67,11 +68,108 @@ const initialState = {
   socketIntervalId: null,
 };
 
-const createRepoSlice = (set, get) => ({
+export type Pod = {
+  id: string;
+  name: string;
+  type: string;
+  content: string;
+  remoteHash?: string;
+  dirty?: boolean;
+  children: { id: string; type: string }[];
+  parent?: string;
+  result?: { html: string; text: string; count: number; image: string };
+  status?: string;
+  stdout?: string;
+  stderr?: string;
+  error?: { evalue: string; stacktrace: string[] } | null;
+  lang: string;
+  column?: number;
+  raw?: boolean;
+  fold?: boolean;
+  thundar?: boolean;
+  utility?: boolean;
+  exports?: { [key: string]: string[] };
+  imports?: {};
+  reexports?: {};
+  midports?: {};
+  isSyncing: boolean;
+  io: {};
+  index: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  ns?: string;
+  running?: boolean;
+};
+
+export interface RepoSlice {
+  pods: Record<string, Pod>;
+  id2parent: Record<string, string>;
+  id2children: Record<string, string[]>;
+  // runtime: string;
+  repoId: string | null;
+  // sessionId?: string;
+  resetState: () => void;
+  setRepo: (repoId: string) => void;
+  loadRepo: (repoId: string) => void;
+  setSessionId: (sessionId: string) => void;
+  addError: (error: { type: string; msg: string }) => void;
+  repoLoaded: boolean;
+  repoName: string | null;
+  queue: string[];
+  showdiff: boolean;
+  sessionId: string | null;
+  runtimeConnected: boolean;
+  kernels: Record<string, { status: string | null }>;
+  // queueProcessing: boolean;
+  socket: WebSocket | null;
+  error: { type: string; msg: string } | null;
+  updatePod: ({ id, data }: { id: string; data: Partial<Pod> }) => void;
+  remoteUpdateAllPods: () => void;
+  clearError: () => void;
+  foldAll: () => void;
+  unfoldAll: () => void;
+  setPodContent: ({ id, content }: { id: string; content: string }) => void;
+  addPod: ({
+    parent,
+    index,
+    anchor,
+    shift,
+    id,
+    type,
+    lang,
+    x,
+    y,
+    width,
+    height,
+  }: any) => void;
+  deletePod: ({ id, toDelete }: { id: string; toDelete: any[] }) => void;
+  setPodResult: ({
+    id,
+    content,
+    count,
+  }: {
+    id: string;
+    content: { data: { html: string; text: string; image: string } };
+    count: number;
+  }) => void;
+  setPodPosition: ({ id, x, y }: any) => void;
+  setPodParent: ({ id, parent }: any) => void;
+}
+
+type BearState = RepoSlice & RuntimeSlice;
+
+const createRepoSlice: StateCreator<
+  RepoSlice & RuntimeSlice,
+  [],
+  [],
+  RepoSlice
+> = (set, get) => ({
   ...initialState,
   // FIXME should reset to inital state, not completely empty.
   resetState: () => set(initialState),
-  setRepo: (repoId) => set({ repoId }),
+  setRepo: (repoId: string) => set({ repoId }),
   setSessionId: (id) => set({ sessionId: id }),
   addError: (error) => set({ error }),
   clearError: () => set({ error: null }),
@@ -99,10 +197,9 @@ const createRepoSlice = (set, get) => ({
     }
     // update all other siblings' index
     // FIXME this might cause other pods to be re-rendered
-    const pod = {
+    const pod: Pod = {
       content: "",
       column: 1,
-      result: "",
       stdout: "",
       error: null,
       lang: "python",
@@ -116,7 +213,6 @@ const createRepoSlice = (set, get) => ({
       reexports: {},
       midports: {},
       isSyncing: false,
-      lastPosUpdate: Date.now(),
       // Prisma seems to throw error when I pass an empty list.
       //
       // UPDATE: the front-end checks children a lot. Thus I need to have this
@@ -137,7 +233,7 @@ const createRepoSlice = (set, get) => ({
     // compute the remotehash
     pod.remoteHash = hashPod(pod);
     set(
-      produce((state) => {
+      produce((state: BearState) => {
         // 1. do local update
         state.pods[id] = pod;
         // push this node
@@ -159,7 +255,7 @@ const createRepoSlice = (set, get) => ({
       pod,
     });
   },
-  deletePod: async ({ id, toDelete }) => {
+  deletePod: async ({ id, toDelete }: { id: string; toDelete: string[] }) => {
     const pods = get().pods;
     // get all ids to delete. Gathering them here is easier than on the server
     const dfs = (id) =>
@@ -167,11 +263,10 @@ const createRepoSlice = (set, get) => ({
     // pop in toDelete
     toDelete = dfs(id);
     set(
-      produce((state) => {
+      produce((state: BearState) => {
         // delete the link to parent
-        const parent = state.pods[state.pods[id].parent];
+        const parent = state.pods[state.pods[id].parent!];
         const index = parent.children.map(({ id }) => id).indexOf(id);
-
         // update all other siblings' index
         // remove all
         parent.children.splice(index, 1);
@@ -222,7 +317,7 @@ const createRepoSlice = (set, get) => ({
     ),
   foldAll: () =>
     set(
-      produce((state) => {
+      produce((state: BearState) => {
         for (const [, pod] of Object.entries(state.pods)) {
           if (pod) {
             pod.fold = true;
@@ -233,7 +328,7 @@ const createRepoSlice = (set, get) => ({
     ),
   unfoldAll: () =>
     set(
-      produce((state) => {
+      produce((state: BearState) => {
         for (const [, pod] of Object.entries(state.pods)) {
           pod.fold = false;
           pod.dirty = pod.remoteHash !== hashPod(pod);
@@ -316,6 +411,145 @@ const createRepoSlice = (set, get) => ({
         state.pods[id].dirty = true;
       })
     ),
+  setPodStdout: ({ id, stdout }) =>
+    set(
+      produce((state) => {
+        state.pods[id].stdout = stdout;
+      })
+    ),
+  setPodResult: ({ id, content, count }) =>
+    set(
+      produce((state) => {
+        if (id in state.pods) {
+          let text = content.data["text/plain"];
+          let html = content.data["text/html"];
+          let file;
+          if (text) {
+            let match = text.match(/CODEPOD-link\s+(.*)"/);
+            if (match) {
+              let fname = match[1].substring(match[1].lastIndexOf("/") + 1);
+              let url = `${window.location.protocol}//api.${window.location.host}/static/${match[1]}`;
+              console.log("url", url);
+              html = `<a target="_blank" style="color:blue" href="${url}" download>${fname}</a>`;
+              file = url;
+            }
+            // http:://api.codepod.test:3000/static/30eea3b1-e767-4fa8-8e3f-a23774eef6c6/ccc.txt
+            // http:://api.codepod.test:3000/static/30eea3b1-e767-4fa8-8e3f-a23774eef6c6/ccc.txt
+          }
+          state.pods[id].result = {
+            text,
+            html,
+            file,
+            count,
+          };
+          // state.pods[id].running = false;
+        } else {
+          // most likely this id is "CODEPOD", which is for startup code and
+          // should not be send to the browser
+          console.log("WARNING id not recognized", id);
+        }
+      })
+    ),
+  setPodDisplayData: ({ id, content, count }) =>
+    set(
+      produce((state) => {
+        // console.log("WS_DISPLAY_DATA", content);
+        state.pods[id].result = {
+          text: content.data["text/plain"],
+          // FIXME hard coded MIME
+          image: content.data["image/png"],
+          count: count,
+        };
+      })
+    ),
+  setPodExecuteReply: ({ id, result, count }) =>
+    set(
+      produce((state) => {
+        // console.log("WS_EXECUTE_REPLY", action.payload);
+        if (id in state.pods) {
+          // state.pods[id].execute_reply = {
+          //   text: result,
+          //   count: count,
+          // };
+          // console.log("WS_EXECUTE_REPLY", result);
+          state.pods[id].running = false;
+          if (!state.pods[id].result) {
+            state.pods[id].result = {
+              text: result,
+              count: count,
+            };
+          }
+        } else {
+          // most likely this id is "CODEPOD", which is for startup code and
+          // should not be send to the browser
+          console.log("WARNING id not recognized", id);
+        }
+      })
+    ),
+  setPodError: ({ id, ename, evalue, stacktrace }) =>
+    set(
+      produce((state) => {
+        if (id === "CODEPOD") return;
+        state.pods[id].error = {
+          ename,
+          evalue,
+          stacktrace,
+        };
+      })
+    ),
+  setPodStream: ({ id, content }) =>
+    set(
+      produce((state) => {
+        if (!(id in state.pods)) {
+          console.log("WARNING id is not found:", id);
+          return;
+        }
+        // append
+        let pod = state.pods[id];
+        if (content.name === "stderr" && pod.lang === "racket") {
+          // if (!pod.result) {
+          //   pod.result = {};
+          // }
+          // pod.result.stderr = true;
+          pod.error = {
+            ename: "stderr",
+            evalue: "stderr",
+            stacktrace: "",
+          };
+        }
+        pod.stdout += content.text;
+      })
+    ),
+  setPodExecuteResult: ({ id, result, name }) =>
+    set(
+      produce((state) => {
+        state.pods[id].io[name] = { result };
+      })
+    ),
+  setIOResult: ({ id, name, ename, evalue, stacktrace }) =>
+    set(
+      produce((state) => {
+        console.log("IOERROR", { id, name, ename, evalue, stacktrace });
+        state.pods[id].io[name] = {
+          error: {
+            ename,
+            evalue,
+            stacktrace,
+          },
+        };
+      })
+    ),
+  setPodStatus: ({ id, status, lang }) =>
+    set(
+      produce((state) => {
+        // console.log("WS_STATUS", { lang, status });
+        state.kernels[lang].status = status;
+        // this is for racket kernel, which does not have a execute_reply
+        if (lang === "racket" && status === "idle" && state.pods[id]) {
+          state.pods[id].running = false;
+        }
+      })
+    ),
   setPodParent: ({ id, parent }) =>
     set(
       produce((state) => {
@@ -352,7 +586,7 @@ const createRepoSlice = (set, get) => ({
       })
     ),
   loadRepo: async (id) => {
-    const response = await doRemoteLoadRepo({ id });
+    const response = (await doRemoteLoadRepo({ id })) as any;
     if (response.errors) {
       throw Error(response.errors[0].message);
     }
@@ -403,7 +637,7 @@ const createRepoSlice = (set, get) => ({
 });
 
 export const createRepoStore = () =>
-  createStore((...a) => ({
+  createStore<BearState>((...a) => ({
     ...createRepoSlice(...a),
     ...createRuntimeSlice(...a),
   }));

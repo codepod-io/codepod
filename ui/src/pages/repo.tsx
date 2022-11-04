@@ -10,9 +10,8 @@ import { useStore } from "zustand";
 import { createRepoStore, RepoContext } from "../lib/store";
 
 import useMe from "../lib/me";
-// import { Deck } from "../components/repo/pod";
-import { Deck } from "../components/repo/graph";
-import { Sidebar } from "../components/repo/sidebar";
+import { Canvas } from "../components/Canvas";
+import { Sidebar } from "../components/Sidebar";
 
 function RepoWrapper({ children }) {
   // this component is used to provide foldable sidebar
@@ -34,7 +33,7 @@ function RepoWrapper({ children }) {
             onClick={() => {
               setShow(!show);
             }}
-            size="xs"
+            size="small"
             // variant="ghost"
           >
             {show ? "Hide" : "Show"}
@@ -66,7 +65,7 @@ function RepoWrapper({ children }) {
             onClick={() => {
               setShow(!show);
             }}
-            size="xs"
+            size="small"
             // variant="ghost"
           >
             {show ? "Hide" : "Show"}
@@ -96,9 +95,9 @@ function RepoImpl() {
   }, [me, id, setSessionId]);
   useEffect(() => {
     resetState();
-    setRepo(id);
+    setRepo(id!);
     // load the repo. It is actually not a queue, just an async thunk
-    loadRepo(id);
+    loadRepo(id!);
   }, [id, loadRepo, resetState, setRepo]);
 
   // FIXME Removing queueL. This will cause Repo to be re-rendered a lot of
@@ -118,7 +117,7 @@ function RepoImpl() {
           // m={2}
           overflow="auto"
         >
-          <Deck id="ROOT" />
+          <Canvas />
         </Box>
       )}
     </RepoWrapper>

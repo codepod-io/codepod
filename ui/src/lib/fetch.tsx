@@ -1,4 +1,5 @@
 import { getAuthHeaders, hashPod, computeNamespace } from "./utils";
+import { Pod } from "./store";
 
 const graphql_url = "/graphql";
 
@@ -55,14 +56,11 @@ export async function doRemoteLoadRepo({ id }) {
     }),
   });
   res = await res.json();
-  if (res.errors) {
-    throw Error(`Error: ${res.errors[0].message}`);
-  }
   return res;
 }
 
 export function normalize(pods) {
-  const res = {
+  const res: { [key: string]: Pod } = {
     ROOT: {
       id: "ROOT",
       name: "root",
@@ -71,9 +69,16 @@ export function normalize(pods) {
       // XXX should I save these to db?
       exports: {},
       imports: {},
-      midport: {},
       io: {},
       lang: "python",
+      type: "DECK",
+      content: "",
+      isSyncing: false,
+      x: 0,
+      y: 0,
+      width: 0,
+      height: 0,
+      index: 0,
     },
   };
 
@@ -236,9 +241,6 @@ export async function doRemoteAddPod({ repoId, parent, index, pod }) {
     }),
   });
   res = await res.json();
-  if (res.errors) {
-    throw Error(`Error: ${res.errors[0].message}`);
-  }
   return res;
 }
 
@@ -264,9 +266,6 @@ export async function doRemoteDeletePod({ id, toDelete }) {
     }),
   });
   res = await res.json();
-  if (res.errors) {
-    throw Error(`Error: ${res.errors[0].message}`);
-  }
   return res;
 }
 
@@ -345,8 +344,5 @@ export async function doRemotePastePod({
     }),
   });
   res = await res.json();
-  if (res.errors) {
-    throw Error(`Error: ${res.errors[0].message}`);
-  }
   return res;
 }

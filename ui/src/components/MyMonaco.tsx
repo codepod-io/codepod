@@ -24,92 +24,6 @@ function construct_indent(pos, indent) {
     },
   ];
 }
-
-monaco.languages.registerOnTypeFormattingEditProvider("scheme", {
-  provideOnTypeFormattingEdits: function (model, position, ch, options, token) {
-    // get the first non-empty line
-    let line = "";
-    let linum = position.lineNumber - 1;
-    while (line.trim().length === 0 && linum > 0) {
-      line = model.getLineContent(linum);
-      linum -= 1;
-    }
-    if (line.trim().length === 0) return [];
-    /* 
-
-    (aaa (bbb (ccc
-                xxx
-                yyy)
-              (xxx)
-              yyy (zzz xxx
-                       iii))
-
-
-           xxx)
-      xxx)
-    (define)    
-    */
-    let n_open = (line.match(/\(/g) || []).length;
-    let n_close = (line.match(/\)/g) || []).length;
-    if (n_open === n_close) {
-      // 1. If previous line has equal number of open and close, use that indentation
-      return construct_indent(position, line.length - line.trimLeft().length);
-    } else if (n_open > n_close) {
-      // 2. If previous line has more ), find the last )'s matching (, and
-      //   - if there's "(aaa bbb", use bbb's indentation
-      //   - else, use ('s indentation + 2
-      let ct = 0;
-      for (let i = line.length - 1; i >= 0; i--) {
-        if (line[i] === ")") {
-          ct += 1;
-        } else if (line[i] === "(") {
-          ct -= 1;
-        }
-        if (ct === -1) {
-          // check the pattern
-          if (line.substring(i).match(/^\((define|lambda|let|for[^*]).*/)) {
-            return construct_indent(position, i + 2);
-          }
-          if (line.substring(i).match(/^\([([]/)) {
-            // this is (let ([xxx]
-            //               []))
-            return construct_indent(position, i + 1);
-          }
-          // trim right, and find " "
-          let match = line.substring(i).trimRight().match(/\s/);
-          if (match) {
-            // if it is (define (fdsf), I want to index 2
-            return construct_indent(position, i + match.index + 1);
-          } else {
-            return construct_indent(position, i + 2);
-          }
-        }
-      }
-    } else {
-      // 3. If previous line has more (
-      //   - If there's "(aaa bbb", use bbb's indentation
-      //   - else, use ('s indentation + 2
-      let range = model.findPreviousMatch(")", position, false).range;
-      let pos = new Position(range.endLineNumber, range.endColumn);
-      let match = model.matchBracket(pos);
-      // this is actually a unmatched parenthesis
-      if (!match) return [];
-      let openPos = match[1];
-
-      let line2 = model.getLineContent(openPos.startLineNumber);
-      let match2 = line2
-        .substring(0, openPos.startColumn)
-        .match(/\((define|lambda|let)\s*\($/);
-      if (match2) {
-        return construct_indent(position, match2.index + 2);
-      } else {
-        return construct_indent(position, openPos.startColumn - 1);
-      }
-    }
-  },
-  autoFormatTriggerCharacters: ["\n"],
-});
-
 function decide_indent_open(line) {
   // Assume line has more (. Decide the indent
   let ct = 0;
@@ -149,7 +63,7 @@ function racket_format(model) {
   // - if n_open > n_close: from right, find the first unpaired open (
   // - if n_open < n_close: find the last close, and find the match brackets
   let indent = 0;
-  let shifts = {};
+  let shifts: { [key: number]: number } = {};
   for (let linum = 1; linum <= model.getLineCount(); linum += 1) {
     let line = model.getLineContent(linum);
     if (line.trim().length === 0) {
@@ -197,7 +111,7 @@ function racket_format(model) {
   }
   // console.log("shifts:", shifts);
   // console.log("computing edits ..");
-  let res = [];
+  let res: any[] = [];
   for (const [linum, shift] of Object.entries(shifts)) {
     let edit = {
       range: {
@@ -263,7 +177,7 @@ export function MyMonacoDiff({ from, to }) {
             Math.max(one.getContentHeight(), two.getContentHeight())
           );
           // console.log("target height:", contentHeight);
-          const editorElement = editor.getDomNode();
+          const editorElement = editor.getContainerDomNode();
           if (!editorElement) {
             return;
           }
@@ -281,7 +195,10 @@ export function MyMonacoDiff({ from, to }) {
   );
 }
 
-async function computeDiff(original, modified) {
+async function computeDiff(
+  original,
+  modified
+): Promise<monaco.editor.ILineChange[] | null> {
   return new Promise((resolve, reject) => {
     // 1. get a diff editor
     // 2. onDidUpdateDiff
@@ -318,8 +235,8 @@ async function updateGitGutter(editor) {
   // console.log("original", gitvalue);
   // console.log("modified", value);
   // console.log("diffs:", diffs);
-  let decorations = [];
-  for (const diff of diffs) {
+  let decorations: any[] = [];
+  for (const diff of diffs || []) {
     // newly added lines
     if (diff.originalStartLineNumber > diff.originalEndLineNumber) {
       // newly added
@@ -382,7 +299,7 @@ export function MyMonaco({
   lang = "javascript",
   value = "",
   gitvalue = null,
-  onChange = () => {},
+  onChange = (value) => {},
   onRun = () => {},
 }) {
   // console.log("rendering monaco ..");
@@ -390,7 +307,7 @@ export function MyMonaco({
   if (lang === "racket") {
     lang = "scheme";
   }
-  let [editor, setEditor] = useState(null);
+  let [editor, setEditor] = useState<any>(null);
   if (editor) {
     // console.log("mounting gitgutter updater");
     editor.staged = gitvalue;
@@ -447,7 +364,7 @@ export function MyMonaco({
         editor.onDidContentSizeChange(updateHeight);
         // FIXME clean up?
         editor.addCommand(
-          [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
+          monaco.KeyMod.Shift | monaco.KeyCode.Enter,
           function () {
             onRun();
           }
