@@ -161,7 +161,7 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
   React.useEffect(() => {
     setTarget(ref.current);
   }, []);
-  return (
+  return ((pod!==undefined) &&
     <Box
       sx={{
         border: "solid 1px black",
@@ -417,7 +417,7 @@ export function Deck({ props }) {
   const addPod = useStore(store, (state) => state.addPod);
   const setPodPosition = useStore(store, (state) => state.setPodPosition);
   const setPodParent = useStore(store, (state) => state.setPodParent);
-  const remoteDelete = useStore(store, (state) => state.remoteDelete);
+  const remoteDelete = useStore(store, (state) => state.deletePod);
 
   const addNode = useCallback(
     (x, y, type) => {
