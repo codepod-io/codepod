@@ -595,6 +595,7 @@ const createRepoSlice: StateCreator<
   remoteUpdateAllPods: async (client) => {
     async function helper(id) {
       let pod = get().pods[id];
+      if (!pod) return;
       pod.children?.map(({ id }) => helper(id));
       if (id !== "ROOT") {
         // console.log("hashPod at remoteUpdateAllPods");
