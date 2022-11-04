@@ -1,5 +1,9 @@
 import produce from "immer";
 import { gql } from "@apollo/client";
+import { createStore, StateCreator, StoreApi } from "zustand";
+
+// FIXME cyclic import
+import { RepoSlice } from "./store";
 
 function getChildExports({ id, pods }) {
   // get all the exports and reexports. The return would be:
@@ -16,16 +20,6 @@ function getChildExports({ id, pods }) {
         .map(({ id }) => pods[id])
         .map((pod) => Object.keys(pod.exports))
     );
-    for (let deckpod of deck.children
-      .filter(({ id }) => pods[id].type !== "DECK")
-      .map(({ id }) => pods[id])) {
-      for (let [name, id] of Object.entries(deckpod.reexports)) {
-        if (!res[pods[id].ns]) {
-          res[pods[id].ns] = [];
-        }
-        res[pods[id].ns].push(name);
-      }
-    }
   }
   return res;
 }
@@ -37,41 +31,6 @@ function getDeckExports({ id, pods }) {
       .filter(({ id }) => pods[id].type !== "DECK" && pods[id].exports)
       .map(({ id }) => Object.keys(pods[id].exports))
   );
-  for (let pod of pods[id].children
-    .filter(({ id }) => pods[id].type !== "DECK" && pods[id].reexports)
-    .map(({ id }) => pods[id])) {
-    for (let [name, id] of Object.entries(pod.reexports)) {
-      if (!res[pods[id].ns]) {
-        res[pods[id].ns] = [];
-      }
-      res[pods[id].ns].push(name);
-    }
-  }
-  return res;
-}
-
-function getUtilExports({ id, pods }) {
-  let res = {};
-  let utilIds = getUtilIds({ id, pods });
-  for (let deck of utilIds.map((id) => pods[id])) {
-    // FIXME these are identical to getChildExports
-    res[deck.ns] = [].concat(
-      ...deck.children
-        .filter(({ id }) => pods[id].type !== "DECK")
-        .map(({ id }) => pods[id])
-        .map((pod) => Object.keys(pod.exports))
-    );
-    for (let deckpod of deck.children
-      .filter(({ id }) => pods[id].type !== "DECK")
-      .map(({ id }) => pods[id])) {
-      for (let [name, id] of Object.entries(deckpod.reexports)) {
-        if (!res[pods[id].ns]) {
-          res[pods[id].ns] = [];
-        }
-        res[pods[id].ns].push(name);
-      }
-    }
-  }
   return res;
 }
 
@@ -91,9 +50,7 @@ function powerRun_python({ id, socket, set, get }) {
   //    if that's a new reexport, add to parent as well and do the resolve and evaluation
   // 3. [ ] delete a function. Just delete the parent's def? Not sure.
 
-  let childexports = getChildExports({ id, pods });
-  let utilexports = getUtilExports({ id, pods });
-  let allexports = Object.assign({}, childexports, utilexports);
+  let allexports = getChildExports({ id, pods });
   if (pod.thundar) {
     // for testing pod, get all exports/reexports from its parent
     allexports = Object.assign(
@@ -132,7 +89,7 @@ function powerRun_python({ id, socket, set, get }) {
   );
 }
 
-function handlePowerRun({ id, doEval, socket, set, get }) {
+function handlePowerRun({ id, doEval = false, socket, set, get }) {
   // assume id is a deck
   // this is used to init or reset the deck with all exported names
   let pods = get().pods;
@@ -225,7 +182,7 @@ CODEPOD_EVAL("""${name} = CODEPOD_GETMOD("${pod.ns}").__dict__["${name}"]\n0""",
 
       console.log("==", name, uses);
       if (uses) {
-        for (let use of uses) {
+        for (let use of uses as string[]) {
           // reevaluate name in use's parent deck
           let to_deck = pods[pods[pods[use].parent].parent];
           code += `
@@ -295,7 +252,7 @@ function getExports(content) {
   // Return exports, reexports, and the rest content
   // analyze the content for magic commands
   content = content.trim();
-  let exports = [];
+  let exports: string[] = [];
   let reexports = {};
   while (content.startsWith("@export ") || content.startsWith("@reexport ")) {
     let idx = content.indexOf("\n");
@@ -437,179 +394,64 @@ function onMessage(set, get) {
     switch (type) {
       case "output":
         console.log("output:", payload);
-
         break;
-      case "stdout": {
-        let { podId, stdout } = payload;
-        set(
-          produce((state) => {
-            state.pods[podId].stdout = stdout;
-          })
-        );
+      case "stdout":
+        {
+          let { podId, stdout } = payload;
+          get().setPodStdout({ id: podId, stdout });
+        }
         break;
-      }
       case "execute_result":
         {
           let { podId, content, count } = payload;
-          set(
-            produce((state) => {
-              if (podId in state.pods) {
-                let text = content.data["text/plain"];
-                let html = content.data["text/html"];
-                let file;
-                if (text) {
-                  let match = text.match(/CODEPOD-link\s+(.*)"/);
-                  if (match) {
-                    let fname = match[1].substring(
-                      match[1].lastIndexOf("/") + 1
-                    );
-                    let url = `${window.location.protocol}//api.${window.location.host}/static/${match[1]}`;
-                    console.log("url", url);
-                    html = `<a target="_blank" style="color:blue" href="${url}" download>${fname}</a>`;
-                    file = url;
-                  }
-                  // http:://api.codepod.test:3000/static/30eea3b1-e767-4fa8-8e3f-a23774eef6c6/ccc.txt
-                  // http:://api.codepod.test:3000/static/30eea3b1-e767-4fa8-8e3f-a23774eef6c6/ccc.txt
-                }
-                state.pods[podId].result = {
-                  text,
-                  html,
-                  file,
-                  count,
-                };
-                // state.pods[podId].running = false;
-              } else {
-                // most likely this podId is "CODEPOD", which is for startup code and
-                // should not be send to the browser
-                console.log("WARNING podId not recognized", podId);
-              }
-            })
-          );
+          get().setPodResult({ id: podId, content, count });
         }
         break;
       case "display_data":
         {
           let { podId, content, count } = payload;
-          set(
-            produce((state) => {
-              // console.log("WS_DISPLAY_DATA", content);
-              state.pods[podId].result = {
-                text: content.data["text/plain"],
-                // FIXME hard coded MIME
-                image: content.data["image/png"],
-                count: count,
-              };
-            })
-          );
+          get().setPodDisplayData({ id: podId, content, count });
         }
         break;
       case "execute_reply":
-        set(
-          produce((state) => {
-            let { podId, result, count } = payload;
-            // console.log("WS_EXECUTE_REPLY", action.payload);
-            if (podId in state.pods) {
-              // state.pods[podId].execute_reply = {
-              //   text: result,
-              //   count: count,
-              // };
-              // console.log("WS_EXECUTE_REPLY", result);
-              state.pods[podId].running = false;
-              if (!state.pods[podId].result) {
-                state.pods[podId].result = {
-                  text: result,
-                  count: count,
-                };
-              }
-            } else {
-              // most likely this podId is "CODEPOD", which is for startup code and
-              // should not be send to the browser
-              console.log("WARNING podId not recognized", podId);
-            }
-          })
-        );
-
+        {
+          let { podId, result, count } = payload;
+          get().setPodExecuteReply({ id: podId, result, count });
+        }
         break;
       case "error":
-        set(
-          produce((state) => {
-            let { podId, ename, evalue, stacktrace } = payload;
-            if (podId === "CODEPOD") return;
-            state.pods[podId].error = {
-              ename,
-              evalue,
-              stacktrace,
-            };
-          })
-        );
-
+        {
+          let { podId, ename, evalue, stacktrace } = payload;
+          get().setPodError({ id: podId, ename, evalue, stacktrace });
+        }
         break;
       case "stream":
-        set(
-          produce((state) => {
-            let { podId, content } = payload;
-            if (!(podId in state.pods)) {
-              console.log("WARNING podId is not found:", podId);
-              return;
-            }
-            // append
-            let pod = state.pods[podId];
-            if (content.name === "stderr" && pod.lang === "racket") {
-              // if (!pod.result) {
-              //   pod.result = {};
-              // }
-              // pod.result.stderr = true;
-              pod.error = {
-                ename: "stderr",
-                evalue: "stderr",
-                stacktrace: "",
-              };
-            }
-            pod.stdout += content.text;
-          })
-        );
+        {
+          let { podId, content } = payload;
+          get().setPodStream({ id: podId, content });
+        }
         break;
       case "IO:execute_result":
-        set(
-          produce((state) => {
-            let { podId, result, name } = payload;
-            // if (!("io" in state.pods[podId])) {
-            //   state.pods[podId].io = {};
-            // }
-            state.pods[podId].io[name] = { result };
-          })
-        );
+        {
+          let { podId, result, name } = payload;
+          get().setPodExecuteResult({ id: podId, result, name });
+        }
         break;
       case "IO:execute_reply":
         // CAUTION ignore
         break;
       case "IO:error":
-        set(
-          produce((state) => {
-            let { podId, name, ename, evalue, stacktrace } = payload;
-            console.log("IOERROR", { podId, name, ename, evalue, stacktrace });
-            state.pods[podId].io[name] = {
-              error: {
-                ename,
-                evalue,
-                stacktrace,
-              },
-            };
-          })
-        );
+        {
+          let { podId, name, ename, evalue, stacktrace } = payload;
+          get().setIOResult({ id: podId, name, ename, evalue, stacktrace });
+        }
         break;
       case "status":
-        set(
-          produce((state) => {
-            const { lang, status, id } = payload;
-            // console.log("WS_STATUS", { lang, status });
-            state.kernels[lang].status = status;
-            // this is for racket kernel, which does not have a execute_reply
-            if (lang === "racket" && status === "idle" && state.pods[id]) {
-              state.pods[id].running = false;
-            }
-          })
-        );
+        {
+          const { lang, status, id } = payload;
+          get().setPodStatus({ id, lang, status });
+        }
+
         break;
       case "interrupt_reply":
         // console.log("got interrupt_reply", payload);
@@ -688,7 +530,35 @@ async function spawnRuntime({ client, sessionId }) {
   return res.data.spawnRuntime;
 }
 
-export const createRuntimeSlice = (set, get) => ({
+export interface RuntimeSlice {
+  wsConnect: (client, sessionId) => void;
+  wsDisconnect: () => void;
+  wsRequestStatus: ({ lang }) => void;
+  wsRun: (id) => void;
+  wsPowerRun: ({ id, doEval }) => void;
+  wsInterruptKernel: ({ lang }) => void;
+  clearResults: (id) => void;
+  clearAllResults: () => void;
+  setRunning: (id) => void;
+  addPodExport: (id, exports, reexports) => void;
+  clearAllExports: () => void;
+  setPodExport: ({ id, exports, reexports }) => void;
+  clearIO: (id) => void;
+  deletePodExport: (id) => void;
+  clearPodExport: (id) => void;
+  togglePodExport: (id) => void;
+  toggleDeckExport: (id) => void;
+  addPodImport: (id, imports) => void;
+  deletePodImport: (id) => void;
+  togglePodImport: (id) => void;
+}
+
+export const createRuntimeSlice: StateCreator<
+  RuntimeSlice & RepoSlice,
+  [],
+  [],
+  RuntimeSlice
+> = (set, get) => ({
   wsConnect: async (client, sessionId) => {
     // 0. ensure the runtime is created
     // let sessionId = get().sessionId;
@@ -753,9 +623,7 @@ export const createRuntimeSlice = (set, get) => ({
     };
   },
   wsDisconnect: () => {
-    if (get().socket !== null) {
-      get().socket.close();
-    }
+    get().socket?.close();
   },
   wsRequestStatus: ({ lang }) => {
     if (get().socket) {
@@ -766,7 +634,7 @@ export const createRuntimeSlice = (set, get) => ({
         })
       );
       console.log("Sending requestKernelStatus ..");
-      get().socket.send(
+      get().socket?.send(
         JSON.stringify({
           type: "requestKernelStatus",
           payload: {
@@ -792,7 +660,7 @@ export const createRuntimeSlice = (set, get) => ({
       socket: {
         send: (payload) => {
           console.log("sending", payload);
-          get().socket.send(payload);
+          get().socket?.send(payload);
         },
       },
       set,
@@ -812,15 +680,7 @@ export const createRuntimeSlice = (set, get) => ({
     handlePowerRun({ id, doEval, socket: get().socket, set, get });
   },
   wsInterruptKernel: ({ lang }) => {
-    if (!get().socket) {
-      get().addError({
-        type: "error",
-        msg: "Runtime not connected",
-      });
-
-      return;
-    }
-    get().socket.send(
+    get().socket!.send(
       JSON.stringify({
         type: "interruptKernel",
         payload: {
@@ -876,8 +736,8 @@ export const createRuntimeSlice = (set, get) => ({
     set(
       produce((state) => {
         for (let [, pod] of Object.entries(state.pods)) {
-          pod.exports = {};
-          pod.reexports = {};
+          (pod as any).exports = {};
+          (pod as any).reexports = {};
         }
       })
     );
@@ -893,8 +753,8 @@ export const createRuntimeSlice = (set, get) => ({
         pod.reexports = reexports;
         // add the reexports use reference to the origin
         for (let [name, origid] of Object.entries(reexports)) {
-          if (state.pods[origid].exports[name].indexOf(id) === -1) {
-            state.pods[origid].exports[name].push(id);
+          if (state.pods[origid as string].exports[name].indexOf(id) === -1) {
+            state.pods[origid as string].exports[name].push(id);
           }
         }
       })

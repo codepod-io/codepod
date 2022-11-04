@@ -1,290 +1,156 @@
-import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
-import Divider from "@mui/material/Divider";
-import Stack from "@mui/material/Stack";
-import Typography from "@mui/material/Typography";
-import Alert from "@mui/material/Alert";
-import TextField from "@mui/material/TextField";
-import FormControl from "@mui/material/FormControl";
-import FormLabel from "@mui/material/FormLabel";
-
-import Grid from "@mui/material/Grid";
-
-import { useNavigate } from "react-router-dom";
-
-import Link from "@mui/material/Link";
-import { Link as ReactLink } from "react-router-dom";
-
 import React, { useEffect, useState } from "react";
-import { FaFacebook, FaGithub, FaGoogle } from "react-icons/fa";
-import { Formik } from "formik";
+
+import Avatar from "@mui/material/Avatar";
+import CssBaseline from "@mui/material/CssBaseline";
+import TextField from "@mui/material/TextField";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Checkbox from "@mui/material/Checkbox";
+import Link from "@mui/material/Link";
+import Grid from "@mui/material/Grid";
+import Box from "@mui/material/Box";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import Typography from "@mui/material/Typography";
+import Container from "@mui/material/Container";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
+import Button from "@mui/material/Button";
+import Alert from "@mui/material/Alert";
+
+import { useFormik } from "formik";
+
+import { Link as ReactLink, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../lib/auth";
 
-function Flex(props) {
+function Copyright(props: any) {
   return (
-    <Box sx={{ display: "flex" }} {...props}>
-      {props.children}
-    </Box>
+    <Typography
+      variant="body2"
+      color="text.secondary"
+      align="center"
+      {...props}
+    >
+      {"Copyright © "}
+      <Link color="inherit" href="https://mui.com/">
+        Your Website
+      </Link>{" "}
+      {new Date().getFullYear()}
+      {"."}
+    </Typography>
   );
 }
 
-function Text(props) {
-  return (
-    <Box component="span" {...props}>
-      {props.children}
-    </Box>
-  );
-}
+const theme = createTheme();
 
-//////////
-// Card
-
-export const Card = (props) => (
-  <Box
-    bg="white"
-    py="8"
-    px={{
-      base: "4",
-      md: "10",
-    }}
-    shadow="base"
-    rounded={{
-      sm: "lg",
-    }}
-    {...props}
-  />
-);
-
-////////
-// Divider
-
-export const DividerWithText = (props) => {
-  const { children, ...flexProps } = props;
-  return (
-    <Flex align="center" color="gray.300" {...flexProps}>
-      <Box flex="1">
-        <Divider sx={{ borderColor: "currentcolor" }} />
-      </Box>
-      <Text as="span" px="3" color="gray.600" fontWeight="medium">
-        {children}
-      </Text>
-      <Box flex="1">
-        <Divider sx={{ borderColor: "currentcolor" }} />
-      </Box>
-    </Flex>
-  );
-};
-
-///////// LoginForm
-
-function LoginForm(props) {
+export default function SignIn() {
   /* eslint-disable no-unused-vars */
   const { signIn, isSignedIn } = useAuth();
   const [error, setError] = useState(null);
-  return (
-    <Formik
-      initialValues={{ email: "", password: "" }}
-      onSubmit={(values, { setSubmitting }) => {
-        console.log("Logging in");
-        console.log(values);
-        console.log([values.email, values.password]);
-        setError(null);
-        return signIn({
-          email: values.email,
-          password: values.password,
-        }).catch((err) => {
-          // TODO use more user friendly error message
-          setError(err.message);
-        });
-      }}
-    >
-      {({
-        values,
-        errors,
-        touched,
-        handleChange,
-        handleBlur,
-        handleSubmit,
-        isSubmitting,
-      }) => (
-        <div>
-          <Box
-            component="form"
-            onSubmit={handleSubmit}
-            noValidate
-            sx={{ mt: 1 }}
-          >
-            <Stack spacing="6">
-              <FormControl id="email">
-                <FormLabel>Email</FormLabel>
-                <TextField
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  onChange={handleChange}
-                  onBlur={handleBlur}
-                  required
-                />
-              </FormControl>
-              {/* Passing handlers in seems messy.*/}
-              <PasswordField
-                handleChange={handleChange}
-                handleBlur={handleBlur}
-              />
-              <Button
-                type="submit"
-                size="lg"
-                fontSize="md"
-                disabled={isSubmitting}
-              >
-                Sign in
-              </Button>
-              {error && <Alert severity="error">{error}</Alert>}
-            </Stack>
-          </Box>
-        </div>
-      )}
-    </Formik>
-  );
-}
 
-///////// Password
-
-export const PasswordField = React.forwardRef((props, ref) => {
-  const [isOpen, setOpen] = useState(false);
-  const inputRef = React.useRef(null);
-  // FIXME alternatives?
-  // const mergeRef = useMergeRefs(inputRef, ref);
-  const mergeRef = inputRef;
-
-  const onClickReveal = () => {
-    setOpen(!isOpen);
-    const input = inputRef.current;
-
-    if (input) {
-      input.focus({
-        preventScroll: true,
-      });
-      const length = input.value.length * 2;
-      requestAnimationFrame(() => {
-        input.setSelectionRange(length, length);
-      });
-    }
-  };
-
-  return (
-    <FormControl id="password">
-      <Flex justify="space-between">
-        <FormLabel>Password</FormLabel>
-        <Box as="a" color="blue.600" fontWeight="semibold" fontSize="sm">
-          Forgot Password?
-        </Box>
-      </Flex>
-      {/* <InputRightElement>
-          <IconButton
-            bg="transparent !important"
-            variant="ghost"
-            aria-label={isOpen ? "Mask password" : "Reveal password"}
-            icon={isOpen ? <HiEyeOff /> : <HiEye />}
-            onClick={onClickReveal}
-          />
-        </InputRightElement> */}
-      <TextField
-        ref={mergeRef}
-        name="password"
-        type={isOpen ? "text" : "password"}
-        autoComplete="current-password"
-        onChange={props.handleChange}
-        onBlur={props.handleBlur}
-        required
-        // {...props}
-      />
-    </FormControl>
-  );
-});
-PasswordField.displayName = "PasswordField";
-
-export default function Login() {
-  const { isSignedIn } = useAuth();
-  const navigate = useNavigate();
+  let navigate = useNavigate();
   useEffect(() => {
     if (isSignedIn()) {
       navigate("/");
     }
   }, [isSignedIn, navigate]);
+
+  const formik = useFormik({
+    initialValues: {
+      email: "",
+      password: "",
+    },
+    // validationSchema: validationSchema,
+    onSubmit: (values) => {
+      setError(null);
+      return signIn({
+        email: values.email,
+        password: values.password,
+      }).catch((err) => {
+        // TODO use more user friendly error message
+        setError(err.message);
+      });
+    },
+  });
+
   return (
-    <Box
-      sx={{
-        bg: "gray.50",
-        minH: "100vh",
-        py: "12",
-        px: {
-          base: "4",
-          lg: "8",
-        },
-      }}
-    >
-      <Box
-        sx={{
-          maxWidth: "md",
-          mx: "auto",
-        }}
-      >
-        <Typography variant="h2" gutterBottom component="div">
-          Sign in to your account
-        </Typography>
-        <Text
+    <ThemeProvider theme={theme}>
+      <Container component="main" maxWidth="xs">
+        <CssBaseline />
+        <Box
           sx={{
-            mt: "4",
-            mb: "8",
-            align: "center",
-            maxWidth: "md",
-            fontWeight: "medium",
+            marginTop: 8,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
           }}
         >
-          <Text as="span">Don&apos;t have an account?</Text>
-          <Link component={ReactLink} to="/signup">
-            Sign up for free
-          </Link>
-        </Text>
-        <Card>
-          <LoginForm />
-          <DividerWithText mt="6">or continue with</DividerWithText>
-          <Grid
-            container
-            spacing={2}
-            sx={{
-              mt: 3,
-            }}
+          <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
+            <LockOutlinedIcon />
+          </Avatar>
+          <Typography component="h1" variant="h5">
+            Sign in
+          </Typography>
+          <Box
+            component="form"
+            onSubmit={formik.handleSubmit}
+            noValidate
+            sx={{ mt: 1 }}
           >
-            <Grid item xs={4}>
-              <Button
-                color="currentColor"
-                variant="outline"
-                onClick={() => {
-                  console.log("hello");
-                }}
-              >
-                {/* <VisuallyHidden>Login with Facebook</VisuallyHidden> */}
-                <FaFacebook />
-              </Button>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
+              label="Email Address"
+              name="email"
+              autoComplete="email"
+              autoFocus
+              value={formik.values.email}
+              onChange={formik.handleChange}
+            />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="password"
+              label="Password"
+              type="password"
+              id="password"
+              autoComplete="current-password"
+              value={formik.values.password}
+              onChange={formik.handleChange}
+            />
+            <FormControlLabel
+              control={<Checkbox value="remember" color="primary" />}
+              label="Remember me"
+            />
+            {error && <Alert severity="error">{error}</Alert>}
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2 }}
+            >
+              Sign In
+            </Button>
+            <Grid container>
+              <Grid item xs>
+                <Link href="#" variant="body2">
+                  Forgot password?
+                </Link>
+              </Grid>
+              <Grid item>
+                <Link component={ReactLink} to="/signup">
+                  {"Don't have an account? Sign Up"}
+                </Link>
+                {/* <Link href="/signup" variant="body2">
+                  {"Don't have an account? Sign Up"}
+                </Link> */}
+              </Grid>
             </Grid>
-            <Grid item xs={4}>
-              <Button color="currentColor" variant="outline">
-                {/* <VisuallyHidden>Login with Google</VisuallyHidden> */}
-                <FaGoogle />
-              </Button>
-            </Grid>
-            <Grid item xs={4}>
-              <Button color="currentColor" variant="outline">
-                {/* <VisuallyHidden>Login with Github</VisuallyHidden> */}
-                <FaGithub />
-              </Button>
-            </Grid>
-          </Grid>
-        </Card>
-      </Box>
-    </Box>
+          </Box>
+        </Box>
+        <Copyright sx={{ mt: 8, mb: 4 }} />
+      </Container>
+    </ThemeProvider>
   );
 }

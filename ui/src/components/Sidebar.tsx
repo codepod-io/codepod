@@ -9,7 +9,7 @@ import IconButton from "@mui/material/IconButton";
 
 import { grey } from "@mui/material/colors";
 
-import { useSnackbar } from "notistack";
+import { useSnackbar, VariantType } from "notistack";
 
 import { gql, useQuery, useMutation, useApolloClient } from "@apollo/client";
 
@@ -70,11 +70,11 @@ function SidebarRuntime() {
       <Box>
         Runtime connected?{" "}
         {runtimeConnected ? (
-          <Box as="span" color="green">
+          <Box component="span" color="green">
             Yes
           </Box>
         ) : (
-          <Box as="span" color="red">
+          <Box component="span" color="red">
             No
           </Box>
         )}
@@ -115,15 +115,15 @@ function SidebarKernel() {
       {Object.entries(kernels).map(([lang, kernel]) => (
         <Box key={`lang-${lang}`}>
           <Box>
-            <Box as="span" color="blue">
+            <Box component="span" color="blue">
               {lang}
             </Box>{" "}
             {runtimeConnected ? (
-              <Box as="span" color="green">
+              <Box component="span" color="green">
                 {kernel.status ? kernel.status : "Unknown"}
               </Box>
             ) : (
-              <Box color="red" as="span">
+              <Box color="red" component="span">
                 NA
               </Box>
             )}
@@ -158,7 +158,6 @@ function ApplyAll() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const numDirty = useStore(store, selectNumDirty());
-  const wsRunAll = useStore(store, (s) => s.wsRunAll);
   const clearAllResults = useStore(store, (s) => s.clearAllResults);
   const remoteUpdateAllPods = useStore(store, (s) => s.remoteUpdateAllPods);
   usePrompt(
@@ -166,19 +165,20 @@ function ApplyAll() {
     numDirty > 0
   );
 
-  let [intervalId, setIntervalId] = useState(null);
+  let [intervalId, setIntervalId] =
+    useState<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (intervalId) {
-      clearInterval(intervalId);
-    }
-    setIntervalId(
-      setInterval(() => {
-        // websocket resets after 60s of idle by most firewalls
-        // console.log("periodically saving ..");
-        // dispatch(remoteUpdateAllPods());
-      }, 1000)
-    );
+    console.log("Setting interval");
+    let id = setInterval(() => {
+      // websocket resets after 60s of idle by most firewalls
+      console.log("periodically saving ..");
+      remoteUpdateAllPods();
+    }, 1000);
+    return () => {
+      console.log("removing interval");
+      clearInterval(id);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -193,32 +193,17 @@ function ApplyAll() {
       >
         <CloudUploadIcon />
         {numDirty > 0 ? (
-          <Box as="span" color="blue" mx={1}>
+          <Box component="span" color="blue" mx={1}>
             save {numDirty} to cloud
           </Box>
         ) : (
-          <Box as="span" color="grey" mx={1}>
+          <Box component="span" color="grey" mx={1}>
             Saved to cloud.
           </Box>
         )}
       </Button>
 
       <Flex>
-        <Button
-          size="small"
-          onClick={() => {
-            // run all pods
-            wsRunAll();
-          }}
-        >
-          Apply All
-        </Button>
-
-        {/* <Prompt
-          when={numDirty > 0}
-          message="You have unsaved changes. Are you sure you want to leave?"
-        /> */}
-
         <Button
           size="small"
           onClick={() => {
@@ -294,7 +279,9 @@ function ToastError() {
   const clearError = useStore(store, (state) => state.clearError);
   useEffect(() => {
     if (error) {
-      enqueueSnackbar(`ERROR: ${error.msg}`, { variant: error.type });
+      enqueueSnackbar(`ERROR: ${error.msg}`, {
+        variant: error.type as VariantType,
+      });
       // I'll need to clear this msg once it is displayed
       clearError();
     }
@@ -362,12 +349,12 @@ export function Sidebar() {
       >
         <SidebarSession />
       </Box>
-      <Divider my={2} />
+      <Divider sx={{ my: 2 }} />
       <Box sx={{ boxShadow: 3, p: 2, borderRadius: 2, bg: grey[50] }}>
         <ToastError />
         <ApplyAll />
       </Box>
-      <Divider my={2} />
+      <Divider sx={{ my: 2 }} />
 
       <Box
         sx={{
@@ -379,7 +366,7 @@ export function Sidebar() {
       >
         <SidebarTest />
       </Box>
-      <Divider my={2} />
+      <Divider sx={{ my: 2 }} />
       <Box
         sx={{
           boxShadow: 3,
@@ -393,7 +380,7 @@ export function Sidebar() {
         <ActiveSessions />
       </Box>
 
-      <Divider my={2} />
+      <Divider sx={{ my: 2 }} />
       {/* <ConfigButton /> */}
     </Box>
   );

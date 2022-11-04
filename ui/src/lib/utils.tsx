@@ -1,7 +1,7 @@
 import sha256 from "crypto-js/sha256";
 
 export function computeNamespace(pods, id) {
-  let res = [];
+  let res: string[] = [];
   // if the pod is a pod, do not include its id
   if (pods[id].type !== "DECK") {
     id = pods[id].parent;

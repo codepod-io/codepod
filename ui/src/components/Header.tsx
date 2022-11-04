@@ -10,6 +10,7 @@ import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Avatar from "@mui/material/Avatar";
 import Link from "@mui/material/Link";
+import Button from "@mui/material/Button";
 
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
@@ -20,6 +21,8 @@ import Tooltip from "@mui/material/Tooltip";
 import AppBar from "@mui/material/AppBar";
 
 import { useAuth } from "../lib/auth";
+
+import useMe from "../lib/me";
 
 export function Header() {
   const [anchorElNav, setAnchorElNav] = useState(null);
@@ -42,6 +45,7 @@ export function Header() {
 
   const { isSignedIn, signOut } = useAuth();
   let navigate = useNavigate();
+  const { me } = useMe();
 
   return (
     <AppBar position="fixed" color="inherit">
@@ -165,44 +169,22 @@ export function Header() {
           </Box>
 
           {isSignedIn() ? (
-            <Box sx={{ flexGrow: 0 }}>
-              <Tooltip title="Open settings">
-                <IconButton onClick={handleOpenUserMenu} sx={{ p: 0 }}>
-                  <Avatar alt="Remy Sharp" src="/static/images/avatar/2.jpg" />
-                </IconButton>
-              </Tooltip>
-              <Menu
-                sx={{ mt: "45px" }}
-                id="menu-appbar"
-                anchorEl={anchorElUser}
-                anchorOrigin={{
-                  vertical: "top",
-                  horizontal: "right",
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <Box>{me?.firstname}</Box>
+              <Button
+                onClick={() => {
+                  signOut();
+                  navigate("/login");
                 }}
-                keepMounted
-                transformOrigin={{
-                  vertical: "top",
-                  horizontal: "right",
-                }}
-                open={Boolean(anchorElUser)}
-                onClose={handleCloseUserMenu}
               >
-                <MenuItem key="profile" onClick={handleCloseUserMenu}>
-                  {/* <Typography textAlign="center">Profile</Typography> */}
-                  {/* <Box>Hello</Box> */}
-                  <Link to="/profile" component={ReactLink} underline="none">
-                    <Typography textAlign="center">Profile</Typography>
-                  </Link>
-                </MenuItem>
-                <MenuItem
-                  onClick={() => {
-                    signOut();
-                    navigate("/login");
-                  }}
-                >
-                  Logout
-                </MenuItem>
-              </Menu>
+                Logout
+              </Button>
             </Box>
           ) : (
             <MyMenuItem to="/login">Login</MyMenuItem>
@@ -213,13 +195,9 @@ export function Header() {
   );
 }
 
-const MyMenuItem = ({ children, isLast, to = "/" }) => {
+const MyMenuItem = ({ children, to = "/" }) => {
   return (
-    <Box
-      mb={{ xl: isLast ? 0 : 2, sm: 0 }}
-      mr={{ xl: 0, sm: isLast ? 0 : 2 }}
-      display="block"
-    >
+    <Box display="block">
       <Link to={to} component={ReactLink} underline="none">
         {children}
       </Link>

@@ -16,6 +16,7 @@ import ReactFlow, {
   Controls,
   Handle,
   useReactFlow,
+  Position,
 } from "react-flow-renderer";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -39,13 +40,20 @@ import { MyMonaco } from "./MyMonaco";
 
 const nanoid = customAlphabet(nolookalikes, 10);
 
-const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
+interface Props {
+  data: any;
+  id: string;
+  isConnectable: boolean;
+  selected: boolean;
+}
+
+const ScopeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
   // add resize to the node
   const ref = useRef(null);
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const updatePod = useStore(store, (state) => state.updatePod);
-  const [target, setTarget] = React.useState();
+  const [target, setTarget] = React.useState<any>();
   const [frame] = React.useState({
     translate: [0, 0],
   });
@@ -81,9 +89,17 @@ const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
       }}
       className="custom-drag-handle"
     >
-      <Handle type="target" position="top" isConnectable={isConnectable} />
+      <Handle
+        type="target"
+        position={Position.Top}
+        isConnectable={isConnectable}
+      />
       Scope: {data?.label}
-      <Handle type="source" position="bottom" isConnectable={isConnectable} />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        isConnectable={isConnectable}
+      />
       {selected && (
         <Moveable
           target={target}
@@ -106,7 +122,6 @@ const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
             e.target.style.height = `${e.height}px`;
             e.target.style.transform = `translate(${beforeTranslate[0]}px, ${beforeTranslate[1]}px)`;
             onResize({
-              id,
               width: e.width,
               height: e.height,
               offx: beforeTranslate[0],
@@ -126,7 +141,7 @@ const ScopeNode = memo(({ data, id, isConnectable, selected }) => {
   );
 });
 
-const CodeNode = memo(({ data, id, isConnectable, selected }) => {
+const CodeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const pod = useStore(store, (state) => state.pods[id]);
@@ -135,7 +150,7 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
   const clearResults = useStore(store, (s) => s.clearResults);
   const wsRun = useStore(store, (state) => state.wsRun);
   const ref = useRef(null);
-  const [target, setTarget] = React.useState();
+  const [target, setTarget] = React.useState<any>(null);
   const [frame] = React.useState({
     translate: [0, 0],
   });
@@ -171,7 +186,11 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
       }}
       ref={ref}
     >
-      <Handle type="target" position="top" isConnectable={isConnectable} />
+      <Handle
+        type="target"
+        position={Position.Top}
+        isConnectable={isConnectable}
+      />
       <Box className="custom-drag-handle">Code: {data?.label}</Box>
       <Box
         sx={{
@@ -196,7 +215,6 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
       >
         <MyMonaco
           value={pod.content || ""}
-          gitvalue={pod.staged}
           // pod={pod}
           onChange={(value) => {
             setPodContent({ id: pod.id, content: value });
@@ -244,8 +262,7 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
           {pod.running && <CircularProgress />}
           {pod.result && (
             <Box
-              sx={{ display: "flex" }}
-              direction="column"
+              sx={{ display: "flex", flexDirection: "column" }}
               overflow="scroll"
               maxHeight="200px"
             >
@@ -276,7 +293,7 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
             </Box>
           )}
           {pod.error && (
-            <Box overflow="scroll" maxHeight="3xs" border="1px" bg="gray.50">
+            <Box overflow="scroll" maxHeight="3xs" border="1px">
               <Box color="red">Error: {pod.error.evalue}</Box>
               {pod.error.stacktrace && (
                 <Box>
@@ -291,7 +308,11 @@ const CodeNode = memo(({ data, id, isConnectable, selected }) => {
         </Box>
       </Box>
 
-      <Handle type="source" position="bottom" isConnectable={isConnectable} />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        isConnectable={isConnectable}
+      />
       {selected && (
         <Moveable
           target={target}
@@ -345,9 +366,9 @@ const level2color = {
   default: "rgba(240,240,240,0.25)",
 };
 
-export function Deck({ props }) {
-  const [nodes, setNodes] = useState([]);
-  const [edges, setEdges] = useState([]);
+export function Canvas() {
+  const [nodes, setNodes] = useState<any[]>([]);
+  const [edges, setEdges] = useState<any[]>([]);
 
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -357,7 +378,7 @@ export function Deck({ props }) {
 
   const getRealNodes = useCallback(
     (id, level) => {
-      let res = [];
+      let res: any[] = [];
       let children = id2children[id];
       if (id !== "ROOT") {
         res.push({
@@ -411,13 +432,13 @@ export function Deck({ props }) {
     [setEdges]
   );
 
-  const [reactFlowInstance, setReactFlowInstance] = useState(null);
-  const reactFlowWrapper = useRef(null);
+  const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  const reactFlowWrapper = useRef<any>(null);
 
   const addPod = useStore(store, (state) => state.addPod);
   const setPodPosition = useStore(store, (state) => state.setPodPosition);
   const setPodParent = useStore(store, (state) => state.setPodParent);
-  const remoteDelete = useStore(store, (state) => state.remoteDelete);
+  const deletePod = useStore(store, (state) => state.deletePod);
 
   const addNode = useCallback(
     (x, y, type) => {
@@ -478,11 +499,15 @@ export function Deck({ props }) {
     (node) => {
       let x = node.position.x;
       let y = node.position.y;
-      let parent = pods[node.parentNode];
+      let parent = pods[node.parent];
       while (parent) {
         x += parent.x;
         y += parent.y;
-        parent = pods[parent.parentNode];
+        if (parent.parent) {
+          parent = pods[parent.parent];
+        } else {
+          break;
+        }
       }
       return [x, y];
     },
@@ -491,7 +516,8 @@ export function Deck({ props }) {
 
   const getScopeAt = useCallback(
     (x, y, id) => {
-      const scope = nodes.findLast((node) => {
+      // FIXME should be fineLast, but findLast cannot pass TS compiler.
+      const scope = nodes.find((node) => {
         let [x1, y1] = getAbsPos(node);
         return (
           node.type === "scope" &&
@@ -627,10 +653,10 @@ export function Deck({ props }) {
     (nodes) => {
       // remove from pods
       for (const node of nodes) {
-        remoteDelete({ id: node.id });
+        deletePod({ id: node.id, toDelete: [] });
       }
     },
-    [remoteDelete]
+    [deletePod]
   );
 
   const [showContextMenu, setShowContextMenu] = useState(false);
@@ -679,7 +705,7 @@ export function Deck({ props }) {
           <Box>
             <MiniMap
               nodeStrokeColor={(n) => {
-                if (n.style?.background) return n.style.background;
+                if (n.style?.background) return n.style.background as string;
                 if (n.type === "code") return "#0041d0";
                 if (n.type === "scope") return "#ff0072";
 

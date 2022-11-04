@@ -69,7 +69,7 @@ export async function loadOrCreateContainer(
   image,
   name,
   network,
-  Env: String[] = []
+  Env: string[] = []
 ) {
   console.log("loading container", name);
   let ip = await loadContainer(name, network);
