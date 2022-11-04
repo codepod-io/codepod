@@ -176,183 +176,182 @@ const CodeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
   React.useEffect(() => {
     setTarget(ref.current);
   }, []);
+  if (!pod) return <Box>ERROR</Box>;
   return (
-    pod !== undefined && (
+    <Box
+      sx={{
+        border: "solid 1px black",
+        width: "100%",
+        height: "100%",
+        backgroundColor: "white",
+      }}
+      ref={ref}
+    >
+      <Handle
+        type="target"
+        position={Position.Top}
+        isConnectable={isConnectable}
+      />
+      <Box className="custom-drag-handle">Code: {data?.label}</Box>
       <Box
         sx={{
-          border: "solid 1px black",
-          width: "100%",
-          height: "100%",
-          backgroundColor: "white",
+          height: "90%",
         }}
-        ref={ref}
+        onClick={(e) => {
+          // If the node is selected (for resize), the cursor is not shown. So
+          // we need to deselect it when we re-focus on the editor.
+          setNodes((nds) =>
+            applyNodeChanges(
+              [
+                {
+                  id,
+                  type: "select",
+                  selected: false,
+                },
+              ],
+              nds
+            )
+          );
+        }}
       >
-        <Handle
-          type="target"
-          position={Position.Top}
-          isConnectable={isConnectable}
+        <MyMonaco
+          value={pod.content || ""}
+          // pod={pod}
+          onChange={(value) => {
+            setPodContent({ id: pod.id, content: value });
+          }}
+          lang={pod.lang || "javascript"}
+          onRun={() => {
+            clearResults(pod.id);
+            wsRun(pod.id);
+          }}
         />
-        <Box className="custom-drag-handle">Code: {data?.label}</Box>
         <Box
           sx={{
-            height: "90%",
-          }}
-          onClick={(e) => {
-            // If the node is selected (for resize), the cursor is not shown. So
-            // we need to deselect it when we re-focus on the editor.
-            setNodes((nds) =>
-              applyNodeChanges(
-                [
-                  {
-                    id,
-                    type: "select",
-                    selected: false,
-                  },
-                ],
-                nds
-              )
-            );
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            width: "100px",
+            height: "100px",
+            backgroundColor: "white",
+            border: "solid 1px blue",
+            zIndex: 100,
           }}
         >
-          <MyMonaco
-            value={pod.content || ""}
-            // pod={pod}
-            onChange={(value) => {
-              setPodContent({ id: pod.id, content: value });
-            }}
-            lang={pod.lang || "javascript"}
-            onRun={() => {
-              clearResults(pod.id);
-              wsRun(pod.id);
-            }}
-          />
-          <Box
-            sx={{
-              position: "absolute",
-              bottom: 0,
-              right: 0,
-              width: "100px",
-              height: "100px",
-              backgroundColor: "white",
-              border: "solid 1px blue",
-              zIndex: 100,
-            }}
-          >
-            <Box sx={{ display: "flex" }}>
-              <Tooltip title="Run (shift-enter)">
-                <IconButton
-                  size="small"
-                  sx={{ color: "green" }}
-                  onClick={() => {
-                    wsRun(id);
-                  }}
-                >
-                  <PlayArrowIcon sx={{ fontSize: 15 }} />
-                </IconButton>
-              </Tooltip>
-            </Box>
-            {pod.stdout && (
-              <Box overflow="scroll" maxHeight="200px" border="1px">
-                {/* TODO separate stdout and stderr */}
-                <Box>Stdout/Stderr:</Box>
-                <Box whiteSpace="pre-wrap" fontSize="sm">
-                  <Ansi>{pod.stdout}</Ansi>
-                </Box>
-              </Box>
-            )}
-            {pod.running && <CircularProgress />}
-            {pod.result && (
-              <Box
-                sx={{ display: "flex", flexDirection: "column" }}
-                overflow="scroll"
-                maxHeight="200px"
+          <Box sx={{ display: "flex" }}>
+            <Tooltip title="Run (shift-enter)">
+              <IconButton
+                size="small"
+                sx={{ color: "green" }}
+                onClick={() => {
+                  wsRun(id);
+                }}
               >
-                {pod.result.html ? (
-                  <div
-                    dangerouslySetInnerHTML={{ __html: pod.result.html }}
-                  ></div>
-                ) : (
-                  pod.result.text && (
-                    <Box>
-                      <Box sx={{ display: "flex" }} color="gray" mr="1rem">
-                        Result: [{pod.result.count}]:
-                      </Box>
-                      <Box>
-                        <Box component="pre" whiteSpace="pre-wrap">
-                          {pod.result.text}
-                        </Box>
-                      </Box>
-                    </Box>
-                  )
-                )}
-                {pod.result.image && (
-                  <img
-                    src={`data:image/png;base64,${pod.result.image}`}
-                    alt="output"
-                  />
-                )}
+                <PlayArrowIcon sx={{ fontSize: 15 }} />
+              </IconButton>
+            </Tooltip>
+          </Box>
+          {pod.stdout && (
+            <Box overflow="scroll" maxHeight="200px" border="1px">
+              {/* TODO separate stdout and stderr */}
+              <Box>Stdout/Stderr:</Box>
+              <Box whiteSpace="pre-wrap" fontSize="sm">
+                <Ansi>{pod.stdout}</Ansi>
               </Box>
-            )}
-            {pod.error && (
-              <Box overflow="scroll" maxHeight="3xs" border="1px">
-                <Box color="red">Error: {pod.error.evalue}</Box>
-                {pod.error.stacktrace && (
+            </Box>
+          )}
+          {pod.running && <CircularProgress />}
+          {pod.result && (
+            <Box
+              sx={{ display: "flex", flexDirection: "column" }}
+              overflow="scroll"
+              maxHeight="200px"
+            >
+              {pod.result.html ? (
+                <div
+                  dangerouslySetInnerHTML={{ __html: pod.result.html }}
+                ></div>
+              ) : (
+                pod.result.text && (
                   <Box>
-                    <Box>StackTrace</Box>
-                    <Box whiteSpace="pre-wrap" fontSize="sm">
-                      <Ansi>{pod.error.stacktrace.join("\n")}</Ansi>
+                    <Box sx={{ display: "flex" }} color="gray" mr="1rem">
+                      Result: [{pod.result.count}]:
+                    </Box>
+                    <Box>
+                      <Box component="pre" whiteSpace="pre-wrap">
+                        {pod.result.text}
+                      </Box>
                     </Box>
                   </Box>
-                )}
-              </Box>
-            )}
-          </Box>
+                )
+              )}
+              {pod.result.image && (
+                <img
+                  src={`data:image/png;base64,${pod.result.image}`}
+                  alt="output"
+                />
+              )}
+            </Box>
+          )}
+          {pod.error && (
+            <Box overflow="scroll" maxHeight="3xs" border="1px">
+              <Box color="red">Error: {pod.error.evalue}</Box>
+              {pod.error.stacktrace && (
+                <Box>
+                  <Box>StackTrace</Box>
+                  <Box whiteSpace="pre-wrap" fontSize="sm">
+                    <Ansi>{pod.error.stacktrace.join("\n")}</Ansi>
+                  </Box>
+                </Box>
+              )}
+            </Box>
+          )}
         </Box>
+      </Box>
 
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          isConnectable={isConnectable}
-        />
-        {selected && (
-          <Moveable
-            target={target}
-            resizable={true}
-            keepRatio={false}
-            throttleResize={1}
-            renderDirections={["e", "s", "se"]}
-            edge={false}
-            zoom={1}
-            origin={true}
-            padding={{ left: 0, top: 0, right: 0, bottom: 0 }}
-            onResizeStart={(e) => {
-              e.setOrigin(["%", "%"]);
-              e.dragStart && e.dragStart.set(frame.translate);
-            }}
-            onResize={(e) => {
-              const beforeTranslate = e.drag.beforeTranslate;
-              frame.translate = beforeTranslate;
-              e.target.style.width = `${e.width}px`;
-              e.target.style.height = `${e.height}px`;
-              e.target.style.transform = `translate(${beforeTranslate[0]}px, ${beforeTranslate[1]}px)`;
-              onResize({
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        isConnectable={isConnectable}
+      />
+      {selected && (
+        <Moveable
+          target={target}
+          resizable={true}
+          keepRatio={false}
+          throttleResize={1}
+          renderDirections={["e", "s", "se"]}
+          edge={false}
+          zoom={1}
+          origin={true}
+          padding={{ left: 0, top: 0, right: 0, bottom: 0 }}
+          onResizeStart={(e) => {
+            e.setOrigin(["%", "%"]);
+            e.dragStart && e.dragStart.set(frame.translate);
+          }}
+          onResize={(e) => {
+            const beforeTranslate = e.drag.beforeTranslate;
+            frame.translate = beforeTranslate;
+            e.target.style.width = `${e.width}px`;
+            e.target.style.height = `${e.height}px`;
+            e.target.style.transform = `translate(${beforeTranslate[0]}px, ${beforeTranslate[1]}px)`;
+            onResize({
+              width: e.width,
+              height: e.height,
+              offx: beforeTranslate[0],
+              offy: beforeTranslate[1],
+            });
+            updatePod({
+              id,
+              data: {
                 width: e.width,
                 height: e.height,
-                offx: beforeTranslate[0],
-                offy: beforeTranslate[1],
-              });
-              updatePod({
-                id,
-                data: {
-                  width: e.width,
-                  height: e.height,
-                },
-              });
-            }}
-          />
-        )}
-      </Box>
-    )
+              },
+            });
+          }}
+        />
+      )}
+    </Box>
   );
 });
 
