@@ -1,11 +1,17 @@
-import { getAuthHeaders, hashPod, computeNamespace } from "./utils";
+import { gql } from "@apollo/client";
+
+import { hashPod, computeNamespace } from "./utils";
 import { Pod } from "./store";
 
-const graphql_url = "/graphql";
-
-export async function doRemoteLoadRepo({ id }) {
+/**
+ * Load remote repo
+ * @param id repo id
+ * @param client apollo client
+ * @returns a list of pods
+ */
+export async function doRemoteLoadRepo({ id, client }) {
   // load from remote
-  const query = `
+  let query = gql`
     query Repo($id: String!) {
       repo(id: $id) {
         id
@@ -34,29 +40,26 @@ export async function doRemoteLoadRepo({ id }) {
           y
           width
           height
-          parent {id}
-          children {id}
+          parent {
+            id
+          }
+          children {
+            id
+          }
         }
       }
     }
   `;
-  // return res
-  let res = await fetch(graphql_url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...getAuthHeaders(),
+  let res = await client.query({
+    query,
+    variables: {
+      id,
     },
-    body: JSON.stringify({
-      query: query,
-      variables: {
-        id,
-      },
-    }),
+    // CAUTION I must set this because refetechQueries does not work.
+    fetchPolicy: "no-cache",
   });
-  res = await res.json();
-  return res;
+  // We need to do a deep copy here, because apollo client returned immutable objects.
+  return res.data.repo.pods.map((pod) => ({ ...pod }));
 }
 
 export function normalize(pods) {
@@ -207,142 +210,59 @@ function serializePodInput(pod) {
   }))(pod);
 }
 
-export async function doRemoteAddPod({ repoId, parent, index, pod }) {
-  const query = `
+export async function doRemoteAddPod(client, { repoId, parent, index, pod }) {
+  const mutation = gql`
     mutation addPod(
       $repoId: String
       $parent: String
       $index: Int
       $input: PodInput
     ) {
-      addPod(
-        repoId: $repoId
-        parent: $parent
-        index: $index
-        input: $input
-      )
+      addPod(repoId: $repoId, parent: $parent, index: $index, input: $input)
     }
   `;
-  let res = await fetch(graphql_url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...getAuthHeaders(),
+  // FIXME refetch
+  await client.mutate({
+    mutation,
+    variables: {
+      repoId,
+      parent,
+      index,
+      input: serializePodInput(pod),
     },
-    body: JSON.stringify({
-      query: query,
-      variables: {
-        repoId,
-        parent,
-        index,
-        input: serializePodInput(pod),
-      },
-    }),
+    // FIXME the query is not refetched.
+    refetchQueries: ["Repo"],
   });
-  res = await res.json();
-  return res;
+  return true;
 }
 
-export async function doRemoteDeletePod({ id, toDelete }) {
-  const query = `
+export async function doRemoteDeletePod(client, { id, toDelete }) {
+  const mutation = gql`
     mutation deletePod($id: String, $toDelete: [String]) {
       deletePod(id: $id, toDelete: $toDelete)
     }
   `;
-  let res = await fetch(graphql_url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...getAuthHeaders(),
+  await client.mutate({
+    mutation,
+    variables: {
+      id,
+      toDelete,
     },
-    body: JSON.stringify({
-      query: query,
-      variables: {
-        id,
-        toDelete,
-      },
-    }),
   });
-  res = await res.json();
-  return res;
+  return true;
 }
 
-export async function doRemoteUpdatePod({ pod }) {
-  const res = await fetch(graphql_url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...getAuthHeaders(),
+export async function doRemoteUpdatePod(client, { pod }) {
+  await client.mutate({
+    mutation: gql`
+      mutation updatePod($id: String, $input: PodInput) {
+        updatePod(id: $id, input: $input)
+      }
+    `,
+    variables: {
+      id: pod.id,
+      input: serializePodInput(pod),
     },
-    body: JSON.stringify({
-      query: `
-        mutation updatePod($id: String, $input: PodInput) {
-          updatePod(id: $id, input: $input)
-        }
-      `,
-      variables: {
-        id: pod.id,
-        input: serializePodInput(pod),
-      },
-    }),
   });
-  const result = await res.json();
-  if (result["errors"]) {
-    console.log();
-    throw new Error(
-      result["errors"][0].message +
-        "\n" +
-        result["errors"][0].extensions.exception.stacktrace.join("\n")
-    );
-  }
-  return result;
-}
-
-export async function doRemotePastePod({
-  clip,
-  repoId, // FIXME repoId is not used.
-  parent,
-  index,
-  column,
-}) {
-  let res = await fetch(graphql_url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify({
-      // movePod(id: String, parentId: String, index: Int): Boolean
-      query: `
-        mutation PastePods(
-          $repoId: String
-          $ids: [String]
-          $parentId: String
-          $index: Int
-          $column: Int
-        ) {
-          pastePods(
-            repoId: $repoId
-            ids: $ids
-            parentId: $parentId
-            index: $index
-            column: $column
-          )
-        }
-      `,
-      variables: {
-        ids: clip,
-        parentId: parent,
-        index,
-        column,
-        repoId,
-      },
-    }),
-  });
-  res = await res.json();
-  return res;
+  return true;
 }
