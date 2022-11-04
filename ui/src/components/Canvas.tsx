@@ -37,6 +37,7 @@ import { useStore } from "zustand";
 import { RepoContext } from "../lib/store";
 
 import { MyMonaco } from "./MyMonaco";
+import { useApolloClient } from "@apollo/client";
 
 const nanoid = customAlphabet(nolookalikes, 10);
 
@@ -437,6 +438,7 @@ export function Canvas() {
   const reactFlowWrapper = useRef<any>(null);
 
   const addPod = useStore(store, (state) => state.addPod);
+  const apolloClient = useApolloClient();
   const setPodPosition = useStore(store, (state) => state.setPodPosition);
   const setPodParent = useStore(store, (state) => state.setPodParent);
   const deletePod = useStore(store, (state) => state.deletePod);
@@ -481,7 +483,7 @@ export function Canvas() {
       setNodes((nds) => nds.concat(newNode));
 
       // add to pods
-      addPod({
+      addPod(apolloClient, {
         id,
         parent: "ROOT",
         index: 0,
@@ -654,7 +656,7 @@ export function Canvas() {
     (nodes) => {
       // remove from pods
       for (const node of nodes) {
-        deletePod({ id: node.id, toDelete: [] });
+        deletePod(apolloClient, { id: node.id, toDelete: [] });
       }
     },
     [deletePod]

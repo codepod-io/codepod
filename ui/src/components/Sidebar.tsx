@@ -160,6 +160,7 @@ function ApplyAll() {
   const numDirty = useStore(store, selectNumDirty());
   const clearAllResults = useStore(store, (s) => s.clearAllResults);
   const remoteUpdateAllPods = useStore(store, (s) => s.remoteUpdateAllPods);
+  const client = useApolloClient();
   usePrompt(
     `You have unsaved ${numDirty} changes. Are you sure you want to leave?`,
     numDirty > 0
@@ -173,7 +174,7 @@ function ApplyAll() {
     let id = setInterval(() => {
       // websocket resets after 60s of idle by most firewalls
       console.log("periodically saving ..");
-      remoteUpdateAllPods();
+      remoteUpdateAllPods(client);
     }, 1000);
     return () => {
       console.log("removing interval");
@@ -188,7 +189,7 @@ function ApplyAll() {
         size="small"
         disabled={numDirty === 0}
         onClick={() => {
-          remoteUpdateAllPods();
+          remoteUpdateAllPods(client);
         }}
       >
         <CloudUploadIcon />

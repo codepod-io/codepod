@@ -12,6 +12,7 @@ import { createRepoStore, RepoContext } from "../lib/store";
 import useMe from "../lib/me";
 import { Canvas } from "../components/Canvas";
 import { Sidebar } from "../components/Sidebar";
+import { useApolloClient } from "@apollo/client";
 
 function RepoWrapper({ children }) {
   // this component is used to provide foldable sidebar
@@ -83,6 +84,7 @@ function RepoImpl() {
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const resetState = useStore(store, (state) => state.resetState);
   const setRepo = useStore(store, (state) => state.setRepo);
+  const client = useApolloClient();
   const loadRepo = useStore(store, (state) => state.loadRepo);
   const setSessionId = useStore(store, (state) => state.setSessionId);
   const repoLoaded = useStore(store, (state) => state.repoLoaded);
@@ -97,8 +99,8 @@ function RepoImpl() {
     resetState();
     setRepo(id!);
     // load the repo. It is actually not a queue, just an async thunk
-    loadRepo(id!);
-  }, [id, loadRepo, resetState, setRepo]);
+    loadRepo(client, id!);
+  }, [client, id, loadRepo, resetState, setRepo]);
 
   // FIXME Removing queueL. This will cause Repo to be re-rendered a lot of
   // times, particularly the delete pod action would cause syncstatus and repo

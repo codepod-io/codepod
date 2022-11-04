@@ -13,6 +13,7 @@ import {
 } from "./fetch";
 
 import { createRuntimeSlice, RuntimeSlice } from "./runtime";
+import { ApolloClient } from "@apollo/client";
 
 export const RepoContext =
   createContext<StoreApi<RepoSlice & RuntimeSlice> | null>(null);
@@ -112,7 +113,7 @@ export interface RepoSlice {
   // sessionId?: string;
   resetState: () => void;
   setRepo: (repoId: string) => void;
-  loadRepo: (repoId: string) => void;
+  loadRepo: (client: ApolloClient<object>, repoId: string) => void;
   setSessionId: (sessionId: string) => void;
   addError: (error: { type: string; msg: string }) => void;
   repoLoaded: boolean;
@@ -126,25 +127,19 @@ export interface RepoSlice {
   socket: WebSocket | null;
   error: { type: string; msg: string } | null;
   updatePod: ({ id, data }: { id: string; data: Partial<Pod> }) => void;
-  remoteUpdateAllPods: () => void;
+  remoteUpdateAllPods: (client) => void;
   clearError: () => void;
   foldAll: () => void;
   unfoldAll: () => void;
   setPodContent: ({ id, content }: { id: string; content: string }) => void;
-  addPod: ({
-    parent,
-    index,
-    anchor,
-    shift,
-    id,
-    type,
-    lang,
-    x,
-    y,
-    width,
-    height,
-  }: any) => void;
-  deletePod: ({ id, toDelete }: { id: string; toDelete: any[] }) => void;
+  addPod: (
+    client: ApolloClient<object>,
+    { parent, index, anchor, shift, id, type, lang, x, y, width, height }: any
+  ) => void;
+  deletePod: (
+    client,
+    { id, toDelete }: { id: string; toDelete: any[] }
+  ) => void;
   setPodResult: ({
     id,
     content,
@@ -173,19 +168,10 @@ const createRepoSlice: StateCreator<
   setSessionId: (id) => set({ sessionId: id }),
   addError: (error) => set({ error }),
   clearError: () => set({ error: null }),
-  addPod: async ({
-    parent,
-    index,
-    anchor,
-    shift,
-    id,
-    type,
-    lang,
-    x,
-    y,
-    width,
-    height,
-  }) => {
+  addPod: async (
+    client,
+    { parent, index, anchor, shift, id, type, lang, x, y, width, height }
+  ) => {
     if (index === undefined) {
       index = get().pods[parent].children.findIndex(({ id }) => id === anchor);
       if (index === -1) throw new Error("Cannot find anchoar pod:", anchor);
@@ -248,14 +234,17 @@ const createRepoSlice: StateCreator<
       })
     );
     // 2. do remote update
-    await doRemoteAddPod({
+    await doRemoteAddPod(client, {
       repoId: get().repoId,
       parent,
       index,
       pod,
     });
   },
-  deletePod: async ({ id, toDelete }: { id: string; toDelete: string[] }) => {
+  deletePod: async (
+    client,
+    { id, toDelete }: { id: string; toDelete: string[] }
+  ) => {
     const pods = get().pods;
     // get all ids to delete. Gathering them here is easier than on the server
     const dfs = (id) =>
@@ -275,7 +264,7 @@ const createRepoSlice: StateCreator<
         });
       })
     );
-    await doRemoteDeletePod({ id, toDelete });
+    await doRemoteDeletePod(client, { id, toDelete });
   },
   setPodType: ({ id, type }) =>
     set(
@@ -585,15 +574,12 @@ const createRepoSlice: StateCreator<
         state.pods[id].dirty = true;
       })
     ),
-  loadRepo: async (id) => {
-    const response = (await doRemoteLoadRepo({ id })) as any;
-    if (response.errors) {
-      throw Error(response.errors[0].message);
-    }
+  loadRepo: async (client, id) => {
+    const pods = await doRemoteLoadRepo({ id, client });
     set(
       produce((state) => {
         // TODO the children ordered by index
-        state.pods = normalize(response.data.repo.pods);
+        state.pods = normalize(pods);
         // fill in the parent/children relationships
         for (const id in state.pods) {
           let pod = state.pods[id];
@@ -606,14 +592,14 @@ const createRepoSlice: StateCreator<
       })
     );
   },
-  remoteUpdateAllPods: async () => {
+  remoteUpdateAllPods: async (client) => {
     async function helper(id) {
       let pod = get().pods[id];
       pod.children?.map(({ id }) => helper(id));
       if (id !== "ROOT") {
         // console.log("hashPod at remoteUpdateAllPods");
         if (pod.remoteHash !== hashPod(pod)) {
-          await doRemoteUpdatePod({ pod });
+          await doRemoteUpdatePod(client, { pod });
           set(
             produce((state) => {
               let pod = state.pods[id];
