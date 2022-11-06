@@ -20,15 +20,15 @@ Make sure you have the runtime containers images pulled.
 - TODO use a more generic image tag here, e.g. latest
 
 ```
-docker pull lihebi/codepod-kernel-python:v0.4.3-alpha.3
-docker pull lihebi/codepod-runtime:v0.4.3-alpha.3
+docker pull lihebi/codepod-kernel-python:v0.4.3-alpha.4
+docker pull lihebi/codepod-runtime:v0.4.3-alpha.4
 ```
 
 Or you can build the images:
 
 ```
-docker build -t lihebi/codepod-kernel-python:v0.4.3-alpha.3 ./runtime/kernel
-docker build -t lihebi/codepod-runtime:v0.4.3-alpha.3 ./runtime
+docker build -t lihebi/codepod-kernel-python:v0.4.3-alpha.4 ./runtime/kernel
+docker build -t lihebi/codepod-runtime:v0.4.3-alpha.4 ./runtime
 ```
 
 ## Usage

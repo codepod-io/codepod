@@ -24,8 +24,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       KERNEL_NETWORK: "codepod"
       PROXY_API_URL: "http://proxy:4011/graphql"
-      ZMQ_KERNEL_IMAGE: "lihebi/codepod-kernel-python:v0.4.3-alpha.3"
-      WS_RUNTIME_IMAGE: "lihebi/codepod-runtime:v0.4.3-alpha.3"
+      ZMQ_KERNEL_IMAGE: "lihebi/codepod-kernel-python:v0.4.3-alpha.4"
+      WS_RUNTIME_IMAGE: "lihebi/codepod-runtime:v0.4.3-alpha.4"
 
   ui:
     build: ../../ui

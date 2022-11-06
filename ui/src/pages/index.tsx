@@ -13,12 +13,6 @@ export default function Home() {
       <Box my={20}>
         <Box sx={{ textAlign: "center", fontSize: 50 }}>
           Coding on a canvas, organized.
-          <Stack sx={{ width: "100%" }} spacing={2}>
-            <Alert severity="warning">
-              CodePod v0.1 is on internal testing. The data (user info, repos)
-              will likely be deleted.
-            </Alert>
-          </Stack>
         </Box>
       </Box>
     </Box>

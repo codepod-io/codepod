@@ -1,0 +1,85 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: postgres-longhorn-pv-claim
+  labels:
+    app: postgres
+spec:
+  storageClassName: longhorn
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database
+  labels:
+    app: postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:10.1
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - containerPort: 5432
+          env:
+            # FIXME the valueFromSecrete is not working, and the PVC will not
+            # update unless delete the /mnt/data on agent node.
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: POSTGRES_USER
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: POSTGRES_PASSWORD
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: POSTGRES_DB
+          volumeMounts:
+            - mountPath: /var/lib/postgresql
+              name: postgredb
+              readOnly: false
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.2"
+      volumes:
+        - name: postgredb
+          persistentVolumeClaim:
+            claimName: postgres-longhorn-pv-claim
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+  selector:
+    app: postgres

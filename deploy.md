@@ -3,21 +3,21 @@
 Build the docker images:
 
 ```
-docker build -t lihebi/codepod-ui:v0.4.3-alpha.3 ./ui
-docker build -t lihebi/codepod-api:v0.4.3-alpha.3 ./api
-docker build -t lihebi/codepod-proxy:v0.4.3-alpha.3 ./proxy
-docker build -t lihebi/codepod-kernel-python:v0.4.3-alpha.3 ./runtime/kernel
-docker build -t lihebi/codepod-runtime:v0.4.3-alpha.3 ./runtime
+docker build -t lihebi/codepod-ui:v0.4.3-alpha.4 ./ui
+docker build -t lihebi/codepod-api:v0.4.3-alpha.4 ./api
+docker build -t lihebi/codepod-proxy:v0.4.3-alpha.4 ./proxy
+docker build -t lihebi/codepod-kernel-python:v0.4.3-alpha.4 ./runtime/kernel
+docker build -t lihebi/codepod-runtime:v0.4.3-alpha.4 ./runtime
 ```
 
 Push to registry:
 
 ```
-docker push lihebi/codepod-ui:v0.4.3-alpha.3
-docker push lihebi/codepod-api:v0.4.3-alpha.3
-docker push lihebi/codepod-proxy:v0.4.3-alpha.3
-docker push lihebi/codepod-kernel-python:v0.4.3-alpha.3
-docker push lihebi/codepod-runtime:v0.4.3-alpha.3
+docker push lihebi/codepod-ui:v0.4.3-alpha.4
+docker push lihebi/codepod-api:v0.4.3-alpha.4
+docker push lihebi/codepod-proxy:v0.4.3-alpha.4
+docker push lihebi/codepod-kernel-python:v0.4.3-alpha.4
+docker push lihebi/codepod-runtime:v0.4.3-alpha.4
 ```
 
 Create a cloud VM with docker support. Add DNS from domain name to the cloud
@@ -61,8 +61,8 @@ npx prisma migrate dev --name init
 Pull the kernel image:
 
 ```
-docker pull lihebi/codepod-kernel-python:v0.4.3-alpha.3
-docker tag lihebi/codepod-kernel-python:v0.4.3-alpha.3 codepod-kernel-python
+docker pull lihebi/codepod-kernel-python:v0.4.3-alpha.4
+docker tag lihebi/codepod-kernel-python:v0.4.3-alpha.4 codepod-kernel-python
 ```
 
 Now go to

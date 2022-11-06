@@ -1,6 +1,6 @@
 {
     "name": "codepod",
-    "version": "0.1.2",
+    "version": "v0.4.3-alpha.4",
     "private": true,
     "main": "./public/electron.js",
     "homepage": "./",
