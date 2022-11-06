@@ -1,4 +1,5 @@
 import * as k8s from "@kubernetes/client-node";
+import * as fs from "fs";
 
 import { ApolloClient, InMemoryCache, gql } from "@apollo/client/core";
 
@@ -117,15 +118,6 @@ function getServiceSpec(name) {
   };
 }
 
-async function k8s_test() {
-  try {
-    let res: any = await k8sApi.listNamespacedPod("codepod-dev");
-    console.log(res.body);
-  } catch (e: any) {
-    console.log("ERROR", e.body.message);
-  }
-}
-
 export async function spawnRuntime(_, { sessionId }) {
   let url = `/${sessionId}`;
   sessionId = sessionId.replaceAll("_", "-").toLowerCase();
@@ -136,9 +128,14 @@ export async function spawnRuntime(_, { sessionId }) {
   // check if exist?
   // 1. create a jupyter kernel pod
   // 2. create a ws pod
-  // await k8s_test();
   console.log("Creating namespaced pod ..");
-  let ns = "codepod-runtime";
+
+  let ns =
+    process.env.RUNTIME_NS ||
+    fs
+      .readFileSync("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+      .toString();
+  console.log("Using k8s ns:", ns);
   try {
     // TODO if exists, skip
     // await k8sApi.createNamespacedPod(ns, getPodSpec(k8s_name));
@@ -254,7 +251,12 @@ export async function killRuntime(_, { sessionId }) {
   // sessionId = "k8s-user-UGY6YAk7TM";
   let k8s_name = `k8s-${sessionId}`;
   console.log("killRuntime", url, k8s_name);
-  let ns = "codepod-runtime";
+  let ns =
+    process.env.RUNTIME_NS ||
+    fs
+      .readFileSync("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+      .toString();
+  console.log("Using k8s ns:", ns);
   console.log("Killing pod ..");
   // await k8sApi.deleteNamespacedPod(getPodSpec(k8s_name).metadata.name, ns);
   await k8sAppsApi.deleteNamespacedDeployment(

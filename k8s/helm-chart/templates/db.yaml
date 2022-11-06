@@ -41,23 +41,20 @@ spec:
             # FIXME the valueFromSecrete is not working, and the PVC will not
             # update unless delete the /mnt/data on agent node.
             - name: POSTGRES_USER
-              value: YOUR_USERNAME
-              # valueFrom:
-              #   secretKeyRef:
-              #     name: mysecret
-              #     key: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: POSTGRES_USER
             - name: POSTGRES_PASSWORD
-              value: YOUR_PASSWD
-              # valueFrom:
-              #   secretKeyRef:
-              #     name: mysecret
-              #     key: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: POSTGRES_PASSWORD
             - name: POSTGRES_DB
-              value: YOUR_DBNAME
-              # valueFrom:
-              #   secretKeyRef:
-              #     name: mysecret
-              #     key: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: mysecret
+                  key: POSTGRES_DB
           volumeMounts:
             - mountPath: /var/lib/postgresql
               name: postgredb

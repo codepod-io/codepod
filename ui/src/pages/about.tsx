@@ -7,7 +7,7 @@ export default function About() {
         textAlign: "center",
       }}
     >
-      <Box>About page</Box>
+      <Box>CodePod version v0.4.3-alpha.4</Box>
     </Box>
   );
 }

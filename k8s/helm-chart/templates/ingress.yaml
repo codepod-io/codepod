@@ -16,17 +16,17 @@ metadata:
   name: codepod-ingress
 spec:
   routes:
-  - match: Host(`app.codepod.io`) && PathPrefix(`/`)
+  - match: "Host(`{{ .Values.hostname }}`) && PathPrefix(`/`)"
     kind: Rule
     services:
       - name: codepod-ui-service
         port: 80
-  - match: Host(`app.codepod.io`) && PathPrefix(`/graphql`)
+  - match: "Host(`{{ .Values.hostname }}`) && PathPrefix(`/graphql`)"
     kind: Rule
     services:
       - name: codepod-api-service
         port: 4000
-  - match: Host(`app.codepod.io`) && PathPrefix(`/runtime`)
+  - match: "Host(`{{ .Values.hostname }}`) && PathPrefix(`/runtime`)"
     kind: Rule
     middlewares:
       - name: stripprefix
