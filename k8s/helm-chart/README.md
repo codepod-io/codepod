@@ -2,7 +2,16 @@
 
 ## Prerequist
 
-Also need the secrets:
+### Create namespaces
+
+We need to create one more namespace manually:
+
+    kubectl create ns codepod-staging
+    kubectl create ns codepod-staging-runtime
+
+### Apply the secrets
+
+Need the secrets:
 
 ```
 apiVersion: v1
@@ -30,11 +39,24 @@ Need to manually apply these secrets:
 kubectl apply -f secrets.yaml
 ```
 
+### Install longhorn
+
+Longhorn is needed to dynamically allocate volumes for DB.
+
+### Get SSL certificate (required for prod)
+
+See `../cert-manager`. Basically:
+
+1. install cert-manager
+2. save cloudflare API token to secrets (to cert-manager ns)
+3. define issuers (clusterwise)
+4. retrieve certs (into codepod-prod namespace)
+
+Ref: https://docs.technotim.live/posts/kube-traefik-cert-manager-le/#cert-manager
+
+End result: the app-codepod-io-tls certificate.
+
 ## Install
-
-We need to create one more namespace manually:
-
-    kubectl create ns codepod-staging-runtime
 
 Install:
 
