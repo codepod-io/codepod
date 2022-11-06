@@ -24,6 +24,12 @@ Note: the secrets must be base64 encoded with:
 Need the -n there, otherwise there will be a space when this secret is used in
 env variables. Ref: https://github.com/kubernetes/kubernetes/issues/28086
 
+Need to manually apply these secrets:
+
+```
+kubectl apply -f secrets.yaml
+```
+
 ## Install
 
 We need to create one more namespace manually:
