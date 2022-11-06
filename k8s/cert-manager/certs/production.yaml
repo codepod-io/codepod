@@ -1,0 +1,13 @@
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: app-codepod-io
+spec:
+  secretName: app-codepod-io-tls
+  issuerRef:
+    name: letsencrypt-production
+    kind: ClusterIssuer
+  commonName: "app.codepod.io"
+  dnsNames:
+  - "app.codepod.io"
