@@ -571,8 +571,10 @@ export const createRuntimeSlice: StateCreator<
     console.log("WS_CONNECT");
     // FIXME socket should be disconnected when leaving the repo page.
     if (get().socket !== null) {
-      console.log("already connected, skip");
-      return;
+      console.log("already connected, disconnecting first..");
+      get().wsDisconnect();
+      // Sleep 100ms for the socket to be disconnected.
+      await new Promise((r) => setTimeout(r, 100));
     }
     // reset kernel status
     set({
