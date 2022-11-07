@@ -217,7 +217,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
       >
         <MyMonaco
           value={pod.content || ""}
-          // pod={pod}
+          id={pod.id}
           onChange={(value) => {
             setPodContent({ id: pod.id, content: value });
           }}

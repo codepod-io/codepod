@@ -12,8 +12,16 @@ import {
   doRemoteDeletePod,
 } from "./fetch";
 
+import {Doc} from 'yjs';
+import { WebsocketProvider } from 'y-websocket';
 import { createRuntimeSlice, RuntimeSlice } from "./runtime";
 import { ApolloClient } from "@apollo/client";
+
+export const ydoc: Doc = new Doc();
+
+// Tofix: can't connect to http://codepod.127.0.0.1.sslip.io/socket/, but it works well on webbrowser or curl
+// const serverURL = "codepod.127.0.0.1.sslip.io/socket/"
+const serverURL = "ws://demos.yjs.dev";
 
 export const RepoContext =
   createContext<StoreApi<RepoSlice & RuntimeSlice> | null>(null);
@@ -126,6 +134,7 @@ export interface RepoSlice {
   // queueProcessing: boolean;
   socket: WebSocket | null;
   error: { type: string; msg: string } | null;
+  provider: WebsocketProvider | null;
   updatePod: ({ id, data }: { id: string; data: Partial<Pod> }) => void;
   remoteUpdateAllPods: (client) => void;
   clearError: () => void;
@@ -164,7 +173,7 @@ const createRepoSlice: StateCreator<
   ...initialState,
   // FIXME should reset to inital state, not completely empty.
   resetState: () => set(initialState),
-  setRepo: (repoId: string) => set({ repoId }),
+  setRepo: (repoId: string) => set({ repoId, provider: new WebsocketProvider(serverURL, repoId, ydoc) }),
   setSessionId: (id) => set({ sessionId: id }),
   addError: (error) => set({ error }),
   clearError: () => set({ error: null }),

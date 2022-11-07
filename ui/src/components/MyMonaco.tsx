@@ -1,7 +1,11 @@
 import { Position } from "monaco-editor";
-import { useState } from "react";
+import { useState, useContext } from "react";
 import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
 import { monaco } from "react-monaco-editor";
+import { useStore } from "zustand";
+import { RepoContext, ydoc } from "../lib/store";
+import { MonacoBinding } from 'y-monaco';
+
 
 monaco.languages.setLanguageConfiguration("julia", {
   indentationRules: {
@@ -298,6 +302,7 @@ async function updateGitGutter(editor) {
 export function MyMonaco({
   lang = "javascript",
   value = "",
+  id = "0",
   gitvalue = null,
   onChange = (value) => {},
   onRun = () => {},
@@ -313,11 +318,54 @@ export function MyMonaco({
     editor.staged = gitvalue;
     updateGitGutter(editor);
   }
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const provider = useStore(store, (state) => state.provider);
+  const awareness = provider.awareness;
+
+  function onEditorDidMount(editor, monaco){
+    // console.log("did mount");
+    setEditor(editor);
+    // console.log(Math.min(1000, editor.getContentHeight()));
+    const updateHeight = () => {
+      // max height: 400
+      const contentHeight = Math.max(
+        100,
+        editor.getContentHeight()
+        // Math.min(400, editor.getContentHeight())
+      );
+      // console.log("target height:", contentHeight);
+      const editorElement = editor.getDomNode();
+      if (!editorElement) {
+        return;
+      }
+      editorElement.style.height = `${contentHeight}px`;
+      // width: 800
+      // editor.layout({ width: 800, height: contentHeight });
+      editor.layout();
+    };
+    editor.onDidContentSizeChange(updateHeight);
+    // FIXME clean up?
+    editor.addCommand(
+      monaco.KeyMod.Shift | monaco.KeyCode.Enter,
+      function () {
+        onRun();
+      }
+    );
+    editor.onDidChangeModelContent(async (e) => {
+      // content is value?
+      updateGitGutter(editor);
+    });
+
+    // bind it to the ytext with pod id
+    const ytext = ydoc.getText("monaco-"+id);
+    const monacoBinding = new MonacoBinding(ytext, (editor.getModel()), new Set([editor]), awareness);
+  }
+
   return (
     <MonacoEditor
       language={lang}
       // theme="vs-dark"
-      value={value}
       options={{
         selectOnLineNumbers: true,
         scrollBeyondLastLine: false,
@@ -340,40 +388,7 @@ export function MyMonaco({
         },
       }}
       onChange={onChange}
-      editorDidMount={(editor, monaco) => {
-        // console.log("did mount");
-        setEditor(editor);
-        // console.log(Math.min(1000, editor.getContentHeight()));
-        const updateHeight = () => {
-          // max height: 400
-          const contentHeight = Math.max(
-            100,
-            editor.getContentHeight()
-            // Math.min(400, editor.getContentHeight())
-          );
-          // console.log("target height:", contentHeight);
-          const editorElement = editor.getDomNode();
-          if (!editorElement) {
-            return;
-          }
-          editorElement.style.height = `${contentHeight}px`;
-          // width: 800
-          // editor.layout({ width: 800, height: contentHeight });
-          editor.layout();
-        };
-        editor.onDidContentSizeChange(updateHeight);
-        // FIXME clean up?
-        editor.addCommand(
-          monaco.KeyMod.Shift | monaco.KeyCode.Enter,
-          function () {
-            onRun();
-          }
-        );
-        editor.onDidChangeModelContent(async (e) => {
-          // content is value?
-          updateGitGutter(editor);
-        });
-      }}
+      editorDidMount={onEditorDidMount}
     />
   );
 }
