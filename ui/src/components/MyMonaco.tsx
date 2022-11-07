@@ -360,6 +360,14 @@ export function MyMonaco({
     // bind it to the ytext with pod id
     const ytext = ydoc.getText("monaco-"+id);
     const monacoBinding = new MonacoBinding(ytext, (editor.getModel()), new Set([editor]), awareness);
+
+    provider.once("synced", () => {
+      if(!ytext._start)
+      {
+        console.log("setting value");
+        ytext.insert(0, value);
+      }
+    });
   }
 
   return (

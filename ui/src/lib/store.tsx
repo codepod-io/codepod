@@ -12,15 +12,16 @@ import {
   doRemoteDeletePod,
 } from "./fetch";
 
-import {Doc} from 'yjs';
+import { Doc } from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import { createRuntimeSlice, RuntimeSlice } from "./runtime";
 import { ApolloClient } from "@apollo/client";
+import { addAwarenessStyle } from "./styles";
 
 export const ydoc: Doc = new Doc();
 
 // Tofix: can't connect to http://codepod.127.0.0.1.sslip.io/socket/, but it works well on webbrowser or curl
-// const serverURL = "codepod.127.0.0.1.sslip.io/socket/"
+// const serverURL = "ws://codepod.127.0.0.1.sslip.io/socket/"
 const serverURL = "ws://demos.yjs.dev";
 
 export const RepoContext =
@@ -67,6 +68,7 @@ const initialState = {
   showdiff: false,
   sessionId: null,
   runtimeConnected: false,
+  user: {},
   kernels: {
     python: {
       status: null,
@@ -75,6 +77,8 @@ const initialState = {
   queueProcessing: false,
   socket: null,
   socketIntervalId: null,
+  //TODO: all presence information are now saved in clients map for future usage. create a modern UI to show those information from clients (e.g., online users)
+  clients: new Map(),
 };
 
 export type Pod = {
@@ -119,6 +123,7 @@ export interface RepoSlice {
   // runtime: string;
   repoId: string | null;
   // sessionId?: string;
+
   resetState: () => void;
   setRepo: (repoId: string) => void;
   loadRepo: (client: ApolloClient<object>, repoId: string) => void;
@@ -135,6 +140,8 @@ export interface RepoSlice {
   socket: WebSocket | null;
   error: { type: string; msg: string } | null;
   provider: WebsocketProvider | null;
+  clients: Map<string, any>;
+  user: any;
   updatePod: ({ id, data }: { id: string; data: Partial<Pod> }) => void;
   remoteUpdateAllPods: (client) => void;
   clearError: () => void;
@@ -630,6 +637,27 @@ const createRepoSlice: StateCreator<
     // state.pods[action.meta.arg.id].isSyncing = false;
     // state.pods[action.meta.arg.id].dirty = false;
   },
+  addClient: (clientID, name, color) => set(state => {
+    if (!state.clients.has(clientID)) {
+      addAwarenessStyle(clientID, color, name);
+      return { clients: new Map(state.clients).set(clientID, { name: name, color: color }) }
+    }
+    console.log(state.clients);
+    return { clients: state.clients }
+  }),
+  deleteClient: (clientID) => set(state => {
+    const clients = new Map(state.clients);
+    clients.delete(clientID);
+    return { clients: clients }
+  }),
+  setUser: (user) => set((state) => {
+    const color = '#' + Math.floor(Math.random() * 16777215).toString(16);
+    if (state.provider) {
+      const awareness = state.provider.awareness;
+      awareness.setLocalStateField('user', {name: user.firstname, color });
+    }
+    return { user: { ...user, color } };
+  }),
 });
 
 export const createRepoStore = () =>
