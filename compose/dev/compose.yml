@@ -42,6 +42,9 @@ services:
   ui:
     image: node:18
     working_dir: /app
+    ports:
+      # For react hot-reloading in development.
+      - 3000:3000
     volumes:
       - ../../ui:/app
       - ui-node-modules:/app/node_modules

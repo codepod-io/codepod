@@ -59,7 +59,8 @@ export async function doRemoteLoadRepo({ id, client }) {
     fetchPolicy: "no-cache",
   });
   // We need to do a deep copy here, because apollo client returned immutable objects.
-  return res.data.repo.pods.map((pod) => ({ ...pod }));
+  let pods = res.data.repo.pods.map((pod) => ({ ...pod }));
+  return { pods, name: res.data.repo.name };
 }
 
 export function normalize(pods) {
