@@ -166,9 +166,6 @@ function ApplyAll() {
     numDirty > 0
   );
 
-  let [intervalId, setIntervalId] =
-    useState<ReturnType<typeof setInterval> | null>(null);
-
   useEffect(() => {
     console.log("Setting interval");
     let id = setInterval(() => {

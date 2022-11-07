@@ -3,6 +3,7 @@ import Divider from "@mui/material/Divider";
 import Typography from "@mui/material/Typography";
 
 import Paper from "@mui/material/Paper";
+import { Container, Stack } from "@mui/material";
 
 import useMe from "../lib/me";
 
@@ -21,28 +22,23 @@ export default function Profile() {
   }
 
   return (
-    <Box
-      sx={{
-        textAlign: "center",
-        maxWidth: "80%",
-      }}
-    >
+    <Container maxWidth="lg" sx={{ mt: 2 }}>
       {loading ? (
         "Loading"
       ) : (
         <Box>
-          <Paper elevation={3}>
-            <Box sx={{ display: "flex" }}>
-              <Box sx={{ flexGrow: 1 }}>
-                <Typography variant="h3">Profile page</Typography>
-                Hello {me.firstname}
-                <Box component="pre">{JSON.stringify(me)}</Box>
+          <Paper elevation={3} sx={{ p: 2 }}>
+            <Stack>
+              <Typography variant="h4">User profile</Typography>
+              <Box>
+                Name {me.firstname} {me.lastname}
               </Box>
-            </Box>
+              <Box> Email: {me.email}</Box>
+            </Stack>
           </Paper>
           <Divider />
         </Box>
       )}
-    </Box>
+    </Container>
   );
 }

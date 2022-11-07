@@ -131,7 +131,8 @@ function Repos() {
   return (
     <Box sx={{ pt: 4 }}>
       <Box>
-        Hello, {me?.firstname}! Your ID: {me?.id}
+        Hello, {me?.firstname}! Please open or create a repository to get
+        started.
       </Box>
       <CreateRepoForm />
       <Typography variant="h2" gutterBottom component="div">

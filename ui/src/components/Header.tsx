@@ -17,7 +17,7 @@ import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
 import Tooltip from "@mui/material/Tooltip";
-
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import AppBar from "@mui/material/AppBar";
 
 import { useAuth } from "../lib/auth";
@@ -133,38 +133,27 @@ export function Header() {
           </Typography>
 
           {/* The navigation on desktop */}
-          <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
+          <Box
+            sx={{
+              flexGrow: 1,
+              display: { xs: "none", md: "flex" },
+              alignItems: "center",
+            }}
+          >
             <Link
-              to="/repos"
-              component={ReactLink}
+              href="https://codepod.io"
+              target="_blank"
               underline="none"
-              sx={{ mx: 2 }}
+              sx={{
+                mx: 2,
+                display: "flex",
+              }}
+              alignItems="center"
+              // alignContent="center"
+              // textAlign={"center"}
             >
-              Repos
-            </Link>
-            <Link
-              to="/test"
-              component={ReactLink}
-              underline="none"
-              sx={{ mx: 2 }}
-            >
-              Test
-            </Link>
-            <Link
-              to="/docs"
-              component={ReactLink}
-              underline="none"
-              sx={{ mx: 2 }}
-            >
-              Docs
-            </Link>
-            <Link
-              to="/about"
-              component={ReactLink}
-              underline="none"
-              sx={{ mx: 2 }}
-            >
-              About
+              {/* <span>Docs</span> */}
+              Docs <OpenInNewIcon fontSize="small" sx={{ ml: "1px" }} />
             </Link>
           </Box>
 
@@ -176,7 +165,11 @@ export function Header() {
                 alignItems: "center",
               }}
             >
-              <Box>{me?.firstname}</Box>
+              <Box sx={{ mr: 2 }}>
+                <Link component={ReactLink} to="/profile" underline="none">
+                  {me?.firstname}
+                </Link>
+              </Box>
               <Button
                 onClick={() => {
                   signOut();
@@ -212,7 +205,7 @@ export function Footer() {
       sx={{
         display: "flex",
         mb: 8,
-        p: 8,
+        px: 8,
         alignItems: "center",
         justifyContent: "space-between",
         flexWrap: "wrap",
