@@ -361,10 +361,11 @@ export function MyMonaco({
     const ytext = ydoc.getText("monaco-"+id);
     const monacoBinding = new MonacoBinding(ytext, (editor.getModel()), new Set([editor]), awareness);
 
+    // FIXME: make sure the provider.wsconnected is true or it won't display any content. 
+
     provider.once("synced", () => {
       if(!ytext._start)
       {
-        console.log("setting value");
         ytext.insert(0, value);
       }
     });

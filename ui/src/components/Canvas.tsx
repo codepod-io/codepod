@@ -35,9 +35,11 @@ import { nolookalikes } from "nanoid-dictionary";
 import { useStore } from "zustand";
 
 import { RepoContext } from "../lib/store";
+import {nodesMap, useNodesStateSynced} from '../lib/nodes';
 
 import { MyMonaco } from "./MyMonaco";
 import { useApolloClient } from "@apollo/client";
+
 
 const nanoid = customAlphabet(nolookalikes, 10);
 
@@ -45,10 +47,10 @@ interface Props {
   data: any;
   id: string;
   isConnectable: boolean;
-  selected: boolean;
+  // selected: boolean;
 }
 
-const ScopeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
+const ScopeNode = memo<Props>(({ data, id, isConnectable}) => {
   // add resize to the node
   const ref = useRef(null);
   const store = useContext(RepoContext);
@@ -58,23 +60,21 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
   const [frame] = React.useState({
     translate: [0, 0],
   });
+  const setSelected = useStore(store, (state) => state.setSelected);
+  const selected = useStore(store, (state) => state.selected);
   const { setNodes } = useReactFlow();
 
   const onResize = useCallback(
     ({ width, height, offx, offy }) => {
-      setNodes((nds) => {
-        return nds.map((node) => {
-          if (node.id === id) {
-            // CAUTION I have to return a new object here.
-            node.style = { ...node.style, width, height };
-            node.position.x += offx;
-            node.position.y += offy;
-          }
-          return node;
-        });
-      });
+      const node = nodesMap.get(id);
+      if(node) {
+        node.style = { ...node.style, width, height };
+        node.position.x += offx;
+        node.position.y += offy;
+        nodesMap.set(id, node);
+      }
     },
-    [setNodes]
+    []
   );
 
   React.useEffect(() => {
@@ -101,7 +101,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
         position={Position.Bottom}
         isConnectable={isConnectable}
       />
-      {selected && (
+      {selected===id && (
         <Moveable
           target={target}
           resizable={true}
@@ -142,7 +142,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
   );
 });
 
-const CodeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
+const CodeNode = memo<Props>(({ data, id, isConnectable}) => {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const pod = useStore(store, (state) => state.pods[id]);
@@ -156,22 +156,21 @@ const CodeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
     translate: [0, 0],
   });
   const { setNodes } = useReactFlow();
+  const selected = useStore(store, (state) => state.selected);
+  const setSelected = useStore(store, (state) => state.setSelected);
+
 
   const onResize = useCallback(
     ({ width, height, offx, offy }) => {
-      setNodes((nds) => {
-        return nds.map((node) => {
-          if (node.id === id) {
-            // CAUTION I have to return a new object here.
-            node.style = { ...node.style, width, height };
-            node.position.x += offx;
-            node.position.y += offy;
-          }
-          return node;
-        });
-      });
+      const node = nodesMap.get(id);
+      if(node) {
+        node.style = { ...node.style, width, height };
+        node.position.x += offx;
+        node.position.y += offy;
+        nodesMap.set(id, node);
+      }
     },
-    [setNodes]
+    []
   );
 
   React.useEffect(() => {
@@ -201,6 +200,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
         onClick={(e) => {
           // If the node is selected (for resize), the cursor is not shown. So
           // we need to deselect it when we re-focus on the editor.
+          setSelected(null);
           setNodes((nds) =>
             applyNodeChanges(
               [
@@ -315,7 +315,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
         position={Position.Bottom}
         isConnectable={isConnectable}
       />
-      {selected && (
+      {(selected===id) && (
         <Moveable
           target={target}
           resizable={true}
@@ -369,7 +369,7 @@ const level2color = {
 };
 
 export function Canvas() {
-  const [nodes, setNodes] = useState<any[]>([]);
+  const [nodes, setNodes, onNodesChange] = useNodesStateSynced([]);
   const [edges, setEdges] = useState<any[]>([]);
 
   const store = useContext(RepoContext);
@@ -415,16 +415,23 @@ export function Canvas() {
   );
   useEffect(() => {
     let nodes = getRealNodes("ROOT", -1);
-    setNodes(nodes);
+    // setNodes(nodes);
+    // check if the nodesMap on the websocket has already been initialized with node info
+    nodes.forEach((node) => {
+      if (!nodesMap.has(node.id)) {
+        nodesMap.set(node.id, node);
+      }});
+    setNodes(Array.from(nodesMap.values()));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onNodesChange = useCallback(
-    (changes) => {
-      setNodes((nds) => applyNodeChanges(changes, nds));
-    },
-    [setNodes]
-  );
+  // const onNodesChange = useCallback(
+  //   (changes) => {
+  //     setNodes((nds) => applyNodeChanges(changes, nds));
+  //   },
+  //   [setNodes]
+  // );
+
   const onEdgesChange = useCallback(
     (changes) => setEdges((eds) => applyEdgeChanges(changes, eds)),
     [setEdges]
@@ -442,6 +449,7 @@ export function Canvas() {
   const setPodPosition = useStore(store, (state) => state.setPodPosition);
   const setPodParent = useStore(store, (state) => state.setPodParent);
   const deletePod = useStore(store, (state) => state.deletePod);
+  const userColor = useStore(store, (state) => state.user?.color);
 
   const addNode = useCallback(
     (x, y, type) => {
@@ -480,7 +488,8 @@ export function Canvas() {
         dragHandle: ".custom-drag-handle",
       };
 
-      setNodes((nds) => nds.concat(newNode));
+      // setNodes((nds) => nds.concat(newNode));
+      
 
       // add to pods
       addPod(apolloClient, {
@@ -494,7 +503,11 @@ export function Canvas() {
         width: style.width,
         height: style.height,
       });
+      
+      nodesMap.set(id, newNode);
     },
+
+    
     [addPod, reactFlowInstance]
   );
 
@@ -563,8 +576,43 @@ export function Canvas() {
    * 1. Update the position of the node in the redux store.
    * 2. Check if the node is moved into a scope. If so, update the parent of the node.
    */
+
+  const onNodeDragStart = useCallback((_, node) => {
+    const currentNode = nodesMap.get(node.id);
+  
+    // setNodes((nodes) => {
+    //   nodes.map((n) => {
+    //     if (n.id === node.id) {
+    //       n.data = {...n.data, color: userColor};
+    //       nodesMap.set(n.id, n);
+    //     }
+    //     return n;
+    //   })
+    // });
+    if (currentNode) {
+      nodesMap.set(node.id, {
+        ...currentNode,
+        // selected: false,
+        style: {...currentNode.style, 
+                  boxShadow: `${userColor} 0px 15px 25px`}
+      });
+    }
+    setNodes((nds) =>
+    applyNodeChanges(
+      [
+        {
+          id: node.id,
+          type: "select",
+          selected: true,
+        },
+      ],
+      nds
+    ));
+  }, [userColor]);
+
   const onNodeDragStop = useCallback(
     (event, node) => {
+
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       // This mouse position is absolute within the canvas.
       const mousePos = reactFlowInstance.project({
@@ -604,7 +652,10 @@ export function Canvas() {
         y: absY,
       });
 
+      
+
       if (scope) {
+        // TOFIX: to enable collaborative editing, consider how to sync dropping scope immediately.
         setPodParent({
           id: node.id,
           parent: scope.id,
@@ -616,30 +667,61 @@ export function Canvas() {
 
         // 1. Put the node into the scope, i.e., set the parentNode field.
         // 2. Use position relative to the scope.
-        setNodes((nds) =>
-          nds
-            .map((nd) => {
-              if (nd.id === node.id) {
-                return {
-                  ...nd,
-                  parentNode: scope.id,
-                  level: scope.level + 1,
-                  style: {
-                    ...nd.style,
-                    backgroundColor: level2color[scope.level + 1],
-                  },
-                  position: {
-                    x: absX,
-                    y: absY,
-                  },
-                };
-              }
-              return nd;
-            })
-            // Sort the nodes by level, so that the scope is rendered first.
-            .sort((a, b) => a.level - b.level)
-        );
+        // setNodes((nds) =>
+        //   nds
+        //     .map((nd) => {
+        //       if (nd.id === node.id) {
+        //         return {
+        //           ...nd,
+        //           parentNode: scope.id,
+        //           level: scope.level + 1,
+        //           style: {
+        //             ...nd.style,
+        //             backgroundColor: level2color[scope.level + 1],
+        //           },
+        //           position: {
+        //             x: absX,
+        //             y: absY,
+        //           },
+        //         };
+        //       }
+        //       return nd;
+        //     })
+        //     // Sort the nodes by level, so that the scope is rendered first.
+        //     .sort((a, b) => a.level - b.level)
+        
+        // );
       }
+
+      const currentNode = nodesMap.get(node.id);
+      if (currentNode) {
+        if(scope)
+        {
+          currentNode.backgroundColor = level2color[scope.level + 1];
+          currentNode.level = scope.level + 1;
+          currentNode.parentNode = scope.id;
+
+        }
+        currentNode.position = {x: absX, y: absY};
+
+        if(currentNode.style['boxShadow']) {
+          delete currentNode.style.boxShadow;
+        }
+
+        nodesMap.set(node.id, currentNode);
+        }
+
+        setNodes((nds) =>
+        applyNodeChanges(
+          [
+            {
+              id: node.id,
+              type: "select",
+              selected: true,
+            },
+          ],
+          nds
+        ));
     },
     // We need to monitor nodes, so that getScopeAt can have all the nodes.
     [
@@ -695,6 +777,7 @@ export function Canvas() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onInit={setReactFlowInstance}
+          onNodeDragStart={onNodeDragStart}
           onNodeDragStop={onNodeDragStop}
           onNodesDelete={onNodesDelete}
           fitView

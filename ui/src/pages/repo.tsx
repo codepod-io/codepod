@@ -89,7 +89,7 @@ function RepoImpl() {
   const setSessionId = useStore(store, (state) => state.setSessionId);
   const repoLoaded = useStore(store, (state) => state.repoLoaded);
   const setUser = useStore(store, (state) => state.setUser);
-  const awareness = useStore(store, (state) => state.provider?.awareness);
+  const provider = useStore(store, (state) => state.provider);
   const addClient = useStore(store, (state) => state.addClient);
   const deleteClient = useStore(store, (state) => state.deleteClient);
 
@@ -104,6 +104,12 @@ function RepoImpl() {
   useEffect(() => {
     if (me) {
       setUser(me);
+    }
+  }, [me, setUser]);
+
+  useEffect(() => {
+    if (provider) {
+      const awareness = provider.awareness;
       console.log(awareness);
       awareness.on("update", (change) => {
         const states = awareness.getStates();
@@ -117,9 +123,8 @@ function RepoImpl() {
         change.removed.forEach((clientID) => {
             deleteClient(clientID);
         })
-    });
-    }
-  }, [me, setUser]);
+    })
+  }}, [provider]);
 
   useEffect(() => {
     resetState();

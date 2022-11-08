@@ -21,8 +21,7 @@ import { addAwarenessStyle } from "./styles";
 export const ydoc: Doc = new Doc();
 
 // Tofix: can't connect to http://codepod.127.0.0.1.sslip.io/socket/, but it works well on webbrowser or curl
-// const serverURL = "ws://codepod.127.0.0.1.sslip.io/socket/"
-const serverURL = "ws://demos.yjs.dev";
+const serverURL = "ws://codepod.127.0.0.1.sslip.io/socket/"
 
 export const RepoContext =
   createContext<StoreApi<RepoSlice & RuntimeSlice> | null>(null);
@@ -77,6 +76,8 @@ const initialState = {
   queueProcessing: false,
   socket: null,
   socketIntervalId: null,
+  // keep different seletced info on each user themselves
+  selected: null,
   //TODO: all presence information are now saved in clients map for future usage. create a modern UI to show those information from clients (e.g., online users)
   clients: new Map(),
 };
@@ -167,6 +168,7 @@ export interface RepoSlice {
   }) => void;
   setPodPosition: ({ id, x, y }: any) => void;
   setPodParent: ({ id, parent }: any) => void;
+  setSelected: (id: string) => void;
 }
 
 type BearState = RepoSlice & RuntimeSlice;
@@ -184,6 +186,7 @@ const createRepoSlice: StateCreator<
   setSessionId: (id) => set({ sessionId: id }),
   addError: (error) => set({ error }),
   clearError: () => set({ error: null }),
+  setSelected: (id) => set({ selected: id }),
   addPod: async (
     client,
     { parent, index, anchor, shift, id, type, lang, x, y, width, height }
@@ -237,25 +240,30 @@ const createRepoSlice: StateCreator<
     set(
       produce((state: BearState) => {
         // 1. do local update
-        state.pods[id] = pod;
-        // push this node
-        // TODO the children no longer need to be ordered
-        // TODO the frontend should handle differently for the children
-        // state.pods[parent].children.splice(index, 0, id);
-        state.pods[parent].children.splice(index, 0, { id, type: pod.type });
-        // DEBUG sort-in-place
-        // TODO I can probably insert
-        // CAUTION the sort expects -1,0,1, not true/false
-        pod.ns = computeNamespace(state.pods, id);
+        if (!state.pods.hasOwnProperty(id)) {
+
+          state.pods[id] = pod;
+          // push this node
+          // TODO the children no longer need to be ordered
+          // TODO the frontend should handle differently for the children
+          // state.pods[parent].children.splice(index, 0, id);
+          state.pods[parent].children.splice(index, 0, { id, type: pod.type });
+          // DEBUG sort-in-place
+          // TODO I can probably insert
+          // CAUTION the sort expects -1,0,1, not true/false
+          pod.ns = computeNamespace(state.pods, id);
+        }
       })
     );
     // 2. do remote update
-    await doRemoteAddPod(client, {
-      repoId: get().repoId,
-      parent,
-      index,
-      pod,
-    });
+    if (client) {
+      await doRemoteAddPod(client, {
+        repoId: get().repoId,
+        parent,
+        index,
+        pod,
+      });
+    }
   },
   deletePod: async (
     client,
@@ -263,24 +271,37 @@ const createRepoSlice: StateCreator<
   ) => {
     const pods = get().pods;
     // get all ids to delete. Gathering them here is easier than on the server
+
+    // TOFIX: check pods[id] exists before deleting
     const dfs = (id) =>
-      [id].concat(...pods[id].children.map(({ id }) => dfs(id)));
+      {
+        const pod = pods[id];
+        if (pod) {
+          toDelete.push(id);
+          pod.children.forEach(dfs);
+        }
+      }
+
+    dfs(id);
     // pop in toDelete
-    toDelete = dfs(id);
     set(
       produce((state: BearState) => {
         // delete the link to parent
-        const parent = state.pods[state.pods[id].parent!];
-        const index = parent.children.map(({ id }) => id).indexOf(id);
-        // update all other siblings' index
-        // remove all
-        parent.children.splice(index, 1);
+        const parent = state.pods[state.pods[id]?.parent!];
+        if (parent) {
+          const index = parent.children.map(({ id }) => id).indexOf(id);
+          // update all other siblings' index
+          // remove all
+          parent.children.splice(index, 1);
+        }
         toDelete.forEach((id) => {
           delete state.pods[id];
         });
       })
     );
-    await doRemoteDeletePod(client, { id, toDelete });
+    if (client) {
+      await doRemoteDeletePod(client, { id, toDelete });
+    }
   },
   setPodType: ({ id, type }) =>
     set(
@@ -559,6 +580,7 @@ const createRepoSlice: StateCreator<
     set(
       produce((state) => {
         // FIXME I need to modify many pods here.
+        if(state.pods[id]?.parent === parent) return;
         state.pods[id].parent = parent;
         // FXME I'm marking all the pods as dirty here.
         state.pods[id].dirty = true;
@@ -642,7 +664,6 @@ const createRepoSlice: StateCreator<
       addAwarenessStyle(clientID, color, name);
       return { clients: new Map(state.clients).set(clientID, { name: name, color: color }) }
     }
-    console.log(state.clients);
     return { clients: state.clients }
   }),
   deleteClient: (clientID) => set(state => {
@@ -654,7 +675,7 @@ const createRepoSlice: StateCreator<
     const color = '#' + Math.floor(Math.random() * 16777215).toString(16);
     if (state.provider) {
       const awareness = state.provider.awareness;
-      awareness.setLocalStateField('user', {name: user.firstname, color });
+      awareness.setLocalStateField('user', { name: user.firstname, color });
     }
     return { user: { ...user, color } };
   }),
