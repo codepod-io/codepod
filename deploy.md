@@ -3,21 +3,21 @@
 Build the docker images:
 
 ```
-docker build -t lihebi/codepod-ui:0.4.3-alpha.6 ./ui
-docker build -t lihebi/codepod-api:0.4.3-alpha.6 ./api
-docker build -t lihebi/codepod-proxy:0.4.3-alpha.6 ./proxy
-docker build -t lihebi/codepod-kernel-python:0.4.3-alpha.6 ./runtime/kernel
-docker build -t lihebi/codepod-runtime:0.4.3-alpha.6 ./runtime
+docker build -t lihebi/codepod-ui:<tag> ./ui
+docker build -t lihebi/codepod-api:<tag> ./api
+docker build -t lihebi/codepod-proxy:<tag> ./proxy
+docker build -t lihebi/codepod-kernel-python:<tag> ./runtime/kernel
+docker build -t lihebi/codepod-runtime:<tag> ./runtime
 ```
 
 Push to registry:
 
 ```
-docker push lihebi/codepod-ui:0.4.3-alpha.6
-docker push lihebi/codepod-api:0.4.3-alpha.6
-docker push lihebi/codepod-proxy:0.4.3-alpha.6
-docker push lihebi/codepod-kernel-python:0.4.3-alpha.6
-docker push lihebi/codepod-runtime:0.4.3-alpha.6
+docker push lihebi/codepod-ui:<tag>
+docker push lihebi/codepod-api:<tag>
+docker push lihebi/codepod-proxy:<tag>
+docker push lihebi/codepod-kernel-python:<tag>
+docker push lihebi/codepod-runtime:<tag>
 ```
 
 Create a cloud VM with docker support. Add DNS from domain name to the cloud
