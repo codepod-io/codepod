@@ -1,1 +1,4 @@
 hostname: "codepod.127.0.0.1.sslip.io"
+
+ingress:
+  tls: false
