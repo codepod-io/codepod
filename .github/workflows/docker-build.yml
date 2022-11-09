@@ -1,8 +1,9 @@
 name: ci
 
 on:
-  release:
-    types: [created, published]
+  push:
+    tags:
+      - "v*.*.*"
 
 jobs:
   docker:
@@ -12,15 +13,15 @@ jobs:
       matrix:
         include:
           - context: ./ui
-            image: ${{ secrets.DOCKER_HUB_USERNAME }}/codepod-ui
+            image: lihebi/codepod-ui
           - context: ./api
-            image: ${{ secrets.DOCKER_HUB_USERNAME }}/codepod-api
+            image: lihebi/codepod-api
           - context: ./proxy
-            image: ${{ secrets.DOCKER_HUB_USERNAME }}/codepod-proxy
+            image: lihebi/codepod-proxy
           - context: ./runtime/kernel
-            image: ${{ secrets.DOCKER_HUB_USERNAME }}/codepod-kernel-python
+            image: lihebi/codepod-kernel-python
           - context: ./runtime
-            image: ${{ secrets.DOCKER_HUB_USERNAME }}/codepod-runtime
+            image: lihebi/codepod-runtime
     steps:
       - name: Checkout
         uses: actions/checkout@v3
