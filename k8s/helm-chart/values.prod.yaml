@@ -1,5 +1,5 @@
 hostname: "app.codepod.io"
 
-ingress:
-  tls:
-    secretName: app-codepod-io-tls
+tls:
+  enabled: true
+  secretName: app-codepod-io-tls
