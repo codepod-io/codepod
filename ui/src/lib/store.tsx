@@ -199,7 +199,6 @@ const createRepoSlice: StateCreator<
   setRepo: (repoId: string) =>
     set(
       produce((state: BearState) => {
-        state.ydoc = new Doc();
         state.repoId = repoId;
         if (!state.provider) {
           console.log("connecting yjs socket ..");

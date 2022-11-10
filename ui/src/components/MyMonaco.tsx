@@ -377,6 +377,7 @@ export function MyMonaco({
   return (
     <MonacoEditor
       language={lang}
+      value={value}
       // theme="vs-dark"
       options={{
         selectOnLineNumbers: true,
