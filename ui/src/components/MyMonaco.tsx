@@ -1,7 +1,9 @@
 import { Position } from "monaco-editor";
-import { useState } from "react";
+import { useState, useContext } from "react";
 import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
 import { monaco } from "react-monaco-editor";
+import { useStore } from "zustand";
+import { RepoContext } from "../lib/store";
 
 monaco.languages.setLanguageConfiguration("julia", {
   indentationRules: {
@@ -304,6 +306,10 @@ export function MyMonaco({
 }) {
   // console.log("rendering monaco ..");
   // there's no racket language support
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
+
   if (lang === "racket") {
     lang = "scheme";
   }
@@ -334,6 +340,7 @@ export function MyMonaco({
         // autoIndent: true,
         overviewRulerLanes: 0,
         automaticLayout: true,
+        lineNumbers: showLineNumbers ? "on" : "off",
         scrollbar: {
           alwaysConsumeMouseWheel: false,
           vertical: "hidden",

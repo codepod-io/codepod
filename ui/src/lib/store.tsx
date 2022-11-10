@@ -15,8 +15,9 @@ import {
 import { createRuntimeSlice, RuntimeSlice } from "./runtime";
 import { ApolloClient } from "@apollo/client";
 
-export const RepoContext =
-  createContext<StoreApi<RepoSlice & RuntimeSlice> | null>(null);
+export const RepoContext = createContext<StoreApi<
+  RepoSlice & RuntimeSlice
+> | null>(null);
 
 // TODO use a selector to compute and retrieve the status
 // TODO this need to cooperate with syncing indicator
@@ -67,6 +68,7 @@ const initialState = {
   queueProcessing: false,
   socket: null,
   socketIntervalId: null,
+  showLineNumbers: true,
 };
 
 export type Pod = {
@@ -125,6 +127,7 @@ export interface RepoSlice {
   kernels: Record<string, { status: string | null }>;
   // queueProcessing: boolean;
   socket: WebSocket | null;
+  showLineNumbers: boolean;
   error: { type: string; msg: string } | null;
   updatePod: ({ id, data }: { id: string; data: Partial<Pod> }) => void;
   remoteUpdateAllPods: (client) => void;
@@ -151,6 +154,7 @@ export interface RepoSlice {
   }) => void;
   setPodPosition: ({ id, x, y }: any) => void;
   setPodParent: ({ id, parent }: any) => void;
+  flipShowLineNumbers: () => void;
 }
 
 type BearState = RepoSlice & RuntimeSlice;
@@ -622,6 +626,8 @@ const createRepoSlice: StateCreator<
     // state.pods[action.meta.arg.id].isSyncing = false;
     // state.pods[action.meta.arg.id].dirty = false;
   },
+  flipShowLineNumbers: () =>
+    set((state) => ({ showLineNumbers: !state.showLineNumbers })),
 });
 
 export const createRepoStore = () =>
