@@ -27,8 +27,9 @@ if (window.location.protocol === "http:") {
 }
 console.log("yjs server url: ", serverURL);
 
-export const RepoContext =
-  createContext<StoreApi<RepoSlice & RuntimeSlice> | null>(null);
+export const RepoContext = createContext<StoreApi<
+  RepoSlice & RuntimeSlice
+> | null>(null);
 
 // TODO use a selector to compute and retrieve the status
 // TODO this need to cooperate with syncing indicator
@@ -85,6 +86,7 @@ const initialState = {
   selected: null,
   //TODO: all presence information are now saved in clients map for future usage. create a modern UI to show those information from clients (e.g., online users)
   clients: new Map(),
+  showLineNumbers: true,
 };
 
 export type Pod = {
@@ -144,6 +146,7 @@ export interface RepoSlice {
   kernels: Record<string, { status: string | null }>;
   // queueProcessing: boolean;
   socket: WebSocket | null;
+  showLineNumbers: boolean;
   error: { type: string; msg: string } | null;
   provider?: WebsocketProvider | null;
   clients: Map<string, any>;
@@ -179,6 +182,7 @@ export interface RepoSlice {
   setUser: (user: any) => void;
   addClient: (clientId: any, name, color) => void;
   deleteClient: (clientId: any) => void;
+  flipShowLineNumbers: () => void;
 }
 
 type BearState = RepoSlice & RuntimeSlice;
@@ -637,11 +641,12 @@ const createRepoSlice: StateCreator<
       })
     ),
   loadRepo: async (client, id) => {
-    const pods = await doRemoteLoadRepo({ id, client });
+    const { pods, name } = await doRemoteLoadRepo({ id, client });
     set(
       produce((state) => {
         // TODO the children ordered by index
         state.pods = normalize(pods);
+        state.repoName = name;
         // fill in the parent/children relationships
         for (const id in state.pods) {
           let pod = state.pods[id];
@@ -714,6 +719,8 @@ const createRepoSlice: StateCreator<
         state.user = { ...user, color };
       })
     ),
+  flipShowLineNumbers: () =>
+    set((state) => ({ showLineNumbers: !state.showLineNumbers })),
 });
 
 export const createRepoStore = () =>

@@ -308,6 +308,10 @@ export function MyMonaco({
 }) {
   // console.log("rendering monaco ..");
   // there's no racket language support
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
+
   if (lang === "racket") {
     lang = "scheme";
   }
@@ -392,6 +396,7 @@ export function MyMonaco({
         // autoIndent: true,
         overviewRulerLanes: 0,
         automaticLayout: true,
+        lineNumbers: showLineNumbers ? "on" : "off",
         scrollbar: {
           alwaysConsumeMouseWheel: false,
           vertical: "hidden",

@@ -1,6 +1,13 @@
 import "./App.css";
 
-import { HashRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  Route,
+  RouterProvider,
+} from "react-router-dom";
+
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 
 import Home from "./pages/index";
 import About from "./pages/about";
@@ -19,8 +26,6 @@ import { SnackbarProvider } from "notistack";
 
 import Docs from "./pages/docs";
 
-import { createTheme, ThemeProvider } from "@mui/material/styles";
-
 const theme = createTheme({
   typography: {
     button: {
@@ -34,102 +39,99 @@ function NormalLayout({ children }: any) {
     <Box>
       <Header />
       <Box pt="50px">{children}</Box>
-      <Footer />
+      {/* <Footer /> */}
     </Box>
   );
 }
 
-function App() {
+const router = createBrowserRouter([
+  {
+    path: "docs",
+    element: (
+      <NormalLayout>
+        <Docs />
+      </NormalLayout>
+    ),
+  },
+  {
+    path: "repos",
+    element: (
+      <NormalLayout>
+        <Repos />
+      </NormalLayout>
+    ),
+  },
+  {
+    path: "repo/:id",
+    element: (
+      <Box height="100vh">
+        <Header />
+        <Box
+          height="100%"
+          boxSizing={"border-box"}
+          sx={{
+            pt: "50px",
+          }}
+        >
+          <Repo />
+        </Box>
+      </Box>
+    ),
+  },
+  {
+    path: "login",
+    element: (
+      <NormalLayout>
+        <Login />
+      </NormalLayout>
+    ),
+  },
+  {
+    path: "signup",
+    element: (
+      <NormalLayout>
+        <Signup />
+      </NormalLayout>
+    ),
+  },
+  {
+    path: "profile",
+    element: (
+      <NormalLayout>
+        <Profile />
+      </NormalLayout>
+    ),
+  },
+  {
+    path: "about",
+    element: (
+      <NormalLayout>
+        <About />
+      </NormalLayout>
+    ),
+  },
+  {
+    path: "/",
+    element: (
+      <NormalLayout>
+        {/* <Home /> */}
+        <Repos />
+      </NormalLayout>
+    ),
+  },
+]);
+
+export default function App() {
   return (
-    <Router>
-      <ThemeProvider theme={theme}>
-        <AuthProvider>
-          <SnackbarProvider maxSnack={5}>
-            <Routes>
-              <Route
-                path="/about"
-                element={
-                  <NormalLayout>
-                    <About />
-                  </NormalLayout>
-                }
-              />
-              <Route
-                path="/docs"
-                element={
-                  <NormalLayout>
-                    <Docs />
-                  </NormalLayout>
-                }
-              ></Route>
-              <Route
-                path="/repos"
-                element={
-                  <NormalLayout>
-                    <Repos />
-                  </NormalLayout>
-                }
-              ></Route>
-              <Route
-                path="/repo/:id"
-                element={
-                  <Box height="100vh">
-                    <Header />
-                    <Box height="100%" pt="50px">
-                      <Repo />
-                    </Box>
-                  </Box>
-                }
-              ></Route>
-              <Route
-                path="/test"
-                element={
-                  <NormalLayout>
-                    <Test />
-                  </NormalLayout>
-                }
-              ></Route>
-              <Route
-                path="/login"
-                element={
-                  <NormalLayout>
-                    <Login />
-                  </NormalLayout>
-                }
-              ></Route>
-              <Route
-                path="/signup"
-                element={
-                  <NormalLayout>
-                    <Signup />
-                  </NormalLayout>
-                }
-              ></Route>
-              <Route
-                path="/profile"
-                element={
-                  <NormalLayout>
-                    <Profile />
-                  </NormalLayout>
-                }
-              ></Route>
-              <Route
-                path="/"
-                element={
-                  <NormalLayout>
-                    <Home />
-                  </NormalLayout>
-                }
-              ></Route>
-            </Routes>
-          </SnackbarProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </Router>
+    <ThemeProvider theme={theme}>
+      <AuthProvider>
+        <SnackbarProvider maxSnack={5}>
+          <RouterProvider router={router} />
+        </SnackbarProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
-
-export default App;
 
 // function App() {
 //   return (

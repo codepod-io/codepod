@@ -17,6 +17,7 @@ import { useApolloClient } from "@apollo/client";
 function RepoWrapper({ children }) {
   // this component is used to provide foldable sidebar
   const [show, setShow] = useState(true);
+  let sidebar_width = 0.12;
   return (
     <Box m="auto" height="100%">
       <Box
@@ -24,7 +25,7 @@ function RepoWrapper({ children }) {
           display: "inline-block",
           verticalAlign: "top",
           height: "100%",
-          width: show ? 0.18 : 0,
+          width: show ? sidebar_width : 0,
           overflow: "auto",
         }}
       >
@@ -40,7 +41,9 @@ function RepoWrapper({ children }) {
             {show ? "Hide" : "Show"}
           </Button>
         </Box>
-        <Sidebar />
+        <Box sx={{ mx: 2, my: 1 }}>
+          <Sidebar />
+        </Box>
       </Box>
 
       <Box
@@ -48,7 +51,7 @@ function RepoWrapper({ children }) {
           display: "inline-block",
           verticalAlign: "top",
           height: "100%",
-          width: show ? 0.8 : 1,
+          width: show ? 1 - sidebar_width : 1,
           overflow: "scroll",
         }}
       >
@@ -144,9 +147,10 @@ function RepoImpl() {
       {!repoLoaded && <Box>Repo Loading ...</Box>}
       {repoLoaded && (
         <Box
-          height="90%"
-          border="solid 3px"
+          height="100%"
+          border="solid 3px black"
           p={2}
+          boxSizing={"border-box"}
           // m={2}
           overflow="auto"
         >

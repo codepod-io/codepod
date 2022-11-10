@@ -1,1 +1,3 @@
-hostname: "codepod.127.0.0.1.sslip.io"
+hostname: "codepod.208.87.130.238.sslip.io"
+tls:
+  enabled: false

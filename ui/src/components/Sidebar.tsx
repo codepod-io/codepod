@@ -24,6 +24,7 @@ import { usePrompt } from "../lib/prompt";
 import { RepoContext, selectNumDirty } from "../lib/store";
 
 import useMe from "../lib/me";
+import { Grid } from "@mui/material";
 
 function Flex(props) {
   return (
@@ -45,7 +46,10 @@ function SidebarSession() {
   return (
     <Box>
       <Box>
-        Project Name: <Box color="blue">{repoName || "Untitled"}</Box>
+        Name:{" "}
+        <Box component="span" color="blue">
+          {repoName || "Error"}
+        </Box>
       </Box>
     </Box>
   );
@@ -61,42 +65,32 @@ function SidebarRuntime() {
   const { loading, me } = useMe();
   let { id: repoId } = useParams();
   useEffect(() => {
-    console.log("Connecting to runtime at the beginning ..");
-    wsConnect(client, `${me.id}_${repoId}`);
+    if (me) {
+      console.log("Connecting to runtime at the beginning ..");
+      wsConnect(client, `${me.id}_${repoId}`);
+    }
   }, []);
   if (loading) return <Box>loading</Box>;
   return (
     <Box>
       <Box>
-        Runtime connected?{" "}
+        Runtime{" "}
         {runtimeConnected ? (
           <Box component="span" color="green">
-            Yes
+            connected
           </Box>
         ) : (
           <Box component="span" color="red">
-            No
+            <Button
+              size="small"
+              onClick={() => {
+                wsConnect(client, `${me.id}_${repoId}`);
+              }}
+            >
+              Connect
+            </Button>
           </Box>
         )}
-      </Box>
-      <Box sx={{ display: "flex" }}>
-        <Button
-          size="small"
-          onClick={() => {
-            wsConnect(client, `${me.id}_${repoId}`);
-          }}
-        >
-          Connect
-        </Button>
-        {/* <Spacer /> */}
-        <Button
-          size="small"
-          onClick={() => {
-            wsDisconnect();
-          }}
-        >
-          Disconnect
-        </Button>
       </Box>
     </Box>
   );
@@ -154,7 +148,7 @@ function SidebarKernel() {
   );
 }
 
-function ApplyAll() {
+function SyncStatus() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const numDirty = useStore(store, selectNumDirty());
@@ -165,9 +159,6 @@ function ApplyAll() {
     `You have unsaved ${numDirty} changes. Are you sure you want to leave?`,
     numDirty > 0
   );
-
-  let [intervalId, setIntervalId] =
-    useState<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     console.log("Setting interval");
@@ -195,7 +186,7 @@ function ApplyAll() {
         <CloudUploadIcon />
         {numDirty > 0 ? (
           <Box component="span" color="blue" mx={1}>
-            save {numDirty} to cloud
+            saving {numDirty} to cloud
           </Box>
         ) : (
           <Box component="span" color="grey" mx={1}>
@@ -203,17 +194,6 @@ function ApplyAll() {
           </Box>
         )}
       </Button>
-
-      <Flex>
-        <Button
-          size="small"
-          onClick={() => {
-            clearAllResults();
-          }}
-        >
-          Clear All
-        </Button>
-      </Flex>
     </Box>
   );
 }
@@ -290,99 +270,21 @@ function ToastError() {
   return <Box></Box>;
 }
 
-function SidebarTest() {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const foldAll = useStore(store, (state) => state.foldAll);
-  const unfoldAll = useStore(store, (state) => state.unfoldAll);
-  const clearAllExports = useStore(store, (state) => state.clearAllExports);
-
-  return (
-    <Box>
-      SidebarTest
-      <Button
-        variant="outlined"
-        size="small"
-        onClick={() => {
-          foldAll();
-        }}
-      >
-        Fold All
-      </Button>
-      <Button
-        variant="outlined"
-        size="small"
-        onClick={() => {
-          unfoldAll();
-        }}
-      >
-        Unfold All
-      </Button>
-      <Button
-        onClick={() => {
-          clearAllExports();
-        }}
-      >
-        ClearExports
-      </Button>
-    </Box>
-  );
-}
-
 export function Sidebar() {
   return (
-    <Box
-      sx={{
-        mx: 1,
-        p: 2,
-        boxShadow: 3,
-        borderRadius: 2,
-        background: grey[50],
-      }}
-    >
-      <Box
-        sx={{
-          boxShadow: 3,
-          p: 2,
-          borderRadius: 2,
-          background: grey[50],
-        }}
-      >
+    <Grid container spacing={2}>
+      <Grid item xs={12}>
+        <SyncStatus />
+      </Grid>
+      <Grid item xs={12}>
+        {" "}
         <SidebarSession />
-      </Box>
-      <Divider sx={{ my: 2 }} />
-      <Box sx={{ boxShadow: 3, p: 2, borderRadius: 2, bg: grey[50] }}>
-        <ToastError />
-        <ApplyAll />
-      </Box>
-      <Divider sx={{ my: 2 }} />
-
-      <Box
-        sx={{
-          boxShadow: 3,
-          p: 2,
-          borderRadius: 2,
-          bgcolor: grey[50],
-        }}
-      >
-        <SidebarTest />
-      </Box>
-      <Divider sx={{ my: 2 }} />
-      <Box
-        sx={{
-          boxShadow: 3,
-          p: 2,
-          borderRadius: 2,
-          bg: grey[50],
-        }}
-      >
+      </Grid>
+      <Grid item xs={12}>
         <SidebarRuntime />
         <SidebarKernel />
-        <ActiveSessions />
-      </Box>
-
-      <Divider sx={{ my: 2 }} />
-      {/* <ConfigButton /> */}
-    </Box>
+      </Grid>
+      <ToastError />
+    </Grid>
   );
 }

@@ -31,11 +31,12 @@ async function ensurePodAccess({ id, userId }) {
     throw new Error("Pod not exists.");
   }
   if (pod.repo.owner.id !== userId) {
-    throw new Error("You do not have write access.");
+    throw new Error("You do not have access to this pod.");
   }
 }
 
 export async function repos() {
+  throw new Error("Deprecated");
   const repos = await prisma.repo.findMany({
     include: {
       owner: true,
@@ -56,10 +57,12 @@ export async function myRepos(_, __, { userId }) {
   return repos;
 }
 
-export async function repo(_, { id }) {
+export async function repo(_, { id }, { userId }) {
+  if (!userId) throw Error("Unauthenticated");
   const repo = await prisma.repo.findFirst({
     where: {
       id,
+      owner: { id: userId },
     },
     include: {
       owner: true,
@@ -79,6 +82,7 @@ export async function repo(_, { id }) {
 }
 
 export async function pod(_, { id }) {
+  throw new Error("Deprecated");
   return await prisma.pod.findFirst({
     where: {
       id: id,
@@ -144,16 +148,10 @@ export async function addPod(_, { repoId, parent, index, input }, { userId }) {
   const repo = await prisma.repo.findFirst({
     where: {
       id: repoId,
-    },
-    include: {
-      owner: true,
+      owner: { id: userId },
     },
   });
   if (!repo) throw new Error("Repo not found");
-  // check ownership
-  if (repo.owner.id != userId) {
-    throw new Error("You do not have access to the repo.");
-  }
   // update all other records
   await prisma.pod.updateMany({
     where: {

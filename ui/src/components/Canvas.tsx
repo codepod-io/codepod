@@ -40,6 +40,7 @@ import { useNodesStateSynced } from "../lib/nodes";
 
 import { MyMonaco } from "./MyMonaco";
 import { useApolloClient } from "@apollo/client";
+import { CanvasContextMenu } from "./CanvasContextMenu";
 
 const nanoid = customAlphabet(nolookalikes, 10);
 
@@ -798,36 +799,12 @@ export function Canvas() {
           </Box>
         </ReactFlow>
         {showContextMenu && (
-          <Box
-            sx={{
-              left: `${points.x}px`,
-              top: `${points.y}px`,
-              zIndex: 100,
-              position: "absolute",
-              boxShadow: "0px 1px 8px 0px rgba(0, 0, 0, 0.1)",
-              // width: '200px',
-              backgroundColor: "#fff",
-              borderRadius: "5px",
-              boxSizing: "border-box",
-            }}
-          >
-            <Stack>
-              <Button
-                onClick={() => {
-                  addNode(client.x, client.y, "code");
-                }}
-              >
-                New Code{" "}
-              </Button>
-              <Button
-                onClick={() => {
-                  addNode(client.x, client.y, "scope");
-                }}
-              >
-                New Scope{" "}
-              </Button>
-            </Stack>
-          </Box>
+          <CanvasContextMenu
+            x={points.x}
+            y={points.y}
+            addCode={() => addNode(client.x, client.y, "code")}
+            addScope={() => addNode(client.x, client.y, "scope")}
+          />
         )}
       </Box>
     </Box>
