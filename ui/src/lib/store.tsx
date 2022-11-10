@@ -27,9 +27,8 @@ if (window.location.protocol === "http:") {
 }
 console.log("yjs server url: ", serverURL);
 
-export const RepoContext = createContext<StoreApi<
-  RepoSlice & RuntimeSlice
-> | null>(null);
+export const RepoContext =
+  createContext<StoreApi<RepoSlice & RuntimeSlice> | null>(null);
 
 // TODO use a selector to compute and retrieve the status
 // TODO this need to cooperate with syncing indicator
@@ -198,11 +197,16 @@ const createRepoSlice: StateCreator<
       produce((state: BearState) => {
         state.ydoc = new Doc();
         state.repoId = repoId;
-        state.provider = new WebsocketProvider(
-          serverURL,
-          state.repoId,
-          state.ydoc
-        );
+        if (!state.provider) {
+          console.log("connecting yjs socket ..");
+          state.provider = new WebsocketProvider(
+            serverURL,
+            state.repoId,
+            state.ydoc
+          );
+          // max retry time: 10s
+          state.provider.maxBackoffTime = 10000;
+        }
       })
     ),
   setSessionId: (id) => set({ sessionId: id }),
