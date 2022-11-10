@@ -321,7 +321,7 @@ export function MyMonaco({
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const provider = useStore(store, (state) => state.provider);
-  const awareness = provider.awareness;
+  const awareness = provider!.awareness;
 
   function onEditorDidMount(editor, monaco){
     // console.log("did mount");
@@ -363,7 +363,7 @@ export function MyMonaco({
 
     // FIXME: make sure the provider.wsconnected is true or it won't display any content. 
 
-    provider.once("synced", () => {
+    provider!.once("synced", () => {
       if(!ytext._start)
       {
         ytext.insert(0, value);

@@ -12,8 +12,8 @@ import {
   doRemoteDeletePod,
 } from "./fetch";
 
-import { Doc } from 'yjs';
-import { WebsocketProvider } from 'y-websocket';
+import { Doc } from "yjs";
+import { WebsocketProvider } from "y-websocket";
 import { createRuntimeSlice, RuntimeSlice } from "./runtime";
 import { ApolloClient } from "@apollo/client";
 import { addAwarenessStyle } from "./styles";
@@ -21,7 +21,13 @@ import { addAwarenessStyle } from "./styles";
 export const ydoc: Doc = new Doc();
 
 // Tofix: can't connect to http://codepod.127.0.0.1.sslip.io/socket/, but it works well on webbrowser or curl
-const serverURL = "ws://codepod.127.0.0.1.sslip.io/socket/"
+let serverURL;
+if (window.location.protocol === "http:") {
+  serverURL = `ws://${window.location.host}/socket`;
+} else {
+  serverURL = `wss://${window.location.host}/socket`;
+}
+console.log("yjs server url: ", serverURL);
 
 export const RepoContext =
   createContext<StoreApi<RepoSlice & RuntimeSlice> | null>(null);
@@ -140,7 +146,7 @@ export interface RepoSlice {
   // queueProcessing: boolean;
   socket: WebSocket | null;
   error: { type: string; msg: string } | null;
-  provider: WebsocketProvider | null;
+  provider?: WebsocketProvider | null;
   clients: Map<string, any>;
   user: any;
   updatePod: ({ id, data }: { id: string; data: Partial<Pod> }) => void;
@@ -150,7 +156,7 @@ export interface RepoSlice {
   unfoldAll: () => void;
   setPodContent: ({ id, content }: { id: string; content: string }) => void;
   addPod: (
-    client: ApolloClient<object>,
+    client: ApolloClient<object> | null,
     { parent, index, anchor, shift, id, type, lang, x, y, width, height }: any
   ) => void;
   deletePod: (
@@ -168,7 +174,11 @@ export interface RepoSlice {
   }) => void;
   setPodPosition: ({ id, x, y }: any) => void;
   setPodParent: ({ id, parent }: any) => void;
-  setSelected: (id: string) => void;
+  selected: string | null;
+  setSelected: (id: string | null) => void;
+  setUser: (user: any) => void;
+  addClient: (clientId: any, name, color) => void;
+  deleteClient: (clientId: any) => void;
 }
 
 type BearState = RepoSlice & RuntimeSlice;

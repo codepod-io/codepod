@@ -504,7 +504,7 @@ export function Canvas() {
         height: style.height,
       });
       
-      nodesMap.set(id, newNode);
+      nodesMap.set(id, newNode as any);
     },
 
     
@@ -697,15 +697,15 @@ export function Canvas() {
       if (currentNode) {
         if(scope)
         {
-          currentNode.backgroundColor = level2color[scope.level + 1];
-          currentNode.level = scope.level + 1;
+          currentNode.style!.backgroundColor = level2color[scope.level + 1];
+          (currentNode as any).level = scope.level + 1;
           currentNode.parentNode = scope.id;
 
         }
         currentNode.position = {x: absX, y: absY};
 
-        if(currentNode.style['boxShadow']) {
-          delete currentNode.style.boxShadow;
+        if(currentNode.style!['boxShadow']) {
+          delete currentNode.style!.boxShadow;
         }
 
         nodesMap.set(node.id, currentNode);

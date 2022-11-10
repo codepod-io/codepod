@@ -3,7 +3,7 @@ import { applyNodeChanges, Node } from "react-flow-renderer";
 import { ydoc, RepoContext } from './store';
 import { useStore } from "zustand";
 
-export const nodesMap = ydoc.getMap('pods');
+export const nodesMap = ydoc.getMap<Node>('pods');
 
 const isNodeAddChange = (change) => change.type === 'add';
 const isNodeRemoveChange = (change) => change.type === 'remove';
@@ -11,6 +11,7 @@ const isNodeResetChange = (change) => change.type === 'reset';
 
 export function useNodesStateSynced(nodeList) {
     const store = useContext(RepoContext);
+    if (!store) throw new Error("Missing BearContext.Provider in the tree");
     const addPod = useStore(store, state => state.addPod);
     const deletePod = useStore(store, state => state.deletePod);
     const setSelected = useStore(store, state => state.setSelected);
@@ -27,6 +28,7 @@ export function useNodesStateSynced(nodeList) {
             if (!isNodeAddChange(change) && !isNodeResetChange(change)) {
 
                 const node = nextNodes.find((n) => n.id === change.id);
+                if (!node) return;
 
                 if (change.type === 'select') {
                     setSelected(node.id);
@@ -48,6 +50,7 @@ export function useNodesStateSynced(nodeList) {
             YMapEvent.changes.keys.forEach((change, key) => {
                 if (change.action === 'add') {
                     const node = nodesMap.get(key);
+                    if (!node) return;
                     addPod(null, {
                         id: node.id,
                         parent: "ROOT",
