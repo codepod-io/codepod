@@ -321,8 +321,6 @@ export function MyMonaco({
     editor.staged = gitvalue;
     updateGitGutter(editor);
   }
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const provider = useStore(store, (state) => state.provider);
   const ydoc = useStore(store, (state) => state.ydoc);
   const awareness = provider?.awareness;
