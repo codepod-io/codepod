@@ -11,3 +11,22 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+
+.paneContextMenu > li {
+  cursor: default;
+  font-family: sans-serif;
+  border: 0;
+  padding: 5px;
+  display: flex;
+  align-items: left;
+}
+
+.paneContextMenu > li > .icon {
+  margin-right: 10px;
+}
+
+.paneContextMenu > li:hover {
+  background:#f1f3f7;
+  color: #4b00ff;
+}
