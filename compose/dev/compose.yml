@@ -64,6 +64,13 @@ services:
       - 80:80
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/nginx.conf
+  
+  socket:
+    image: node:18
+    working_dir: /app
+    volumes:
+      - socket-node-modules:/app/node_modules
+    command: sh -c "yarn add yjs y-websocket && HOST=0.0.0.0 PORT=4233 npx y-websocket"
 
 volumes:
   db-data:
@@ -71,6 +78,7 @@ volumes:
   ui-node-modules:
   proxy-node-modules:
   prisma-node-modules:
+  socket-node-modules:
 
 networks:
   default:
