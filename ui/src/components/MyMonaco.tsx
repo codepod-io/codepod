@@ -3,9 +3,8 @@ import { useState, useContext } from "react";
 import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
 import { monaco } from "react-monaco-editor";
 import { useStore } from "zustand";
-import { RepoContext, ydoc } from "../lib/store";
-import { MonacoBinding } from 'y-monaco';
-
+import { RepoContext } from "../lib/store";
+import { MonacoBinding } from "y-monaco";
 
 monaco.languages.setLanguageConfiguration("julia", {
   indentationRules: {
@@ -321,9 +320,10 @@ export function MyMonaco({
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const provider = useStore(store, (state) => state.provider);
+  const ydoc = useStore(store, (state) => state.ydoc);
   const awareness = provider!.awareness;
 
-  function onEditorDidMount(editor, monaco){
+  function onEditorDidMount(editor, monaco) {
     // console.log("did mount");
     setEditor(editor);
     // console.log(Math.min(1000, editor.getContentHeight()));
@@ -346,26 +346,27 @@ export function MyMonaco({
     };
     editor.onDidContentSizeChange(updateHeight);
     // FIXME clean up?
-    editor.addCommand(
-      monaco.KeyMod.Shift | monaco.KeyCode.Enter,
-      function () {
-        onRun();
-      }
-    );
+    editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, function () {
+      onRun();
+    });
     editor.onDidChangeModelContent(async (e) => {
       // content is value?
       updateGitGutter(editor);
     });
 
     // bind it to the ytext with pod id
-    const ytext = ydoc.getText("monaco-"+id);
-    const monacoBinding = new MonacoBinding(ytext, (editor.getModel()), new Set([editor]), awareness);
+    const ytext = ydoc.getText("monaco-" + id);
+    const monacoBinding = new MonacoBinding(
+      ytext,
+      editor.getModel(),
+      new Set([editor]),
+      awareness
+    );
 
-    // FIXME: make sure the provider.wsconnected is true or it won't display any content. 
+    // FIXME: make sure the provider.wsconnected is true or it won't display any content.
 
     provider!.once("synced", () => {
-      if(!ytext._start)
-      {
+      if (!ytext._start) {
         ytext.insert(0, value);
       }
     });

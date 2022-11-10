@@ -18,8 +18,6 @@ import { createRuntimeSlice, RuntimeSlice } from "./runtime";
 import { ApolloClient } from "@apollo/client";
 import { addAwarenessStyle } from "./styles";
 
-export const ydoc: Doc = new Doc();
-
 // Tofix: can't connect to http://codepod.127.0.0.1.sslip.io/socket/, but it works well on webbrowser or curl
 let serverURL;
 if (window.location.protocol === "http:") {
@@ -29,8 +27,9 @@ if (window.location.protocol === "http:") {
 }
 console.log("yjs server url: ", serverURL);
 
-export const RepoContext =
-  createContext<StoreApi<RepoSlice & RuntimeSlice> | null>(null);
+export const RepoContext = createContext<StoreApi<
+  RepoSlice & RuntimeSlice
+> | null>(null);
 
 // TODO use a selector to compute and retrieve the status
 // TODO this need to cooperate with syncing indicator
@@ -80,6 +79,7 @@ const initialState = {
     },
   },
   queueProcessing: false,
+  ydoc: new Doc(),
   socket: null,
   socketIntervalId: null,
   // keep different seletced info on each user themselves
@@ -149,6 +149,7 @@ export interface RepoSlice {
   provider?: WebsocketProvider | null;
   clients: Map<string, any>;
   user: any;
+  ydoc: Doc;
   updatePod: ({ id, data }: { id: string; data: Partial<Pod> }) => void;
   remoteUpdateAllPods: (client) => void;
   clearError: () => void;
@@ -192,7 +193,18 @@ const createRepoSlice: StateCreator<
   ...initialState,
   // FIXME should reset to inital state, not completely empty.
   resetState: () => set(initialState),
-  setRepo: (repoId: string) => set({ repoId, provider: new WebsocketProvider(serverURL, repoId, ydoc) }),
+  setRepo: (repoId: string) =>
+    set(
+      produce((state: BearState) => {
+        state.ydoc = new Doc();
+        state.repoId = repoId;
+        state.provider = new WebsocketProvider(
+          serverURL,
+          state.repoId,
+          state.ydoc
+        );
+      })
+    ),
   setSessionId: (id) => set({ sessionId: id }),
   addError: (error) => set({ error }),
   clearError: () => set({ error: null }),
@@ -251,7 +263,6 @@ const createRepoSlice: StateCreator<
       produce((state: BearState) => {
         // 1. do local update
         if (!state.pods.hasOwnProperty(id)) {
-
           state.pods[id] = pod;
           // push this node
           // TODO the children no longer need to be ordered
@@ -283,14 +294,13 @@ const createRepoSlice: StateCreator<
     // get all ids to delete. Gathering them here is easier than on the server
 
     // TOFIX: check pods[id] exists before deleting
-    const dfs = (id) =>
-      {
-        const pod = pods[id];
-        if (pod) {
-          toDelete.push(id);
-          pod.children.forEach(dfs);
-        }
+    const dfs = (id) => {
+      const pod = pods[id];
+      if (pod) {
+        toDelete.push(id);
+        pod.children.forEach(dfs);
       }
+    };
 
     dfs(id);
     // pop in toDelete
@@ -590,7 +600,7 @@ const createRepoSlice: StateCreator<
     set(
       produce((state) => {
         // FIXME I need to modify many pods here.
-        if(state.pods[id]?.parent === parent) return;
+        if (state.pods[id]?.parent === parent) return;
         state.pods[id].parent = parent;
         // FXME I'm marking all the pods as dirty here.
         state.pods[id].dirty = true;
@@ -669,26 +679,37 @@ const createRepoSlice: StateCreator<
     // state.pods[action.meta.arg.id].isSyncing = false;
     // state.pods[action.meta.arg.id].dirty = false;
   },
-  addClient: (clientID, name, color) => set(state => {
-    if (!state.clients.has(clientID)) {
-      addAwarenessStyle(clientID, color, name);
-      return { clients: new Map(state.clients).set(clientID, { name: name, color: color }) }
-    }
-    return { clients: state.clients }
-  }),
-  deleteClient: (clientID) => set(state => {
-    const clients = new Map(state.clients);
-    clients.delete(clientID);
-    return { clients: clients }
-  }),
-  setUser: (user) => set((state) => {
-    const color = '#' + Math.floor(Math.random() * 16777215).toString(16);
-    if (state.provider) {
-      const awareness = state.provider.awareness;
-      awareness.setLocalStateField('user', { name: user.firstname, color });
-    }
-    return { user: { ...user, color } };
-  }),
+  addClient: (clientID, name, color) =>
+    set((state) => {
+      if (!state.clients.has(clientID)) {
+        addAwarenessStyle(clientID, color, name);
+        return {
+          clients: new Map(state.clients).set(clientID, {
+            name: name,
+            color: color,
+          }),
+        };
+      }
+      return { clients: state.clients };
+    }),
+  deleteClient: (clientID) =>
+    set((state) => {
+      const clients = new Map(state.clients);
+      clients.delete(clientID);
+      return { clients: clients };
+    }),
+  setUser: (user) =>
+    set(
+      produce((state: BearState) => {
+        const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+        // if (!state.ydoc) state.ydoc = new Doc();
+        if (state.provider) {
+          const awareness = state.provider.awareness;
+          awareness.setLocalStateField("user", { name: user.firstname, color });
+        }
+        state.user = { ...user, color };
+      })
+    ),
 });
 
 export const createRepoStore = () =>

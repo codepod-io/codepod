@@ -17,6 +17,7 @@ import ReactFlow, {
   Handle,
   useReactFlow,
   Position,
+  Node,
 } from "react-flow-renderer";
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -35,11 +36,10 @@ import { nolookalikes } from "nanoid-dictionary";
 import { useStore } from "zustand";
 
 import { RepoContext } from "../lib/store";
-import {nodesMap, useNodesStateSynced} from '../lib/nodes';
+import { useNodesStateSynced } from "../lib/nodes";
 
 import { MyMonaco } from "./MyMonaco";
 import { useApolloClient } from "@apollo/client";
-
 
 const nanoid = customAlphabet(nolookalikes, 10);
 
@@ -50,13 +50,14 @@ interface Props {
   // selected: boolean;
 }
 
-const ScopeNode = memo<Props>(({ data, id, isConnectable}) => {
+const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
   // add resize to the node
   const ref = useRef(null);
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const updatePod = useStore(store, (state) => state.updatePod);
   const [target, setTarget] = React.useState<any>();
+  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const [frame] = React.useState({
     translate: [0, 0],
   });
@@ -64,18 +65,15 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable}) => {
   const selected = useStore(store, (state) => state.selected);
   const { setNodes } = useReactFlow();
 
-  const onResize = useCallback(
-    ({ width, height, offx, offy }) => {
-      const node = nodesMap.get(id);
-      if(node) {
-        node.style = { ...node.style, width, height };
-        node.position.x += offx;
-        node.position.y += offy;
-        nodesMap.set(id, node);
-      }
-    },
-    []
-  );
+  const onResize = useCallback(({ width, height, offx, offy }) => {
+    const node = nodesMap.get(id);
+    if (node) {
+      node.style = { ...node.style, width, height };
+      node.position.x += offx;
+      node.position.y += offy;
+      nodesMap.set(id, node);
+    }
+  }, []);
 
   React.useEffect(() => {
     setTarget(ref.current);
@@ -101,7 +99,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable}) => {
         position={Position.Bottom}
         isConnectable={isConnectable}
       />
-      {selected===id && (
+      {selected === id && (
         <Moveable
           target={target}
           resizable={true}
@@ -142,7 +140,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable}) => {
   );
 });
 
-const CodeNode = memo<Props>(({ data, id, isConnectable}) => {
+const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const pod = useStore(store, (state) => state.pods[id]);
@@ -150,6 +148,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable}) => {
   const updatePod = useStore(store, (state) => state.updatePod);
   const clearResults = useStore(store, (s) => s.clearResults);
   const wsRun = useStore(store, (state) => state.wsRun);
+  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const ref = useRef(null);
   const [target, setTarget] = React.useState<any>(null);
   const [frame] = React.useState({
@@ -159,19 +158,15 @@ const CodeNode = memo<Props>(({ data, id, isConnectable}) => {
   const selected = useStore(store, (state) => state.selected);
   const setSelected = useStore(store, (state) => state.setSelected);
 
-
-  const onResize = useCallback(
-    ({ width, height, offx, offy }) => {
-      const node = nodesMap.get(id);
-      if(node) {
-        node.style = { ...node.style, width, height };
-        node.position.x += offx;
-        node.position.y += offy;
-        nodesMap.set(id, node);
-      }
-    },
-    []
-  );
+  const onResize = useCallback(({ width, height, offx, offy }) => {
+    const node = nodesMap.get(id);
+    if (node) {
+      node.style = { ...node.style, width, height };
+      node.position.x += offx;
+      node.position.y += offy;
+      nodesMap.set(id, node);
+    }
+  }, []);
 
   React.useEffect(() => {
     setTarget(ref.current);
@@ -315,7 +310,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable}) => {
         position={Position.Bottom}
         isConnectable={isConnectable}
       />
-      {(selected===id) && (
+      {selected === id && (
         <Moveable
           target={target}
           resizable={true}
@@ -377,6 +372,7 @@ export function Canvas() {
   // the real pods
   const id2children = useStore(store, (state) => state.id2children);
   const pods = useStore(store, (state) => state.pods);
+  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
 
   const getRealNodes = useCallback(
     (id, level) => {
@@ -420,7 +416,8 @@ export function Canvas() {
     nodes.forEach((node) => {
       if (!nodesMap.has(node.id)) {
         nodesMap.set(node.id, node);
-      }});
+      }
+    });
     setNodes(Array.from(nodesMap.values()));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -489,7 +486,6 @@ export function Canvas() {
       };
 
       // setNodes((nds) => nds.concat(newNode));
-      
 
       // add to pods
       addPod(apolloClient, {
@@ -503,11 +499,10 @@ export function Canvas() {
         width: style.width,
         height: style.height,
       });
-      
+
       nodesMap.set(id, newNode as any);
     },
 
-    
     [addPod, reactFlowInstance]
   );
 
@@ -577,42 +572,38 @@ export function Canvas() {
    * 2. Check if the node is moved into a scope. If so, update the parent of the node.
    */
 
-  const onNodeDragStart = useCallback((_, node) => {
-    const currentNode = nodesMap.get(node.id);
-  
-    // setNodes((nodes) => {
-    //   nodes.map((n) => {
-    //     if (n.id === node.id) {
-    //       n.data = {...n.data, color: userColor};
-    //       nodesMap.set(n.id, n);
-    //     }
-    //     return n;
-    //   })
-    // });
-    if (currentNode) {
-      nodesMap.set(node.id, {
-        ...currentNode,
-        // selected: false,
-        style: {...currentNode.style, 
-                  boxShadow: `${userColor} 0px 15px 25px`}
-      });
-    }
-    setNodes((nds) =>
-    applyNodeChanges(
-      [
-        {
-          id: node.id,
-          type: "select",
-          selected: true,
-        },
-      ],
-      nds
-    ));
-  }, [userColor]);
+  const onNodeDragStart = useCallback(
+    (_, node) => {
+      const currentNode = nodesMap.get(node.id);
+
+      if (currentNode) {
+        nodesMap.set(node.id, {
+          ...currentNode,
+          // selected: false,
+          style: {
+            ...currentNode.style,
+            boxShadow: `${userColor} 0px 15px 25px`,
+          },
+        });
+      }
+      setNodes((nds) =>
+        applyNodeChanges(
+          [
+            {
+              id: node.id,
+              type: "select",
+              selected: true,
+            },
+          ],
+          nds
+        )
+      );
+    },
+    [userColor]
+  );
 
   const onNodeDragStop = useCallback(
     (event, node) => {
-
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       // This mouse position is absolute within the canvas.
       const mousePos = reactFlowInstance.project({
@@ -652,8 +643,6 @@ export function Canvas() {
         y: absY,
       });
 
-      
-
       if (scope) {
         // TOFIX: to enable collaborative editing, consider how to sync dropping scope immediately.
         setPodParent({
@@ -689,29 +678,27 @@ export function Canvas() {
         //     })
         //     // Sort the nodes by level, so that the scope is rendered first.
         //     .sort((a, b) => a.level - b.level)
-        
+
         // );
       }
 
       const currentNode = nodesMap.get(node.id);
       if (currentNode) {
-        if(scope)
-        {
+        if (scope) {
           currentNode.style!.backgroundColor = level2color[scope.level + 1];
           (currentNode as any).level = scope.level + 1;
           currentNode.parentNode = scope.id;
-
         }
-        currentNode.position = {x: absX, y: absY};
+        currentNode.position = { x: absX, y: absY };
 
-        if(currentNode.style!['boxShadow']) {
+        if (currentNode.style!["boxShadow"]) {
           delete currentNode.style!.boxShadow;
         }
 
         nodesMap.set(node.id, currentNode);
-        }
+      }
 
-        setNodes((nds) =>
+      setNodes((nds) =>
         applyNodeChanges(
           [
             {
@@ -721,7 +708,8 @@ export function Canvas() {
             },
           ],
           nds
-        ));
+        )
+      );
     },
     // We need to monitor nodes, so that getScopeAt can have all the nodes.
     [
