@@ -15,8 +15,9 @@ import {
 import { createRuntimeSlice, RuntimeSlice } from "./runtime";
 import { ApolloClient } from "@apollo/client";
 
-export const RepoContext =
-  createContext<StoreApi<RepoSlice & RuntimeSlice> | null>(null);
+export const RepoContext = createContext<StoreApi<
+  RepoSlice & RuntimeSlice
+> | null>(null);
 
 // TODO use a selector to compute and retrieve the status
 // TODO this need to cooperate with syncing indicator
@@ -67,7 +68,7 @@ const initialState = {
   queueProcessing: false,
   socket: null,
   socketIntervalId: null,
-  showLineNumbers: true
+  showLineNumbers: true,
 };
 
 export type Pod = {

@@ -301,8 +301,8 @@ export function MyMonaco({
   lang = "javascript",
   value = "",
   gitvalue = null,
-  onChange = (value) => { },
-  onRun = () => { },
+  onChange = (value) => {},
+  onRun = () => {},
 }) {
   // console.log("rendering monaco ..");
   // there's no racket language support
