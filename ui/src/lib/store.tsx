@@ -80,6 +80,7 @@ const initialState = {
   },
   queueProcessing: false,
   ydoc: new Doc(),
+  provider: null,
   socket: null,
   socketIntervalId: null,
   // keep different seletced info on each user themselves
@@ -195,12 +196,28 @@ const createRepoSlice: StateCreator<
 > = (set, get) => ({
   ...initialState,
   // FIXME should reset to inital state, not completely empty.
-  resetState: () => set(initialState),
+  resetState: () =>
+    // FIXME before rest a state, first
+    // 1. destroy/disconnect the provider, or it keep the awareness information of the exited page
+    // 2. set state.provider = null, or it can't be assigned a new provider.
+    set((state) => {
+      console.log("user reset state provider", state.provider);
+      if (state.provider) {
+        state.provider.destroy();
+        state.ydoc.destroy();
+        state.provider = null;
+      }
+      return initialState;
+    }),
   setRepo: (repoId: string) =>
     set(
       produce((state: BearState) => {
         state.repoId = repoId;
-        if (!state.provider) {
+        state.ydoc = new Doc();
+        // console.log("user reset state setrepo", repoId);
+        if (state.provider) {
+          console.log("emmm, provider exists", state.provider);
+        } else {
           console.log("connecting yjs socket ..");
           state.provider = new WebsocketProvider(
             serverURL,
@@ -208,6 +225,7 @@ const createRepoSlice: StateCreator<
             state.ydoc
           );
           // max retry time: 10s
+          state.provider.connect();
           state.provider.maxBackoffTime = 10000;
         }
       })

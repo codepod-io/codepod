@@ -365,19 +365,30 @@ export function MyMonaco({
       awareness
     );
 
-    // FIXME: make sure the provider.wsconnected is true or it won't display any content.
-
-    provider?.once("synced", () => {
-      if (!ytext._start) {
+    const init = () => {
+      if (!ytext._start && ytext.length === 0) {
         ytext.insert(0, value);
       }
-    });
+    };
+
+    if (!provider || !provider.wsconnected) {
+      // TODO: consider offline situation later
+      console.log("editor", provider?.wsconnected, provider, editor.getModel());
+      // editor.getModel().setValue(value);
+      return;
+    } else if (provider.synced) {
+      init();
+    } else {
+      provider.once("synced", init);
+    }
+
+    // FIXME: make sure the provider.wsconnected is true or it won't display any content.
   }
 
   return (
     <MonacoEditor
       language={lang}
-      value={value}
+      // value={value}
       // theme="vs-dark"
       options={{
         selectOnLineNumbers: true,
