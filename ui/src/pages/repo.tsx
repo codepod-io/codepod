@@ -96,19 +96,12 @@ function RepoImpl() {
   const addClient = useStore(store, (state) => state.addClient);
   const deleteClient = useStore(store, (state) => state.deleteClient);
 
-
   const { loading, me } = useMe();
   useEffect(() => {
     if (me) {
       setSessionId(`${me.id}_${id}`);
     }
   }, [me, id, setSessionId]);
-
-  useEffect(() => {
-    if (me) {
-      setUser(me);
-    }
-  }, [me, setUser]);
 
   useEffect(() => {
     if (provider) {
@@ -118,23 +111,27 @@ function RepoImpl() {
         const states = awareness.getStates();
         const nodes = change.added.concat(change.updated);
         nodes.forEach((clientID) => {
-            const user = states.get(clientID)?.user
-            if (user) {
-                addClient(clientID, user.name, user.color);
-            }
+          const user = states.get(clientID)?.user;
+          if (user) {
+            addClient(clientID, user.name, user.color);
+          }
         });
         change.removed.forEach((clientID) => {
-            deleteClient(clientID);
-        })
-    })
-  }}, [provider]);
+          deleteClient(clientID);
+        });
+      });
+    }
+  }, [provider]);
 
   useEffect(() => {
     resetState();
     setRepo(id!);
     // load the repo. It is actually not a queue, just an async thunk
     loadRepo(client, id!);
-  }, [client, id, loadRepo, resetState, setRepo]);
+    if (!loading && me) {
+      setUser(me);
+    }
+  }, [client, id, loadRepo, resetState, setRepo, me, loading, setUser]);
 
   // FIXME Removing queueL. This will cause Repo to be re-rendered a lot of
   // times, particularly the delete pod action would cause syncstatus and repo
