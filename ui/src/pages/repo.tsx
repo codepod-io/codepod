@@ -160,6 +160,13 @@ function RepoImpl() {
 
 export default function Repo() {
   const store = useRef(createRepoStore()).current;
+  const disconnect = useStore(store, (state) => state.disconnect);
+  // console.log("load store", useRef(createRepoStore()));
+  useEffect(() => {
+    // const provider = useStore(store, (state) => state.provider);
+    // clean up the connected provider after exiting the page
+    return disconnect;
+  }, [store]);
   return (
     <RepoContext.Provider value={store}>
       <RepoImpl />
