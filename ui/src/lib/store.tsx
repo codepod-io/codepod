@@ -184,6 +184,7 @@ export interface RepoSlice {
   addClient: (clientId: any, name, color) => void;
   deleteClient: (clientId: any) => void;
   flipShowLineNumbers: () => void;
+  disconnect: () => void;
 }
 
 type BearState = RepoSlice & RuntimeSlice;
@@ -738,6 +739,19 @@ const createRepoSlice: StateCreator<
     ),
   flipShowLineNumbers: () =>
     set((state) => ({ showLineNumbers: !state.showLineNumbers })),
+  disconnect: () =>
+    set(
+      // clean up the connected provider after exiting the page
+      produce((state) => {
+        if (state.provider) {
+          state.provider.destroy();
+          // just for debug usage, remove it later
+          console.log("remove awareness", state.provider.awareness);
+          state.provider = null;
+        }
+        state.ydoc.destroy();
+      })
+    ),
 });
 
 export const createRepoStore = () =>
