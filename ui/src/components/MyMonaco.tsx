@@ -305,6 +305,7 @@ export function MyMonaco({
   gitvalue = null,
   onChange = (value) => {},
   onRun = () => {},
+  onLayout = (height) => {},
 }) {
   // console.log("rendering monaco ..");
   // there's no racket language support
@@ -345,6 +346,7 @@ export function MyMonaco({
       // width: 800
       // editor.layout({ width: 800, height: contentHeight });
       editor.layout();
+      onLayout(`${contentHeight}px`);
     };
     editor.onDidContentSizeChange(updateHeight);
     // FIXME clean up?
@@ -392,6 +394,8 @@ export function MyMonaco({
       // theme="vs-dark"
       options={{
         selectOnLineNumbers: true,
+        // This scrollBeyondLastLine is super important. Without this, it will
+        // try to adjust height infinitely.
         scrollBeyondLastLine: false,
         folding: false,
         lineNumbersMinChars: 3,
