@@ -1,7 +1,10 @@
 import { Position } from "monaco-editor";
-import { useState } from "react";
+import { useState, useContext } from "react";
 import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
 import { monaco } from "react-monaco-editor";
+import { useStore } from "zustand";
+import { RepoContext } from "../lib/store";
+import { MonacoBinding } from "y-monaco";
 
 monaco.languages.setLanguageConfiguration("julia", {
   indentationRules: {
@@ -298,12 +301,18 @@ async function updateGitGutter(editor) {
 export function MyMonaco({
   lang = "javascript",
   value = "",
+  id = "0",
   gitvalue = null,
   onChange = (value) => {},
   onRun = () => {},
+  onLayout = (height) => {},
 }) {
   // console.log("rendering monaco ..");
   // there's no racket language support
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
+
   if (lang === "racket") {
     lang = "scheme";
   }
@@ -313,13 +322,80 @@ export function MyMonaco({
     editor.staged = gitvalue;
     updateGitGutter(editor);
   }
+  const provider = useStore(store, (state) => state.provider);
+  const ydoc = useStore(store, (state) => state.ydoc);
+  const awareness = provider?.awareness;
+
+  function onEditorDidMount(editor, monaco) {
+    // console.log("did mount");
+    setEditor(editor);
+    // console.log(Math.min(1000, editor.getContentHeight()));
+    const updateHeight = () => {
+      // max height: 400
+      const contentHeight = Math.max(
+        100,
+        editor.getContentHeight()
+        // Math.min(400, editor.getContentHeight())
+      );
+      // console.log("target height:", contentHeight);
+      const editorElement = editor.getDomNode();
+      if (!editorElement) {
+        return;
+      }
+      editorElement.style.height = `${contentHeight}px`;
+      // width: 800
+      // editor.layout({ width: 800, height: contentHeight });
+      editor.layout();
+      onLayout(`${contentHeight}px`);
+    };
+    editor.onDidContentSizeChange(updateHeight);
+    // FIXME clean up?
+    editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, function () {
+      onRun();
+    });
+    editor.onDidChangeModelContent(async (e) => {
+      // content is value?
+      updateGitGutter(editor);
+    });
+
+    // bind it to the ytext with pod id
+    const ytext = ydoc.getText("monaco-" + id);
+    const monacoBinding = new MonacoBinding(
+      ytext,
+      editor.getModel(),
+      new Set([editor]),
+      awareness
+    );
+
+    const init = () => {
+      if (!ytext._start && ytext.length === 0) {
+        ytext.insert(0, value);
+      }
+    };
+
+    if (!provider || !provider.wsconnected) {
+      // TODO: consider offline situation later
+      console.log("editor", provider?.wsconnected, provider, editor.getModel());
+      // editor.getModel().setValue(value);
+      return;
+    } else if (provider.synced) {
+      init();
+    } else {
+      provider.once("synced", init);
+    }
+
+    // FIXME: make sure the provider.wsconnected is true or it won't display any content.
+  }
+
   return (
     <MonacoEditor
       language={lang}
+      // value={value}
       // theme="vs-dark"
-      value={value}
       options={{
         selectOnLineNumbers: true,
+        // This scrollBeyondLastLine is super important. Without this, it will
+        // try to adjust height infinitely.
         scrollBeyondLastLine: false,
         folding: false,
         lineNumbersMinChars: 3,
@@ -334,46 +410,14 @@ export function MyMonaco({
         // autoIndent: true,
         overviewRulerLanes: 0,
         automaticLayout: true,
+        lineNumbers: showLineNumbers ? "on" : "off",
         scrollbar: {
           alwaysConsumeMouseWheel: false,
           vertical: "hidden",
         },
       }}
       onChange={onChange}
-      editorDidMount={(editor, monaco) => {
-        // console.log("did mount");
-        setEditor(editor);
-        // console.log(Math.min(1000, editor.getContentHeight()));
-        const updateHeight = () => {
-          // max height: 400
-          const contentHeight = Math.max(
-            100,
-            editor.getContentHeight()
-            // Math.min(400, editor.getContentHeight())
-          );
-          // console.log("target height:", contentHeight);
-          const editorElement = editor.getDomNode();
-          if (!editorElement) {
-            return;
-          }
-          editorElement.style.height = `${contentHeight}px`;
-          // width: 800
-          // editor.layout({ width: 800, height: contentHeight });
-          editor.layout();
-        };
-        editor.onDidContentSizeChange(updateHeight);
-        // FIXME clean up?
-        editor.addCommand(
-          monaco.KeyMod.Shift | monaco.KeyCode.Enter,
-          function () {
-            onRun();
-          }
-        );
-        editor.onDidChangeModelContent(async (e) => {
-          // content is value?
-          updateGitGutter(editor);
-        });
-      }}
+      editorDidMount={onEditorDidMount}
     />
   );
 }

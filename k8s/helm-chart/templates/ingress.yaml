@@ -15,11 +15,11 @@ kind: IngressRoute
 metadata:
   name: codepod-ingress
 spec:
-  {{- if .Values.ingress.tls }}
+  {{- if .Values.tls.enabled }}
   entryPoints:
     - websecure
   tls:
-    secretName: {{ .Values.ingress.tls.secretName }}
+    secretName: {{ .Values.tls.secretName }}
   {{- end }}
   routes:
   - match: "Host(`{{ .Values.hostname }}`) && PathPrefix(`/`)"
@@ -40,7 +40,7 @@ spec:
       - name: codepod-proxy-service
         port: 4010
 
-{{- if .Values.ingress.tls }}
+{{- if .Values.tls.enabled }}
 ---
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware

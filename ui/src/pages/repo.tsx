@@ -91,6 +91,10 @@ function RepoImpl() {
   const loadRepo = useStore(store, (state) => state.loadRepo);
   const setSessionId = useStore(store, (state) => state.setSessionId);
   const repoLoaded = useStore(store, (state) => state.repoLoaded);
+  const setUser = useStore(store, (state) => state.setUser);
+  const provider = useStore(store, (state) => state.provider);
+  const addClient = useStore(store, (state) => state.addClient);
+  const deleteClient = useStore(store, (state) => state.deleteClient);
 
   const { loading, me } = useMe();
   useEffect(() => {
@@ -98,12 +102,36 @@ function RepoImpl() {
       setSessionId(`${me.id}_${id}`);
     }
   }, [me, id, setSessionId]);
+
+  useEffect(() => {
+    if (provider) {
+      const awareness = provider.awareness;
+      console.log(awareness);
+      awareness.on("update", (change) => {
+        const states = awareness.getStates();
+        const nodes = change.added.concat(change.updated);
+        nodes.forEach((clientID) => {
+          const user = states.get(clientID)?.user;
+          if (user) {
+            addClient(clientID, user.name, user.color);
+          }
+        });
+        change.removed.forEach((clientID) => {
+          deleteClient(clientID);
+        });
+      });
+    }
+  }, [provider]);
+
   useEffect(() => {
     resetState();
     setRepo(id!);
     // load the repo. It is actually not a queue, just an async thunk
     loadRepo(client, id!);
-  }, [client, id, loadRepo, resetState, setRepo]);
+    if (!loading && me) {
+      setUser(me);
+    }
+  }, [client, id, loadRepo, resetState, setRepo, me, loading, setUser]);
 
   // FIXME Removing queueL. This will cause Repo to be re-rendered a lot of
   // times, particularly the delete pod action would cause syncstatus and repo
@@ -132,6 +160,13 @@ function RepoImpl() {
 
 export default function Repo() {
   const store = useRef(createRepoStore()).current;
+  const disconnect = useStore(store, (state) => state.disconnect);
+  // console.log("load store", useRef(createRepoStore()));
+  useEffect(() => {
+    // const provider = useStore(store, (state) => state.provider);
+    // clean up the connected provider after exiting the page
+    return disconnect;
+  }, [store]);
   return (
     <RepoContext.Provider value={store}>
       <RepoImpl />

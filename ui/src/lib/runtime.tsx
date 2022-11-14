@@ -696,7 +696,7 @@ export const createRuntimeSlice: StateCreator<
     set(
       produce((state) => {
         state.pods[id].result = null;
-        state.pods[id].stdout = null;
+        state.pods[id].stdout = "";
         state.pods[id].error = null;
       })
     );

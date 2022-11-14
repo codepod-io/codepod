@@ -76,3 +76,7 @@ Optionally initialize the DB (run in one api pod):
 Uninstall:
 
     helm uninstall codepod-staging
+
+Prod:
+
+    helm upgrade codepod-prod . --namespace codepod-prod --values=./values.prod.yaml

@@ -36,8 +36,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       KERNEL_NETWORK: "codepod"
       PROXY_API_URL: "http://proxy:4011/graphql"
-      ZMQ_KERNEL_IMAGE: "lihebi/codepod-kernel-python:v0.4.3-alpha.4"
-      WS_RUNTIME_IMAGE: "lihebi/codepod-runtime:v0.4.3-alpha.4"
+      ZMQ_KERNEL_IMAGE: "lihebi/codepod-kernel-python:latest"
+      WS_RUNTIME_IMAGE: "lihebi/codepod-runtime:latest"
 
   ui:
     image: node:18
@@ -64,6 +64,13 @@ services:
       - 80:80
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/nginx.conf
+  
+  socket:
+    image: node:18
+    working_dir: /app
+    volumes:
+      - socket-node-modules:/app/node_modules
+    command: sh -c "yarn add yjs y-websocket && HOST=0.0.0.0 PORT=4233 npx y-websocket"
 
 volumes:
   db-data:
@@ -71,6 +78,7 @@ volumes:
   ui-node-modules:
   proxy-node-modules:
   prisma-node-modules:
+  socket-node-modules:
 
 networks:
   default:

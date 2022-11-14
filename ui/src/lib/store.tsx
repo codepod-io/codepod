@@ -12,11 +12,24 @@ import {
   doRemoteDeletePod,
 } from "./fetch";
 
+import { Doc } from "yjs";
+import { WebsocketProvider } from "y-websocket";
 import { createRuntimeSlice, RuntimeSlice } from "./runtime";
 import { ApolloClient } from "@apollo/client";
+import { addAwarenessStyle } from "./styles";
 
-export const RepoContext =
-  createContext<StoreApi<RepoSlice & RuntimeSlice> | null>(null);
+// Tofix: can't connect to http://codepod.127.0.0.1.sslip.io/socket/, but it works well on webbrowser or curl
+let serverURL;
+if (window.location.protocol === "http:") {
+  serverURL = `ws://${window.location.host}/socket`;
+} else {
+  serverURL = `wss://${window.location.host}/socket`;
+}
+console.log("yjs server url: ", serverURL);
+
+export const RepoContext = createContext<StoreApi<
+  RepoSlice & RuntimeSlice
+> | null>(null);
 
 // TODO use a selector to compute and retrieve the status
 // TODO this need to cooperate with syncing indicator
@@ -59,14 +72,22 @@ const initialState = {
   showdiff: false,
   sessionId: null,
   runtimeConnected: false,
+  user: {},
   kernels: {
     python: {
       status: null,
     },
   },
   queueProcessing: false,
+  ydoc: new Doc(),
+  provider: null,
   socket: null,
   socketIntervalId: null,
+  // keep different seletced info on each user themselves
+  selected: null,
+  //TODO: all presence information are now saved in clients map for future usage. create a modern UI to show those information from clients (e.g., online users)
+  clients: new Map(),
+  showLineNumbers: true,
 };
 
 export type Pod = {
@@ -111,6 +132,7 @@ export interface RepoSlice {
   // runtime: string;
   repoId: string | null;
   // sessionId?: string;
+
   resetState: () => void;
   setRepo: (repoId: string) => void;
   loadRepo: (client: ApolloClient<object>, repoId: string) => void;
@@ -125,7 +147,12 @@ export interface RepoSlice {
   kernels: Record<string, { status: string | null }>;
   // queueProcessing: boolean;
   socket: WebSocket | null;
+  showLineNumbers: boolean;
   error: { type: string; msg: string } | null;
+  provider?: WebsocketProvider | null;
+  clients: Map<string, any>;
+  user: any;
+  ydoc: Doc;
   updatePod: ({ id, data }: { id: string; data: Partial<Pod> }) => void;
   remoteUpdateAllPods: (client) => void;
   clearError: () => void;
@@ -133,7 +160,7 @@ export interface RepoSlice {
   unfoldAll: () => void;
   setPodContent: ({ id, content }: { id: string; content: string }) => void;
   addPod: (
-    client: ApolloClient<object>,
+    client: ApolloClient<object> | null,
     { parent, index, anchor, shift, id, type, lang, x, y, width, height }: any
   ) => void;
   deletePod: (
@@ -151,6 +178,13 @@ export interface RepoSlice {
   }) => void;
   setPodPosition: ({ id, x, y }: any) => void;
   setPodParent: ({ id, parent }: any) => void;
+  selected: string | null;
+  setSelected: (id: string | null) => void;
+  setUser: (user: any) => void;
+  addClient: (clientId: any, name, color) => void;
+  deleteClient: (clientId: any) => void;
+  flipShowLineNumbers: () => void;
+  disconnect: () => void;
 }
 
 type BearState = RepoSlice & RuntimeSlice;
@@ -163,11 +197,44 @@ const createRepoSlice: StateCreator<
 > = (set, get) => ({
   ...initialState,
   // FIXME should reset to inital state, not completely empty.
-  resetState: () => set(initialState),
-  setRepo: (repoId: string) => set({ repoId }),
+  resetState: () =>
+    // FIXME before rest a state, first
+    // 1. destroy/disconnect the provider, or it keep the awareness information of the exited page
+    // 2. set state.provider = null, or it can't be assigned a new provider.
+    set((state) => {
+      console.log("user reset state provider", state.provider);
+      if (state.provider) {
+        state.provider.destroy();
+        state.ydoc.destroy();
+        state.provider = null;
+      }
+      return initialState;
+    }),
+  setRepo: (repoId: string) =>
+    set(
+      produce((state: BearState) => {
+        state.repoId = repoId;
+        state.ydoc = new Doc();
+        // console.log("user reset state setrepo", repoId);
+        if (state.provider) {
+          console.log("emmm, provider exists", state.provider);
+        } else {
+          console.log("connecting yjs socket ..");
+          state.provider = new WebsocketProvider(
+            serverURL,
+            state.repoId,
+            state.ydoc
+          );
+          // max retry time: 10s
+          state.provider.connect();
+          state.provider.maxBackoffTime = 10000;
+        }
+      })
+    ),
   setSessionId: (id) => set({ sessionId: id }),
   addError: (error) => set({ error }),
   clearError: () => set({ error: null }),
+  setSelected: (id) => set({ selected: id }),
   addPod: async (
     client,
     { parent, index, anchor, shift, id, type, lang, x, y, width, height }
@@ -221,25 +288,29 @@ const createRepoSlice: StateCreator<
     set(
       produce((state: BearState) => {
         // 1. do local update
-        state.pods[id] = pod;
-        // push this node
-        // TODO the children no longer need to be ordered
-        // TODO the frontend should handle differently for the children
-        // state.pods[parent].children.splice(index, 0, id);
-        state.pods[parent].children.splice(index, 0, { id, type: pod.type });
-        // DEBUG sort-in-place
-        // TODO I can probably insert
-        // CAUTION the sort expects -1,0,1, not true/false
-        pod.ns = computeNamespace(state.pods, id);
+        if (!state.pods.hasOwnProperty(id)) {
+          state.pods[id] = pod;
+          // push this node
+          // TODO the children no longer need to be ordered
+          // TODO the frontend should handle differently for the children
+          // state.pods[parent].children.splice(index, 0, id);
+          state.pods[parent].children.splice(index, 0, { id, type: pod.type });
+          // DEBUG sort-in-place
+          // TODO I can probably insert
+          // CAUTION the sort expects -1,0,1, not true/false
+          pod.ns = computeNamespace(state.pods, id);
+        }
       })
     );
     // 2. do remote update
-    await doRemoteAddPod(client, {
-      repoId: get().repoId,
-      parent,
-      index,
-      pod,
-    });
+    if (client) {
+      await doRemoteAddPod(client, {
+        repoId: get().repoId,
+        parent,
+        index,
+        pod,
+      });
+    }
   },
   deletePod: async (
     client,
@@ -247,24 +318,36 @@ const createRepoSlice: StateCreator<
   ) => {
     const pods = get().pods;
     // get all ids to delete. Gathering them here is easier than on the server
-    const dfs = (id) =>
-      [id].concat(...pods[id].children.map(({ id }) => dfs(id)));
+
+    // TOFIX: check pods[id] exists before deleting
+    const dfs = (id) => {
+      const pod = pods[id];
+      if (pod) {
+        toDelete.push(id);
+        pod.children.forEach(dfs);
+      }
+    };
+
+    dfs(id);
     // pop in toDelete
-    toDelete = dfs(id);
     set(
       produce((state: BearState) => {
         // delete the link to parent
-        const parent = state.pods[state.pods[id].parent!];
-        const index = parent.children.map(({ id }) => id).indexOf(id);
-        // update all other siblings' index
-        // remove all
-        parent.children.splice(index, 1);
+        const parent = state.pods[state.pods[id]?.parent!];
+        if (parent) {
+          const index = parent.children.map(({ id }) => id).indexOf(id);
+          // update all other siblings' index
+          // remove all
+          parent.children.splice(index, 1);
+        }
         toDelete.forEach((id) => {
           delete state.pods[id];
         });
       })
     );
-    await doRemoteDeletePod(client, { id, toDelete });
+    if (client) {
+      await doRemoteDeletePod(client, { id, toDelete });
+    }
   },
   setPodType: ({ id, type }) =>
     set(
@@ -543,6 +626,7 @@ const createRepoSlice: StateCreator<
     set(
       produce((state) => {
         // FIXME I need to modify many pods here.
+        if (state.pods[id]?.parent === parent) return;
         state.pods[id].parent = parent;
         // FXME I'm marking all the pods as dirty here.
         state.pods[id].dirty = true;
@@ -622,6 +706,52 @@ const createRepoSlice: StateCreator<
     // state.pods[action.meta.arg.id].isSyncing = false;
     // state.pods[action.meta.arg.id].dirty = false;
   },
+  addClient: (clientID, name, color) =>
+    set((state) => {
+      if (!state.clients.has(clientID)) {
+        addAwarenessStyle(clientID, color, name);
+        return {
+          clients: new Map(state.clients).set(clientID, {
+            name: name,
+            color: color,
+          }),
+        };
+      }
+      return { clients: state.clients };
+    }),
+  deleteClient: (clientID) =>
+    set((state) => {
+      const clients = new Map(state.clients);
+      clients.delete(clientID);
+      return { clients: clients };
+    }),
+  setUser: (user) =>
+    set(
+      produce((state: BearState) => {
+        const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+        // if (!state.ydoc) state.ydoc = new Doc();
+        if (state.provider) {
+          const awareness = state.provider.awareness;
+          awareness.setLocalStateField("user", { name: user.firstname, color });
+        }
+        state.user = { ...user, color };
+      })
+    ),
+  flipShowLineNumbers: () =>
+    set((state) => ({ showLineNumbers: !state.showLineNumbers })),
+  disconnect: () =>
+    set(
+      // clean up the connected provider after exiting the page
+      produce((state) => {
+        if (state.provider) {
+          state.provider.destroy();
+          // just for debug usage, remove it later
+          console.log("remove awareness", state.provider.awareness);
+          state.provider = null;
+        }
+        state.ydoc.destroy();
+      })
+    ),
 });
 
 export const createRepoStore = () =>
