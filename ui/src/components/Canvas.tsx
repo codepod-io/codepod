@@ -17,6 +17,8 @@ import ReactFlow, {
   Handle,
   useReactFlow,
   Position,
+  ConnectionMode,
+  MarkerType,
   Node,
 } from "react-flow-renderer";
 import Box from "@mui/material/Box";
@@ -94,8 +96,9 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
       className="custom-drag-handle"
     >
       <Handle
-        type="target"
+        type="source"
         position={Position.Top}
+        id="top"
         isConnectable={isConnectable}
       />
       {/* The header of scope nodes. */}
@@ -127,6 +130,19 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
       <Handle
         type="source"
         position={Position.Bottom}
+        id="bottom"
+        isConnectable={isConnectable}
+      />
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="left"
+        isConnectable={isConnectable}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
         isConnectable={isConnectable}
       />
       {selected === id && (
@@ -285,8 +301,27 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
       ref={ref}
     >
       <Handle
-        type="target"
+        type="source"
         position={Position.Top}
+        id="top"
+        isConnectable={isConnectable}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom"
+        isConnectable={isConnectable}
+      />
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="left"
+        isConnectable={isConnectable}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
         isConnectable={isConnectable}
       />
       {/* The header of code pods. */}
@@ -385,12 +420,13 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
           </Box>
         )}
       </Box>
-
+      
       <Handle
         type="source"
         position={Position.Bottom}
         isConnectable={isConnectable}
       />
+
       {false && (
         <Moveable
           target={target}
@@ -515,7 +551,23 @@ export function Canvas() {
     [setEdges]
   );
   const onConnect = useCallback(
-    (connection) => setEdges((eds) => addEdge(connection, eds)),
+    (connection) =>
+      setEdges((eds) =>
+        addEdge(
+          {
+            ...connection,
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: "black",
+            },
+            style: {
+              stroke: "black",
+              strokeWidth: 3,
+            },
+          },
+          eds
+        )
+      ),
     [setEdges]
   );
 
@@ -856,6 +908,7 @@ export function Canvas() {
           nodeTypes={nodeTypes}
           zoomOnScroll={false}
           panOnScroll={true}
+          connectionMode={ConnectionMode.Loose}
         >
           <Box>
             <MiniMap
