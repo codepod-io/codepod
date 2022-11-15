@@ -192,16 +192,6 @@ function ResultBlock({ pod, id }) {
   const wsRun = useStore(store, (state) => state.wsRun);
   return (
     <Box>
-      {pod.stdout && (
-        <Box overflow="scroll" border="1px">
-          {/* TODO separate stdout and stderr */}
-          <Box bgcolor="lightgray">Stdout</Box>
-          <Box whiteSpace="pre-wrap" fontSize="sm">
-            <Ansi>{pod.stdout}</Ansi>
-          </Box>
-        </Box>
-      )}
-      {pod.running && <CircularProgress />}
       {pod.result && (
         <Box
           sx={{ display: "flex", flexDirection: "column" }}
@@ -231,6 +221,16 @@ function ResultBlock({ pod, id }) {
           )}
         </Box>
       )}
+      {pod.stdout && (
+        <Box overflow="scroll" border="1px">
+          {/* TODO separate stdout and stderr */}
+          <Box bgcolor="lightgray">Stdout</Box>
+          <Box whiteSpace="pre-wrap" fontSize="sm">
+            <Ansi>{pod.stdout}</Ansi>
+          </Box>
+        </Box>
+      )}
+      {pod.running && <CircularProgress />}
       {pod.error && (
         <Box overflow="scroll" border="1px">
           <Box bgcolor="lightgray">Error</Box>
@@ -400,7 +400,11 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
           }}
           onLayout={onLayout}
         />
-        {(pod.stdout || pod.stderr || pod.result || pod.error) && (
+        {(pod.running ||
+          pod.stdout ||
+          pod.stderr ||
+          pod.result ||
+          pod.error) && (
           <Box
             className="nowheel"
             sx={{
@@ -420,13 +424,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
           </Box>
         )}
       </Box>
-      
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        isConnectable={isConnectable}
-      />
-
       {false && (
         <Moveable
           target={target}
@@ -514,7 +511,7 @@ export function Canvas() {
               pods[id].type === "CODE"
                 ? undefined
                 : level2color[level] || level2color["default"],
-            width: pods[id].width,
+            width: 700,
             height: pods[id].height,
           },
         });
@@ -595,7 +592,7 @@ export function Canvas() {
         };
       } else {
         style = {
-          width: 300,
+          width: 700,
           height: 300,
         };
       }
