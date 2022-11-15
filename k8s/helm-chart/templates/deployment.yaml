@@ -169,3 +169,40 @@ spec:
       protocol: TCP
       port: 4011
       targetPort: 4011
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: example-runtime-deployment
+  labels:
+    app: example-runtime
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: example-runtime
+  template:
+    metadata:
+      labels:
+        app: example-runtime
+    spec:
+      containers:
+        - name: example-runtime-kernel
+          image: lihebi/codepod-kernel-python:{{ .Chart.AppVersion }}
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.2"
+        - name: example-runtime-ws
+          image: lihebi/codepod-runtime:{{ .Chart.AppVersion }}
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.2"
