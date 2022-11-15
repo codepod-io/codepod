@@ -72,6 +72,13 @@ services:
       - socket-node-modules:/app/node_modules
     command: sh -c "yarn add yjs y-websocket && HOST=0.0.0.0 PORT=4233 npx y-websocket"
 
+  example-runtime:
+    # TODO Verify the latest image will be downloaded for each new release.
+    image: lihebi/codepod-runtime:latest
+
+  example-kernel:
+    image: lihebi/codepod-kernel-python:latest
+
 volumes:
   db-data:
   api-node-modules:
