@@ -300,18 +300,19 @@ async function updateGitGutter(editor) {
 // won't be visible in the editorDidMount callback.
 export function MyMonaco({
   lang = "javascript",
-  value = "",
   id = "0",
   gitvalue = null,
   onChange = (value) => {},
   onRun = () => {},
-  onLayout = (height) => {},
+  // onLayout = (height) => {},
 }) {
   // console.log("rendering monaco ..");
   // there's no racket language support
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
+  const getPod = useStore(store, (state) => state.getPod);
+  const value = getPod(id).content || "";
 
   if (lang === "racket") {
     lang = "scheme";

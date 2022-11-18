@@ -185,6 +185,7 @@ export interface RepoSlice {
   deleteClient: (clientId: any) => void;
   flipShowLineNumbers: () => void;
   disconnect: () => void;
+  getPod: (string) => any;
 }
 
 type BearState = RepoSlice & RuntimeSlice;
@@ -752,6 +753,8 @@ const createRepoSlice: StateCreator<
         state.ydoc.destroy();
       })
     ),
+  getPod: (id: string) => get().pods[id],
+  // getPods: () => get().pods,
 });
 
 export const createRepoStore = () =>

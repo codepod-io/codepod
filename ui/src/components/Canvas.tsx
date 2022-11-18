@@ -250,7 +250,7 @@ function ResultBlock({ pod, id }) {
 const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const pod = useStore(store, (state) => state.pods[id]);
+  // const pod = useStore(store, (state) => state.pods[id]);
   const setPodContent = useStore(store, (state) => state.setPodContent);
   const updatePod = useStore(store, (state) => state.updatePod);
   const clearResults = useStore(store, (s) => s.clearResults);
@@ -266,11 +266,29 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const { setNodes } = useReactFlow();
   // const selected = useStore(store, (state) => state.selected);
   const setSelected = useStore(store, (state) => state.setSelected);
+  const getPod = useStore(store, (state) => state.getPod);
+  const pod = getPod(id);
+  const showResult = useStore(
+    store,
+    (state) =>
+      state.pods[id].running ||
+      state.pods[id].result ||
+      state.pods[id].error ||
+      state.pods[id].stdout ||
+      state.pods[id].stderr
+  );
+
+  //FIXME: keep it for degguging, see if the codenode is re-rendering, remove later
+  console.log("code node render", getPod(id));
+
+  // useEffect(() => {
+  //   console.log("podref changes", podRef.current);
+  // }, [podRef]);
 
   React.useEffect(() => {
     setTarget(ref.current);
   }, []);
-  if (!pod) return <Box>ERROR</Box>;
+  // if (!pod) return <Box>ERROR</Box>;
   return (
     <Box
       sx={{
@@ -369,22 +387,17 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
         }}
       >
         <MyMonaco
-          value={pod.content || ""}
-          id={pod.id}
+          id={id}
           onChange={(value) => {
-            setPodContent({ id: pod.id, content: value });
+            setPodContent({ id: id, content: value });
           }}
-          lang={pod.lang || "javascript"}
+          lang={"python" || "javascript"}
           onRun={() => {
-            clearResults(pod.id);
-            wsRun(pod.id);
+            clearResults(id);
+            wsRun(id);
           }}
         />
-        {(pod.running ||
-          pod.stdout ||
-          pod.stderr ||
-          pod.result ||
-          pod.error) && (
+        {showResult && (
           <Box
             className="nowheel"
             sx={{
@@ -400,7 +413,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
               zIndex: 100,
             }}
           >
-            <ResultBlock pod={pod} id={id} />
+            <ResultBlock pod={getPod(id)} id={id} />
           </Box>
         )}
       </Box>
