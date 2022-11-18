@@ -184,6 +184,8 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
   );
 });
 
+// FIXME: the resultblock is rendered every time the parent codeNode changes (e.g., dragging), we may set the result number as a state of a pod to memoize the resultblock.
+
 function ResultBlock({ pod, id }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -251,11 +253,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   // const pod = useStore(store, (state) => state.pods[id]);
-  const setPodContent = useStore(store, (state) => state.setPodContent);
-  const updatePod = useStore(store, (state) => state.updatePod);
-  const clearResults = useStore(store, (s) => s.clearResults);
   const wsRun = useStore(store, (state) => state.wsRun);
-  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const ref = useRef(null);
   const [target, setTarget] = React.useState<any>(null);
   const [frame] = React.useState({
@@ -268,6 +266,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const setSelected = useStore(store, (state) => state.setSelected);
   const getPod = useStore(store, (state) => state.getPod);
   const pod = getPod(id);
+
   const showResult = useStore(
     store,
     (state) =>
@@ -278,14 +277,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
       state.pods[id].stderr
   );
 
-  //FIXME: keep it for degguging, see if the codenode is re-rendering, remove later
-  console.log("code node render", getPod(id));
-
-  // useEffect(() => {
-  //   console.log("podref changes", podRef.current);
-  // }, [podRef]);
-
-  React.useEffect(() => {
+  useEffect(() => {
     setTarget(ref.current);
   }, []);
   // if (!pod) return <Box>ERROR</Box>;
@@ -386,17 +378,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
           );
         }}
       >
-        <MyMonaco
-          id={id}
-          onChange={(value) => {
-            setPodContent({ id: id, content: value });
-          }}
-          lang={"python" || "javascript"}
-          onRun={() => {
-            clearResults(id);
-            wsRun(id);
-          }}
-        />
+        <MyMonaco id={id} gitvalue="" />
         {showResult && (
           <Box
             className="nowheel"
@@ -413,7 +395,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
               zIndex: 100,
             }}
           >
-            <ResultBlock pod={getPod(id)} id={id} />
+            <ResultBlock pod={pod} id={id} />
           </Box>
         )}
       </Box>
@@ -440,36 +422,39 @@ export function Canvas() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   // the real pods
-  const id2children = useStore(store, (state) => state.id2children);
-  const pods = useStore(store, (state) => state.pods);
+  const getId2children = useStore(store, (state) => state.getId2children);
+  // const pods = useStore(store, (state) => state.pods);
+  const getPod = useStore(store, (state) => state.getPod);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
 
   const getRealNodes = useCallback(
     (id, level) => {
       let res: any[] = [];
-      let children = id2children[id];
+      let children = getId2children(id) || [];
+      console.log("getChildren", id, children);
+      const pod = getPod(id);
       if (id !== "ROOT") {
         res.push({
           id: id,
-          type: pods[id].type === "CODE" ? "code" : "scope",
+          type: pod.type === "CODE" ? "code" : "scope",
           data: {
             // label: `ID: ${id}, parent: ${pods[id].parent}, pos: ${pods[id].x}, ${pods[id].y}`,
             label: id,
           },
           // position: { x: 100, y: 100 },
-          position: { x: pods[id].x, y: pods[id].y },
-          parentNode: pods[id].parent !== "ROOT" ? pods[id].parent : undefined,
+          position: { x: pod.x, y: pod.y },
+          parentNode: pod.parent !== "ROOT" ? pod.parent : undefined,
           extent: "parent",
           dragHandle: ".custom-drag-handle",
           level,
           style: {
             backgroundColor:
-              pods[id].type === "CODE"
+              pod.type === "CODE"
                 ? undefined
                 : level2color[level] || level2color["default"],
             width: 700,
             // for code node, don't set height, let it be auto
-            height: pods[id].height || undefined,
+            height: pod.height || undefined,
           },
         });
       }
@@ -478,7 +463,7 @@ export function Canvas() {
       }
       return res;
     },
-    [id2children, pods]
+    [getId2children, getPod]
   );
   useEffect(() => {
     let nodes = getRealNodes("ROOT", -1);
@@ -598,19 +583,19 @@ export function Canvas() {
     (node) => {
       let x = node.position.x;
       let y = node.position.y;
-      let parent = pods[node.parent];
+      let parent = getPod(node.parent);
       while (parent) {
         x += parent.x;
         y += parent.y;
         if (parent.parent) {
-          parent = pods[parent.parent];
+          parent = getPod(parent.parent);
         } else {
           break;
         }
       }
       return [x, y];
     },
-    [pods]
+    [getPod]
   );
 
   const getScopeAt = useCallback(

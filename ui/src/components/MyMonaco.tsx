@@ -1,5 +1,5 @@
 import { Position } from "monaco-editor";
-import { useState, useContext } from "react";
+import { useState, useContext, memo } from "react";
 import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
 import { monaco } from "react-monaco-editor";
 import { useStore } from "zustand";
@@ -298,21 +298,31 @@ async function updateGitGutter(editor) {
 // not, and the instance will only be mounted once. All variables, even a object
 // like the pod object will be fixed at original state: changing pod.staged
 // won't be visible in the editorDidMount callback.
-export function MyMonaco({
-  lang = "javascript",
+
+interface MyMonacoProps {
+  id: string;
+  gitvalue: string;
+}
+
+export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   id = "0",
   gitvalue = null,
-  onChange = (value) => {},
-  onRun = () => {},
-  // onLayout = (height) => {},
 }) {
-  // console.log("rendering monaco ..");
   // there's no racket language support
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
   const getPod = useStore(store, (state) => state.getPod);
+  const setPodContent = useStore(store, (state) => state.setPodContent);
+  const clearResults = useStore(store, (s) => s.clearResults);
+  const wsRun = useStore(store, (state) => state.wsRun);
   const value = getPod(id).content || "";
+  let lang = getPod(id).lang || "javascript";
+  const onChange = (value) => setPodContent({ id, content: value });
+  const onRun = () => {
+    clearResults(id);
+    wsRun(id);
+  };
 
   if (lang === "racket") {
     lang = "scheme";
@@ -421,4 +431,4 @@ export function MyMonaco({
       editorDidMount={onEditorDidMount}
     />
   );
-}
+});
