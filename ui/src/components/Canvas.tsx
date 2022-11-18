@@ -273,7 +273,7 @@ function ResultBlock({ pod, id }) {
       )}
       {pod.running && <CircularProgress />}
       {pod.error && (
-        <Box overflow="scroll" maxHeight="150px" border="1px">
+        <Box overflow="scroll" maxHeight="145px" border="1px">
           {/* <Box bgcolor="lightgray">Error</Box> */}
           <Box color="red">{pod.error.evalue}</Box>
           {pod.error.stacktrace && (
@@ -443,8 +443,10 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
               // left: layout === "right" ? "100%" : 0,
               maxHeight: "150px",
               width: "100%",
+              boxSizing: "border-box",
               backgroundColor: "white",
               zIndex: 100,
+              padding: '0 10px'
             }}
           >
             <ResultBlock pod={pod} id={id} />
