@@ -29,12 +29,19 @@ export function useNodesStateSynced(nodeList) {
       if (!isNodeAddChange(change) && !isNodeResetChange(change)) {
         if (isNodeRemoveChange(change)) {
           nodesMap.delete(change.id);
+          return;
         }
         const node = nextNodes.find((n) => n.id === change.id);
         if (!node) return;
 
-        if (change.type === "select") {
+        if (change.type === "select" && change.selected) {
+          // FIXME: consider the case where only unselect is called
           setSelected(node.id);
+          return;
+        }
+
+        if (change.type === "dimensions" && node.type === "code") {
+          // the re-size event of codeNode don't need to be sync, just skip.
           return;
         }
 

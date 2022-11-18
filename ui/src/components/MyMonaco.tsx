@@ -346,7 +346,7 @@ export function MyMonaco({
       // width: 800
       // editor.layout({ width: 800, height: contentHeight });
       editor.layout();
-      onLayout(`${contentHeight}px`);
+      // onLayout(`${contentHeight}px`);
     };
     editor.onDidContentSizeChange(updateHeight);
     // FIXME clean up?

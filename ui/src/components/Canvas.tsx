@@ -68,9 +68,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
   const [frame] = React.useState({
     translate: [0, 0],
   });
-  const setSelected = useStore(store, (state) => state.setSelected);
   const selected = useStore(store, (state) => state.selected);
-  const { setNodes } = useReactFlow();
 
   const onResize = useCallback(({ width, height, offx, offy }) => {
     const node = nodesMap.get(id);
@@ -266,25 +264,8 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   // right, bottom
   const [layout, setLayout] = useState("right");
   const { setNodes } = useReactFlow();
-  const selected = useStore(store, (state) => state.selected);
+  // const selected = useStore(store, (state) => state.selected);
   const setSelected = useStore(store, (state) => state.setSelected);
-
-  const onResize = useCallback(({ width, height, offx, offy }) => {
-    const node = nodesMap.get(id);
-    if (node) {
-      node.style = { ...node.style, width, height };
-      node.position.x += offx;
-      node.position.y += offy;
-      nodesMap.set(id, node);
-    }
-  }, []);
-  const onLayout = useCallback(({ height }) => {
-    const node = nodesMap.get(id);
-    if (node) {
-      node.style = { ...node.style, height };
-      nodesMap.set(id, node);
-    }
-  }, []);
 
   React.useEffect(() => {
     setTarget(ref.current);
@@ -398,7 +379,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
             clearResults(pod.id);
             wsRun(pod.id);
           }}
-          onLayout={onLayout}
         />
         {(pod.running ||
           pod.stdout ||
@@ -424,43 +404,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
           </Box>
         )}
       </Box>
-      {false && (
-        <Moveable
-          target={target}
-          resizable={true}
-          keepRatio={false}
-          throttleResize={1}
-          renderDirections={["e", "s", "se"]}
-          edge={false}
-          zoom={1}
-          origin={true}
-          padding={{ left: 0, top: 0, right: 0, bottom: 0 }}
-          onResizeStart={(e) => {
-            e.setOrigin(["%", "%"]);
-            e.dragStart && e.dragStart.set(frame.translate);
-          }}
-          onResize={(e) => {
-            const beforeTranslate = e.drag.beforeTranslate;
-            frame.translate = beforeTranslate;
-            e.target.style.width = `${e.width}px`;
-            e.target.style.height = `${e.height}px`;
-            e.target.style.transform = `translate(${beforeTranslate[0]}px, ${beforeTranslate[1]}px)`;
-            onResize({
-              width: e.width,
-              height: e.height,
-              offx: beforeTranslate[0],
-              offy: beforeTranslate[1],
-            });
-            updatePod({
-              id,
-              data: {
-                width: e.width,
-                height: e.height,
-              },
-            });
-          }}
-        />
-      )}
     </Box>
   );
 });
@@ -512,7 +455,8 @@ export function Canvas() {
                 ? undefined
                 : level2color[level] || level2color["default"],
             width: 700,
-            height: pods[id].height,
+            // for code node, don't set height, let it be auto
+            height: pods[id].height || undefined,
           },
         });
       }
@@ -593,7 +537,8 @@ export function Canvas() {
       } else {
         style = {
           width: 700,
-          height: 300,
+          // we must not set the height here, otherwise the auto layout will not work
+          height: undefined,
         };
       }
 
