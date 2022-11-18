@@ -87,7 +87,7 @@ const initialState = {
   selected: null,
   //TODO: all presence information are now saved in clients map for future usage. create a modern UI to show those information from clients (e.g., online users)
   clients: new Map(),
-  showLineNumbers: true,
+  showLineNumbers: false,
 };
 
 export type Pod = {

@@ -179,8 +179,8 @@ export function MyMonacoDiff({ from, to }) {
             400,
             Math.max(one.getContentHeight(), two.getContentHeight())
           );
+          const editorElement:any = editor.getContainerDomNode();
           // console.log("target height:", contentHeight);
-          const editorElement = editor.getContainerDomNode();
           if (!editorElement) {
             return;
           }
@@ -306,13 +306,14 @@ export function MyMonaco({
   onChange = (value) => {},
   onRun = () => {},
   onLayout = (height) => {},
+  onBlur=()=>{},
+  onFocus=()=>{}
 }) {
   // console.log("rendering monaco ..");
   // there's no racket language support
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
-
   if (lang === "racket") {
     lang = "scheme";
   }
@@ -327,7 +328,6 @@ export function MyMonaco({
   const awareness = provider?.awareness;
 
   function onEditorDidMount(editor, monaco) {
-    // console.log("did mount");
     setEditor(editor);
     // console.log(Math.min(1000, editor.getContentHeight()));
     const updateHeight = () => {
@@ -348,6 +348,12 @@ export function MyMonaco({
       editor.layout();
       onLayout(`${contentHeight}px`);
     };
+    editor.onDidBlurEditorText(()=>{
+      onBlur();
+    });
+    editor.onDidFocusEditorText(()=>{
+      onFocus();
+    });
     editor.onDidContentSizeChange(updateHeight);
     // FIXME clean up?
     editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, function () {
@@ -390,6 +396,7 @@ export function MyMonaco({
   return (
     <MonacoEditor
       language={lang}
+      className="monaco"
       // value={value}
       // theme="vs-dark"
       options={{

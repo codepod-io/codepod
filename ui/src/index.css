@@ -11,3 +11,10 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+.react-monaco-editor-container {
+  box-sizing: border-box;
+  padding: 10px 0;
+}
+.monaco .monaco-editor-background, .margin{
+  background-color: rgb(244, 246, 248)!important;
+}

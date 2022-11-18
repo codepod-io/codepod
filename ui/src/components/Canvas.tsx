@@ -6,7 +6,6 @@ import {
   useEffect,
   memo,
 } from "react";
-import * as React from "react";
 import ReactFlow, {
   addEdge,
   applyEdgeChanges,
@@ -25,10 +24,11 @@ import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
-import CircleIcon from "@mui/icons-material/Circle";
+import DeleteIcon from "@mui/icons-material/Delete";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
 
 import Grid from "@mui/material/Grid";
@@ -47,6 +47,7 @@ import { useNodesStateSynced } from "../lib/nodes";
 import { MyMonaco } from "./MyMonaco";
 import { useApolloClient } from "@apollo/client";
 import { CanvasContextMenu } from "./CanvasContextMenu";
+import styles from "./canvas.module.css";
 
 const nanoid = customAlphabet(nolookalikes, 10);
 
@@ -56,16 +57,72 @@ interface Props {
   isConnectable: boolean;
   // selected: boolean;
 }
-
+enum ToolTypes {
+  delete,
+  play,
+  layout,
+}
+function ToolBox({ visible=true, data, onRunTask = (...args) => {} }) {
+  // todo: need another design pattern to control visible
+  if (!visible) {
+    return null;
+  }
+  return (
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        width: "40px",
+        marginLeft: "10px",
+        borderRadius: "4px",
+        position: "absolute",
+        border: "solid 1px #d6dee6",
+        left: "100%",
+        background: "white",
+        zIndex: 150,
+        justifyContent: "center",
+      }}
+    >
+      <Tooltip title="Run (shift-enter)">
+        <IconButton
+          size="small"
+          onClick={() => {
+            onRunTask && onRunTask(ToolTypes.play, data);
+          }}
+        >
+          <PlayCircleOutlineIcon fontSize="inherit" />
+        </IconButton>
+      </Tooltip>
+      <IconButton
+        size="small"
+        onClick={() => {
+          onRunTask && onRunTask(ToolTypes.delete, data);
+        }}
+      >
+        <DeleteIcon fontSize="inherit" />
+      </IconButton>
+      <Tooltip title="Change layout">
+        <IconButton
+          size="small"
+          onClick={() => {
+            onRunTask && onRunTask(ToolTypes.layout, data);
+          }}
+        >
+          <ViewComfyIcon fontSize="inherit" />
+        </IconButton>
+      </Tooltip>
+    </Box>
+  );
+}
 const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
   // add resize to the node
   const ref = useRef(null);
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const updatePod = useStore(store, (state) => state.updatePod);
-  const [target, setTarget] = React.useState<any>();
+  const [target, setTarget] = useState<any>();
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
-  const [frame] = React.useState({
+  const [frame] = useState({
     translate: [0, 0],
   });
   const setSelected = useStore(store, (state) => state.setSelected);
@@ -82,7 +139,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
     }
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setTarget(ref.current);
   }, []);
   return (
@@ -103,29 +160,13 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
       />
       {/* The header of scope nodes. */}
       <Box
-        className="custom-drag-handle"
-        bgcolor={"rgb(225,225,225)"}
-        sx={{ display: "flex" }}
+        sx={{
+          display: "flex",
+          flexGrow: 1,
+          justifyContent: "center",
+        }}
       >
-        <Grid container spacing={2} sx={{ alignItems: "center" }}>
-          <Grid item xs={4}>
-            <IconButton size="small">
-              <CircleIcon sx={{ color: "red" }} fontSize="inherit" />
-            </IconButton>
-          </Grid>
-          <Grid item xs={4}>
-            <Box
-              sx={{
-                display: "flex",
-                flexGrow: 1,
-                justifyContent: "center",
-              }}
-            >
-              Scope
-            </Box>
-          </Grid>
-          <Grid item xs={4}></Grid>
-        </Grid>
+        Scope
       </Box>
       <Handle
         type="source"
@@ -200,16 +241,17 @@ function ResultBlock({ pod, id }) {
           {pod.result.html ? (
             <div dangerouslySetInnerHTML={{ __html: pod.result.html }}></div>
           ) : (
-            pod.result.text && (
-              <Box>
-                <Box sx={{ display: "flex" }} bgcolor="lightgray">
-                  Result: [{pod.result.count}]:
-                </Box>
-                <Box>
-                  <Box component="pre" whiteSpace="pre-wrap">
-                    {pod.result.text}
-                  </Box>
-                </Box>
+            !pod.error && (
+              <Box
+                color="rgb(0, 183, 87)"
+                sx={{
+                  padding: "6px",
+                  zIndex: 200,
+                }}
+              >
+                <div className={styles["result-status__success"]}>
+                  <CheckCircleIcon fontSize="inherit" />
+                </div>
               </Box>
             )
           )}
@@ -222,9 +264,8 @@ function ResultBlock({ pod, id }) {
         </Box>
       )}
       {pod.stdout && (
-        <Box overflow="scroll" border="1px">
+        <Box overflow="scroll" maxHeight="135px" border="1px">
           {/* TODO separate stdout and stderr */}
-          <Box bgcolor="lightgray">Stdout</Box>
           <Box whiteSpace="pre-wrap" fontSize="sm">
             <Ansi>{pod.stdout}</Ansi>
           </Box>
@@ -232,8 +273,8 @@ function ResultBlock({ pod, id }) {
       )}
       {pod.running && <CircularProgress />}
       {pod.error && (
-        <Box overflow="scroll" border="1px">
-          <Box bgcolor="lightgray">Error</Box>
+        <Box overflow="scroll" maxHeight="150px" border="1px">
+          {/* <Box bgcolor="lightgray">Error</Box> */}
           <Box color="red">{pod.error.evalue}</Box>
           {pod.error.stacktrace && (
             <Box>
@@ -248,7 +289,6 @@ function ResultBlock({ pod, id }) {
     </Box>
   );
 }
-
 const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -259,10 +299,11 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const wsRun = useStore(store, (state) => state.wsRun);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const ref = useRef(null);
-  const [target, setTarget] = React.useState<any>(null);
-  const [frame] = React.useState({
+  const [target, setTarget] = useState<any>(null);
+  const [frame] = useState({
     translate: [0, 0],
   });
+  const [isEditorBlur, setIsEditorBlur] = useState(true);
   // right, bottom
   const [layout, setLayout] = useState("right");
   const { setNodes } = useReactFlow();
@@ -285,18 +326,32 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
       nodesMap.set(id, node);
     }
   }, []);
-
-  React.useEffect(() => {
+  const runToolBoxTask = (type, data) => {
+    switch (type) {
+      case ToolTypes.delete:
+        break;
+      case ToolTypes.play:
+        wsRun(data.id);
+        break;
+      case ToolTypes.layout:
+        setLayout(layout === "bottom" ? "right" : "bottom");
+        break;
+    }
+  };
+  useEffect(() => {
     setTarget(ref.current);
   }, []);
   if (!pod) return <Box>ERROR</Box>;
   return (
     <Box
+      className="custom-drag-handle"
       sx={{
-        border: "solid 1px black",
+        border: "solid 1px #d6dee6",
+        borderRadius: "4px",
         width: "100%",
         height: "100%",
-        backgroundColor: "white",
+        backgroundColor: "rgb(244, 246, 248)",
+        borderColor: isEditorBlur ? "#d6dee6" : "#3182ce",
       }}
       ref={ref}
     >
@@ -325,46 +380,13 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
         isConnectable={isConnectable}
       />
       {/* The header of code pods. */}
-      <Box
-        className="custom-drag-handle"
-        bgcolor={"rgb(225,225,225)"}
-        sx={{ display: "flex" }}
-      >
-        {/* Code: {data?.label} */}
-        {/* pod */}
-        <Box sx={{ display: "flex", flexGrow: 1 }}>
-          <IconButton size="small">
-            <CircleIcon sx={{ color: "red" }} fontSize="inherit" />
-          </IconButton>
-        </Box>
-        <Box sx={{ display: "flex" }}>
-          <Box sx={{ display: "flex" }}>
-            <Tooltip title="Run (shift-enter)">
-              <IconButton
-                size="small"
-                sx={{ color: "green" }}
-                onClick={() => {
-                  wsRun(id);
-                }}
-              >
-                <PlayArrowIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-          <Box sx={{ display: "flex" }}>
-            <Tooltip title="Change layout">
-              <IconButton
-                size="small"
-                onClick={() => {
-                  setLayout(layout === "bottom" ? "right" : "bottom");
-                }}
-              >
-                <ViewComfyIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
-      </Box>
+      <div className={styles["pod-index"]}>
+        [{pod.index}]
+      </div>
+      <ToolBox
+        data={{ id }}
+        onRunTask={runToolBoxTask}
+      ></ToolBox>
       <Box
         sx={{
           height: "90%",
@@ -399,6 +421,12 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
             wsRun(pod.id);
           }}
           onLayout={onLayout}
+          onBlur={() => {
+            setIsEditorBlur(true);
+          }}
+          onFocus={() => {
+            setIsEditorBlur(false);
+          }}
         />
         {(pod.running ||
           pod.stdout ||
@@ -408,15 +436,14 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
           <Box
             className="nowheel"
             sx={{
+              border: "solid 1px #d6dee6",
+              borderRadius: "4px",
               position: "absolute",
-              top: layout === "right" ? 0 : "100%",
-              left: layout === "right" ? "100%" : 0,
-              maxHeight: "100%",
-              maxWidth: "100%",
-              minWidth: "100px",
-              overflow: "scroll",
+              // top: layout === "right" ? 0 : "100%",
+              // left: layout === "right" ? "100%" : 0,
+              maxHeight: "150px",
+              width: "100%",
               backgroundColor: "white",
-              border: "solid 1px blue",
               zIndex: 100,
             }}
           >
@@ -704,6 +731,7 @@ export function Canvas() {
 
   const onNodeDragStart = useCallback(
     (_, node) => {
+      console.log("onNodeDragStart");
       const currentNode = nodesMap.get(node.id);
 
       if (currentNode) {
