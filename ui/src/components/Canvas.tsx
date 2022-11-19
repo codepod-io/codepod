@@ -62,7 +62,7 @@ enum ToolTypes {
   play,
   layout,
 }
-function ToolBox({ visible=true, data, onRunTask = (...args) => {} }) {
+function ToolBox({ visible = true, data, onRunTask = (...args) => {} }) {
   // todo: need another design pattern to control visible
   if (!visible) {
     return null;
@@ -71,15 +71,14 @@ function ToolBox({ visible=true, data, onRunTask = (...args) => {} }) {
     <Box
       sx={{
         display: "flex",
-        flexDirection: "column",
-        width: "40px",
         marginLeft: "10px",
         borderRadius: "4px",
         position: "absolute",
         border: "solid 1px #d6dee6",
-        left: "100%",
+        right: "25px",
+        top: "-15px",
         background: "white",
-        zIndex: 150,
+        zIndex: 250,
         justifyContent: "center",
       }}
     >
@@ -309,7 +308,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const { setNodes } = useReactFlow();
   const selected = useStore(store, (state) => state.selected);
   const setSelected = useStore(store, (state) => state.setSelected);
-
   const onResize = useCallback(({ width, height, offx, offy }) => {
     const node = nodesMap.get(id);
     if (node) {
@@ -326,9 +324,17 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
       nodesMap.set(id, node);
     }
   }, []);
+  const deleteNodeById = (id) => {
+    setNodes((nds) =>
+      nds.filter((node) => {
+        return node.id !== id;
+      })
+    );
+  };
   const runToolBoxTask = (type, data) => {
     switch (type) {
       case ToolTypes.delete:
+        deleteNodeById(id);
         break;
       case ToolTypes.play:
         wsRun(data.id);
@@ -342,6 +348,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
     setTarget(ref.current);
   }, []);
   if (!pod) return <Box>ERROR</Box>;
+  const isRightLayout = layout === "right";
   return (
     <Box
       className="custom-drag-handle"
@@ -380,13 +387,8 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
         isConnectable={isConnectable}
       />
       {/* The header of code pods. */}
-      <div className={styles["pod-index"]}>
-        [{pod.index}]
-      </div>
-      <ToolBox
-        data={{ id }}
-        onRunTask={runToolBoxTask}
-      ></ToolBox>
+      <div className={styles["pod-index"]}>[{pod.index}]</div>
+      <ToolBox data={{ id }} onRunTask={runToolBoxTask}></ToolBox>
       <Box
         sx={{
           height: "90%",
@@ -439,22 +441,23 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
               border: "solid 1px #d6dee6",
               borderRadius: "4px",
               position: "absolute",
-              // top: layout === "right" ? 0 : "100%",
-              // left: layout === "right" ? "100%" : 0,
+              top: isRightLayout ? 0 : "100%",
+              left: isRightLayout ? "100%" : 0,
               maxHeight: "150px",
-              width: "100%",
+              minWidth: isRightLayout ? "200px" : "100%",
               boxSizing: "border-box",
               backgroundColor: "white",
               zIndex: 100,
-              padding: '0 10px'
+              padding: "0 10px",
             }}
           >
             <ResultBlock pod={pod} id={id} />
           </Box>
         )}
       </Box>
+      {/* moveable will effect editor */}
       {false && (
-        <Moveable
+          <Moveable
           target={target}
           resizable={true}
           keepRatio={false}
@@ -487,9 +490,22 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
                 height: e.height,
               },
             });
+            onResize({
+              width: e.width,
+              height: e.height,
+              offx: beforeTranslate[0],
+              offy: beforeTranslate[1],
+            });
+            updatePod({
+              id,
+              data: {
+                width: e.width,
+                height: e.height,
+              },
+            });
           }}
-        />
-      )}
+        />)
+      }
     </Box>
   );
 });
