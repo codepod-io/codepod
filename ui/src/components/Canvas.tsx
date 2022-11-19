@@ -262,20 +262,15 @@ function ResultBlock({ pod, id }) {
           )}
         </Box>
       )}
-      {pod.stdout && (
-        <Box overflow="scroll" maxHeight="135px" border="1px">
-          {/* TODO separate stdout and stderr */}
-          <Box whiteSpace="pre-wrap" fontSize="sm">
-            <Ansi>{pod.stdout}</Ansi>
-          </Box>
-        </Box>
-      )}
       {pod.running && <CircularProgress />}
-      {pod.error && (
+      {true && (
         <Box overflow="scroll" maxHeight="145px" border="1px">
           {/* <Box bgcolor="lightgray">Error</Box> */}
-          <Box color="red">{pod.error.evalue}</Box>
-          {pod.error.stacktrace && (
+         {pod.stdout && (<Box whiteSpace="pre-wrap" fontSize="sm">
+            <Ansi>{pod.stdout}</Ansi>
+          </Box>)} 
+         {pod?.error && <Box color="red">{pod?.error?.evalue}</Box>}
+          {pod?.error?.stacktrace && (
             <Box>
               <Box>StackTrace</Box>
               <Box whiteSpace="pre-wrap" fontSize="small">
@@ -300,7 +295,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   });
   const [isEditorBlur, setIsEditorBlur] = useState(true);
   // right, bottom
-  const [layout, setLayout] = useState("right");
+  const [layout, setLayout] = useState("bottom");
   const { setNodes } = useReactFlow();
   // const selected = useStore(store, (state) => state.selected);
   const setSelected = useStore(store, (state) => state.setSelected);
@@ -343,15 +338,14 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   };
   const getPod = useStore(store, (state) => state.getPod);
   const pod = getPod(id);
-
   const showResult = useStore(
     store,
     (state) =>
-      state.pods[id].running ||
-      state.pods[id].result ||
-      state.pods[id].error ||
-      state.pods[id].stdout ||
-      state.pods[id].stderr
+      state.pods[id]?.running ||
+      state.pods[id]?.result ||
+      state.pods[id]?.error ||
+      state.pods[id]?.stdout ||
+      state.pods[id]?.stderr
   );
   useEffect(() => {
     setTarget(ref.current);
@@ -420,26 +414,15 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
           );
         }}
       >
-        {/* <MyMonaco
-          value={pod.content || ""}
-          id={pod.id}
-          onChange={(value) => {
-            setPodContent({ id: pod.id, content: value });
-          }}
-          lang={pod.lang || "javascript"}
-          onRun={() => {
-            clearResults(pod.id);
-            wsRun(pod.id);
-          }}
-          onLayout={onLayout}
-          onBlur={() => {
+         <MyMonaco 
+           id={id} 
+           gitvalue="" 
+           onBlur={() => {
             setIsEditorBlur(true);
-          }}
-          onFocus={() => {
+           }}
+           onFocus={() => {
             setIsEditorBlur(false);
-          }}
-        /> */}
-         <MyMonaco id={id} gitvalue="" />
+          }}/>
         {showResult && (
           <Box
             className="nowheel"
