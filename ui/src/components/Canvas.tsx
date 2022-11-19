@@ -733,7 +733,6 @@ export function Canvas() {
 
   const onNodeDragStart = useCallback(
     (_, node) => {
-      console.log("onNodeDragStart");
       const currentNode = nodesMap.get(node.id);
 
       if (currentNode) {

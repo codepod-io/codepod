@@ -6,6 +6,16 @@ import { useStore } from "zustand";
 import { RepoContext } from "../lib/store";
 import { MonacoBinding } from "y-monaco";
 
+const theme :monaco.editor.IStandaloneThemeData = {
+  base: "vs",
+  inherit: false,
+  rules: [],
+  colors: {
+    "editor.background": '#f3f3f340',
+    "editor.lineHighlightBackground": "#f3f3f340"
+  }
+}
+monaco.editor.defineTheme('codepod', theme);
 monaco.languages.setLanguageConfiguration("julia", {
   indentationRules: {
     increaseIndentPattern:
@@ -398,7 +408,7 @@ export function MyMonaco({
       language={lang}
       className="monaco"
       // value={value}
-      // theme="vs-dark"
+      theme="codepod"
       options={{
         selectOnLineNumbers: true,
         // This scrollBeyondLastLine is super important. Without this, it will
