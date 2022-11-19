@@ -454,6 +454,9 @@ const createRepoSlice: StateCreator<
     set(
       produce((state) => {
         let pod = state.pods[id];
+        if(!pod){
+          return;
+        }
         pod.content = content;
         pod.dirty = pod.remoteHash !== hashPod(pod);
       })

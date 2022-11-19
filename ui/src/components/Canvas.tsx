@@ -316,12 +316,11 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
       nodesMap.set(id, node);
     }
   }, []);
+  const apolloClient = useApolloClient();
+  const deletePod = useStore(store, (state) => state.deletePod);
   const deleteNodeById = (id) => {
-    setNodes((nds) =>
-      nds.filter((node) => {
-        return node.id !== id;
-      })
-    );
+    deletePod(apolloClient, { id: id, toDelete: [] });
+    nodesMap.delete(id);
   };
   const runToolBoxTask = (type, data) => {
     switch (type) {
@@ -338,6 +337,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   };
   const getPod = useStore(store, (state) => state.getPod);
   const pod = getPod(id);
+
   const showResult = useStore(
     store,
     (state) =>
@@ -350,6 +350,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   useEffect(() => {
     setTarget(ref.current);
   }, []);
+  if (!pod) return null;
   // if (!pod) return <Box>ERROR</Box>;
   const isRightLayout = layout === "right";
   return (
