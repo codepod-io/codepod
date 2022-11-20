@@ -6,16 +6,16 @@ import { useStore } from "zustand";
 import { RepoContext } from "../lib/store";
 import { MonacoBinding } from "y-monaco";
 
-const theme :monaco.editor.IStandaloneThemeData = {
+const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",
   inherit: false,
   rules: [],
   colors: {
-    "editor.background": '#f3f3f340',
-    "editor.lineHighlightBackground": "#f3f3f340"
-  }
-}
-monaco.editor.defineTheme('codepod', theme);
+    "editor.background": "#f3f3f340",
+    "editor.lineHighlightBackground": "#f3f3f340",
+  },
+};
+monaco.editor.defineTheme("codepod", theme);
 monaco.languages.setLanguageConfiguration("julia", {
   indentationRules: {
     increaseIndentPattern:
@@ -189,7 +189,7 @@ export function MyMonacoDiff({ from, to }) {
             400,
             Math.max(one.getContentHeight(), two.getContentHeight())
           );
-          const editorElement:any = editor.getContainerDomNode();
+          const editorElement: any = editor.getContainerDomNode();
           // console.log("target height:", contentHeight);
           if (!editorElement) {
             return;
@@ -312,15 +312,15 @@ async function updateGitGutter(editor) {
 interface MyMonacoProps {
   id: string;
   gitvalue: string;
-  onBlur?:Function;
-  onFocus?:Function;
+  onBlur?: Function;
+  onFocus?: Function;
 }
 
 export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   id = "0",
   gitvalue = null,
-  onBlur=()=>{},
-  onFocus=()=>{}
+  onBlur = () => {},
+  onFocus = () => {},
 }) {
   // there's no racket language support
   const store = useContext(RepoContext);
@@ -356,26 +356,19 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     // console.log(Math.min(1000, editor.getContentHeight()));
     const updateHeight = () => {
       // max height: 400
-      const contentHeight = Math.max(
-        100,
-        editor.getContentHeight()
-        // Math.min(400, editor.getContentHeight())
-      );
-      // console.log("target height:", contentHeight);
+      const contentHeight = Math.max(100, editor.getContentHeight());
       const editorElement = editor.getDomNode();
       if (!editorElement) {
         return;
       }
       editorElement.style.height = `${contentHeight}px`;
-      // width: 800
-      // editor.layout({ width: 800, height: contentHeight });
-      editor.layout();
+      //editor.layout();
       // onLayout(`${contentHeight}px`);
     };
-    editor.onDidBlurEditorText(()=>{
+    editor.onDidBlurEditorText(() => {
       onBlur();
     });
-    editor.onDidFocusEditorText(()=>{
+    editor.onDidFocusEditorText(() => {
       onFocus();
     });
     editor.onDidContentSizeChange(updateHeight);

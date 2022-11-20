@@ -34,6 +34,7 @@ import ViewComfyIcon from "@mui/icons-material/ViewComfy";
 import Grid from "@mui/material/Grid";
 
 import Moveable from "react-moveable";
+import { ResizableBox } from "react-resizable";
 import Ansi from "ansi-to-react";
 
 import { customAlphabet } from "nanoid";
@@ -47,7 +48,7 @@ import { useNodesStateSynced } from "../lib/nodes";
 import { MyMonaco } from "./MyMonaco";
 import { useApolloClient } from "@apollo/client";
 import { CanvasContextMenu } from "./CanvasContextMenu";
-import styles from "./canvas.module.css";
+import styles from "./canvas.style.js";
 
 const nanoid = customAlphabet(nolookalikes, 10);
 
@@ -248,9 +249,12 @@ function ResultBlock({ pod, id }) {
                   zIndex: 200,
                 }}
               >
-                <div className={styles["result-status__success"]}>
-                  <CheckCircleIcon fontSize="inherit" />
-                </div>
+                <Box sx={styles["result-status__success"]}>
+                  <CheckCircleIcon
+                    style={{ marginTop: "5px" }}
+                    fontSize="inherit"
+                  />
+                </Box>
               </Box>
             )
           )}
@@ -266,10 +270,12 @@ function ResultBlock({ pod, id }) {
       {true && (
         <Box overflow="scroll" maxHeight="145px" border="1px">
           {/* <Box bgcolor="lightgray">Error</Box> */}
-         {pod.stdout && (<Box whiteSpace="pre-wrap" fontSize="sm">
-            <Ansi>{pod.stdout}</Ansi>
-          </Box>)} 
-         {pod?.error && <Box color="red">{pod?.error?.evalue}</Box>}
+          {pod.stdout && (
+            <Box whiteSpace="pre-wrap" fontSize="sm">
+              <Ansi>{pod.stdout}</Ansi>
+            </Box>
+          )}
+          {pod?.error && <Box color="red">{pod?.error?.evalue}</Box>}
           {pod?.error?.stacktrace && (
             <Box>
               <Box>StackTrace</Box>
@@ -300,13 +306,19 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   // const selected = useStore(store, (state) => state.selected);
   const setSelected = useStore(store, (state) => state.setSelected);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
-  const onResize = useCallback(({ width, height, offx, offy }) => {
+  const onResize = useCallback((e, data) => {
+    const { size } = data;
     const node = nodesMap.get(id);
     if (node) {
-      node.style = { ...node.style, width, height };
-      node.position.x += offx;
-      node.position.y += offy;
+      node.style = { ...node.style, width: size.width };
       nodesMap.set(id, node);
+      updatePod({
+        id,
+        data: {
+          width: size.width,
+          height: pod.height,
+        },
+      });
     }
   }, []);
   const onLayout = useCallback(({ height }) => {
@@ -316,6 +328,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
       nodesMap.set(id, node);
     }
   }, []);
+  const updatePod = useStore(store, (state) => state.updatePod);
   const apolloClient = useApolloClient();
   const deletePod = useStore(store, (state) => state.deletePod);
   const deleteNodeById = (id) => {
@@ -337,7 +350,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   };
   const getPod = useStore(store, (state) => state.getPod);
   const pod = getPod(id);
-
   const showResult = useStore(
     store,
     (state) =>
@@ -347,6 +359,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
       state.pods[id]?.stdout ||
       state.pods[id]?.stderr
   );
+
   useEffect(() => {
     setTarget(ref.current);
   }, []);
@@ -354,136 +367,103 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   // if (!pod) return <Box>ERROR</Box>;
   const isRightLayout = layout === "right";
   return (
-    <Box
-      className="custom-drag-handle"
-      sx={{
-        border: "solid 1px #d6dee6",
-        borderRadius: "4px",
-        width: "100%",
-        height: "100%",
-        backgroundColor: "rgb(244, 246, 248)",
-        borderColor: isEditorBlur ? "#d6dee6" : "#3182ce",
-      }}
-      ref={ref}
-    >
-      <Handle
-        type="source"
-        position={Position.Top}
-        id="top"
-        isConnectable={isConnectable}
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        id="bottom"
-        isConnectable={isConnectable}
-      />
-      <Handle
-        type="source"
-        position={Position.Left}
-        id="left"
-        isConnectable={isConnectable}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="right"
-        isConnectable={isConnectable}
-      />
-      {/* The header of code pods. */}
-      <div className={styles["pod-index"]}>[{pod.index}]</div>
-      <ToolBox data={{ id }} onRunTask={runToolBoxTask}></ToolBox>
+    <ResizableBox onResizeStop={onResize} height={pod.height||100} width={pod.width} axis="x">
       <Box
         sx={{
-          height: "90%",
+          border: "solid 1px #d6dee6",
+          borderRadius: "4px",
+          width: "100%",
+          height: "100%",
+          backgroundColor: "rgb(244, 246, 248)",
+          borderColor: isEditorBlur ? "#d6dee6" : "#3182ce",
         }}
-        onClick={(e) => {
-          // If the node is selected (for resize), the cursor is not shown. So
-          // we need to deselect it when we re-focus on the editor.
-          setSelected(null);
-          setNodes((nds) =>
-            applyNodeChanges(
-              [
-                {
-                  id,
-                  type: "select",
-                  selected: false,
-                },
-              ],
-              nds
-            )
-          );
-        }}
+        ref={ref}
       >
-         <MyMonaco 
-           id={id} 
-           gitvalue="" 
-           onBlur={() => {
-            setIsEditorBlur(true);
-           }}
-           onFocus={() => {
-            setIsEditorBlur(false);
-          }}/>
-        {showResult && (
-          <Box
-            className="nowheel"
-            sx={{
-              border: "solid 1px #d6dee6",
-              borderRadius: "4px",
-              position: "absolute",
-              top: isRightLayout ? 0 : "100%",
-              left: isRightLayout ? "100%" : 0,
-              maxHeight: "150px",
-              minWidth: isRightLayout ? "200px" : "100%",
-              boxSizing: "border-box",
-              backgroundColor: "white",
-              zIndex: 100,
-              padding: "0 10px",
+        <Handle
+          type="source"
+          position={Position.Top}
+          id="top"
+          isConnectable={isConnectable}
+        />
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          id="bottom"
+          isConnectable={isConnectable}
+        />
+        <Handle
+          type="source"
+          position={Position.Left}
+          id="left"
+          isConnectable={isConnectable}
+        />
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="right"
+          isConnectable={isConnectable}
+        />
+        {/* The header of code pods. */}
+        <Box className="custom-drag-handle">
+          <Box sx={styles["pod-index"]}>[{pod.index}]</Box>
+          <ToolBox data={{ id }} onRunTask={runToolBoxTask}></ToolBox>
+        </Box>
+
+        <Box
+          sx={{
+            height: "90%",
+          }}
+          onClick={(e) => {
+            // If the node is selected (for resize), the cursor is not shown. So
+            // we need to deselect it when we re-focus on the editor.
+            setSelected(null);
+            setNodes((nds) =>
+              applyNodeChanges(
+                [
+                  {
+                    id,
+                    type: "select",
+                    selected: false,
+                  },
+                ],
+                nds
+              )
+            );
+          }}
+        >
+          <MyMonaco
+            id={id}
+            gitvalue=""
+            onBlur={() => {
+              setIsEditorBlur(true);
             }}
-          >
-            <ResultBlock pod={pod} id={id} />
-          </Box>
-        )}
+            onFocus={() => {
+              setIsEditorBlur(false);
+            }}
+          />
+          {showResult && (
+            <Box
+              className="nowheel"
+              sx={{
+                border: "solid 1px #d6dee6",
+                borderRadius: "4px",
+                position: "absolute",
+                top: isRightLayout ? 0 : "100%",
+                left: isRightLayout ? "100%" : 0,
+                maxHeight: "150px",
+                minWidth: isRightLayout ? "200px" : "100%",
+                boxSizing: "border-box",
+                backgroundColor: "white",
+                zIndex: 100,
+                padding: "0 10px",
+              }}
+            >
+              <ResultBlock pod={pod} id={id} />
+            </Box>
+          )}
+        </Box>
       </Box>
-      {/* moveable will effect editor */}
-      {/* {false && (
-          <Moveable
-          target={target}
-          resizable={true}
-          keepRatio={false}
-          throttleResize={1}
-          renderDirections={["e", "s", "se"]}
-          edge={false}
-          zoom={1}
-          origin={true}
-          padding={{ left: 0, top: 0, right: 0, bottom: 0 }}
-          onResizeStart={(e) => {
-            e.setOrigin(["%", "%"]);
-            e.dragStart && e.dragStart.set(frame.translate);
-          }}
-          onResize={(e) => {
-            const beforeTranslate = e.drag.beforeTranslate;
-            frame.translate = beforeTranslate;
-            e.target.style.width = `${e.width}px`;
-            e.target.style.height = `${e.height}px`;
-            e.target.style.transform = `translate(${beforeTranslate[0]}px, ${beforeTranslate[1]}px)`;
-            onResize({
-              width: e.width,
-              height: e.height,
-              offx: beforeTranslate[0],
-              offy: beforeTranslate[1],
-            });
-            updatePod({
-              id,
-              data: {
-                width: e.width,
-                height: e.height,
-              },
-            });
-          }}
-        />)
-      } */}
-    </Box>
+    </ResizableBox>
   );
 });
 
@@ -643,12 +623,11 @@ export function Canvas() {
       };
 
       // setNodes((nds) => nds.concat(newNode));
-
       // add to pods
       addPod(apolloClient, {
         id,
         parent: "ROOT",
-        index: 0,
+        index: nodesMap.size + 1,
         type: type === "code" ? "CODE" : "DECK",
         lang: "python",
         x: position.x,
@@ -739,7 +718,7 @@ export function Canvas() {
           // selected: false,
           style: {
             ...currentNode.style,
-            boxShadow: `${userColor} 0px 15px 25px`,
+            // boxShadow: `${userColor} 0px 15px 25px`,
           },
         });
       }
