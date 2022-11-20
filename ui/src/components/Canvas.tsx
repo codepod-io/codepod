@@ -367,7 +367,12 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   // if (!pod) return <Box>ERROR</Box>;
   const isRightLayout = layout === "right";
   return (
-    <ResizableBox onResizeStop={onResize} height={pod.height||100} width={pod.width} axis="x">
+    <ResizableBox 
+      onResizeStop={onResize} 
+      height={pod.height||100} 
+      width={pod.width} 
+      axis="x"
+      minConstraints={[200, 200]}>
       <Box
         sx={{
           border: "solid 1px #d6dee6",
@@ -450,7 +455,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
                 position: "absolute",
                 top: isRightLayout ? 0 : "100%",
                 left: isRightLayout ? "100%" : 0,
-                maxHeight: "150px",
+                maxHeight: "158px",
                 minWidth: isRightLayout ? "200px" : "100%",
                 boxSizing: "border-box",
                 backgroundColor: "white",
