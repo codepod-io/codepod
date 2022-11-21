@@ -2,11 +2,14 @@ import { Tooltip, Box, IconButton } from "@mui/material";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
+import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
+import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
 
 export enum ToolTypes {
   delete,
   play,
   layout,
+  fold,
 }
 export default function ToolBox({
   visible = true,
@@ -43,14 +46,14 @@ export default function ToolBox({
         </IconButton>
       </Tooltip>
       <Tooltip title="Delete">
-      <IconButton
-        size="small"
-        onClick={() => {
-          onRunTask && onRunTask(ToolTypes.delete, data);
-        }}
-      >
-        <DeleteIcon fontSize="inherit" />
-      </IconButton>
+        <IconButton
+          size="small"
+          onClick={() => {
+            onRunTask && onRunTask(ToolTypes.delete, data);
+          }}
+        >
+          <DeleteIcon fontSize="inherit" />
+        </IconButton>
       </Tooltip>
       <Tooltip title="Change layout">
         <IconButton
@@ -60,6 +63,20 @@ export default function ToolBox({
           }}
         >
           <ViewComfyIcon fontSize="inherit" />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title={data.showOutput ? "Fold output" : "Unfold output"}>
+        <IconButton
+          size="small"
+          onClick={() => {
+            onRunTask && onRunTask(ToolTypes.fold, data);
+          }}
+        >
+          {data.showOutput ? (
+            <UnfoldLessIcon fontSize="inherit" />
+          ) : (
+            <UnfoldMoreIcon fontSize="inherit" />
+          )}
         </IconButton>
       </Tooltip>
     </Box>
