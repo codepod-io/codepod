@@ -10,7 +10,6 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
 import Home from "./pages/index";
-import About from "./pages/about";
 import Repos from "./pages/repos";
 import Repo from "./pages/repo";
 import Test from "./pages/test";
@@ -99,14 +98,6 @@ const router = createBrowserRouter([
     element: (
       <NormalLayout>
         <Profile />
-      </NormalLayout>
-    ),
-  },
-  {
-    path: "about",
-    element: (
-      <NormalLayout>
-        <About />
       </NormalLayout>
     ),
   },

@@ -170,6 +170,52 @@ spec:
       port: 4011
       targetPort: 4011
 
+# Socket
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: codepod-socket-deployment
+  labels:
+    app: codepod-socket
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: codepod-socket
+  template:
+    metadata:
+      labels:
+        app: codepod-socket
+    spec:
+      containers:
+        - name: codepod-socket
+          image: node:18
+          command: ["/bin/sh", "-c", "yarn add yjs y-websocket && HOST=0.0.0.0 PORT=4233 npx y-websocket"]
+          ports:
+            - containerPort: 4233
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "1"
+            requests:
+              memory: 256Mi
+              cpu: "0.2"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: codepod-socket-service
+spec:
+  selector:
+    app: codepod-socket
+  ports:
+    - protocol: TCP
+      port: 4233
+      targetPort: 4233
+
+
 ---
 apiVersion: apps/v1
 kind: Deployment
