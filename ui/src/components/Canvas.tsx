@@ -230,7 +230,6 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
 function ResultBlock({ pod, id }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const wsRun = useStore(store, (state) => state.wsRun);
   return (
     <Box>
       {pod.result && (
@@ -267,25 +266,38 @@ function ResultBlock({ pod, id }) {
         </Box>
       )}
       {pod.running && <CircularProgress />}
-      {true && (
-        <Box overflow="scroll" maxHeight="145px" border="1px">
-          {/* <Box bgcolor="lightgray">Error</Box> */}
-          {pod.stdout && (
-            <Box whiteSpace="pre-wrap" fontSize="sm">
-              <Ansi>{pod.stdout}</Ansi>
+      <Box overflow="scroll" maxHeight="145px" border="1px">
+        {/* <Box bgcolor="lightgray">Error</Box> */}
+        {pod?.result?.text && (
+          <>
+            {pod.result.count > 0 && (
+              <>
+                <Box sx={{ display: "flex" }}>
+                  Result: [{pod.result.count}]:
+                </Box>
+                <Box component="pre" whiteSpace="pre-wrap">
+                  {pod.result.text}
+                </Box>
+              </>
+            )}
+          </>
+        )}
+
+        {pod.stdout && (
+          <Box whiteSpace="pre-wrap" fontSize="sm">
+            <Ansi>{pod.stdout}</Ansi>
+          </Box>
+        )}
+        {pod?.error && <Box color="red">{pod?.error?.evalue}</Box>}
+        {pod?.error?.stacktrace && (
+          <Box>
+            <Box>StackTrace</Box>
+            <Box whiteSpace="pre-wrap" fontSize="small">
+              <Ansi>{pod.error.stacktrace.join("\n")}</Ansi>
             </Box>
-          )}
-          {pod?.error && <Box color="red">{pod?.error?.evalue}</Box>}
-          {pod?.error?.stacktrace && (
-            <Box>
-              <Box>StackTrace</Box>
-              <Box whiteSpace="pre-wrap" fontSize="small">
-                <Ansi>{pod.error.stacktrace.join("\n")}</Ansi>
-              </Box>
-            </Box>
-          )}
-        </Box>
-      )}
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 }
@@ -319,13 +331,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
           height: pod.height,
         },
       });
-    }
-  }, []);
-  const onLayout = useCallback(({ height }) => {
-    const node = nodesMap.get(id);
-    if (node) {
-      node.style = { ...node.style, height };
-      nodesMap.set(id, node);
     }
   }, []);
   const updatePod = useStore(store, (state) => state.updatePod);
@@ -367,12 +372,13 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   // if (!pod) return <Box>ERROR</Box>;
   const isRightLayout = layout === "right";
   return (
-    <ResizableBox 
-      onResizeStop={onResize} 
-      height={pod.height||100} 
-      width={pod.width} 
+    <ResizableBox
+      onResizeStop={onResize}
+      height={pod.height || 100}
+      width={pod.width}
       axis="x"
-      minConstraints={[200, 200]}>
+      minConstraints={[200, 200]}
+    >
       <Box
         sx={{
           border: "solid 1px #d6dee6",
