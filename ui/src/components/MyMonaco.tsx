@@ -329,12 +329,15 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const setPodContent = useStore(store, (state) => state.setPodContent);
   const clearResults = useStore(store, (s) => s.clearResults);
   const wsRun = useStore(store, (state) => state.wsRun);
+
   const value = getPod(id).content || "";
   let lang = getPod(id).lang || "javascript";
   const onChange = (value) => setPodContent({ id, content: value });
   const onRun = () => {
-    clearResults(id);
-    wsRun(id);
+    // it's MonacoEditor's bug microsoft/monaco-editor#2947, it always triggered the last created instance
+    const activeId = store.getState().currentEditor;
+    clearResults(activeId);
+    wsRun(activeId);
   };
 
   if (lang === "racket") {

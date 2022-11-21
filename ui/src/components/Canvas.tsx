@@ -278,6 +278,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const { setNodes } = useReactFlow();
   // const selected = useStore(store, (state) => state.selected);
   const setSelected = useStore(store, (state) => state.setSelected);
+  const setCurrentEditor = useStore(store, (state) => state.setCurrentEditor);
   const getPod = useStore(store, (state) => state.getPod);
   const pod = getPod(id);
 
@@ -409,6 +410,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
           }}
           onFocus={() => {
             setIsEditorBlur(false);
+            setCurrentEditor(id);
           }}
         />
         {showResult && (

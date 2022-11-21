@@ -27,9 +27,8 @@ if (window.location.protocol === "http:") {
 }
 console.log("yjs server url: ", serverURL);
 
-export const RepoContext = createContext<StoreApi<
-  RepoSlice & RuntimeSlice
-> | null>(null);
+export const RepoContext =
+  createContext<StoreApi<RepoSlice & RuntimeSlice> | null>(null);
 
 // TODO use a selector to compute and retrieve the status
 // TODO this need to cooperate with syncing indicator
@@ -85,6 +84,8 @@ const initialState = {
   socketIntervalId: null,
   // keep different seletced info on each user themselves
   selected: null,
+  // to fixed maco editor command bug
+  currentEditor: null,
   //TODO: all presence information are now saved in clients map for future usage. create a modern UI to show those information from clients (e.g., online users)
   clients: new Map(),
   showLineNumbers: false,
@@ -180,6 +181,8 @@ export interface RepoSlice {
   setPodParent: ({ id, parent }: any) => void;
   selected: string | null;
   setSelected: (id: string | null) => void;
+  currentEditor: string | null;
+  setCurrentEditor: (id: string | null) => void;
   setUser: (user: any) => void;
   addClient: (clientId: any, name, color) => void;
   deleteClient: (clientId: any) => void;
@@ -238,6 +241,7 @@ const createRepoSlice: StateCreator<
   addError: (error) => set({ error }),
   clearError: () => set({ error: null }),
   setSelected: (id) => set({ selected: id }),
+  setCurrentEditor: (id) => set({ currentEditor: id }),
   addPod: async (
     client,
     { parent, index, anchor, shift, id, type, lang, x, y, width, height }
