@@ -20,7 +20,9 @@ import ReactFlow, {
   ConnectionMode,
   MarkerType,
   Node,
-} from "react-flow-renderer";
+} from "reactflow";
+import "reactflow/dist/style.css";
+
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
 import Tooltip from "@mui/material/Tooltip";

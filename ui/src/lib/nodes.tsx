@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, useContext } from "react";
-import { applyNodeChanges, Node } from "react-flow-renderer";
+import { applyNodeChanges, Node } from "reactflow";
 import { RepoContext } from "./store";
 import { useStore } from "zustand";
 
