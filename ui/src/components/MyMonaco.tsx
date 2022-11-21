@@ -9,7 +9,15 @@ import { MonacoBinding } from "y-monaco";
 const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",
   inherit: false,
-  rules: [],
+  rules: [
+    {
+      token:'keyword',
+      foreground: "#4b83cd"
+    },{
+      token: 'comment',
+      foreground: '#aaaaaa'
+    }
+  ],
   colors: {
     "editor.background": "#f3f3f340",
     "editor.lineHighlightBackground": "#f3f3f340",
