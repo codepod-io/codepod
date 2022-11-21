@@ -503,7 +503,7 @@ export function Canvas() {
               pod.type === "CODE"
                 ? undefined
                 : level2color[level] || level2color["default"],
-            width: 700,
+            width: pod.width || undefined,
             // for code node, don't set height, let it be auto
             height: pod.height || undefined,
           },
@@ -585,7 +585,7 @@ export function Canvas() {
         };
       } else {
         style = {
-          width: 700,
+          width: 300,
           // we must not set the height here, otherwise the auto layout will not work
           height: undefined,
         };
