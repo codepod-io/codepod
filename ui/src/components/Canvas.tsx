@@ -188,7 +188,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
 
 // FIXME: the resultblock is rendered every time the parent codeNode changes (e.g., dragging), we may set the result number as a state of a pod to memoize the resultblock.
 
-function ResultBlock({ pod, id }) {
+function ResultBlock({ pod, id, showOutput = true }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const wsRun = useStore(store, (state) => state.wsRun);
@@ -231,7 +231,7 @@ function ResultBlock({ pod, id }) {
       )}
 
       {pod.running && <CircularProgress />}
-      <Box overflow="scroll" maxHeight="145px" border="1px">
+     { showOutput && <Box overflow="scroll" maxHeight="145px" border="1px">
         {/* <Box bgcolor="lightgray">Error</Box> */}
         {pod.stdout && (
           <Box whiteSpace="pre-wrap" sx={{fontSize: 10}}>
@@ -255,7 +255,7 @@ function ResultBlock({ pod, id }) {
             </Box>
           </Box>
         )}
-      </Box>
+      </Box>}
     </Box>
   );
 }
@@ -270,6 +270,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const [frame] = React.useState({
     translate: [0, 0],
   });
+  const [showOutput,setShowOutput] = useState(true);
   // right, bottom
   const [layout, setLayout] = useState("bottom");
   const isRightLayout = layout === "right";
@@ -307,6 +308,8 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
       case ToolTypes.layout:
         setLayout(layout === "bottom" ? "right" : "bottom");
         break;
+      case ToolTypes.fold:
+        setShowOutput(!showOutput);
     }
   };
 
@@ -353,7 +356,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
       {/* The header of code pods. */}
       <Box className="custom-drag-handle">
         <Box sx={styles["pod-index"]}>[{pod.index}]</Box>
-        <ToolBox data={{ id }} onRunTask={runToolBoxTask}></ToolBox>
+        <ToolBox data={{ id, showOutput }} onRunTask={runToolBoxTask}></ToolBox>
       </Box>
       <Box
         sx={{
@@ -404,7 +407,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
               padding: "0 10px",
             }}
           >
-            <ResultBlock pod={pod} id={id} />
+            <ResultBlock pod={pod} id={id} showOutput={showOutput}/>
           </Box>
         )}
       </Box>
