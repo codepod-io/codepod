@@ -8,16 +8,8 @@ import { MonacoBinding } from "y-monaco";
 
 const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",
-  inherit: false,
-  rules: [
-    {
-      token:'keyword',
-      foreground: "#4b83cd"
-    },{
-      token: 'comment',
-      foreground: '#aaaaaa'
-    }
-  ],
+  inherit: true,
+  rules: [],
   colors: {
     "editor.background": "#f3f3f340",
     "editor.lineHighlightBackground": "#f3f3f340",
@@ -31,7 +23,6 @@ monaco.languages.setLanguageConfiguration("julia", {
     decreaseIndentPattern: /^\s*(end|else|elseif|catch|finally)\b.*$/,
   },
 });
-
 function construct_indent(pos, indent) {
   return [
     {
