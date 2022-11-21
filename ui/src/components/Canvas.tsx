@@ -90,7 +90,8 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
       sx={{
         width: "100%",
         height: "100%",
-        border: "1px solid black",
+        border: "solid 1px #d6dee6",
+        borderRadius: "4px",
       }}
       className="custom-drag-handle"
     >
@@ -218,18 +219,6 @@ function ResultBlock({ pod, id }) {
                   </Box>
                 </Box>
               )}
-              {pod?.result?.text && pod?.result?.count > 0 && (
-                <Box>
-                  <Box sx={{ display: "flex" }}>
-                    Result: [{pod.result.count}]:
-                  </Box>
-                  <Box>
-                    <Box component="pre" whiteSpace="pre-wrap">
-                      {pod.result.text}
-                    </Box>
-                  </Box>
-                </Box>
-              )}
             </>
           )}
           {pod.result.image && (
@@ -245,15 +234,23 @@ function ResultBlock({ pod, id }) {
       <Box overflow="scroll" maxHeight="145px" border="1px">
         {/* <Box bgcolor="lightgray">Error</Box> */}
         {pod.stdout && (
-          <Box whiteSpace="pre-wrap" fontSize="sm">
+          <Box whiteSpace="pre-wrap" sx={{fontSize: 10}}>
             <Ansi>{pod.stdout}</Ansi>
+          </Box>
+        )}
+        {pod?.result?.text && pod?.result?.count > 0 && (
+          <Box sx={{ display: "flex", fontSize: 10, flexDirection: "row", alignItems: 'center' }}>
+            <Box>Result[{pod.result.count}]:</Box>
+            <Box component="pre" whiteSpace="pre-wrap">
+                {pod.result.text}
+            </Box>
           </Box>
         )}
         {pod?.error && <Box color="red">{pod?.error?.evalue}</Box>}
         {pod?.error?.stacktrace && (
           <Box>
             <Box>StackTrace</Box>
-            <Box whiteSpace="pre-wrap" fontSize="small">
+            <Box whiteSpace="pre-wrap" sx={{fontSize: 10}}>
               <Ansi>{pod.error.stacktrace.join("\n")}</Ansi>
             </Box>
           </Box>
