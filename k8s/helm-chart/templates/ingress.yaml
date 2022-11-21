@@ -39,6 +39,13 @@ spec:
     services:
       - name: codepod-proxy-service
         port: 4010
+  - match: "Host(`{{ .Values.hostname }}`) && PathPrefix(`/socket`)"
+    kind: Rule
+    middlewares:
+      - name: stripprefix
+    services:
+      - name: codepod-socket-service
+        port: 4233
 
 {{- if .Values.tls.enabled }}
 ---
