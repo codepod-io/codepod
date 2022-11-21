@@ -33,7 +33,6 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import Grid from "@mui/material/Grid";
 
 import Moveable from "react-moveable";
-import { ResizableBox } from "react-resizable";
 import Ansi from "ansi-to-react";
 
 import { customAlphabet } from "nanoid";
@@ -291,22 +290,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
       state.pods[id]?.stdout ||
       state.pods[id]?.stderr
   );
-  const updatePod = useStore(store, (state) => state.updatePod);
-  const onResize = useCallback((e, data) => {
-    const { size } = data;
-    const node = nodesMap.get(id);
-    if (node) {
-      node.style = { ...node.style, width: size.width };
-      nodesMap.set(id, node);
-      updatePod({
-        id,
-        data: {
-          width: size.width,
-          height: pod.height,
-        },
-      });
-    }
-  }, []);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const apolloClient = useApolloClient();
   const deletePod = useStore(store, (state) => state.deletePod);
@@ -333,13 +316,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   }, []);
   if (!pod) return null;
   return (
-    <ResizableBox
-    onResizeStop={onResize}
-    height={pod.height || 100}
-    width={pod.width}
-    axis="x"
-    minConstraints={[200, 200]}
-  >
     <Box
       sx={{
         border: "solid 1px #d6dee6",
@@ -435,7 +411,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
         )}
       </Box>
     </Box>
-    </ResizableBox>
   );
 });
 
