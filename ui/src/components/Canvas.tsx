@@ -232,31 +232,40 @@ function ResultBlock({ pod, id, showOutput = true }) {
       )}
 
       {pod.running && <CircularProgress />}
-     { showOutput && <Box overflow="scroll" maxHeight="145px" border="1px">
-        {/* <Box bgcolor="lightgray">Error</Box> */}
-        {pod.stdout && (
-          <Box whiteSpace="pre-wrap" sx={{fontSize: 10}}>
-            <Ansi>{pod.stdout}</Ansi>
-          </Box>
-        )}
-        {pod?.result?.text && pod?.result?.count > 0 && (
-          <Box sx={{ display: "flex", fontSize: 10, flexDirection: "row", alignItems: 'center' }}>
-            <Box>Result[{pod.result.count}]:</Box>
-            <Box component="pre" whiteSpace="pre-wrap">
+      {showOutput && (
+        <Box overflow="scroll" maxHeight="145px" border="1px">
+          {/* <Box bgcolor="lightgray">Error</Box> */}
+          {pod.stdout && (
+            <Box whiteSpace="pre-wrap" sx={{ fontSize: 10 }}>
+              <Ansi>{pod.stdout}</Ansi>
+            </Box>
+          )}
+          {pod?.result?.text && pod?.result?.count > 0 && (
+            <Box
+              sx={{
+                display: "flex",
+                fontSize: 10,
+                flexDirection: "row",
+                alignItems: "center",
+              }}
+            >
+              <Box>Result[{pod.result.count}]:</Box>
+              <Box component="pre" whiteSpace="pre-wrap">
                 {pod.result.text}
+              </Box>
             </Box>
-          </Box>
-        )}
-        {pod?.error && <Box color="red">{pod?.error?.evalue}</Box>}
-        {pod?.error?.stacktrace && (
-          <Box>
-            <Box>StackTrace</Box>
-            <Box whiteSpace="pre-wrap" sx={{fontSize: 10}}>
-              <Ansi>{pod.error.stacktrace.join("\n")}</Ansi>
+          )}
+          {pod?.error && <Box color="red">{pod?.error?.evalue}</Box>}
+          {pod?.error?.stacktrace && (
+            <Box>
+              <Box>StackTrace</Box>
+              <Box whiteSpace="pre-wrap" sx={{ fontSize: 10 }}>
+                <Ansi>{pod.error.stacktrace.join("\n")}</Ansi>
+              </Box>
             </Box>
-          </Box>
-        )}
-      </Box>}
+          )}
+        </Box>
+      )}
     </Box>
   );
 }
@@ -271,7 +280,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const [frame] = React.useState({
     translate: [0, 0],
   });
-  const [showOutput,setShowOutput] = useState(true);
+  const [showOutput, setShowOutput] = useState(true);
   // right, bottom
   const [layout, setLayout] = useState("bottom");
   const isRightLayout = layout === "right";
@@ -337,107 +346,110 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   if (!pod) return null;
   return (
     <ResizableBox
-    onResizeStop={onResize}
-    height={pod.height || 100}
-    width={pod.width}
-    axis="x"
-    minConstraints={[200, 200]}
-  >
-    <Box
-      sx={{
-        border: "solid 1px #d6dee6",
-        borderRadius: "4px",
-        width: "100%",
-        height: "100%",
-        backgroundColor: "rgb(244, 246, 248)",
-        borderColor: isEditorBlur ? "#d6dee6" : "#3182ce",
-      }}
-      ref={ref}
+      onResizeStop={onResize}
+      height={pod.height || 100}
+      width={pod.width}
+      axis="x"
+      minConstraints={[200, 200]}
     >
-      <Handle
-        type="source"
-        position={Position.Top}
-        id="top"
-        isConnectable={isConnectable}
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        id="bottom"
-        isConnectable={isConnectable}
-      />
-      <Handle
-        type="source"
-        position={Position.Left}
-        id="left"
-        isConnectable={isConnectable}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="right"
-        isConnectable={isConnectable}
-      />
-      {/* The header of code pods. */}
-      <Box className="custom-drag-handle">
-        <Box sx={styles["pod-index"]}>[{pod.index}]</Box>
-        <ToolBox data={{ id, showOutput }} onRunTask={runToolBoxTask}></ToolBox>
-      </Box>
       <Box
         sx={{
-          height: "90%",
+          border: "solid 1px #d6dee6",
+          borderRadius: "4px",
+          width: "100%",
+          height: "100%",
+          backgroundColor: "rgb(244, 246, 248)",
+          borderColor: isEditorBlur ? "#d6dee6" : "#3182ce",
         }}
-        onClick={(e) => {
-          // If the node is selected (for resize), the cursor is not shown. So
-          // we need to deselect it when we re-focus on the editor.
-          setSelected(null);
-          setNodes((nds) =>
-            applyNodeChanges(
-              [
-                {
-                  id,
-                  type: "select",
-                  selected: false,
-                },
-              ],
-              nds
-            )
-          );
-        }}
+        ref={ref}
       >
-        <MyMonaco
-          id={id}
-          gitvalue=""
-          onBlur={() => {
-            setIsEditorBlur(true);
-          }}
-          onFocus={() => {
-            setIsEditorBlur(false);
-            setCurrentEditor(id);
-          }}
+        <Handle
+          type="source"
+          position={Position.Top}
+          id="top"
+          isConnectable={isConnectable}
         />
-        {showResult && (
-          <Box
-            className="nowheel"
-            sx={{
-              border: "solid 1px #d6dee6",
-              borderRadius: "4px",
-              position: "absolute",
-              top: isRightLayout ? 0 : "100%",
-              left: isRightLayout ? "100%" : 0,
-              maxHeight: "158px",
-              minWidth: isRightLayout ? "200px" : "100%",
-              boxSizing: "border-box",
-              backgroundColor: "white",
-              zIndex: 100,
-              padding: "0 10px",
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          id="bottom"
+          isConnectable={isConnectable}
+        />
+        <Handle
+          type="source"
+          position={Position.Left}
+          id="left"
+          isConnectable={isConnectable}
+        />
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="right"
+          isConnectable={isConnectable}
+        />
+        {/* The header of code pods. */}
+        <Box className="custom-drag-handle">
+          <Box sx={styles["pod-index"]}>[{pod.index}]</Box>
+          <ToolBox
+            data={{ id, showOutput }}
+            onRunTask={runToolBoxTask}
+          ></ToolBox>
+        </Box>
+        <Box
+          sx={{
+            height: "90%",
+          }}
+          onClick={(e) => {
+            // If the node is selected (for resize), the cursor is not shown. So
+            // we need to deselect it when we re-focus on the editor.
+            setSelected(null);
+            setNodes((nds) =>
+              applyNodeChanges(
+                [
+                  {
+                    id,
+                    type: "select",
+                    selected: false,
+                  },
+                ],
+                nds
+              )
+            );
+          }}
+        >
+          <MyMonaco
+            id={id}
+            gitvalue=""
+            onBlur={() => {
+              setIsEditorBlur(true);
             }}
-          >
-            <ResultBlock pod={pod} id={id} showOutput={showOutput}/>
-          </Box>
-        )}
+            onFocus={() => {
+              setIsEditorBlur(false);
+              setCurrentEditor(id);
+            }}
+          />
+          {showResult && (
+            <Box
+              className="nowheel"
+              sx={{
+                border: "solid 1px #d6dee6",
+                borderRadius: "4px",
+                position: "absolute",
+                top: isRightLayout ? 0 : "100%",
+                left: isRightLayout ? "100%" : 0,
+                maxHeight: "158px",
+                minWidth: isRightLayout ? "200px" : "100%",
+                boxSizing: "border-box",
+                backgroundColor: "white",
+                zIndex: 100,
+                padding: "0 10px",
+              }}
+            >
+              <ResultBlock pod={pod} id={id} showOutput={showOutput} />
+            </Box>
+          )}
+        </Box>
       </Box>
-    </Box>
     </ResizableBox>
   );
 });
