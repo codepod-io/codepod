@@ -29,8 +29,7 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import CircleIcon from "@mui/icons-material/Circle";
-import ViewComfyIcon from "@mui/icons-material/ViewComfy";
-
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import Grid from "@mui/material/Grid";
 
 import Moveable from "react-moveable";
@@ -47,6 +46,8 @@ import { useNodesStateSynced } from "../lib/nodes";
 import { MyMonaco } from "./MyMonaco";
 import { useApolloClient } from "@apollo/client";
 import { CanvasContextMenu } from "./CanvasContextMenu";
+import ToolBox, { ToolTypes } from "./Toolbox";
+import styles from "./canvas.style.js";
 
 const nanoid = customAlphabet(nolookalikes, 10);
 
@@ -200,18 +201,36 @@ function ResultBlock({ pod, id }) {
           {pod.result.html ? (
             <div dangerouslySetInnerHTML={{ __html: pod.result.html }}></div>
           ) : (
-            pod.result.text && (
-              <Box>
-                <Box sx={{ display: "flex" }} bgcolor="lightgray">
-                  Result: [{pod.result.count}]:
-                </Box>
-                <Box>
-                  <Box component="pre" whiteSpace="pre-wrap">
-                    {pod.result.text}
+            <>
+              {!pod.error && (
+                <Box
+                  color="rgb(0, 183, 87)"
+                  sx={{
+                    padding: "6px",
+                    zIndex: 200,
+                  }}
+                >
+                  <Box sx={styles["result-status__success"]}>
+                    <CheckCircleIcon
+                      style={{ marginTop: "5px" }}
+                      fontSize="inherit"
+                    />
                   </Box>
                 </Box>
-              </Box>
-            )
+              )}
+              {pod?.result?.text && pod?.result?.count > 0 && (
+                <Box>
+                  <Box sx={{ display: "flex" }}>
+                    Result: [{pod.result.count}]:
+                  </Box>
+                  <Box>
+                    <Box component="pre" whiteSpace="pre-wrap">
+                      {pod.result.text}
+                    </Box>
+                  </Box>
+                </Box>
+              )}
+            </>
           )}
           {pod.result.image && (
             <img
@@ -221,30 +240,25 @@ function ResultBlock({ pod, id }) {
           )}
         </Box>
       )}
-      {pod.stdout && (
-        <Box overflow="scroll" border="1px">
-          {/* TODO separate stdout and stderr */}
-          <Box bgcolor="lightgray">Stdout</Box>
+
+      {pod.running && <CircularProgress />}
+      <Box overflow="scroll" maxHeight="145px" border="1px">
+        {/* <Box bgcolor="lightgray">Error</Box> */}
+        {pod.stdout && (
           <Box whiteSpace="pre-wrap" fontSize="sm">
             <Ansi>{pod.stdout}</Ansi>
           </Box>
-        </Box>
-      )}
-      {pod.running && <CircularProgress />}
-      {pod.error && (
-        <Box overflow="scroll" border="1px">
-          <Box bgcolor="lightgray">Error</Box>
-          <Box color="red">{pod.error.evalue}</Box>
-          {pod.error.stacktrace && (
-            <Box>
-              <Box>StackTrace</Box>
-              <Box whiteSpace="pre-wrap" fontSize="small">
-                <Ansi>{pod.error.stacktrace.join("\n")}</Ansi>
-              </Box>
+        )}
+        {pod?.error && <Box color="red">{pod?.error?.evalue}</Box>}
+        {pod?.error?.stacktrace && (
+          <Box>
+            <Box>StackTrace</Box>
+            <Box whiteSpace="pre-wrap" fontSize="small">
+              <Ansi>{pod.error.stacktrace.join("\n")}</Ansi>
             </Box>
-          )}
-        </Box>
-      )}
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 }
@@ -260,7 +274,9 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
     translate: [0, 0],
   });
   // right, bottom
-  const [layout, setLayout] = useState("right");
+  const [layout, setLayout] = useState("bottom");
+  const isRightLayout = layout === "right";
+  const [isEditorBlur, setIsEditorBlur] = useState(true);
   const { setNodes } = useReactFlow();
   // const selected = useStore(store, (state) => state.selected);
   const setSelected = useStore(store, (state) => state.setSelected);
@@ -270,24 +286,46 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const showResult = useStore(
     store,
     (state) =>
-      state.pods[id].running ||
-      state.pods[id].result ||
-      state.pods[id].error ||
-      state.pods[id].stdout ||
-      state.pods[id].stderr
+      state.pods[id]?.running ||
+      state.pods[id]?.result ||
+      state.pods[id]?.error ||
+      state.pods[id]?.stdout ||
+      state.pods[id]?.stderr
   );
+  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+  const apolloClient = useApolloClient();
+  const deletePod = useStore(store, (state) => state.deletePod);
+  const deleteNodeById = (id) => {
+    deletePod(apolloClient, { id: id, toDelete: [] });
+    nodesMap.delete(id);
+  };
+  const runToolBoxTask = (type, data) => {
+    switch (type) {
+      case ToolTypes.delete:
+        deleteNodeById(id);
+        break;
+      case ToolTypes.play:
+        wsRun(data.id);
+        break;
+      case ToolTypes.layout:
+        setLayout(layout === "bottom" ? "right" : "bottom");
+        break;
+    }
+  };
 
   useEffect(() => {
     setTarget(ref.current);
   }, []);
-  // if (!pod) return <Box>ERROR</Box>;
+  if (!pod) return null;
   return (
     <Box
       sx={{
-        border: "solid 1px black",
+        border: "solid 1px #d6dee6",
+        borderRadius: "4px",
         width: "100%",
         height: "100%",
-        backgroundColor: "white",
+        backgroundColor: "rgb(244, 246, 248)",
+        borderColor: isEditorBlur ? "#d6dee6" : "#3182ce",
       }}
       ref={ref}
     >
@@ -316,45 +354,9 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
         isConnectable={isConnectable}
       />
       {/* The header of code pods. */}
-      <Box
-        className="custom-drag-handle"
-        bgcolor={"rgb(225,225,225)"}
-        sx={{ display: "flex" }}
-      >
-        {/* Code: {data?.label} */}
-        {/* pod */}
-        <Box sx={{ display: "flex", flexGrow: 1 }}>
-          <IconButton size="small">
-            <CircleIcon sx={{ color: "red" }} fontSize="inherit" />
-          </IconButton>
-        </Box>
-        <Box sx={{ display: "flex" }}>
-          <Box sx={{ display: "flex" }}>
-            <Tooltip title="Run (shift-enter)">
-              <IconButton
-                size="small"
-                sx={{ color: "green" }}
-                onClick={() => {
-                  wsRun(id);
-                }}
-              >
-                <PlayArrowIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-          <Box sx={{ display: "flex" }}>
-            <Tooltip title="Change layout">
-              <IconButton
-                size="small"
-                onClick={() => {
-                  setLayout(layout === "bottom" ? "right" : "bottom");
-                }}
-              >
-                <ViewComfyIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
+      <Box className="custom-drag-handle">
+        <Box sx={styles["pod-index"]}>[{pod.index}]</Box>
+        <ToolBox data={{ id }} onRunTask={runToolBoxTask}></ToolBox>
       </Box>
       <Box
         sx={{
@@ -378,21 +380,31 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
           );
         }}
       >
-        <MyMonaco id={id} gitvalue="" />
+        <MyMonaco
+          id={id}
+          gitvalue=""
+          onBlur={() => {
+            setIsEditorBlur(true);
+          }}
+          onFocus={() => {
+            setIsEditorBlur(false);
+          }}
+        />
         {showResult && (
           <Box
             className="nowheel"
             sx={{
+              border: "solid 1px #d6dee6",
+              borderRadius: "4px",
               position: "absolute",
-              top: layout === "right" ? 0 : "100%",
-              left: layout === "right" ? "100%" : 0,
-              maxHeight: "100%",
-              maxWidth: "100%",
-              minWidth: "100px",
-              overflow: "scroll",
+              top: isRightLayout ? 0 : "100%",
+              left: isRightLayout ? "100%" : 0,
+              maxHeight: "158px",
+              minWidth: isRightLayout ? "200px" : "100%",
+              boxSizing: "border-box",
               backgroundColor: "white",
-              border: "solid 1px blue",
               zIndex: 100,
+              padding: "0 10px",
             }}
           >
             <ResultBlock pod={pod} id={id} />
@@ -564,7 +576,7 @@ export function Canvas() {
       addPod(apolloClient, {
         id,
         parent: "ROOT",
-        index: 0,
+        index: nodesMap.size + 1,
         type: type === "code" ? "CODE" : "DECK",
         lang: "python",
         x: position.x,

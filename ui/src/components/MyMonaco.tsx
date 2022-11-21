@@ -6,6 +6,16 @@ import { useStore } from "zustand";
 import { RepoContext } from "../lib/store";
 import { MonacoBinding } from "y-monaco";
 
+const theme: monaco.editor.IStandaloneThemeData = {
+  base: "vs",
+  inherit: false,
+  rules: [],
+  colors: {
+    "editor.background": "#f3f3f340",
+    "editor.lineHighlightBackground": "#f3f3f340",
+  },
+};
+monaco.editor.defineTheme("codepod", theme);
 monaco.languages.setLanguageConfiguration("julia", {
   indentationRules: {
     increaseIndentPattern:
@@ -302,11 +312,15 @@ async function updateGitGutter(editor) {
 interface MyMonacoProps {
   id: string;
   gitvalue: string;
+  onBlur?: Function;
+  onFocus?: Function;
 }
 
 export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   id = "0",
   gitvalue = null,
+  onBlur = () => {},
+  onFocus = () => {},
 }) {
   // there's no racket language support
   const store = useContext(RepoContext);
@@ -359,6 +373,12 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       editor.layout();
       // onLayout(`${contentHeight}px`);
     };
+    editor.onDidBlurEditorText(() => {
+      onBlur();
+    });
+    editor.onDidFocusEditorText(() => {
+      onFocus();
+    });
     editor.onDidContentSizeChange(updateHeight);
     // FIXME clean up?
     editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, function () {
@@ -402,7 +422,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     <MonacoEditor
       language={lang}
       // value={value}
-      // theme="vs-dark"
+      theme="codepod"
       options={{
         selectOnLineNumbers: true,
         // This scrollBeyondLastLine is super important. Without this, it will
