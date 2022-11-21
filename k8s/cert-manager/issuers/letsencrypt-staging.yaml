@@ -19,3 +19,4 @@ spec:
         selector:
           dnsZones:
             - "app.codepod.io"
+            - "alpha.codepod.io"
