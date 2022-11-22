@@ -468,6 +468,21 @@ const level2color = {
   default: "rgba(240,240,240,0.25)",
 };
 
+function getAbsPos({ node, nodesMap }) {
+  let x = node.position.x;
+  let y = node.position.y;
+  if (node.parentNode) {
+    // FIXME performance.
+    let [dx, dy] = getAbsPos({
+      node: nodesMap.get(node.parentNode),
+      nodesMap,
+    });
+    return [x + dx, y + dy];
+  } else {
+    return [x, y];
+  }
+}
+
 export function Canvas() {
   const [nodes, setNodes, onNodesChange] = useNodesStateSynced([]);
   const [edges, setEdges] = useState<any[]>([]);
@@ -629,33 +644,13 @@ export function Canvas() {
       nodesMap.set(id, newNode as any);
     },
 
-    [addPod, reactFlowInstance]
-  );
-
-  const getAbsPos = useCallback(
-    (node) => {
-      let x = node.position.x;
-      let y = node.position.y;
-      let parent = getPod(node.parent);
-      while (parent) {
-        x += parent.x;
-        y += parent.y;
-        if (parent.parent) {
-          parent = getPod(parent.parent);
-        } else {
-          break;
-        }
-      }
-      return [x, y];
-    },
-    [getPod]
+    [addPod, apolloClient, nodesMap, reactFlowInstance]
   );
 
   const getScopeAt = useCallback(
     (x, y, id) => {
-      // FIXME should be fineLast, but findLast cannot pass TS compiler.
-      const scope = nodes.find((node) => {
-        let [x1, y1] = getAbsPos(node);
+      const scope = nodes.findLast((node) => {
+        let [x1, y1] = getAbsPos({ node, nodesMap });
         return (
           node.type === "scope" &&
           node.id !== id &&
@@ -667,27 +662,8 @@ export function Canvas() {
       });
       return scope;
     },
-    [getAbsPos, nodes]
+    [nodes, nodesMap]
   );
-
-  /**
-   * @param {string} x The position relative to the parent.
-   * @param {string} y
-   * @param {Node} parent The parent node.
-   * @param {list} nodes A list of all nodes.
-   * @returns {x,y} The absolute position of the node.
-   */
-  const getAbsolutePos = useCallback((x, y, parent, nodes) => {
-    x -= parent.position.x;
-    y -= parent.position.y;
-    if (parent.parentNode) {
-      // FIXME performance.
-      parent = nodes.find((n) => n.id === parent.parentNode);
-      return getAbsolutePos(x, y, parent, nodes);
-    } else {
-      return { x, y };
-    }
-  }, []);
 
   /**
    * @param {string} node The node to be moved.
@@ -725,11 +701,11 @@ export function Canvas() {
         )
       );
     },
-    [userColor]
+    [nodesMap, setNodes, userColor]
   );
 
   const onNodeDragStop = useCallback(
-    (event, node) => {
+    (event, node: Node) => {
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       // This mouse position is absolute within the canvas.
       const mousePos = reactFlowInstance.project({
@@ -738,10 +714,10 @@ export function Canvas() {
       });
       // check if this position is inside parent scope
       if (
-        mousePos.x < node.positionAbsolute.x ||
-        mousePos.y < node.positionAbsolute.y ||
-        mousePos.x > node.positionAbsolute.x + node.width ||
-        mousePos.y > node.positionAbsolute.y + node.height
+        mousePos.x < node.positionAbsolute!.x ||
+        mousePos.y < node.positionAbsolute!.y ||
+        mousePos.x > node.positionAbsolute!.x + node.width! ||
+        mousePos.y > node.positionAbsolute!.y + node.height!
       ) {
         // console.log("Cannot drop outside parent scope");
         return;
@@ -753,14 +729,9 @@ export function Canvas() {
       if (scope) {
         console.log("dropped into scope:", scope);
         // compute the actual position
-        let { x: _absX, y: _absY } = getAbsolutePos(
-          node.positionAbsolute.x,
-          node.positionAbsolute.y,
-          scope,
-          nodes
-        );
-        absX = _absX;
-        absY = _absY;
+        let [dx, dy] = getAbsPos({ node: scope, nodesMap });
+        absX = node.positionAbsolute!.x - dx;
+        absY = node.positionAbsolute!.y - dy;
       }
       // first, dispatch this to the store
       setPodPosition({
@@ -842,8 +813,8 @@ export function Canvas() {
       reactFlowInstance,
       getScopeAt,
       setPodPosition,
-      getAbsolutePos,
-      nodes,
+      nodesMap,
+      setNodes,
       setPodParent,
     ]
   );
@@ -855,7 +826,7 @@ export function Canvas() {
         deletePod(apolloClient, { id: node.id, toDelete: [] });
       }
     },
-    [deletePod]
+    [apolloClient, deletePod]
   );
 
   const [showContextMenu, setShowContextMenu] = useState(false);

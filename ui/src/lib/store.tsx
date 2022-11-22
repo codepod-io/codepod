@@ -188,8 +188,8 @@ export interface RepoSlice {
   deleteClient: (clientId: any) => void;
   flipShowLineNumbers: () => void;
   disconnect: () => void;
-  getPod: (string) => any;
-  getPods: () => any;
+  getPod: (string) => Pod;
+  getPods: () => Record<string, Pod>;
   getId2children: (string) => string[];
 }
 
