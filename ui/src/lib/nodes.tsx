@@ -77,8 +77,12 @@ export function useNodesStateSynced(nodeList) {
       });
 
       // TOFIX: a node may be shadowed behind its parent, due to the order to render reactflow node, to fix this, comment out the following sorted method, which brings in a large overhead.
-      // setNodes(Array.from(nodesMap.values()).sort((a:Node, b:Node) => (a.level - b.level)));
-      setNodes(Array.from(nodesMap.values()));
+      setNodes(
+        Array.from(nodesMap.values()).sort(
+          (a: Node & { level }, b: Node & { level }) => a.level - b.level
+        )
+      );
+      // setNodes(Array.from(nodesMap.values()));
     };
 
     // setNodes(Array.from(nodesMap.values()));
