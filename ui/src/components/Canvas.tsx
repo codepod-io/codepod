@@ -51,6 +51,7 @@ import { useApolloClient } from "@apollo/client";
 import { CanvasContextMenu } from "./CanvasContextMenu";
 import ToolBox, { ToolTypes } from "./Toolbox";
 import styles from "./canvas.style.js";
+import { ShareProjDialog } from "./ShareProjDialog";
 import { analyzeCode } from "../lib/parser";
 
 const nanoid = customAlphabet(nolookalikes, 10);
@@ -513,12 +514,14 @@ export function Canvas() {
   // const pods = useStore(store, (state) => state.pods);
   const getPod = useStore(store, (state) => state.getPod);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const repoId = useStore(store, (state) => state.repoId);
+  const repoName = useStore(store, (state) => state.repoName);
 
   const getRealNodes = useCallback(
     (id, level) => {
       let res: any[] = [];
       let children = getId2children(id) || [];
-      console.log("getChildren", id, children);
       const pod = getPod(id);
       if (id !== "ROOT") {
         res.push({
@@ -920,8 +923,17 @@ export function Canvas() {
             y={points.y}
             addCode={() => addNode(client.x, client.y, "code")}
             addScope={() => addNode(client.x, client.y, "scope")}
+            onShareClick={() => {
+              setShowShareDialog(true);
+            }}
           />
         )}
+        <ShareProjDialog
+          open={showShareDialog}
+          onClose={() => setShowShareDialog(false)}
+          title={repoName || ""}
+          id={repoId || ""}
+        />
       </Box>
     </Box>
   );

@@ -5,6 +5,8 @@ import {
   deletePod,
   deleteRepo,
   myRepos,
+  myCollabRepos,
+  addCollaborator,
   pod,
   repo,
   repos,
@@ -34,6 +36,7 @@ export const resolvers = {
     repo,
     pod,
     listAllRuntimes,
+    myCollabRepos,
   },
   Mutation: {
     signup,
@@ -45,6 +48,7 @@ export const resolvers = {
     addPod,
     updatePod,
     deletePod,
+    addCollaborator,
     spawnRuntime:
       process.env.RUNTIME_SPAWNER === "k8s"
         ? spawnRuntime_k8s

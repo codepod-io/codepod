@@ -3,6 +3,8 @@ const { PrismaClient } = Prisma;
 
 const prisma = new PrismaClient();
 
+// console.log("resolver_repo.ts", Prisma.RepoInclude);
+
 async function ensurePodAccess({ id, userId }) {
   let pod = await prisma.pod.findFirst({
     where: { id },
@@ -30,7 +32,9 @@ async function ensurePodAccess({ id, userId }) {
     // is created on server, which is a time sequence bug
     throw new Error("Pod not exists.");
   }
-  if (pod.repo.owner.id !== userId) {
+  // public repo can be accessed by everyone
+  // if the user is the owner or one of the collaborators, then it is ok
+  if (!pod.repo.public &&  pod.repo.owner.id !== userId && pod.repo.collaboratorIds.indexOf(userId) === -1) {
     throw new Error("You do not have access to this pod.");
   }
 }
@@ -57,12 +61,27 @@ export async function myRepos(_, __, { userId }) {
   return repos;
 }
 
-export async function repo(_, { id }, { userId }) {
+export async function myCollabRepos(_, __, {userId}) {
   if (!userId) throw Error("Unauthenticated");
-  const repo = await prisma.repo.findFirst({
+  // console.log("myCollabRepos", userId);
+  const repos = await prisma.repo.findMany({
     where: {
-      id,
-      owner: { id: userId },
+      public: false,
+      collaboratorIds: {
+        has:userId,
+      },
+    },
+  });
+  return repos;
+}
+
+export async function repo(_, { id }, { userId }) {
+  const repo = await prisma.repo.findFirst({
+    where: { OR: [
+      { id, public: true },
+      { id, owner: { id: userId!} },
+      { id, collaboratorIds: { has: userId!} },
+    ]
     },
     include: {
       owner: true,
@@ -77,7 +96,6 @@ export async function repo(_, { id }, { userId }) {
       },
     },
   });
-  // console.log("Returning repo", repo);
   return repo;
 }
 
@@ -90,12 +108,13 @@ export async function pod(_, { id }) {
   });
 }
 
-export async function createRepo(_, { id, name }, { userId }) {
+export async function createRepo(_, { id, name, isPublic}, { userId }) {
   if (!userId) throw Error("Unauthenticated");
   const repo = await prisma.repo.create({
     data: {
       id,
       name,
+      public: isPublic,
       owner: {
         connect: {
           id: userId,
@@ -138,6 +157,42 @@ export async function deleteRepo(_, { name }, { userId }) {
       id: repo.id,
     },
   });
+  return true;
+}
+
+export async function addCollaborator(_, { repoId, email }, { userId}) {
+  // make sure the repo is writable by this user
+  if (!userId) throw new Error("Not authenticated.");
+  // 1. find the repo
+  const repo = await prisma.repo.findFirst({
+    where: {
+      id: repoId,
+      owner: { id: userId },
+    },
+  });
+  if (!repo) throw new Error("Repo not found or you are not the owner.");
+  if (repo.public) throw new Error("Public repo cannot have collaborators.");
+  // 2. find the user
+  const user = await prisma.user.findFirst({
+    where: {
+      email,
+    }
+  });
+  if (!user) throw new Error("User not found");
+  if (user.id === userId) throw new Error("You are already the owner.");
+  if (repo.collaboratorIds.indexOf(user.id) !== -1) throw new Error("The user is already a collaborator.");
+  // 3. add the user to the repo
+  const res = await prisma.repo.update({
+    where: {
+      id: repoId,
+    },
+    data: {
+      // public: false,
+      // name: "test",
+      collaboratorIds: {push: user.id},
+    }
+  })
+  // console.log(res.collaboratorIds);
   return true;
 }
 

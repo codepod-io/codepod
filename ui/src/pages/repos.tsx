@@ -14,6 +14,11 @@ import TextField from "@mui/material/TextField";
 import FormControl from "@mui/material/FormControl";
 import FormLabel from "@mui/material/FormLabel";
 import CircularProgress from "@mui/material/CircularProgress";
+import ShareIcon from "@mui/icons-material/Share";
+import Chip from "@mui/material/Chip";
+import Switch from "@mui/material/Switch";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import { ShareProjDialog } from "../components/ShareProjDialog";
 
 import { Formik } from "formik";
 
@@ -28,12 +33,24 @@ const FETCH_REPOS = gql`
     myRepos {
       name
       id
+      public
     }
   }
 `;
 
-function RepoLine({ repo }) {
+const FETCH_COLLAB_REPOS = gql`
+  query GetCollabRepos {
+    myCollabRepos {
+      name
+      id
+      public
+    }
+  }
+`;
+
+function RepoLine({ repo, deletable, sharable }) {
   const { me } = useMe();
+  const [open, setOpen] = useState(false);
   const [deleteRepo] = useMutation(
     gql`
       mutation deleteRepo($name: String) {
@@ -81,22 +98,39 @@ function RepoLine({ repo }) {
         component={ReactLink}
         to={`/repo/${repo.id}`}
       >{`${repo.name}`}</Link>
-      <Button
+      <Chip
+        label={repo.public ? "public" : "private"}
         size="small"
-        sx={{
-          color: "red",
-        }}
-        onClick={async () => {
-          // FIXME ensure the runtime is killed
-          deleteRepo({
-            variables: {
-              name: repo.name,
-            },
-          });
-        }}
-      >
-        Delete
-      </Button>
+        variant={repo.public ? "outlined" : "filled"}
+      ></Chip>
+      {sharable && (
+        <Button
+          size="small"
+          sx={{ color: "#008000" }}
+          endIcon={<ShareIcon />}
+          onClick={() => setOpen(true)}
+        >
+          Share
+        </Button>
+      )}
+      {deletable && (
+        <Button
+          size="small"
+          sx={{
+            color: "red",
+          }}
+          onClick={async () => {
+            // FIXME ensure the runtime is killed
+            deleteRepo({
+              variables: {
+                name: repo.name,
+              },
+            });
+          }}
+        >
+          Delete
+        </Button>
+      )}
       {!rt_loading && rt_data.listAllRuntimes.includes(repo.id) && (
         <Box>
           Runtime Active{" "}
@@ -118,16 +152,62 @@ function RepoLine({ repo }) {
           </Button>
         </Box>
       )}
+      <ShareProjDialog
+        open={open}
+        title={repo.name}
+        onClose={() => setOpen(false)}
+        id={repo.id}
+      />
     </Box>
   );
 }
 
-function Repos() {
+function RepoList() {
   const { loading, error, data } = useQuery(FETCH_REPOS);
-  const { me } = useMe();
   if (loading) return <p>Loading...</p>;
   if (error) return <Alert severity="error">{error.message}</Alert>;
   let repos = data.myRepos.slice().reverse();
+  return (
+    <>
+      <Typography variant="h4" gutterBottom component="div">
+        Your repos ({repos.length}):
+      </Typography>
+      {repos.map((repo) => (
+        <RepoLine repo={repo} deletable={true} sharable={true} key={repo.id} />
+      ))}
+    </>
+  );
+}
+
+// Almost the same as RepoList, consider re-using code later
+function CollabRepoList() {
+  const { loading, error, data } = useQuery(FETCH_COLLAB_REPOS);
+  if (loading) return <p>Loading...</p>;
+  if (error) return <Alert severity="error">{error.message}</Alert>;
+  let repos = data.myCollabRepos.slice().reverse();
+  return (
+    <>
+      <Typography variant="h4" gutterBottom component="div">
+        Shared repos ({repos.length}):
+      </Typography>
+      {repos.map((repo) => (
+        <RepoLine
+          repo={repo}
+          deletable={false}
+          sharable={false}
+          key={repo.id}
+        />
+      ))}
+    </>
+  );
+}
+
+function Repos() {
+  // const { loading, error, data } = useQuery(FETCH_REPOS);
+  const { me } = useMe();
+
+  // if (error) return <Alert severity="error">{error.message}</Alert>;
+  // let repos = data.myRepos.slice().reverse();
   return (
     <Box sx={{ pt: 4 }}>
       <Box>
@@ -135,22 +215,19 @@ function Repos() {
         started.
       </Box>
       <CreateRepoForm />
-      <Typography variant="h2" gutterBottom component="div">
-        Your repos {repos.length}:
-      </Typography>
-      {repos.map((repo) => (
-        <RepoLine repo={repo} key={repo.id} />
-      ))}
+      <RepoList />
+      <CollabRepoList />
     </Box>
   );
 }
 
 function CreateRepoForm(props) {
   const [error, setError] = useState(null);
+  const [isPrivate, setIsPrivate] = useState(true);
   const [createRepo] = useMutation(
     gql`
-      mutation CreateRepo($name: String!, $id: ID!) {
-        createRepo(name: $name, id: $id) {
+      mutation CreateRepo($name: String!, $id: ID!, $isPublic: Boolean) {
+        createRepo(name: $name, id: $id, isPublic: $isPublic) {
           name
         }
       }
@@ -183,6 +260,7 @@ function CreateRepoForm(props) {
           variables: {
             name: values.reponame,
             id: "repo_" + nanoid(),
+            isPublic: !isPrivate,
           },
         });
         setSubmitting(false);
@@ -216,8 +294,22 @@ function CreateRepoForm(props) {
                 />
               </FormControl>
 
+              <FormControlLabel
+                sx={{ alignItems: "center" }}
+                control={
+                  <Switch
+                    defaultChecked
+                    onChange={(e) => {
+                      setIsPrivate(e.target.checked);
+                    }}
+                  />
+                }
+                // checked={isPrivate}
+                label={isPrivate ? "Private" : "Public"}
+              />
+
               <Button type="submit" size="large" disabled={isSubmitting}>
-                Create New Repo
+                Create a New {isPrivate ? "Private" : "Public"} Repo
               </Button>
               {error && <Alert severity="error">{error}</Alert>}
             </Stack>

@@ -18,6 +18,8 @@ export const typeDefs = gql`
     id: ID!
     name: String!
     pods: [Pod]
+    collaboratorIds: [ID!]
+    public: Boolean!
   }
 
   type Pod {
@@ -83,6 +85,7 @@ export const typeDefs = gql`
     myRepos: [Repo]
     activeSessions: [String]
     listAllRuntimes: [String]
+    myCollabRepos: [Repo]
   }
 
   type Mutation {
@@ -95,7 +98,7 @@ export const typeDefs = gql`
       lastname: String
     ): AuthData
     updateUser(email: String, firstname: String, lastname: String): Boolean
-    createRepo(name: String, id: ID): Repo
+    createRepo(name: String, id: ID, isPublic: Boolean): Repo
     deleteRepo(name: String): Boolean
     addPod(repoId: String, parent: String, index: Int, input: PodInput): Boolean
     deletePod(id: String, toDelete: [String]): Boolean
@@ -105,5 +108,6 @@ export const typeDefs = gql`
     clearPod: Boolean
     spawnRuntime(sessionId: String): Boolean
     killRuntime(sessionId: String!): Boolean
+    addCollaborator(repoId: String, email: String): Boolean
   }
 `;
