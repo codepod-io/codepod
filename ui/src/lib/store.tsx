@@ -641,19 +641,13 @@ const createRepoSlice: StateCreator<
       produce((state) => {
         // FIXME I need to modify many pods here.
         if (state.pods[id]?.parent === parent) return;
+        const oldparent = state.pods[state.pods[id].parent];
         state.pods[id].parent = parent;
         // FXME I'm marking all the pods as dirty here.
         state.pods[id].dirty = true;
         state.pods[parent].children.push(state.pods[id]);
-        const oldparent = state.pods[state.pods[id].parent];
-        if (oldparent) {
-          let idx = oldparent.children.findIndex((_id) => _id === id);
-          if (idx >= 0) {
-            oldparent.children.splice(idx, 1);
-            oldparent.dirty = true;
-          }
-        }
-        // return [id, parent, oldparent];
+        let idx = oldparent.children.findIndex(({ id: _id }) => _id === id);
+        oldparent.children.splice(idx, 1);
       })
     ),
   resizeScopeSize: ({ id }) =>
