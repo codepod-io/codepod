@@ -719,14 +719,13 @@ export function Canvas() {
   const onNodeDragStart = useCallback(
     (_, node) => {
       const currentNode = nodesMap.get(node.id);
-
       if (currentNode) {
         nodesMap.set(node.id, {
           ...currentNode,
           // selected: false,
           style: {
             ...currentNode.style,
-            boxShadow: `${userColor} 0px 15px 25px`,
+            // boxShadow: `${userColor} 0px 15px 25px`,
           },
         });
       }
