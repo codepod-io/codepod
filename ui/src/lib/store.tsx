@@ -27,8 +27,9 @@ if (window.location.protocol === "http:") {
 }
 console.log("yjs server url: ", serverURL);
 
-export const RepoContext =
-  createContext<StoreApi<RepoSlice & RuntimeSlice> | null>(null);
+export const RepoContext = createContext<StoreApi<
+  RepoSlice & RuntimeSlice
+> | null>(null);
 
 // TODO use a selector to compute and retrieve the status
 // TODO this need to cooperate with syncing indicator

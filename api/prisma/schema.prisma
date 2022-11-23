@@ -54,6 +54,9 @@ model Repo {
     userId String
     pods   Pod[]    @relation("BELONG")
     podsId String[]
+    public Boolean @default(false)
+    collaboratorIds String[] 
+    
 
     @@unique([name, userId])
 }
