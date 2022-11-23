@@ -52,6 +52,7 @@ import { CanvasContextMenu } from "./CanvasContextMenu";
 import ToolBox, { ToolTypes } from "./Toolbox";
 import styles from "./canvas.style.js";
 import { ShareProjDialog } from "./ShareProjDialog";
+import { analyzeCode } from "../lib/parser";
 
 const nanoid = customAlphabet(nolookalikes, 10);
 
@@ -195,7 +196,6 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
 function ResultBlock({ pod, id, showOutput = true }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const wsRun = useStore(store, (state) => state.wsRun);
   return (
     <Box>
       {pod.result && (
@@ -278,6 +278,9 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   // const pod = useStore(store, (state) => state.pods[id]);
   const wsRun = useStore(store, (state) => state.wsRun);
+  const clearResults = useStore(store, (s) => s.clearResults);
+  const setSymbolTable = useStore(store, (s) => s.setSymbolTable);
+  const setPodVisibility = useStore(store, (s) => s.setPodVisibility);
   const ref = useRef(null);
   const [target, setTarget] = React.useState<any>(null);
   const [frame] = React.useState({
@@ -333,7 +336,18 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
         deleteNodeById(id);
         break;
       case ToolTypes.play:
-        wsRun(data.id);
+        {
+          // analyze code and set symbol table
+          // TODO maybe put this logic elsewhere?
+          let { ispublic, names } = analyzeCode(pod.content);
+          setPodVisibility(id, ispublic);
+          console.log("names", names);
+          if (names) {
+            setSymbolTable(data.id, names);
+          }
+          clearResults(data.id);
+          wsRun(data.id);
+        }
         break;
       case ToolTypes.layout:
         setLayout(layout === "bottom" ? "right" : "bottom");
@@ -358,11 +372,16 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
       <Box
         sx={{
           border: "solid 1px #d6dee6",
+          borderWidth: pod.ispublic ? "4px" : "1px",
           borderRadius: "4px",
           width: "100%",
           height: "100%",
           backgroundColor: "rgb(244, 246, 248)",
-          borderColor: isEditorBlur ? "#d6dee6" : "#3182ce",
+          borderColor: pod.ispublic
+            ? "green"
+            : isEditorBlur
+            ? "#d6dee6"
+            : "#3182ce",
         }}
         ref={ref}
       >

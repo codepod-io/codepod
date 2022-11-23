@@ -4,6 +4,7 @@ import { createStore, StateCreator, StoreApi } from "zustand";
 
 // FIXME cyclic import
 import { RepoSlice } from "./store";
+import { rewriteCode } from "./parser";
 
 function getChildExports({ id, pods }) {
   // get all the exports and reexports. The return would be:
@@ -288,6 +289,58 @@ function getExports(content) {
   return { exports, reexports, content };
 }
 
+function doRun({ id, socket, set, get }) {
+  // 1. rewrite the code
+  let pods = get().pods;
+  let pod = pods[id];
+  let code = pod.content;
+  // get symbol tables
+  //
+  // TODO currently, I'm using only the symbol table from the current pod. I'll
+  // need to get the symbol table from all the children as well.
+
+  // I should get symbol table of:
+  // - all sibling nodes
+  console.log("rewriting code ..");
+  // console.log("my id", id, pod.symbolTable);
+  // console.log("=== children", pods[pod.parent].children);
+  // FIXME what if there are conflicts?
+  let allSymbolTables = pods[pod.parent].children.map(({ id, type }) => {
+    // FIXME make this consistent, CODE, POD, DECK, SCOPE; use enums
+    if (pods[id].type === "CODE") {
+      return pods[id].symbolTable || {};
+    } else {
+      let tables = pods[id].children
+        .filter(({ id }) => pods[id].ispublic)
+        .map(({ id }) => pods[id].symbolTable || {});
+      return Object.assign({}, ...tables);
+    }
+  });
+  // console.log("=== allSymbolTables", allSymbolTables);
+  let combinedSymbolTable = Object.assign({}, ...allSymbolTables);
+  // console.log("=== combinedSymbolTable", combinedSymbolTable);
+  let { ispublic, newcode } = rewriteCode(code, combinedSymbolTable);
+  get().setPodVisibility(id, ispublic);
+  console.log("new code:\n", newcode);
+
+  get().setRunning(pod.id);
+  socket.send(
+    JSON.stringify({
+      type: "runCode",
+      payload: {
+        lang: pod.lang,
+        code: newcode,
+        namespace: pod.ns,
+        raw: true,
+        podId: pod.id,
+        sessionId: get().sessionId,
+      },
+    })
+  );
+
+  // 2. send for evaluation
+}
+
 function handleRunTree({ id, socket, set, get }) {
   // get all pods
   function helper(id) {
@@ -540,6 +593,7 @@ export interface RuntimeSlice {
   clearResults: (id) => void;
   clearAllResults: () => void;
   setRunning: (id) => void;
+  setSymbolTable: (id: string, names: string[]) => void;
   addPodExport: (id, exports, reexports) => void;
   clearAllExports: () => void;
   setPodExport: ({ id, exports, reexports }) => void;
@@ -657,7 +711,7 @@ export const createRuntimeSlice: StateCreator<
       });
       return;
     }
-    handleRunTree({
+    doRun({
       id,
       socket: {
         send: (payload) => {
@@ -670,6 +724,7 @@ export const createRuntimeSlice: StateCreator<
     });
   },
   wsPowerRun: ({ id, doEval }) => {
+    throw Error("Depcrecated");
     if (!get().socket) {
       get().addError({
         type: "error",
@@ -721,6 +776,19 @@ export const createRuntimeSlice: StateCreator<
   },
   // ==========
   // exports
+  setSymbolTable: (id: string, names: string[]) => {
+    set(
+      produce((state) => {
+        // a symbol table is foo->foo_<podid>
+        state.pods[id].symbolTable = Object.assign(
+          {},
+          ...names.map((name) => ({
+            [name]: `${name}_${id}`,
+          }))
+        );
+      })
+    );
+  },
   addPodExport: ({ id, name }) => {
     set(
       produce((state) => {

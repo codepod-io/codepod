@@ -17,6 +17,7 @@ import { WebsocketProvider } from "y-websocket";
 import { createRuntimeSlice, RuntimeSlice } from "./runtime";
 import { ApolloClient } from "@apollo/client";
 import { addAwarenessStyle } from "./styles";
+import { analyzeCode } from "./parser";
 
 // Tofix: can't connect to http://codepod.127.0.0.1.sslip.io/socket/, but it works well on webbrowser or curl
 let serverURL;
@@ -112,6 +113,8 @@ export type Pod = {
   fold?: boolean;
   thundar?: boolean;
   utility?: boolean;
+  symbolTable?: { [key: string]: string };
+  ispublic?: boolean;
   exports?: { [key: string]: string[] };
   imports?: {};
   reexports?: {};
@@ -192,6 +195,7 @@ export interface RepoSlice {
   getPod: (string) => Pod;
   getPods: () => Record<string, Pod>;
   getId2children: (string) => string[];
+  setPodVisibility: (id, visible) => void;
 }
 
 type BearState = RepoSlice & RuntimeSlice;
@@ -269,6 +273,8 @@ const createRepoSlice: StateCreator<
       thundar: false,
       utility: false,
       name: "",
+      ispublic: false,
+      symbolTable: {},
       exports: {},
       imports: {},
       reexports: {},
@@ -666,6 +672,13 @@ const createRepoSlice: StateCreator<
         state.pods[id].dirty = true;
       })
     ),
+  setPodVisibility: (id, ispublic) => {
+    set(
+      produce((state) => {
+        state.pods[id].ispublic = ispublic;
+      })
+    );
+  },
   loadRepo: async (client, id) => {
     const { pods, name } = await doRemoteLoadRepo({ id, client });
     set(
@@ -680,6 +693,15 @@ const createRepoSlice: StateCreator<
             state.id2parent[pod.id] = pod.parent.id;
           }
           state.id2children[pod.id] = pod.children.map((child) => child.id);
+          // trigger analyze code for symbol table
+          let { ispublic, names } = analyzeCode(pod.content);
+          pod.ispublic = ispublic;
+          pod.symbolTable = Object.assign(
+            {},
+            ...names.map((name) => ({
+              [name]: `${name}_${id}`,
+            }))
+          );
         }
         state.repoLoaded = true;
       })
