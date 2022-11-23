@@ -22,4 +22,16 @@ export default {
     paddingLeft: "5px",
     fontSize: "12px",
   },
+  'hidden-btn': {
+    fontSize: 10,
+    paddingTop: '2px',
+    paddingBottom: '2px',
+    lineHeight: '10px',
+    zIndex: 201
+  },
+  'hidden-hint': {
+    fontSize: 10,
+    color: 'rgb(151, 151, 151)',
+    whiteSpace: 'pre'
+  }
 };
