@@ -15,5 +15,9 @@ module.exports = function override(config, env) {
   };
   // by default load all the languages
   config.plugins.push(new MonacoWebpackPlugin());
+  config.resolve.fallback = {
+    fs: false,
+    path: false,
+  };
   return config;
 };

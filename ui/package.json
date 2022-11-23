@@ -41,6 +41,7 @@
     "socket.io-client": "^4.5.3",
     "stompjs": "^2.3.3",
     "typescript": "^4.4.2",
+    "web-tree-sitter": "^0.20.7",
     "web-vitals": "^2.1.0",
     "xterm": "^5.0.0",
     "xterm-addon-fit": "^0.6.0",
@@ -88,6 +89,8 @@
     "babel-plugin-named-exports-order": "^0.0.2",
     "prop-types": "^15.8.1",
     "react-app-rewired": "^2.2.1",
+    "tree-sitter-javascript": "^0.19.0",
+    "tree-sitter-python": "^0.20.1",
     "webpack": "^5.74.0"
   }
 }
