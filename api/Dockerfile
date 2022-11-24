@@ -11,7 +11,7 @@ WORKDIR /app
 COPY package.json .
 COPY yarn.lock .
 RUN yarn install --production
-COPY prisma .
+COPY prisma ./prisma
 RUN yarn run prisma generate
 COPY --from=builder ./app/build ./build
 EXPOSE 4000
