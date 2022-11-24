@@ -34,7 +34,7 @@ export default function Profile() {
                 Name {me.firstname} {me.lastname}
               </Box>
               <Box> Email: {me.email}</Box>
-              <Box>CodePod version 0.4.5</Box>
+              <Box>CodePod version 0.4.6</Box>
             </Stack>
           </Paper>
           <Divider />
