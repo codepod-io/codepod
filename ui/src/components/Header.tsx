@@ -2,7 +2,7 @@ import { Link as ReactLink } from "react-router-dom";
 
 import { useState } from "react";
 
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import Box from "@mui/material/Box";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -11,23 +11,28 @@ import MenuItem from "@mui/material/MenuItem";
 import Avatar from "@mui/material/Avatar";
 import Link from "@mui/material/Link";
 import Button from "@mui/material/Button";
-
-import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
+import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Container from "@mui/material/Container";
-import Tooltip from "@mui/material/Tooltip";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import Breadcrumbs from "@mui/material/Breadcrumbs";
 import AppBar from "@mui/material/AppBar";
-
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { useAuth } from "../lib/auth";
-
 import useMe from "../lib/me";
 
+function formatPath(path) {
+  const { pathname, search } = path;
+  if (pathname.includes("repo")) {
+    return search.split("=").pop();
+  }
+  return pathname.split("/").pop();
+}
 export function Header() {
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
-
+  const path = useLocation();
+  const currentCrumbs = formatPath(path);
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
   };
@@ -42,9 +47,11 @@ export function Header() {
   const handleCloseUserMenu = () => {
     setAnchorElUser(null);
   };
-
+  const logout = () => {
+    signOut();
+    handleCloseNavMenu();
+  };
   const { isSignedIn, signOut } = useAuth();
-  let navigate = useNavigate();
   const { me } = useMe();
 
   return (
@@ -57,127 +64,57 @@ export function Header() {
             maxHeight: "10px",
           }}
         >
-          <Typography
-            variant="h6"
-            noWrap
-            component="div"
-            sx={{ mr: 2, display: { xs: "none", md: "flex" } }}
-          >
-            <Link component={ReactLink} underline="none" to="/">
+          <Breadcrumbs sx={{ marginLeft: "10px" }}>
+            <Link component={ReactLink} underline="hover" to="/">
               CodePod
             </Link>
-          </Typography>
-
-          <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
-            <IconButton
-              size="large"
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleOpenNavMenu}
-              color="primary"
-            >
-              <MenuIcon />
-            </IconButton>
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorElNav}
-              anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "left",
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: "top",
-                horizontal: "left",
-              }}
-              open={Boolean(anchorElNav)}
-              onClose={handleCloseNavMenu}
-              sx={{
-                display: { xs: "block", md: "none" },
-              }}
-            >
-              {/* The toggle menu */}
-              <MenuItem onClick={handleCloseNavMenu}>
-                <Link to="/repos" component={ReactLink} underline="none">
-                  Repos
-                </Link>
-              </MenuItem>
-              <MenuItem onClick={handleCloseNavMenu}>
-                <Link to="/test" component={ReactLink} underline="none">
-                  Test
-                </Link>
-              </MenuItem>
-              <MenuItem onClick={handleCloseNavMenu}>
-                <Link to="/docs" component={ReactLink} underline="none">
-                  Docs
-                </Link>
-              </MenuItem>
-              <MenuItem onClick={handleCloseNavMenu}>
-                <Link to="/about" component={ReactLink} underline="none">
-                  About
-                </Link>
-              </MenuItem>
-            </Menu>
-          </Box>
-          <Typography
-            variant="h6"
-            noWrap
-            component="div"
-            color="primary"
-            sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}
-          >
-            <Link component={ReactLink} underline="none" to="/">
-              CodePod
-            </Link>
-          </Typography>
-
-          {/* The navigation on desktop */}
+            <Typography color="text.primary">
+              {currentCrumbs || "Dashboard"}
+            </Typography>
+          </Breadcrumbs>
           <Box
             sx={{
               flexGrow: 1,
-              display: { xs: "none", md: "flex" },
+              display: "flex",
               alignItems: "center",
             }}
-          >
-            <Link
-              href="https://codepod.io"
-              target="_blank"
-              underline="none"
-              sx={{
-                mx: 2,
-                display: "flex",
-              }}
-              alignItems="center"
-              // alignContent="center"
-              // textAlign={"center"}
-            >
-              {/* <span>Docs</span> */}
-              Docs <OpenInNewIcon fontSize="small" sx={{ ml: "1px" }} />
-            </Link>
-          </Box>
-
+          ></Box>
           {isSignedIn() ? (
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              <Box sx={{ mr: 2 }}>
-                <Link component={ReactLink} to="/profile" underline="none">
-                  {me?.firstname}
-                </Link>
-              </Box>
-              <Button
-                onClick={() => {
-                  signOut();
-                  navigate("/login");
+            <Box>
+              <IconButton onClick={handleOpenNavMenu}>
+                <AccountCircleIcon></AccountCircleIcon>
+              </IconButton>
+              <Menu
+                id="menu-appbar"
+                anchorEl={anchorElNav}
+                anchorOrigin={{
+                  vertical: "bottom",
+                  horizontal: "left",
                 }}
+                keepMounted
+                transformOrigin={{
+                  vertical: "top",
+                  horizontal: "left",
+                }}
+                open={Boolean(anchorElNav)}
+                onClose={handleCloseNavMenu}
               >
-                Logout
-              </Button>
+                <MenuItem onClick={handleCloseNavMenu}>
+                  <Link to="/profile" component={ReactLink} underline="none">
+                    {me?.firstname}
+                  </Link>
+                </MenuItem>
+                <MenuItem onClick={logout}>
+                  <Link to="/login" component={ReactLink} underline="none">
+                    Logout
+                  </Link>
+                </MenuItem>
+                <MenuItem onClick={handleCloseNavMenu}>
+                  <Link to="/docs" component={ReactLink} underline="none">
+                    Docs
+                  </Link>
+                </MenuItem>
+              </Menu>
             </Box>
           ) : (
             <MyMenuItem to="/login">Login</MyMenuItem>

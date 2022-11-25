@@ -3,16 +3,18 @@ import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
-
-import { grey } from "@mui/material/colors";
-
+import MenuOpenIcon from "@mui/icons-material/MenuOpen";
+import Drawer from "@mui/material/Drawer";
 import { useSnackbar, VariantType } from "notistack";
-
 import { gql, useQuery, useMutation, useApolloClient } from "@apollo/client";
-
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import InfoIcon from "@mui/icons-material/Info";
+import LanguageIcon from "@mui/icons-material/Language";
+import SensorsIcon from "@mui/icons-material/Sensors";
+import ListItemIcon from "@mui/material/ListItemIcon";
 import StopIcon from "@mui/icons-material/Stop";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -24,8 +26,9 @@ import { usePrompt } from "../lib/prompt";
 import { RepoContext, selectNumDirty } from "../lib/store";
 
 import useMe from "../lib/me";
-import { Grid } from "@mui/material";
+import ListItemText from "@mui/material/ListItemText/ListItemText";
 
+const drawerWidth = 240;
 function Flex(props) {
   return (
     <Box sx={{ display: "flex" }} {...props}>
@@ -44,14 +47,16 @@ function SidebarSession() {
   console.log(`Repo ID: ${id} Session ID: ${sessionId}`);
 
   return (
-    <Box>
+    <ListItem>
+      <ListItemIcon>
+        <InfoIcon />
+      </ListItemIcon>
       <Box>
-        Name:{" "}
         <Box component="span" color="blue">
           {repoName || "Error"}
         </Box>
       </Box>
-    </Box>
+    </ListItem>
   );
 }
 
@@ -72,27 +77,27 @@ function SidebarRuntime() {
   }, []);
   if (loading) return <Box>loading</Box>;
   return (
-    <Box>
-      <Box>
-        Runtime{" "}
-        {runtimeConnected ? (
-          <Box component="span" color="green">
-            connected
-          </Box>
-        ) : (
-          <Box component="span" color="red">
-            <Button
-              size="small"
-              onClick={() => {
-                wsConnect(client, `${me.id}_${repoId}`);
-              }}
-            >
-              Connect
-            </Button>
-          </Box>
-        )}
-      </Box>
-    </Box>
+    <ListItem>
+      <ListItemIcon>
+        <SensorsIcon />
+      </ListItemIcon>
+      {runtimeConnected ? (
+        <Box component="span" color="green">
+          connected
+        </Box>
+      ) : (
+        <Box component="span" color="red">
+          <Button
+            size="small"
+            onClick={() => {
+              wsConnect(client, `${me.id}_${repoId}`);
+            }}
+          >
+            Connect
+          </Button>
+        </Box>
+      )}
+    </ListItem>
   );
 }
 
@@ -103,12 +108,25 @@ function SidebarKernel() {
   const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
   const wsRequestStatus = useStore(store, (state) => state.wsRequestStatus);
   const wsInterruptKernel = useStore(store, (state) => state.wsInterruptKernel);
+  console.log(kernels, "kernels");
   return (
     <Box>
+      <ListItem>
+        <ListItemIcon>
+          <LanguageIcon />
+        </ListItemIcon>
+        <ListItemText primary="Enviroment" />
+      </ListItem>
       {/* CAUTION Object.entries is very tricky. Must use for .. of, and the destructure must be [k,v] LIST */}
-      {Object.entries(kernels).map(([lang, kernel]) => (
-        <Box key={`lang-${lang}`}>
-          <Box>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          paddingLeft: "56px",
+        }}
+      >
+        {Object.entries(kernels).map(([lang, kernel]) => (
+          <Box key={`lang-${lang}`}>
             <Box component="span" color="blue">
               {lang}
             </Box>{" "}
@@ -142,8 +160,8 @@ function SidebarKernel() {
               </IconButton>
             </Tooltip>
           </Box>
-        </Box>
-      ))}
+        ))}
+      </Box>
     </Box>
   );
 }
@@ -175,7 +193,7 @@ function SyncStatus() {
   }, []);
 
   return (
-    <Box>
+    <ListItem>
       <Button
         size="small"
         disabled={numDirty === 0}
@@ -183,18 +201,17 @@ function SyncStatus() {
           remoteUpdateAllPods(client);
         }}
       >
-        <CloudUploadIcon />
+        <ListItemIcon>
+          <CloudUploadIcon />
+        </ListItemIcon>
+
         {numDirty > 0 ? (
-          <Box component="span" color="blue" mx={1}>
-            saving {numDirty} to cloud
-          </Box>
+          <Box color="blue">saving {numDirty} to cloud</Box>
         ) : (
-          <Box component="span" color="grey" mx={1}>
-            Saved to cloud.
-          </Box>
+          <Box color="grey">Saved to cloud.</Box>
         )}
       </Button>
-    </Box>
+    </ListItem>
   );
 }
 
@@ -269,22 +286,52 @@ function ToastError() {
   }, [error, enqueueSnackbar, clearError]);
   return <Box></Box>;
 }
-
 export function Sidebar() {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const handleDrawerToggle = () => {
+    setMobileOpen(!mobileOpen);
+  };
+  const container = document.body;
   return (
-    <Grid container spacing={2}>
-      <Grid item xs={12}>
-        <SyncStatus />
-      </Grid>
-      <Grid item xs={12}>
-        {" "}
-        <SidebarSession />
-      </Grid>
-      <Grid item xs={12}>
-        <SidebarRuntime />
-        <SidebarKernel />
-      </Grid>
+    <Box>
+      {!mobileOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 6,
+            left: 0,
+            zIndex: 1650,
+          }}
+        >
+          <IconButton onClick={handleDrawerToggle}>
+            <MenuOpenIcon />
+          </IconButton>
+        </div>
+      )}
+
+      <Drawer
+        container={container}
+        variant="temporary"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{
+          keepMounted: true, // Better open performance on mobile.
+        }}
+        sx={{
+          padding: "10px",
+          display: { xs: "block", sm: "block" },
+          "& .MuiDrawer-paper": { boxSizing: "border-box", width: drawerWidth },
+        }}
+      >
+        <List>
+          <SyncStatus />
+          <SidebarSession />
+          <SidebarRuntime />
+          <SidebarKernel />
+        </List>
+      </Drawer>
       <ToastError />
-    </Grid>
+    </Box>
   );
 }
