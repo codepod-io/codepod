@@ -193,15 +193,18 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
 
 // FIXME: the resultblock is rendered every time the parent codeNode changes (e.g., dragging), we may set the result number as a state of a pod to memoize the resultblock.
 
-function ResultBlock({ pod, id, showOutput = true }) {
+function ResultBlock({ pod, id}) {
   const store = useContext(RepoContext);
+  const [showOutput, setShowOutput] = useState(true);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   return (
-    <Box>
+    <Box
+    sx={{
+      minHeight: pod.height,
+    }}>
       {pod.result && (
         <Box
           sx={{ display: "flex", flexDirection: "column" }}
-          overflow="scroll"
         >
           {pod.result.html ? (
             <div dangerouslySetInnerHTML={{ __html: pod.result.html }}></div>
@@ -235,11 +238,33 @@ function ResultBlock({ pod, id, showOutput = true }) {
       )}
 
       {pod.running && <CircularProgress />}
-      {showOutput && (
-        <Box overflow="scroll" maxHeight="145px" border="1px">
+      {showOutput ? (
+        <Box 
+        sx={{ paddingBottom: "2px" }}
+        overflow="scroll"
+        maxHeight="145px"
+        border="1px">
           {/* <Box bgcolor="lightgray">Error</Box> */}
+          <Button
+            onClick={() => {
+              setShowOutput(!showOutput);
+            }}
+            sx={[
+              styles["hidden-btn"],
+              {
+                position: "absolute",
+                top: 0,
+                right: 0,
+                zIndex: 201,
+              },
+            ]}
+            variant="text"
+            size="small"
+          >
+            Hide output
+          </Button>
           {pod.stdout && (
-            <Box whiteSpace="pre-wrap" sx={{ fontSize: 10 }}>
+            <Box whiteSpace="pre-wrap" sx={{ fontSize: 10, paddingBottom: 1 }}>
               <Ansi>{pod.stdout}</Ansi>
             </Box>
           )}
@@ -250,9 +275,9 @@ function ResultBlock({ pod, id, showOutput = true }) {
                 fontSize: 10,
                 flexDirection: "row",
                 alignItems: "center",
+                borderTop: "1px solid rgb(214, 222, 230)",
               }}
             >
-              <Box>Result[{pod.result.count}]:</Box>
               <Box component="pre" whiteSpace="pre-wrap">
                 {pod.result.text}
               </Box>
@@ -267,6 +292,27 @@ function ResultBlock({ pod, id, showOutput = true }) {
               </Box>
             </Box>
           )}
+        </Box>
+      ):(
+        <Box
+          sx={{
+            paddingBottom: "5px",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Box sx={styles["hidden-hint"]}>This output has been hidden. </Box>
+          <Button
+            onClick={() => {
+              setShowOutput(!showOutput);
+            }}
+            sx={styles["hidden-btn"]}
+            size="small"
+            variant="text"
+          >
+            Show it
+          </Button>
         </Box>
       )}
     </Box>
@@ -286,7 +332,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const [frame] = React.useState({
     translate: [0, 0],
   });
-  const [showOutput, setShowOutput] = useState(true);
   // right, bottom
   const [layout, setLayout] = useState("bottom");
   const isRightLayout = layout === "right";
@@ -352,8 +397,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
       case ToolTypes.layout:
         setLayout(layout === "bottom" ? "right" : "bottom");
         break;
-      case ToolTypes.fold:
-        setShowOutput(!showOutput);
     }
   };
 
@@ -372,7 +415,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
       <Box
         sx={{
           border: "solid 1px #d6dee6",
-          borderWidth: pod.ispublic ? "4px" : "1px",
+          borderWidth: pod.ispublic ? "4px" : "2px",
           borderRadius: "4px",
           width: "100%",
           height: "100%",
@@ -413,7 +456,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
         <Box className="custom-drag-handle">
           <Box sx={styles["pod-index"]}>[{pod.index}]</Box>
           <ToolBox
-            data={{ id, showOutput }}
+            data={{ id }}
             onRunTask={runToolBoxTask}
           ></ToolBox>
         </Box>
@@ -460,14 +503,15 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
                 top: isRightLayout ? 0 : "100%",
                 left: isRightLayout ? "100%" : 0,
                 maxHeight: "158px",
-                minWidth: isRightLayout ? "200px" : "100%",
+                maxWidth: isRightLayout ? "300px" : "100%",
+                minWidth: isRightLayout ? "150px" : "100%",
                 boxSizing: "border-box",
                 backgroundColor: "white",
                 zIndex: 100,
                 padding: "0 10px",
               }}
             >
-              <ResultBlock pod={pod} id={id} showOutput={showOutput} />
+              <ResultBlock pod={pod} id={id} />
             </Box>
           )}
         </Box>
@@ -706,7 +750,7 @@ export function Canvas() {
           // selected: false,
           style: {
             ...currentNode.style,
-            boxShadow: `${userColor} 0px 15px 25px`,
+            // boxShadow: `${userColor} 0px 15px 25px`,
           },
         });
       }
