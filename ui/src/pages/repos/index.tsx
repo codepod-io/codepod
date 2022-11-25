@@ -189,7 +189,6 @@ function RepoLine({ repo, deletable, sharable }) {
 function Repos({
   url = FETCH_REPOS,
   type = RepoTypes.repo,
-  callback = (...arg) => {},
   onLoading = (load) => {},
 }) {
   const { loading, error, data } = useQuery(url);
@@ -200,7 +199,6 @@ function Repos({
     onLoading(loading);
   }
   if (error) {
-    callback(error.message);
     return null;
   }
   const repos = data[type].slice().reverse();
@@ -268,7 +266,6 @@ function Repos({
 export default function Page() {
   const { me } = useMe();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   return (
     <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
       {/* TODO some meta information about the user */}
@@ -285,8 +282,7 @@ export default function Page() {
         👋 Welcome, {me?.firstname}! Please open or create a repository to get
         started.
       </Box>
-      {error && <Alert severity="error">{error}</Alert>}
-      {!error && loading && (
+      {loading && (
         <Box
           sx={{
             display: "flex",
@@ -297,15 +293,9 @@ export default function Page() {
         </Box>
       )}
       <Repos
-        callback={(arg) => {
-          if (arg) {
-            setError(arg);
-          }
-        }}
-        onLoading={(value) => {
-          setLoading(value);
-        }}
-      />
+        onLoading={(value)=>{
+          setLoading(value)
+        }}/>
       <Repos url={FETCH_COLLAB_REPOS} type={RepoTypes.collab} />
     </Box>
   );
