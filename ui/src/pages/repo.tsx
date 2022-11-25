@@ -13,70 +13,12 @@ import useMe from "../lib/me";
 import { Canvas } from "../components/Canvas";
 import { Sidebar } from "../components/Sidebar";
 import { useApolloClient } from "@apollo/client";
-
 function RepoWrapper({ children }) {
   // this component is used to provide foldable sidebar
-  const [show, setShow] = useState(true);
-  let sidebar_width = 0.12;
   return (
     <Box m="auto" height="100%">
-      <Box
-        sx={{
-          display: "inline-block",
-          verticalAlign: "top",
-          height: "100%",
-          width: show ? sidebar_width : 0,
-          overflow: "auto",
-        }}
-      >
-        <Box sx={{ display: "flex" }}>
-          {/* <Spacer /> */}
-          <Button
-            onClick={() => {
-              setShow(!show);
-            }}
-            size="small"
-            // variant="ghost"
-          >
-            {show ? "Hide" : "Show"}
-          </Button>
-        </Box>
-        <Box sx={{ mx: 2, my: 1 }}>
-          <Sidebar />
-        </Box>
-      </Box>
-
-      <Box
-        sx={{
-          display: "inline-block",
-          verticalAlign: "top",
-          height: "100%",
-          width: show ? 1 - sidebar_width : 1,
-          overflow: "scroll",
-        }}
-      >
-        <Box
-          style={{
-            position: "absolute",
-            margin: "5px",
-            top: "50px",
-            left: "5px",
-          }}
-          zIndex={100}
-          visibility={show ? "hidden" : "inherit"}
-        >
-          <Button
-            onClick={() => {
-              setShow(!show);
-            }}
-            size="small"
-            // variant="ghost"
-          >
-            {show ? "Hide" : "Show"}
-          </Button>
-        </Box>
-        {children}
-      </Box>
+      <Sidebar />
+      {children}
     </Box>
   );
 }
