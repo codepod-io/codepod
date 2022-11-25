@@ -186,10 +186,23 @@ function RepoLine({ repo, deletable, sharable }) {
   );
 }
 
-function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
+function Repos({
+  url = FETCH_REPOS,
+  type = RepoTypes.repo,
+  callback = (...arg) => {},
+  onLoading = (load) => {},
+}) {
   const { loading, error, data } = useQuery(url);
-  if (loading) return <p>Loading...</p>;
-  if (error) return <Alert severity="error">{error.message}</Alert>;
+  if (loading) {
+    onLoading(loading);
+    return null;
+  } else {
+    onLoading(loading);
+  }
+  if (error) {
+    callback(error.message);
+    return null;
+  }
   const repos = data[type].slice().reverse();
   return (
     <Box>
@@ -254,6 +267,8 @@ function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
 }
 export default function Page() {
   const { me } = useMe();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   return (
     <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
       {/* TODO some meta information about the user */}
@@ -270,7 +285,27 @@ export default function Page() {
         👋 Welcome, {me?.firstname}! Please open or create a repository to get
         started.
       </Box>
-      <Repos />
+      {error && <Alert severity="error">{error}</Alert>}
+      {!error && loading && (
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
+          <CircularProgress />
+        </Box>
+      )}
+      <Repos
+        callback={(arg) => {
+          if (arg) {
+            setError(arg);
+          }
+        }}
+        onLoading={(value) => {
+          setLoading(value);
+        }}
+      />
       <Repos url={FETCH_COLLAB_REPOS} type={RepoTypes.collab} />
     </Box>
   );

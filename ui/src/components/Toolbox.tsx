@@ -65,20 +65,6 @@ export default function ToolBox({
           <ViewComfyIcon fontSize="inherit" />
         </IconButton>
       </Tooltip>
-      <Tooltip title={data.showOutput ? "Fold output" : "Unfold output"}>
-        <IconButton
-          size="small"
-          onClick={() => {
-            onRunTask && onRunTask(ToolTypes.fold, data);
-          }}
-        >
-          {data.showOutput ? (
-            <UnfoldLessIcon fontSize="inherit" />
-          ) : (
-            <UnfoldMoreIcon fontSize="inherit" />
-          )}
-        </IconButton>
-      </Tooltip>
     </Box>
   );
 }
