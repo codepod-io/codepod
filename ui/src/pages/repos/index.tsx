@@ -101,7 +101,7 @@ function RepoLine({ repo, deletable, sharable }) {
       sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
     >
       <TableCell align="center">
-        <Link component={ReactLink} to={`/repo/${repo.id}`}>
+        <Link component={ReactLink} to={`/repo/${repo.id}?name=${repo.name}`}>
           <Box
             sx={{
               display: "flex",
