@@ -91,6 +91,7 @@ const initialState = {
   //TODO: all presence information are now saved in clients map for future usage. create a modern UI to show those information from clients (e.g., online users)
   clients: new Map(),
   showLineNumbers: false,
+  loadError: null,
 };
 
 export type Pod = {
@@ -136,6 +137,7 @@ export interface RepoSlice {
   id2children: Record<string, string[]>;
   // runtime: string;
   repoId: string | null;
+  loadError: any;
   // sessionId?: string;
 
   resetState: () => void;
@@ -682,6 +684,7 @@ const createRepoSlice: StateCreator<
         state.repoName = name;
         // fill in the parent/children relationships
         for (const id in state.pods) {
+          console.log("id", id);
           let pod = state.pods[id];
           if (pod.parent) {
             state.id2parent[pod.id] = pod.parent.id;

@@ -1,8 +1,9 @@
 import { useQuery, useMutation, gql } from "@apollo/client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import Link from "@mui/material/Link";
 import { Link as ReactLink } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import Box from "@mui/material/Box";
 import Alert from "@mui/material/Alert";
@@ -263,9 +264,34 @@ function Repos({
     </Box>
   );
 }
+
+function NoLogginErrorAlert() {
+  const nevigate = useNavigate();
+
+  useEffect(() => {
+    setTimeout(() => {
+      nevigate("/login");
+    }, 3000);
+  }, []);
+
+  return (
+    <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
+      <Alert severity="error">
+        Please login first! Automatically jump to{" "}
+        <Link component={ReactLink} to="/login">
+          login
+        </Link>{" "}
+        page in 3 seconds.
+      </Alert>
+    </Box>
+  );
+}
 export default function Page() {
   const { me } = useMe();
   const [loading, setLoading] = useState(true);
+  if (!me) {
+    return <NoLogginErrorAlert />;
+  }
   return (
     <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
       {/* TODO some meta information about the user */}
@@ -293,9 +319,10 @@ export default function Page() {
         </Box>
       )}
       <Repos
-        onLoading={(value)=>{
-          setLoading(value)
-        }}/>
+        onLoading={(value) => {
+          setLoading(value);
+        }}
+      />
       <Repos url={FETCH_COLLAB_REPOS} type={RepoTypes.collab} />
     </Box>
   );

@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Alert from "@mui/material/Alert";
 
 import { useEffect, useState, useRef, useContext } from "react";
 
@@ -81,6 +82,16 @@ function RepoWrapper({ children }) {
   );
 }
 
+function NotFoundAlert() {
+  return (
+    <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
+      <Alert severity="error">
+        The repo you are looking for is not found. Please check the URL.
+      </Alert>
+    </Box>
+  );
+}
+
 function RepoImpl() {
   let { id } = useParams();
   const store = useContext(RepoContext);
@@ -89,6 +100,7 @@ function RepoImpl() {
   const setRepo = useStore(store, (state) => state.setRepo);
   const client = useApolloClient();
   const loadRepo = useStore(store, (state) => state.loadRepo);
+  // const loadError = useStore(store, (state) => state.loadError);
   const setSessionId = useStore(store, (state) => state.setSessionId);
   const repoLoaded = useStore(store, (state) => state.repoLoaded);
   const setUser = useStore(store, (state) => state.setUser);
@@ -138,6 +150,7 @@ function RepoImpl() {
   // to be re-rendered in conflict, which is weird.
 
   if (loading) return <Box>Loading</Box>;
+  // if (loadError) return <Box>Error </Box>;
 
   return (
     <RepoWrapper>
