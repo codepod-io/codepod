@@ -13,6 +13,8 @@ Parser.init({
   parser.setLanguage(Python);
 });
 
+console.log("parser", parser);
+
 /**
  * Return a list of names defined in this code.
  * @param code the code

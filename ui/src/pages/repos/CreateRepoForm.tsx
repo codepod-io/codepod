@@ -89,6 +89,7 @@ export default function CreateRepoForm(props: form = {}) {
                   variables: {
                     name: values.reponame,
                     id,
+                    isPublic: !isPrivate,
                   },
                 });
                 if (res.data) {

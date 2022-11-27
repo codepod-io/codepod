@@ -100,7 +100,7 @@ function RepoImpl() {
   const setRepo = useStore(store, (state) => state.setRepo);
   const client = useApolloClient();
   const loadRepo = useStore(store, (state) => state.loadRepo);
-  // const loadError = useStore(store, (state) => state.loadError);
+  const loadError = useStore(store, (state) => state.loadError);
   const setSessionId = useStore(store, (state) => state.setSessionId);
   const repoLoaded = useStore(store, (state) => state.repoLoaded);
   const setUser = useStore(store, (state) => state.setUser);
@@ -150,7 +150,7 @@ function RepoImpl() {
   // to be re-rendered in conflict, which is weird.
 
   if (loading) return <Box>Loading</Box>;
-  // if (loadError) return <Box>Error </Box>;
+  if (loadError) return <Box>Error </Box>;
 
   return (
     <RepoWrapper>

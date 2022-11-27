@@ -676,11 +676,16 @@ const createRepoSlice: StateCreator<
     );
   },
   loadRepo: async (client, id) => {
-    const { pods, name } = await doRemoteLoadRepo({ id, client });
+    const { pods, name, error } = await doRemoteLoadRepo({ id, client });
     set(
       produce((state) => {
         // TODO the children ordered by index
         state.pods = normalize(pods);
+        // if (error) {
+        //   console.log("ERROR", error);
+        //   state.loadError = error;
+        //   return;
+        // }
         state.repoName = name;
         // fill in the parent/children relationships
         for (const id in state.pods) {
