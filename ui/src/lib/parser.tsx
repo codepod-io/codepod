@@ -3,7 +3,7 @@ import Parser from "web-tree-sitter";
 let parser: Parser | null = null;
 Parser.init({
   locateFile(scriptName: string, scriptDirectory: string) {
-    return scriptName;
+    return "/" + scriptName;
   },
 }).then(async () => {
   /* the library is ready */
@@ -12,8 +12,6 @@ Parser.init({
   const Python = await Parser.Language.load("/tree-sitter-python.wasm");
   parser.setLanguage(Python);
 });
-
-console.log("parser", parser);
 
 /**
  * Return a list of names defined in this code.
@@ -30,6 +28,7 @@ export function analyzeCode(code) {
   if (!parser) {
     throw Error("warning: parser not ready");
   }
+  console.log("parser", code, parser);
   let tree = parser.parse(code);
   tree.rootNode.children.forEach((node) => {
     if (node.type === "function_definition") {
