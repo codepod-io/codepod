@@ -6,8 +6,18 @@ import DialogContentText from "@mui/material/DialogContentText";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
-import { useState } from "react";
-import { useQuery, useMutation, gql } from "@apollo/client";
+import Snackbar from "@mui/material/Snackbar";
+import { useState, useEffect } from "react";
+import { useMutation, gql } from "@apollo/client";
+import MuiAlert, { AlertProps } from "@mui/material/Alert";
+import React from "react";
+
+// const Alert = React.forwardRef<HTMLDivElement, AlertProps>(function Alert(
+//   props,
+//   ref,
+// ) {
+//   return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
+// });
 
 interface ShareProjDialogProps {
   open: boolean;
@@ -23,9 +33,9 @@ export function ShareProjDialog({
   id,
 }: ShareProjDialogProps) {
   const [email, setEmail] = useState("");
-  const [alert, setAlert] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [errorMsg, setErrorMsg] = useState("");
+  const [status, setStatus] = useState("info");
+  const [message, setMessage] = useState("inviting...");
+  const [infoOpen, setInfoOpen] = useState(false);
 
   const query = gql`
     mutation addCollaborator($repoId: String, $email: String) {
@@ -37,10 +47,12 @@ export function ShareProjDialog({
   const onChange = (e) => {
     setEmail(e.target.value);
   };
+
   async function onShare() {
+    setInfoOpen(true);
     if (email === "") {
-      setAlert(true);
-      setErrorMsg("Please enter an email address");
+      setStatus("error");
+      setMessage("Please enter an email address");
       return;
     }
     try {
@@ -50,51 +62,67 @@ export function ShareProjDialog({
           email,
         },
       });
-      setAlert(false);
-      setSuccess(true);
+      setStatus("success");
+      setMessage(`Invitation sent to ${email} successfully`);
       // show the success message for 1 second before closing the dialog
-      setTimeout(() => {
-        onCloseHandler();
-      }, 1000);
+      console.log(status, message);
+      onCloseHandler();
     } catch (error: any) {
-      setSuccess(false); // just in case
-      setAlert(true);
-      setErrorMsg(error?.message || "Unknown error");
+      setStatus("error"); // just in case
+      setMessage(error?.message || "Unknown error");
     }
   }
 
   function onCloseHandler() {
     setEmail("");
-    setAlert(false);
-    setSuccess(false);
     onClose();
   }
 
+  function onCloseAlert(event, reason) {
+    if (reason === "clickaway") {
+      return;
+    }
+    setInfoOpen(false);
+  }
+
   return (
-    <Dialog open={open} onClose={onCloseHandler}>
-      <DialogTitle> Share Project {title} with</DialogTitle>
-      {alert && <Alert severity="error"> {errorMsg} </Alert>}
-      {success && <Alert severity="success"> Invitation Sent </Alert>}
-      <DialogContent>
-        <DialogContentText>
-          Enter the email address of the person you want to share this project
-          with.
-        </DialogContentText>
-        <TextField
-          autoFocus
-          margin="dense"
-          id="name"
-          label="Email Address"
-          type="email"
-          variant="standard"
-          fullWidth
-          onChange={onChange}
-        />
-        <DialogActions>
-          <Button onClick={onCloseHandler}>Cancel</Button>
-          <Button onClick={onShare}> Share</Button>
-        </DialogActions>
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open={open} onClose={onCloseHandler}>
+        <DialogTitle> Share Project {title} with</DialogTitle>
+
+        <DialogContent>
+          <DialogContentText>
+            Enter the email address of the person you want to share this project
+            with.
+          </DialogContentText>
+          <TextField
+            autoFocus
+            margin="dense"
+            id="name"
+            label="Email Address"
+            type="email"
+            variant="standard"
+            fullWidth
+            onChange={onChange}
+          />
+          <DialogActions>
+            <Button
+              onClick={() => {
+                setInfoOpen(false);
+                onCloseHandler();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={onShare}> Share</Button>
+          </DialogActions>
+        </DialogContent>
+      </Dialog>
+      <Snackbar open={infoOpen} autoHideDuration={3000} onClose={onCloseAlert}>
+        <Alert severity={status} onClose={onCloseAlert}>
+          {message}
+        </Alert>
+      </Snackbar>
+    </>
   );
 }

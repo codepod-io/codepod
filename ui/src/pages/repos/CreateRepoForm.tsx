@@ -65,7 +65,7 @@ export default function CreateRepoForm(props: form = {}) {
             fontWeight: 500,
           }}
         >
-          New Repo
+          New {isPrivate ? " Private " : " Public "} Repo
         </DialogTitle>
         <DialogContent>
           <Formik

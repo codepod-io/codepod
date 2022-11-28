@@ -18,6 +18,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import StopCircleIcon from "@mui/icons-material/StopCircle";
 import CircularProgress from "@mui/material/CircularProgress";
 import SourceIcon from "@mui/icons-material/Source";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import ShareIcon from "@mui/icons-material/Share";
@@ -109,7 +110,7 @@ function RepoLine({ repo, deletable, sharable }) {
               alignItems: "center",
             }}
           >
-            <SourceIcon
+            <DescriptionOutlinedIcon
               sx={{
                 marginRight: "5px",
               }}
@@ -267,12 +268,22 @@ function Repos({
 
 function NoLogginErrorAlert() {
   const nevigate = useNavigate();
+  const [seconds, setSeconds] = useState(3);
 
   useEffect(() => {
-    setTimeout(() => {
+    if (seconds === 0) {
+      setSeconds(null);
       nevigate("/login");
-    }, 3000);
-  }, []);
+      return;
+    }
+    if (seconds === null) return;
+
+    const timer = setTimeout(() => {
+      setSeconds((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [seconds]);
 
   return (
     <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
@@ -281,7 +292,7 @@ function NoLogginErrorAlert() {
         <Link component={ReactLink} to="/login">
           login
         </Link>{" "}
-        page in 3 seconds.
+        page in {seconds} seconds.
       </Alert>
     </Box>
   );
@@ -289,7 +300,7 @@ function NoLogginErrorAlert() {
 export default function Page() {
   const { me } = useMe();
   const [loading, setLoading] = useState(true);
-  if (!me) {
+  if (!me && !loading) {
     return <NoLogginErrorAlert />;
   }
   return (

@@ -680,12 +680,13 @@ const createRepoSlice: StateCreator<
     set(
       produce((state) => {
         // TODO the children ordered by index
+        if (error) {
+          // TOFIX: If you enter a repo by URL directly, it may throw a repo not found error because of your user info is not loaded in time.
+          console.log("ERROR", error, id);
+          state.loadError = error;
+          return;
+        }
         state.pods = normalize(pods);
-        // if (error) {
-        //   console.log("ERROR", error);
-        //   state.loadError = error;
-        //   return;
-        // }
         state.repoName = name;
         // fill in the parent/children relationships
         for (const id in state.pods) {
