@@ -7,7 +7,7 @@ import { Pod } from "./store";
  * Load remote repo
  * @param id repo id
  * @param client apollo client
- * @returns a list of podsa
+ * @returns a list of pods
  */
 export async function doRemoteLoadRepo({ id, client }) {
   // load from remote

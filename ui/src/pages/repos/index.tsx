@@ -268,7 +268,7 @@ function Repos({
 
 function NoLogginErrorAlert() {
   const nevigate = useNavigate();
-  const [seconds, setSeconds] = useState(3);
+  const [seconds, setSeconds] = useState<number | null>(3);
 
   useEffect(() => {
     if (seconds === 0) {
@@ -279,7 +279,7 @@ function NoLogginErrorAlert() {
     if (seconds === null) return;
 
     const timer = setTimeout(() => {
-      setSeconds((prev) => prev - 1);
+      setSeconds((prev) => prev! - 1);
     }, 1000);
 
     return () => clearTimeout(timer);

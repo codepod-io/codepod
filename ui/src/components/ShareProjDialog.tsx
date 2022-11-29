@@ -6,6 +6,7 @@ import DialogContentText from "@mui/material/DialogContentText";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
+import { AlertColor } from "@mui/material/Alert";
 import Snackbar from "@mui/material/Snackbar";
 import { useState, useEffect } from "react";
 import { useMutation, gql } from "@apollo/client";
@@ -33,7 +34,7 @@ export function ShareProjDialog({
   id,
 }: ShareProjDialogProps) {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState("info");
+  const [status, setStatus] = useState<AlertColor>("info");
   const [message, setMessage] = useState("inviting...");
   const [infoOpen, setInfoOpen] = useState(false);
 
@@ -78,7 +79,7 @@ export function ShareProjDialog({
     onClose();
   }
 
-  function onCloseAlert(event, reason) {
+  function onCloseAlert(event: React.SyntheticEvent | Event, reason?: string) {
     if (reason === "clickaway") {
       return;
     }

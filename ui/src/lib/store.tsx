@@ -690,7 +690,6 @@ const createRepoSlice: StateCreator<
         state.repoName = name;
         // fill in the parent/children relationships
         for (const id in state.pods) {
-          console.log("id", id);
           let pod = state.pods[id];
           if (pod.parent) {
             state.id2parent[pod.id] = pod.parent.id;

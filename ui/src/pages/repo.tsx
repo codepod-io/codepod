@@ -86,7 +86,7 @@ function RepoWrapper({ children }) {
 
 function NotFoundAlert({ error }) {
   const navigate = useNavigate();
-  const [seconds, setSeconds] = useState(3);
+  const [seconds, setSeconds] = useState<number | null>(3);
 
   useEffect(() => {
     if (seconds === 0) {
@@ -97,7 +97,7 @@ function NotFoundAlert({ error }) {
     if (seconds === null) return;
 
     const timer = setTimeout(() => {
-      setSeconds((prev) => prev - 1);
+      setSeconds((prev) => prev! - 1);
     }, 1000);
 
     return () => clearTimeout(timer);

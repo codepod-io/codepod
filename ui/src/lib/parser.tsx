@@ -28,7 +28,6 @@ export function analyzeCode(code) {
   if (!parser) {
     throw Error("warning: parser not ready");
   }
-  console.log("parser", code, parser);
   let tree = parser.parse(code);
   tree.rootNode.children.forEach((node) => {
     if (node.type === "function_definition") {
