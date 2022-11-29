@@ -33,6 +33,9 @@ import Button from "@mui/material/Button";
 import CircleIcon from "@mui/icons-material/Circle";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import Grid from "@mui/material/Grid";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import DeleteIcon from "@mui/icons-material/Delete";
+import ViewComfyIcon from "@mui/icons-material/ViewComfy";
 
 import Moveable from "react-moveable";
 import { ResizableBox } from "react-resizable";
@@ -49,7 +52,6 @@ import { useNodesStateSynced } from "../lib/nodes";
 import { MyMonaco } from "./MyMonaco";
 import { useApolloClient } from "@apollo/client";
 import { CanvasContextMenu } from "./CanvasContextMenu";
-import ToolBox, { ToolTypes } from "./Toolbox";
 import styles from "./canvas.style.js";
 import { ShareProjDialog } from "./ShareProjDialog";
 import { analyzeCode } from "../lib/parser";
@@ -373,20 +375,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
     deletePod(apolloClient, { id: id, toDelete: [] });
     nodesMap.delete(id);
   };
-  const runToolBoxTask = (type, data) => {
-    switch (type) {
-      case ToolTypes.delete:
-        deleteNodeById(id);
-        break;
-      case ToolTypes.play:
-        clearResults(data.id);
-        wsRun(data.id);
-        break;
-      case ToolTypes.layout:
-        setLayout(layout === "bottom" ? "right" : "bottom");
-        break;
-    }
-  };
 
   useEffect(() => {
     setTarget(ref.current);
@@ -443,10 +431,52 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
         {/* The header of code pods. */}
         <Box className="custom-drag-handle">
           <Box sx={styles["pod-index"]}>[{pod.index}]</Box>
-          <ToolBox
-            data={{ id }}
-            onRunTask={runToolBoxTask}
-          ></ToolBox>
+          <Box
+            sx={{
+              display: "flex",
+              marginLeft: "10px",
+              borderRadius: "4px",
+              position: "absolute",
+              border: "solid 1px #d6dee6",
+              right: "25px",
+              top: "-15px",
+              background: "white",
+              zIndex: 250,
+              justifyContent: "center",
+            }}
+          >
+            <Tooltip title="Run (shift-enter)">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  clearResults(id);
+                  wsRun(id);
+                }}
+              >
+                <PlayCircleOutlineIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  deleteNodeById(id);
+                }}
+              >
+                <DeleteIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Change layout">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  setLayout(layout === "bottom" ? "right" : "bottom");
+                }}
+              >
+                <ViewComfyIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          </Box>
         </Box>
         <Box
           sx={{
