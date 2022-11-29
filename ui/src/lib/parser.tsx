@@ -34,7 +34,7 @@ export function analyzeCode(code) {
     .query(
       "[" +
         "(function_definition (identifier) @name)" +
-        "(module (expression_statement (assignment (identifier) @var)))" +
+        // "(module (expression_statement (assignment (identifier) @var)))" +
         "]"
     );
   query.matches(tree.rootNode).forEach((match) => {
@@ -71,7 +71,7 @@ export function rewriteCode(code, symbolTable) {
     .query(
       "[" +
         "(function_definition (identifier) @name)" +
-        "(module (expression_statement (assignment (identifier) @var)))" +
+        // "(module (expression_statement (assignment (identifier) @var)))" +
         "(call (identifier) @name)" +
         "(module (expression_statement (identifier) @id))" +
         "]"
