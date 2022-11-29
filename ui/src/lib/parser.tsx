@@ -29,11 +29,17 @@ export function analyzeCode(code) {
     throw Error("warning: parser not ready");
   }
   let tree = parser.parse(code);
-  tree.rootNode.children.forEach((node) => {
-    if (node.type === "function_definition") {
-      let name = node.firstNamedChild!.text;
-      names.push(name);
-    }
+  let query = parser
+    .getLanguage()
+    .query(
+      "[" +
+        "(function_definition (identifier) @name)" +
+        "(module (expression_statement (assignment (identifier) @var)))" +
+        "]"
+    );
+  query.matches(tree.rootNode).forEach((match) => {
+    let node = match.captures[0].node;
+    names.push(node.text);
   });
   return { ispublic, names };
 }
@@ -65,6 +71,7 @@ export function rewriteCode(code, symbolTable) {
     .query(
       "[" +
         "(function_definition (identifier) @name)" +
+        "(module (expression_statement (assignment (identifier) @var)))" +
         "(call (identifier) @name)" +
         "(module (expression_statement (identifier) @id))" +
         "]"
