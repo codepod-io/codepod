@@ -22,17 +22,17 @@ export default {
     paddingLeft: "5px",
     fontSize: "12px",
   },
-  'hidden-btn': {
+  "hidden-btn": {
     fontSize: 10,
-    paddingTop: '3px',
-    paddingBottom: '2px',
-    lineHeight: '10px',
-    zIndex: 201
+    paddingTop: "3px",
+    paddingBottom: "2px",
+    lineHeight: "10px",
+    zIndex: 201,
   },
-  'hidden-hint': {
+  "hidden-hint": {
     fontSize: 10,
-    color: 'rgb(151, 151, 151)',
-    whiteSpace: 'pre',
-    paddingTop: '2px'
-  }
+    color: "rgb(151, 151, 151)",
+    whiteSpace: "pre",
+    paddingTop: "2px",
+  },
 };
