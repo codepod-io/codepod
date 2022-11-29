@@ -4,7 +4,7 @@ import { createStore, StateCreator, StoreApi } from "zustand";
 
 // FIXME cyclic import
 import { RepoSlice } from "./store";
-import { rewriteCode } from "./parser";
+import { analyzeCode, rewriteCode } from "./parser";
 
 function getChildExports({ id, pods }) {
   // get all the exports and reexports. The return would be:
@@ -711,6 +711,13 @@ export const createRuntimeSlice: StateCreator<
       });
       return;
     }
+    // Analyze code and set symbol table
+    let { ispublic, names } = analyzeCode(get().pods[id].content);
+    get().setPodVisibility(id, ispublic);
+    if (names) {
+      get().setSymbolTable(id, names);
+    }
+    // Run the code in remote kernel.
     doRun({
       id,
       socket: {

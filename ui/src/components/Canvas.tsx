@@ -325,8 +325,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   // const pod = useStore(store, (state) => state.pods[id]);
   const wsRun = useStore(store, (state) => state.wsRun);
   const clearResults = useStore(store, (s) => s.clearResults);
-  const setSymbolTable = useStore(store, (s) => s.setSymbolTable);
-  const setPodVisibility = useStore(store, (s) => s.setPodVisibility);
   const ref = useRef(null);
   const [target, setTarget] = React.useState<any>(null);
   const [frame] = React.useState({
@@ -381,18 +379,8 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
         deleteNodeById(id);
         break;
       case ToolTypes.play:
-        {
-          // analyze code and set symbol table
-          // TODO maybe put this logic elsewhere?
-          let { ispublic, names } = analyzeCode(pod.content);
-          setPodVisibility(id, ispublic);
-          console.log("names", names);
-          if (names) {
-            setSymbolTable(data.id, names);
-          }
-          clearResults(data.id);
-          wsRun(data.id);
-        }
+        clearResults(data.id);
+        wsRun(data.id);
         break;
       case ToolTypes.layout:
         setLayout(layout === "bottom" ? "right" : "bottom");
