@@ -195,19 +195,18 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
 
 // FIXME: the resultblock is rendered every time the parent codeNode changes (e.g., dragging), we may set the result number as a state of a pod to memoize the resultblock.
 
-function ResultBlock({ pod, id}) {
+function ResultBlock({ pod, id }) {
   const store = useContext(RepoContext);
   const [showOutput, setShowOutput] = useState(true);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   return (
     <Box
-    sx={{
-      minHeight: pod.height,
-    }}>
+      sx={{
+        minHeight: pod.height,
+      }}
+    >
       {pod.result && (
-        <Box
-          sx={{ display: "flex", flexDirection: "column" }}
-        >
+        <Box sx={{ display: "flex", flexDirection: "column" }}>
           {pod.result.html ? (
             <div dangerouslySetInnerHTML={{ __html: pod.result.html }}></div>
           ) : (
@@ -241,11 +240,12 @@ function ResultBlock({ pod, id}) {
 
       {pod.running && <CircularProgress />}
       {showOutput ? (
-        <Box 
-        sx={{ paddingBottom: "2px" }}
-        overflow="scroll"
-        maxHeight="145px"
-        border="1px">
+        <Box
+          sx={{ paddingBottom: "2px" }}
+          overflow="scroll"
+          maxHeight="145px"
+          border="1px"
+        >
           {/* <Box bgcolor="lightgray">Error</Box> */}
           <Button
             onClick={() => {
@@ -295,7 +295,7 @@ function ResultBlock({ pod, id}) {
             </Box>
           )}
         </Box>
-      ):(
+      ) : (
         <Box
           sx={{
             paddingBottom: "5px",
