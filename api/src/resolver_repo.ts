@@ -76,11 +76,12 @@ export async function myCollabRepos(_, __, {userId}) {
 }
 
 export async function repo(_, { id }, { userId }) {
+  // a user can only access a private repo if he is the owner or a collaborator
   const repo = await prisma.repo.findFirst({
     where: { OR: [
       { id, public: true },
-      { id, owner: { id: userId!} },
-      { id, collaboratorIds: { has: userId!} },
+      { id, owner: { id: userId || "undefined"} },
+      { id, collaboratorIds: { has: userId || "undefined"} },
     ]
     },
     include: {
@@ -96,6 +97,7 @@ export async function repo(_, { id }, { userId }) {
       },
     },
   });
+  if(!repo) throw Error("Repo not found");
   return repo;
 }
 

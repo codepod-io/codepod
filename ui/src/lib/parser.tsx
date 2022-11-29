@@ -3,7 +3,7 @@ import Parser from "web-tree-sitter";
 let parser: Parser | null = null;
 Parser.init({
   locateFile(scriptName: string, scriptDirectory: string) {
-    return scriptName;
+    return "/" + scriptName;
   },
 }).then(async () => {
   /* the library is ready */

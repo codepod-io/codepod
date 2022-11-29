@@ -91,6 +91,7 @@ const initialState = {
   //TODO: all presence information are now saved in clients map for future usage. create a modern UI to show those information from clients (e.g., online users)
   clients: new Map(),
   showLineNumbers: false,
+  loadError: null,
 };
 
 export type Pod = {
@@ -136,6 +137,7 @@ export interface RepoSlice {
   id2children: Record<string, string[]>;
   // runtime: string;
   repoId: string | null;
+  loadError: any;
   // sessionId?: string;
 
   resetState: () => void;
@@ -674,10 +676,16 @@ const createRepoSlice: StateCreator<
     );
   },
   loadRepo: async (client, id) => {
-    const { pods, name } = await doRemoteLoadRepo({ id, client });
+    const { pods, name, error } = await doRemoteLoadRepo({ id, client });
     set(
       produce((state) => {
         // TODO the children ordered by index
+        if (error) {
+          // TOFIX: If you enter a repo by URL directly, it may throw a repo not found error because of your user info is not loaded in time.
+          console.log("ERROR", error, id);
+          state.loadError = error;
+          return;
+        }
         state.pods = normalize(pods);
         state.repoName = name;
         // fill in the parent/children relationships

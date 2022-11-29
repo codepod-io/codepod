@@ -1,8 +1,9 @@
 import { useQuery, useMutation, gql } from "@apollo/client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import Link from "@mui/material/Link";
 import { Link as ReactLink } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import Box from "@mui/material/Box";
 import Alert from "@mui/material/Alert";
@@ -17,6 +18,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import StopCircleIcon from "@mui/icons-material/StopCircle";
 import CircularProgress from "@mui/material/CircularProgress";
 import SourceIcon from "@mui/icons-material/Source";
+import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import ShareIcon from "@mui/icons-material/Share";
@@ -108,7 +110,7 @@ function RepoLine({ repo, deletable, sharable }) {
               alignItems: "center",
             }}
           >
-            <SourceIcon
+            <DescriptionOutlinedIcon
               sx={{
                 marginRight: "5px",
               }}
@@ -263,9 +265,44 @@ function Repos({
     </Box>
   );
 }
+
+function NoLogginErrorAlert() {
+  const nevigate = useNavigate();
+  const [seconds, setSeconds] = useState<number | null>(3);
+
+  useEffect(() => {
+    if (seconds === 0) {
+      setSeconds(null);
+      nevigate("/login");
+      return;
+    }
+    if (seconds === null) return;
+
+    const timer = setTimeout(() => {
+      setSeconds((prev) => prev! - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [seconds]);
+
+  return (
+    <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
+      <Alert severity="error">
+        Please login first! Automatically jump to{" "}
+        <Link component={ReactLink} to="/login">
+          login
+        </Link>{" "}
+        page in {seconds} seconds.
+      </Alert>
+    </Box>
+  );
+}
 export default function Page() {
   const { me } = useMe();
   const [loading, setLoading] = useState(true);
+  if (!me && !loading) {
+    return <NoLogginErrorAlert />;
+  }
   return (
     <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
       {/* TODO some meta information about the user */}
@@ -293,9 +330,10 @@ export default function Page() {
         </Box>
       )}
       <Repos
-        onLoading={(value)=>{
-          setLoading(value)
-        }}/>
+        onLoading={(value) => {
+          setLoading(value);
+        }}
+      />
       <Repos url={FETCH_COLLAB_REPOS} type={RepoTypes.collab} />
     </Box>
   );

@@ -1,7 +1,10 @@
-import { useParams } from "react-router-dom";
-
+import { useParams, useNavigate } from "react-router-dom";
+import { Link as ReactLink } from "react-router-dom";
 import Box from "@mui/material/Box";
+import Link from "@mui/material/Link";
 import Button from "@mui/material/Button";
+import Alert from "@mui/material/Alert";
+import AlertTitle from "@mui/material/AlertTitle";
 
 import { useEffect, useState, useRef, useContext } from "react";
 
@@ -81,6 +84,40 @@ function RepoWrapper({ children }) {
   );
 }
 
+function NotFoundAlert({ error }) {
+  const navigate = useNavigate();
+  const [seconds, setSeconds] = useState<number | null>(3);
+
+  useEffect(() => {
+    if (seconds === 0) {
+      setSeconds(null);
+      navigate("/");
+      return;
+    }
+    if (seconds === null) return;
+
+    const timer = setTimeout(() => {
+      setSeconds((prev) => prev! - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [seconds]);
+
+  return (
+    <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
+      <Alert severity="error">
+        <AlertTitle>Error: {error}</AlertTitle>
+        The repo you are looking for is not found. Please check the URL. Go back
+        your{" "}
+        <Link component={ReactLink} to="/">
+          dashboard
+        </Link>{" "}
+        page in {seconds} seconds.
+      </Alert>
+    </Box>
+  );
+}
+
 function RepoImpl() {
   let { id } = useParams();
   const store = useContext(RepoContext);
@@ -89,6 +126,7 @@ function RepoImpl() {
   const setRepo = useStore(store, (state) => state.setRepo);
   const client = useApolloClient();
   const loadRepo = useStore(store, (state) => state.loadRepo);
+  const loadError = useStore(store, (state) => state.loadError);
   const setSessionId = useStore(store, (state) => state.setSessionId);
   const repoLoaded = useStore(store, (state) => state.repoLoaded);
   const setUser = useStore(store, (state) => state.setUser);
@@ -138,6 +176,12 @@ function RepoImpl() {
   // to be re-rendered in conflict, which is weird.
 
   if (loading) return <Box>Loading</Box>;
+
+  // TOFIX: consider more types of error and display detailed error message in the future
+  // TOFIX: if the repo is not found, sidebar should not be rendered and runtime should not be lanuched.
+  if (!repoLoaded && loadError) {
+    return <NotFoundAlert error={loadError.message} />;
+  }
 
   return (
     <RepoWrapper>

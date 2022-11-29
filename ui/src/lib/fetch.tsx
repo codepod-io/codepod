@@ -50,17 +50,22 @@ export async function doRemoteLoadRepo({ id, client }) {
       }
     }
   `;
-  let res = await client.query({
-    query,
-    variables: {
-      id,
-    },
-    // CAUTION I must set this because refetechQueries does not work.
-    fetchPolicy: "no-cache",
-  });
-  // We need to do a deep copy here, because apollo client returned immutable objects.
-  let pods = res.data.repo.pods.map((pod) => ({ ...pod }));
-  return { pods, name: res.data.repo.name };
+  try {
+    let res = await client.query({
+      query,
+      variables: {
+        id,
+      },
+      // CAUTION I must set this because refetechQueries does not work.
+      fetchPolicy: "no-cache",
+    });
+    // We need to do a deep copy here, because apollo client returned immutable objects.
+    let pods = res.data.repo.pods.map((pod) => ({ ...pod }));
+    return { pods, name: res.data.repo.name, error: null };
+  } catch (e) {
+    console.log(e);
+    return { pods: [], name: "", error: e };
+  }
 }
 
 export function normalize(pods) {

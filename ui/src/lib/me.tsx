@@ -15,7 +15,7 @@ const PROFILE_QUERY = gql`
 
 export default function useMe() {
   /* eslint-disable no-unused-vars */
-  const { client, loading, data } = useQuery(PROFILE_QUERY, {
+  const { loading, data } = useQuery(PROFILE_QUERY, {
     // fetchPolicy: "network-only",
   });
   return { loading, me: data?.me };
