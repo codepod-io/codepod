@@ -188,17 +188,10 @@ function RepoLine({ repo, deletable, sharable }) {
   );
 }
 
-function Repos({
-  url = FETCH_REPOS,
-  type = RepoTypes.repo,
-  onLoading = (load) => {},
-}) {
+function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
   const { loading, error, data } = useQuery(url);
   if (loading) {
-    onLoading(loading);
-    return null;
-  } else {
-    onLoading(loading);
+    return <CircularProgress />;
   }
   if (error) {
     return null;
@@ -299,8 +292,7 @@ function NoLogginErrorAlert() {
 }
 export default function Page() {
   const { me } = useMe();
-  const [loading, setLoading] = useState(true);
-  if (!me && !loading) {
+  if (!me) {
     return <NoLogginErrorAlert />;
   }
   return (
@@ -319,21 +311,7 @@ export default function Page() {
         👋 Welcome, {me?.firstname}! Please open or create a repository to get
         started.
       </Box>
-      {loading && (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-          }}
-        >
-          <CircularProgress />
-        </Box>
-      )}
-      <Repos
-        onLoading={(value) => {
-          setLoading(value);
-        }}
-      />
+      <Repos />
       <Repos url={FETCH_COLLAB_REPOS} type={RepoTypes.collab} />
     </Box>
   );
