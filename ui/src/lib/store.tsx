@@ -28,6 +28,12 @@ if (window.location.protocol === "http:") {
 }
 console.log("yjs server url: ", serverURL);
 
+export enum RoleType {
+  OWNER,
+  COLLABORATOR,
+  GUEST,
+}
+
 export const RepoContext = createContext<StoreApi<
   RepoSlice & RuntimeSlice
 > | null>(null);
@@ -92,6 +98,7 @@ const initialState = {
   clients: new Map(),
   showLineNumbers: false,
   loadError: null,
+  role: RoleType.GUEST,
 };
 
 export type Pod = {
@@ -138,6 +145,7 @@ export interface RepoSlice {
   // runtime: string;
   repoId: string | null;
   loadError: any;
+  role: RoleType;
   // sessionId?: string;
 
   resetState: () => void;
@@ -676,7 +684,8 @@ const createRepoSlice: StateCreator<
     );
   },
   loadRepo: async (client, id) => {
-    const { pods, name, error } = await doRemoteLoadRepo({ id, client });
+    const { pods, name, error, userId, collaboratorIds } =
+      await doRemoteLoadRepo({ id, client });
     set(
       produce((state) => {
         // TODO the children ordered by index
@@ -688,6 +697,13 @@ const createRepoSlice: StateCreator<
         }
         state.pods = normalize(pods);
         state.repoName = name;
+        if (userId == state.user.id) {
+          state.role = RoleType.OWNER;
+        } else if (state.user && collaboratorIds.indexOf(state.user.id) >= 0) {
+          state.role = RoleType.COLLABORATOR;
+        } else {
+          state.role = RoleType.GUEST;
+        }
         // fill in the parent/children relationships
         for (const id in state.pods) {
           let pod = state.pods[id];

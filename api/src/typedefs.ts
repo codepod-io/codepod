@@ -18,6 +18,7 @@ export const typeDefs = gql`
     id: ID!
     name: String!
     pods: [Pod]
+    userId: ID!
     collaboratorIds: [ID!]
     public: Boolean!
   }
