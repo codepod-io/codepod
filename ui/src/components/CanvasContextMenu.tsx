@@ -1,5 +1,5 @@
 import { useStore } from "zustand";
-import { RepoContext } from "../lib/store";
+import { RepoContext, RoleType } from "../lib/store";
 import Box from "@mui/material/Box";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
@@ -40,21 +40,26 @@ export function CanvasContextMenu(props) {
     store,
     (state) => state.flipShowLineNumbers
   );
+  const role = useStore(store, (state) => state.role);
   return (
     <Box sx={paneMenuStyle(props.x, props.y)}>
       <MenuList className="paneContextMenu">
-        <MenuItem onClick={props.addCode} sx={ItemStyle}>
-          <ListItemIcon>
-            <CodeIcon />
-          </ListItemIcon>
-          <ListItemText>New Code</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={props.addScope} sx={ItemStyle}>
-          <ListItemIcon>
-            <PostAddIcon />
-          </ListItemIcon>
-          <ListItemText>New Scope</ListItemText>
-        </MenuItem>
+        {role !== RoleType.GUEST && (
+          <MenuItem onClick={props.addCode} sx={ItemStyle}>
+            <ListItemIcon>
+              <CodeIcon />
+            </ListItemIcon>
+            <ListItemText>New Code</ListItemText>
+          </MenuItem>
+        )}
+        {role !== RoleType.GUEST && (
+          <MenuItem onClick={props.addScope} sx={ItemStyle}>
+            <ListItemIcon>
+              <PostAddIcon />
+            </ListItemIcon>
+            <ListItemText>New Scope</ListItemText>
+          </MenuItem>
+        )}
         <MenuItem onClick={flipShowLineNumbers} sx={ItemStyle}>
           <ListItemIcon>
             <FormatListNumberedIcon />
@@ -63,12 +68,14 @@ export function CanvasContextMenu(props) {
             {showLineNumbers ? "Hide " : "Show "} Line Numbers
           </ListItemText>
         </MenuItem>
-        <MenuItem onClick={props.onShareClick} sx={ItemStyle}>
-          <ListItemIcon>
-            <ShareOutlinedIcon />
-          </ListItemIcon>
-          <ListItemText> Share with Collaborators </ListItemText>
-        </MenuItem>
+        {role === RoleType.OWNER && (
+          <MenuItem onClick={props.onShareClick} sx={ItemStyle}>
+            <ListItemIcon>
+              <ShareOutlinedIcon />
+            </ListItemIcon>
+            <ListItemText> Share with Collaborators </ListItemText>
+          </MenuItem>
+        )}
       </MenuList>
     </Box>
   );

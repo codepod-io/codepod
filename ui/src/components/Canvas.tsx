@@ -46,7 +46,7 @@ import { nolookalikes } from "nanoid-dictionary";
 
 import { useStore } from "zustand";
 
-import { RepoContext } from "../lib/store";
+import { RepoContext, RoleType } from "../lib/store";
 import { useNodesStateSynced } from "../lib/nodes";
 
 import { MyMonaco } from "./MyMonaco";
@@ -342,6 +342,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const setCurrentEditor = useStore(store, (state) => state.setCurrentEditor);
   const getPod = useStore(store, (state) => state.getPod);
   const pod = getPod(id);
+  const role = useStore(store, (state) => state.role);
 
   const showResult = useStore(
     store,
@@ -445,27 +446,31 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
               justifyContent: "center",
             }}
           >
-            <Tooltip title="Run (shift-enter)">
-              <IconButton
-                size="small"
-                onClick={() => {
-                  clearResults(id);
-                  wsRun(id);
-                }}
-              >
-                <PlayCircleOutlineIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Delete">
-              <IconButton
-                size="small"
-                onClick={() => {
-                  deleteNodeById(id);
-                }}
-              >
-                <DeleteIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
+            {role !== RoleType.GUEST && (
+              <Tooltip title="Run (shift-enter)">
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    clearResults(id);
+                    wsRun(id);
+                  }}
+                >
+                  <PlayCircleOutlineIcon fontSize="inherit" />
+                </IconButton>
+              </Tooltip>
+            )}
+            {role !== RoleType.GUEST && (
+              <Tooltip title="Delete">
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    deleteNodeById(id);
+                  }}
+                >
+                  <DeleteIcon fontSize="inherit" />
+                </IconButton>
+              </Tooltip>
+            )}
             <Tooltip title="Change layout">
               <IconButton
                 size="small"
@@ -579,6 +584,7 @@ export function Canvas() {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const repoId = useStore(store, (state) => state.repoId);
   const repoName = useStore(store, (state) => state.repoName);
+  const role = useStore(store, (state) => state.role);
 
   const getRealNodes = useCallback(
     (id, level) => {
@@ -597,7 +603,6 @@ export function Canvas() {
           position: { x: pod.x, y: pod.y },
           parentNode: pod.parent !== "ROOT" ? pod.parent : undefined,
           extent: "parent",
-          dragHandle: ".custom-drag-handle",
           level,
           style: {
             backgroundColor:
@@ -957,6 +962,9 @@ export function Canvas() {
           zoomOnScroll={false}
           panOnScroll={true}
           connectionMode={ConnectionMode.Loose}
+          nodesDraggable={role !== RoleType.GUEST}
+          // disable node delete on backspace when the user is a guest.
+          deleteKeyCode={role === RoleType.GUEST ? null : "Backspace"}
         >
           <Box>
             <MiniMap

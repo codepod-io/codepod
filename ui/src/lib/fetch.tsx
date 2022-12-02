@@ -16,6 +16,8 @@ export async function doRemoteLoadRepo({ id, client }) {
       repo(id: $id) {
         id
         name
+        userId
+        collaboratorIds
         pods {
           id
           type
@@ -61,10 +63,16 @@ export async function doRemoteLoadRepo({ id, client }) {
     });
     // We need to do a deep copy here, because apollo client returned immutable objects.
     let pods = res.data.repo.pods.map((pod) => ({ ...pod }));
-    return { pods, name: res.data.repo.name, error: null };
+    return {
+      pods,
+      name: res.data.repo.name,
+      error: null,
+      userId: res.data.repo.userId,
+      collaboratorIds: res.data.repo.collaboratorIds,
+    };
   } catch (e) {
     console.log(e);
-    return { pods: [], name: "", error: e };
+    return { pods: [], name: "", error: e, userId: null, collaboratorIds: [] };
   }
 }
 
