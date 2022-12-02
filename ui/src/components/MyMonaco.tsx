@@ -3,7 +3,7 @@ import { useState, useContext, memo } from "react";
 import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
 import { monaco } from "react-monaco-editor";
 import { useStore } from "zustand";
-import { RepoContext } from "../lib/store";
+import { RepoContext, RoleType } from "../lib/store";
 import { MonacoBinding } from "y-monaco";
 
 const theme: monaco.editor.IStandaloneThemeData = {
@@ -324,6 +324,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   // there's no racket language support
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const readOnly = useStore(store, (state) => state.role === RoleType.GUEST);
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
   const getPod = useStore(store, (state) => state.getPod);
   const setPodContent = useStore(store, (state) => state.setPodContent);
@@ -408,7 +409,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
 
     if (!provider || !provider.wsconnected) {
       // TODO: consider offline situation later
-      console.log("editor", provider?.wsconnected, provider, editor.getModel());
       // editor.getModel().setValue(value);
       return;
     } else if (provider.synced) {
@@ -427,6 +427,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       theme="codepod"
       options={{
         selectOnLineNumbers: true,
+        readOnly: readOnly,
         // This scrollBeyondLastLine is super important. Without this, it will
         // try to adjust height infinitely.
         scrollBeyondLastLine: false,

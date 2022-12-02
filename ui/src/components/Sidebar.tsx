@@ -21,7 +21,7 @@ import { useStore } from "zustand";
 
 import { usePrompt } from "../lib/prompt";
 
-import { RepoContext, selectNumDirty } from "../lib/store";
+import { RepoContext, selectNumDirty, RoleType } from "../lib/store";
 
 import useMe from "../lib/me";
 import { Grid } from "@mui/material";
@@ -271,20 +271,39 @@ function ToastError() {
 }
 
 export function Sidebar() {
+  // never render saving status / runtime module for a guest
+  // FIXME: improve the implementation logic
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const role = useStore(store, (state) => state.role);
   return (
     <Grid container spacing={2}>
-      <Grid item xs={12}>
-        <SyncStatus />
-      </Grid>
-      <Grid item xs={12}>
-        {" "}
-        <SidebarSession />
-      </Grid>
-      <Grid item xs={12}>
-        <SidebarRuntime />
-        <SidebarKernel />
-      </Grid>
-      <ToastError />
+      {role === RoleType.GUEST ? (
+        <>
+          <Grid item xs={12}>
+            <Box> Read-only Mode: You are a guest. </Box>
+          </Grid>
+          <Grid item xs={12}>
+            {" "}
+            <SidebarSession />
+          </Grid>
+        </>
+      ) : (
+        <>
+          <Grid item xs={12}>
+            <SyncStatus />
+          </Grid>
+          <Grid item xs={12}>
+            {" "}
+            <SidebarSession />
+          </Grid>
+          <Grid item xs={12}>
+            <SidebarRuntime />
+            <SidebarKernel />
+          </Grid>
+          <ToastError />
+        </>
+      )}
     </Grid>
   );
 }

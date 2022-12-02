@@ -44,18 +44,22 @@ export function CanvasContextMenu(props) {
   return (
     <Box sx={paneMenuStyle(props.x, props.y)}>
       <MenuList className="paneContextMenu">
-        <MenuItem onClick={props.addCode} sx={ItemStyle}>
-          <ListItemIcon>
-            <CodeIcon />
-          </ListItemIcon>
-          <ListItemText>New Code</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={props.addScope} sx={ItemStyle}>
-          <ListItemIcon>
-            <PostAddIcon />
-          </ListItemIcon>
-          <ListItemText>New Scope</ListItemText>
-        </MenuItem>
+        {role !== RoleType.GUEST && (
+          <MenuItem onClick={props.addCode} sx={ItemStyle}>
+            <ListItemIcon>
+              <CodeIcon />
+            </ListItemIcon>
+            <ListItemText>New Code</ListItemText>
+          </MenuItem>
+        )}
+        {role !== RoleType.GUEST && (
+          <MenuItem onClick={props.addScope} sx={ItemStyle}>
+            <ListItemIcon>
+              <PostAddIcon />
+            </ListItemIcon>
+            <ListItemText>New Scope</ListItemText>
+          </MenuItem>
+        )}
         <MenuItem onClick={flipShowLineNumbers} sx={ItemStyle}>
           <ListItemIcon>
             <FormatListNumberedIcon />

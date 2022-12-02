@@ -697,6 +697,7 @@ const createRepoSlice: StateCreator<
         }
         state.pods = normalize(pods);
         state.repoName = name;
+        // set the user role in this repo
         if (userId == state.user.id) {
           state.role = RoleType.OWNER;
         } else if (state.user && collaboratorIds.indexOf(state.user.id) >= 0) {
@@ -704,6 +705,17 @@ const createRepoSlice: StateCreator<
         } else {
           state.role = RoleType.GUEST;
         }
+        // only set the local awareness when the user is an owner or a collaborator
+        if (state.provider && state.role !== RoleType.GUEST) {
+          console.log("set awareness", state.user.firstname);
+          const awareness = state.provider.awareness;
+          awareness.setLocalStateField("user", {
+            name: state.user.firstname,
+            color: state.user.color,
+          });
+          console.log("awareness", awareness);
+        }
+
         // fill in the parent/children relationships
         for (const id in state.pods) {
           let pod = state.pods[id];
@@ -777,11 +789,6 @@ const createRepoSlice: StateCreator<
     set(
       produce((state: BearState) => {
         const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
-        // if (!state.ydoc) state.ydoc = new Doc();
-        if (state.provider) {
-          const awareness = state.provider.awareness;
-          awareness.setLocalStateField("user", { name: user.firstname, color });
-        }
         state.user = { ...user, color };
       })
     ),
