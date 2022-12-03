@@ -16,11 +16,14 @@ import useMe from "../lib/me";
 import { Canvas } from "../components/Canvas";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+
+const DrawerWidth = 240;
+const SIDEBAR_KEY = "sidebar";
 
 function RepoWrapper({ children }) {
   // this component is used to provide a foldable layout
-  const [open, setOpen] = useState(true);
-  const DrawerWidth = 240;
+  const [open, setOpen] = useLocalStorage(SIDEBAR_KEY, true);
 
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
