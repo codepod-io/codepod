@@ -63,7 +63,7 @@ const router = createBrowserRouter([
   {
     path: "repos",
     element: (
-      <NormalLayout>
+      <NormalLayout currentPage="Dashboard">
         <Repos />
       </NormalLayout>
     ),
