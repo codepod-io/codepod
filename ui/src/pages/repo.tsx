@@ -22,6 +22,10 @@ function RepoWrapper({ children }) {
   const [open, setOpen] = useState(true);
   const DrawerWidth = 240;
 
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const repoName = useStore(store, (state) => state.repoName);
+
   return (
     <Box
       sx={{
@@ -47,7 +51,7 @@ function RepoWrapper({ children }) {
           ml: open ? `${DrawerWidth}px` : 0,
         }}
       >
-        <Header open={open} drawerWidth={DrawerWidth} />
+        <Header open={open} drawerWidth={DrawerWidth} currentPage={repoName} />
         <Box
           sx={{
             boxSizing: "border-box",

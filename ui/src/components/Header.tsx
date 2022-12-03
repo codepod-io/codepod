@@ -1,4 +1,4 @@
-import { Link as ReactLink } from "react-router-dom";
+import { Link as ReactLink, useLocation } from "react-router-dom";
 
 import { useState } from "react";
 
@@ -9,6 +9,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import Menu from "@mui/material/Menu";
 import MenuItem from "@mui/material/MenuItem";
 import Avatar from "@mui/material/Avatar";
+import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Link from "@mui/material/Link";
 import Button from "@mui/material/Button";
 
@@ -24,14 +25,48 @@ import { useAuth } from "../lib/auth";
 
 import useMe from "../lib/me";
 
+type HeaderTitleProps = {
+  currentPage: string | null;
+};
+
+const HeaderTitle: React.FC<HeaderTitleProps> = ({ currentPage = null }) => {
+  if (!currentPage) {
+    return (
+      <Typography variant="h6">
+        <Link component={ReactLink} underline="none" to="/">
+          CodePod
+        </Link>
+      </Typography>
+    );
+  }
+
+  return (
+    <Breadcrumbs
+      aria-label="breadcrumb"
+      sx={{
+        alignItems: "baseline",
+        display: "flex",
+        flexGrow: 1,
+      }}
+    >
+      <Link component={ReactLink} underline="hover" to="/">
+        <Typography noWrap>CodePod</Typography>
+      </Link>
+      <Typography color="text.primary">{currentPage}</Typography>
+    </Breadcrumbs>
+  );
+};
+
 type HeaderProps = {
   open?: boolean;
   drawerWidth?: number;
+  currentPage?: string | null;
 };
 
 export const Header: React.FC<HeaderProps> = ({
   open = false,
   drawerWidth = 0,
+  currentPage = null,
 }) => {
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
@@ -72,17 +107,6 @@ export const Header: React.FC<HeaderProps> = ({
             maxHeight: "10px",
           }}
         >
-          <Typography
-            variant="h6"
-            noWrap
-            component="div"
-            sx={{ mr: 2, display: { xs: "none", md: "flex" } }}
-          >
-            <Link component={ReactLink} underline="none" to="/">
-              CodePod
-            </Link>
-          </Typography>
-
           <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
             <IconButton
               size="large"
@@ -108,9 +132,6 @@ export const Header: React.FC<HeaderProps> = ({
               }}
               open={Boolean(anchorElNav)}
               onClose={handleCloseNavMenu}
-              sx={{
-                display: { xs: "block", md: "none" },
-              }}
             >
               {/* The toggle menu */}
               <MenuItem onClick={handleCloseNavMenu}>
@@ -135,22 +156,11 @@ export const Header: React.FC<HeaderProps> = ({
               </MenuItem>
             </Menu>
           </Box>
-          <Typography
-            variant="h6"
-            noWrap
-            component="div"
-            color="primary"
-            sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}
-          >
-            <Link component={ReactLink} underline="none" to="/">
-              CodePod
-            </Link>
-          </Typography>
+          <HeaderTitle currentPage={currentPage} />
 
           {/* The navigation on desktop */}
           <Box
             sx={{
-              flexGrow: 1,
               display: { xs: "none", md: "flex" },
               alignItems: "center",
             }}
