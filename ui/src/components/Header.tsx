@@ -32,7 +32,7 @@ type HeaderTitleProps = {
 const HeaderTitle: React.FC<HeaderTitleProps> = ({ currentPage = null }) => {
   if (!currentPage) {
     return (
-      <Typography variant="h6">
+      <Typography variant="h6" sx={{ display: "flex", flexGrow: 1 }}>
         <Link component={ReactLink} underline="none" to="/">
           CodePod
         </Link>
