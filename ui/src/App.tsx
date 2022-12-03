@@ -33,15 +33,23 @@ const theme = createTheme({
   },
 });
 
-function NormalLayout({ children }: any) {
+type NormalLayoutProps = {
+  currentPage?: string | null;
+  children: React.ReactNode;
+};
+
+const NormalLayout: React.FC<NormalLayoutProps> = ({
+  currentPage,
+  children,
+}) => {
   return (
     <Box>
-      <Header />
+      <Header currentPage={currentPage} />
       <Box pt="50px">{children}</Box>
       {/* <Footer /> */}
     </Box>
   );
-}
+};
 
 const router = createBrowserRouter([
   {
@@ -55,7 +63,7 @@ const router = createBrowserRouter([
   {
     path: "repos",
     element: (
-      <NormalLayout>
+      <NormalLayout currentPage="Dashboard">
         <Repos />
       </NormalLayout>
     ),
@@ -63,17 +71,8 @@ const router = createBrowserRouter([
   {
     path: "repo/:id",
     element: (
-      <Box height="100vh">
-        <Header />
-        <Box
-          height="100%"
-          boxSizing={"border-box"}
-          sx={{
-            pt: "50px",
-          }}
-        >
-          <Repo />
-        </Box>
+      <Box height="100vh" width="100%" boxSizing={"border-box"}>
+        <Repo />
       </Box>
     ),
   },
@@ -96,7 +95,7 @@ const router = createBrowserRouter([
   {
     path: "profile",
     element: (
-      <NormalLayout>
+      <NormalLayout currentPage="Profile">
         <Profile />
       </NormalLayout>
     ),

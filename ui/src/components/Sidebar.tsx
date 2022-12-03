@@ -1,22 +1,20 @@
-import { useEffect, useState, useContext } from "react";
-
+import { useEffect, useContext } from "react";
 import { useParams } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
-
-import { grey } from "@mui/material/colors";
-
-import { useSnackbar, VariantType } from "notistack";
-
-import { gql, useQuery, useMutation, useApolloClient } from "@apollo/client";
-
 import StopIcon from "@mui/icons-material/Stop";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import Drawer from "@mui/material/Drawer";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import Grid from "@mui/material/Grid";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import { useSnackbar, VariantType } from "notistack";
 
+import { gql, useQuery, useMutation, useApolloClient } from "@apollo/client";
 import { useStore } from "zustand";
 
 import { usePrompt } from "../lib/prompt";
@@ -24,7 +22,6 @@ import { usePrompt } from "../lib/prompt";
 import { RepoContext, selectNumDirty, RoleType } from "../lib/store";
 
 import useMe from "../lib/me";
-import { Grid } from "@mui/material";
 
 function Flex(props) {
   return (
@@ -270,40 +267,105 @@ function ToastError() {
   return <Box></Box>;
 }
 
-export function Sidebar() {
+type SidebarProps = {
+  width: number;
+  open: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+};
+
+export const Sidebar: React.FC<SidebarProps> = ({
+  width,
+  open,
+  onOpen,
+  onClose,
+}) => {
   // never render saving status / runtime module for a guest
   // FIXME: improve the implementation logic
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const role = useStore(store, (state) => state.role);
   return (
-    <Grid container spacing={2}>
-      {role === RoleType.GUEST ? (
-        <>
-          <Grid item xs={12}>
-            <Box> Read-only Mode: You are a guest. </Box>
+    <>
+      <Box
+        sx={{
+          position: "absolute",
+          display: open ? "none" : "block",
+          top: `54px`,
+          left: 1,
+        }}
+      >
+        <IconButton
+          onClick={onOpen}
+          sx={{
+            zIndex: 1,
+          }}
+        >
+          <ChevronRightIcon />
+        </IconButton>
+      </Box>
+
+      <Drawer
+        sx={{
+          width: width,
+          flexShrink: 0,
+          "& .MuiDrawer-paper": {
+            width: width,
+            boxSizing: "border-box",
+          },
+        }}
+        variant="persistent"
+        anchor="left"
+        open={open}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            paddingLeft: "8px",
+            height: 48,
+          }}
+        >
+          <IconButton onClick={onClose}>
+            <ChevronLeftIcon />
+          </IconButton>
+        </Box>
+        <Divider />
+        <Box
+          sx={{
+            padding: "8px 16px",
+          }}
+        >
+          <Grid container spacing={2}>
+            {role === RoleType.GUEST ? (
+              <>
+                <Grid item xs={12}>
+                  <Box> Read-only Mode: You are a guest. </Box>
+                </Grid>
+                <Grid item xs={12}>
+                  {" "}
+                  <SidebarSession />
+                </Grid>
+              </>
+            ) : (
+              <>
+                <Grid item xs={12}>
+                  <SyncStatus />
+                </Grid>
+                <Grid item xs={12}>
+                  {" "}
+                  <SidebarSession />
+                </Grid>
+                <Grid item xs={12}>
+                  <SidebarRuntime />
+                  <SidebarKernel />
+                </Grid>
+                <ToastError />
+              </>
+            )}
           </Grid>
-          <Grid item xs={12}>
-            {" "}
-            <SidebarSession />
-          </Grid>
-        </>
-      ) : (
-        <>
-          <Grid item xs={12}>
-            <SyncStatus />
-          </Grid>
-          <Grid item xs={12}>
-            {" "}
-            <SidebarSession />
-          </Grid>
-          <Grid item xs={12}>
-            <SidebarRuntime />
-            <SidebarKernel />
-          </Grid>
-          <ToastError />
-        </>
-      )}
-    </Grid>
+        </Box>
+      </Drawer>
+    </>
   );
-}
+};
