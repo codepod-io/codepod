@@ -2,9 +2,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Link as ReactLink } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Link from "@mui/material/Link";
-import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
+import { useApolloClient } from "@apollo/client";
 
 import { useEffect, useState, useRef, useContext } from "react";
 
@@ -14,71 +14,51 @@ import { createRepoStore, RepoContext } from "../lib/store";
 
 import useMe from "../lib/me";
 import { Canvas } from "../components/Canvas";
+import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
-import { useApolloClient } from "@apollo/client";
 
 function RepoWrapper({ children }) {
-  // this component is used to provide foldable sidebar
-  const [show, setShow] = useState(true);
-  let sidebar_width = 0.12;
+  // this component is used to provide a foldable layout
+  const [open, setOpen] = useState(true);
+  const DrawerWidth = 240;
+
   return (
-    <Box m="auto" height="100%">
-      <Box
-        sx={{
-          display: "inline-block",
-          verticalAlign: "top",
-          height: "100%",
-          width: show ? sidebar_width : 0,
-          overflow: "auto",
-        }}
-      >
-        <Box sx={{ display: "flex" }}>
-          {/* <Spacer /> */}
-          <Button
-            onClick={() => {
-              setShow(!show);
-            }}
-            size="small"
-            // variant="ghost"
-          >
-            {show ? "Hide" : "Show"}
-          </Button>
-        </Box>
-        <Box sx={{ mx: 2, my: 1 }}>
-          <Sidebar />
-        </Box>
-      </Box>
+    <Box
+      sx={{
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+      }}
+    >
+      <Sidebar
+        width={DrawerWidth}
+        open={open}
+        onOpen={() => setOpen(true)}
+        onClose={() => setOpen(false)}
+      />
 
       <Box
         sx={{
-          display: "inline-block",
+          display: "flex",
+          flexGrow: 1,
           verticalAlign: "top",
           height: "100%",
-          width: show ? 1 - sidebar_width : 1,
-          overflow: "scroll",
+          transition: "margin 195ms cubic-bezier(0.4, 0, 0.6, 1) 0ms",
+          ml: open ? `${DrawerWidth}px` : 0,
         }}
       >
+        <Header open={open} drawerWidth={DrawerWidth} />
         <Box
-          style={{
-            position: "absolute",
-            margin: "5px",
-            top: "50px",
-            left: "5px",
+          sx={{
+            boxSizing: "border-box",
+            width: "100%",
+            height: "100%",
+            pt: `52px`,
+            mx: "auto",
           }}
-          zIndex={100}
-          visibility={show ? "hidden" : "inherit"}
         >
-          <Button
-            onClick={() => {
-              setShow(!show);
-            }}
-            size="small"
-            // variant="ghost"
-          >
-            {show ? "Hide" : "Show"}
-          </Button>
+          {children}
         </Box>
-        {children}
       </Box>
     </Box>
   );

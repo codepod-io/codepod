@@ -63,17 +63,8 @@ const router = createBrowserRouter([
   {
     path: "repo/:id",
     element: (
-      <Box height="100vh">
-        <Header />
-        <Box
-          height="100%"
-          boxSizing={"border-box"}
-          sx={{
-            pt: "50px",
-          }}
-        >
-          <Repo />
-        </Box>
+      <Box height="100vh" width="100%" boxSizing={"border-box"}>
+        <Repo />
       </Box>
     ),
   },

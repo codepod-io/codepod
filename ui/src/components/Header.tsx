@@ -24,7 +24,15 @@ import { useAuth } from "../lib/auth";
 
 import useMe from "../lib/me";
 
-export function Header() {
+type HeaderProps = {
+  open?: boolean;
+  drawerWidth?: number;
+};
+
+export const Header: React.FC<HeaderProps> = ({
+  open = false,
+  drawerWidth = 0,
+}) => {
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
 
@@ -48,7 +56,14 @@ export function Header() {
   const { me } = useMe();
 
   return (
-    <AppBar position="fixed" color="inherit">
+    <AppBar
+      position="fixed"
+      color="inherit"
+      sx={{
+        width: `calc(100% - ${open ? drawerWidth : 0}px)`,
+        transition: "width 195ms cubic-bezier(0.4, 0, 0.6, 1) 0ms",
+      }}
+    >
       <Container maxWidth="xl">
         <Toolbar
           disableGutters
@@ -186,7 +201,7 @@ export function Header() {
       </Container>
     </AppBar>
   );
-}
+};
 
 const MyMenuItem = ({ children, to = "/" }) => {
   return (
