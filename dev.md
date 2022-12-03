@@ -15,14 +15,14 @@ docker rm $(docker ps  -a  | grep cpkernel_ | awk '{print $1}')
   - add electron-rebuild to the dev dep (already added here)
   - after npm install or yarn, run ./node_modules/.bin/electron-rebuild
 
-To develop the electoron app:
+To develop the electron app:
 
 1. go into ui directory and `yarn start` to start the UI server at localhost:3000. When delivered as an electron app, the react UI is compiled to dist. When the app starts, it will access file:/path/to/index.html instead of http://localhost:3000.
-2. go into the cpkernel direcotry and `yarn start`. This will start the backend server (both repo server and kernel server) at http://localhost:14321.
+2. go into the cpkernel directory and `yarn start`. This will start the backend server (both repo server and kernel server) at http://localhost:14321.
 
 - the kernel server is ws://localhost:14321
 - the repo server is http://localhost:14321/graphql
-- When delievered as an electron app, the backend is packaged as a cpkernel pacakge,and the server is launched via electron's main.js process at http://localhost:14321
+- When delivered as an electron app, the backend is packaged as a cpkernel package,and the server is launched via electron's main.js process at http://localhost:14321
 
 3. go into ui directory and run `yarn ele` to start the electron app.
 
