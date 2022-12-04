@@ -62,6 +62,7 @@ interface Props {
   data: any;
   id: string;
   isConnectable: boolean;
+
   // selected: boolean;
 }
 
@@ -77,6 +78,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
     translate: [0, 0],
   });
   const selected = useStore(store, (state) => state.selected);
+  const role = useStore(store, (state) => state.role);
 
   const onResize = useCallback(({ width, height, offx, offy }) => {
     const node = nodesMap.get(id);
@@ -152,7 +154,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
         id="right"
         isConnectable={isConnectable}
       />
-      {selected === id && (
+      {selected === id && role !== RoleType.GUEST && (
         <Moveable
           target={target}
           resizable={true}
@@ -381,165 +383,174 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
     setTarget(ref.current);
   }, []);
   if (!pod) return null;
-  return (
-    <ResizableBox
-      onResizeStop={onResize}
-      height={pod.height || 100}
-      width={pod.width}
-      axis="x"
-      minConstraints={[200, 200]}
-    >
-      <Box
-        sx={{
-          border: "solid 1px #d6dee6",
-          borderWidth: pod.ispublic ? "4px" : "2px",
-          borderRadius: "4px",
-          width: "100%",
-          height: "100%",
-          backgroundColor: "rgb(244, 246, 248)",
-          borderColor: pod.ispublic
-            ? "green"
-            : isEditorBlur
-            ? "#d6dee6"
-            : "#3182ce",
-        }}
-        ref={ref}
+
+  // onsize is banned for a guest, FIXME: ugly code
+  const Wrap = (child) =>
+    role === RoleType.GUEST ? (
+      <>{child}</>
+    ) : (
+      <ResizableBox
+        onResizeStop={onResize}
+        height={pod.height || 100}
+        width={pod.width}
+        axis={"x"}
+        minConstraints={[200, 200]}
       >
-        <Handle
-          type="source"
-          position={Position.Top}
-          id="top"
-          isConnectable={isConnectable}
-        />
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          id="bottom"
-          isConnectable={isConnectable}
-        />
-        <Handle
-          type="source"
-          position={Position.Left}
-          id="left"
-          isConnectable={isConnectable}
-        />
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="right"
-          isConnectable={isConnectable}
-        />
-        {/* The header of code pods. */}
-        <Box className="custom-drag-handle">
-          <Box sx={styles["pod-index"]}>[{pod.index}]</Box>
-          <Box
-            sx={{
-              display: "flex",
-              marginLeft: "10px",
-              borderRadius: "4px",
-              position: "absolute",
-              border: "solid 1px #d6dee6",
-              right: "25px",
-              top: "-15px",
-              background: "white",
-              zIndex: 250,
-              justifyContent: "center",
-            }}
-          >
-            {role !== RoleType.GUEST && (
-              <Tooltip title="Run (shift-enter)">
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    clearResults(id);
-                    wsRun(id);
-                  }}
-                >
-                  <PlayCircleOutlineIcon fontSize="inherit" />
-                </IconButton>
-              </Tooltip>
-            )}
-            {role !== RoleType.GUEST && (
-              <Tooltip title="Delete">
-                <IconButton
-                  size="small"
-                  onClick={() => {
-                    deleteNodeById(id);
-                  }}
-                >
-                  <DeleteIcon fontSize="inherit" />
-                </IconButton>
-              </Tooltip>
-            )}
-            <Tooltip title="Change layout">
+        {child}
+      </ResizableBox>
+    );
+
+  return Wrap(
+    <Box
+      sx={{
+        border: "solid 1px #d6dee6",
+        borderWidth: pod.ispublic ? "4px" : "2px",
+        borderRadius: "4px",
+        width: "100%",
+        height: "100%",
+        backgroundColor: "rgb(244, 246, 248)",
+        borderColor: pod.ispublic
+          ? "green"
+          : isEditorBlur
+          ? "#d6dee6"
+          : "#3182ce",
+      }}
+      ref={ref}
+    >
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="top"
+        isConnectable={isConnectable}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom"
+        isConnectable={isConnectable}
+      />
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="left"
+        isConnectable={isConnectable}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="right"
+        isConnectable={isConnectable}
+      />
+      {/* The header of code pods. */}
+      <Box className="custom-drag-handle">
+        <Box sx={styles["pod-index"]}>[{pod.index}]</Box>
+        <Box
+          sx={{
+            display: "flex",
+            marginLeft: "10px",
+            borderRadius: "4px",
+            position: "absolute",
+            border: "solid 1px #d6dee6",
+            right: "25px",
+            top: "-15px",
+            background: "white",
+            zIndex: 250,
+            justifyContent: "center",
+          }}
+        >
+          {role !== RoleType.GUEST && (
+            <Tooltip title="Run (shift-enter)">
               <IconButton
                 size="small"
                 onClick={() => {
-                  setLayout(layout === "bottom" ? "right" : "bottom");
+                  clearResults(id);
+                  wsRun(id);
                 }}
               >
-                <ViewComfyIcon fontSize="inherit" />
+                <PlayCircleOutlineIcon fontSize="inherit" />
               </IconButton>
             </Tooltip>
-          </Box>
-        </Box>
-        <Box
-          sx={{
-            height: "90%",
-          }}
-          onClick={(e) => {
-            // If the node is selected (for resize), the cursor is not shown. So
-            // we need to deselect it when we re-focus on the editor.
-            setSelected(null);
-            setNodes((nds) =>
-              applyNodeChanges(
-                [
-                  {
-                    id,
-                    type: "select",
-                    selected: false,
-                  },
-                ],
-                nds
-              )
-            );
-          }}
-        >
-          <MyMonaco
-            id={id}
-            gitvalue=""
-            onBlur={() => {
-              setIsEditorBlur(true);
-            }}
-            onFocus={() => {
-              setIsEditorBlur(false);
-              setCurrentEditor(id);
-            }}
-          />
-          {showResult && (
-            <Box
-              className="nowheel"
-              sx={{
-                border: "solid 1px #d6dee6",
-                borderRadius: "4px",
-                position: "absolute",
-                top: isRightLayout ? 0 : "100%",
-                left: isRightLayout ? "100%" : 0,
-                maxHeight: "158px",
-                maxWidth: isRightLayout ? "300px" : "100%",
-                minWidth: isRightLayout ? "150px" : "100%",
-                boxSizing: "border-box",
-                backgroundColor: "white",
-                zIndex: 100,
-                padding: "0 10px",
+          )}
+          {role !== RoleType.GUEST && (
+            <Tooltip title="Delete">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  deleteNodeById(id);
+                }}
+              >
+                <DeleteIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          )}
+          <Tooltip title="Change layout">
+            <IconButton
+              size="small"
+              onClick={() => {
+                setLayout(layout === "bottom" ? "right" : "bottom");
               }}
             >
-              <ResultBlock pod={pod} id={id} />
-            </Box>
-          )}
+              <ViewComfyIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
         </Box>
       </Box>
-    </ResizableBox>
+      <Box
+        sx={{
+          height: "90%",
+        }}
+        onClick={(e) => {
+          // If the node is selected (for resize), the cursor is not shown. So
+          // we need to deselect it when we re-focus on the editor.
+          setSelected(null);
+          setNodes((nds) =>
+            applyNodeChanges(
+              [
+                {
+                  id,
+                  type: "select",
+                  selected: false,
+                },
+              ],
+              nds
+            )
+          );
+        }}
+      >
+        <MyMonaco
+          id={id}
+          gitvalue=""
+          onBlur={() => {
+            setIsEditorBlur(true);
+          }}
+          onFocus={() => {
+            setIsEditorBlur(false);
+            setCurrentEditor(id);
+          }}
+        />
+        {showResult && (
+          <Box
+            className="nowheel"
+            sx={{
+              border: "solid 1px #d6dee6",
+              borderRadius: "4px",
+              position: "absolute",
+              top: isRightLayout ? 0 : "100%",
+              left: isRightLayout ? "100%" : 0,
+              maxHeight: "158px",
+              maxWidth: isRightLayout ? "300px" : "100%",
+              minWidth: isRightLayout ? "150px" : "100%",
+              boxSizing: "border-box",
+              backgroundColor: "white",
+              zIndex: 100,
+              padding: "0 10px",
+            }}
+          >
+            <ResultBlock pod={pod} id={id} />
+          </Box>
+        )}
+      </Box>
+    </Box>
   );
 });
 
@@ -613,6 +624,7 @@ export function Canvas() {
             // for code node, don't set height, let it be auto
             height: pod.height || undefined,
           },
+          dragHandle: ".custom-drag-handle",
         });
       }
       for (const child of children) {
@@ -628,6 +640,7 @@ export function Canvas() {
     // check if the nodesMap on the websocket has already been initialized with node info
     nodes.forEach((node) => {
       if (!nodesMap.has(node.id)) {
+        console.log("add node", node.id, node);
         nodesMap.set(node.id, node);
       }
     });
@@ -982,7 +995,7 @@ export function Canvas() {
               }}
               nodeBorderRadius={2}
             />
-            <Controls />
+            <Controls showInteractive={role !== RoleType.GUEST} />
 
             <Background />
           </Box>

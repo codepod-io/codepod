@@ -41,6 +41,7 @@ export function useNodesStateSynced(nodeList) {
         }
 
         if (change.type === "dimensions" && node.type === "code") {
+          console.log("dimensions", change);
           // the re-size event of codeNode don't need to be sync, just skip.
           return;
         }
@@ -66,8 +67,8 @@ export function useNodesStateSynced(nodeList) {
             lang: "python",
             x: node.position.x,
             y: node.position.y,
-            width: node.width,
-            height: node.height,
+            width: node.style?.width,
+            height: node.style?.height,
           });
         } else if (change.action === "delete") {
           const node = change.oldValue;
@@ -83,6 +84,8 @@ export function useNodesStateSynced(nodeList) {
         )
       );
       // setNodes(Array.from(nodesMap.values()));
+
+      console.log("nodes", Array.from(nodesMap.values()));
     };
 
     // setNodes(Array.from(nodesMap.values()));
