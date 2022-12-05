@@ -687,7 +687,7 @@ const createRepoSlice: StateCreator<
         state.pods = normalize(pods);
         state.repoName = name;
         // set the user role in this repo
-        if (userId == state.user.id) {
+        if (userId === state.user.id) {
           state.role = RoleType.OWNER;
         } else if (state.user && collaboratorIds.indexOf(state.user.id) >= 0) {
           state.role = RoleType.COLLABORATOR;
