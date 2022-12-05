@@ -11,6 +11,7 @@ export function useNodesStateSynced(nodeList) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const addPod = useStore(store, (state) => state.addPod);
+  const getPod = useStore(store, (state) => state.getPod);
   const deletePod = useStore(store, (state) => state.deletePod);
   const updatePod = useStore(store, (state) => state.updatePod);
   const setSelected = useStore(store, (state) => state.setSelected);
@@ -49,13 +50,18 @@ export function useNodesStateSynced(nodeList) {
         }
 
         if (change.type === "dimensions" && node.type === "code") {
-          // only sync width
-          updatePod({
-            id: node.id,
-            data: {
-              width: node.style?.width as number,
-            },
-          });
+          // There is a (seemingly unnecessary) dimension change at the very
+          // beginning of canvas page, which causes dirty status of all
+          // CodeNodes to be set. This is a workaround to prevent that.
+          if (getPod(node.id).width !== node.width) {
+            // only sync width
+            updatePod({
+              id: node.id,
+              data: {
+                width: node.style?.width as number,
+              },
+            });
+          }
           return;
         }
 
