@@ -337,7 +337,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   // right, bottom
   const [layout, setLayout] = useState("bottom");
   const isRightLayout = layout === "right";
-  const [isEditorBlur, setIsEditorBlur] = useState(true);
   const { setNodes } = useReactFlow();
   // const selected = useStore(store, (state) => state.selected);
   const setSelected = useStore(store, (state) => state.setSelected);
@@ -345,6 +344,8 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const getPod = useStore(store, (state) => state.getPod);
   const pod = getPod(id);
   const role = useStore(store, (state) => state.role);
+  const width = useStore(store, (state) => state.pods[id]?.width);
+  const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
 
   const showResult = useStore(
     store,
@@ -355,20 +356,12 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
       state.pods[id]?.stdout ||
       state.pods[id]?.stderr
   );
-  const updatePod = useStore(store, (state) => state.updatePod);
   const onResize = useCallback((e, data) => {
     const { size } = data;
     const node = nodesMap.get(id);
     if (node) {
       node.style = { ...node.style, width: size.width };
       nodesMap.set(id, node);
-      updatePod({
-        id,
-        data: {
-          width: size.width,
-          height: pod.height,
-        },
-      });
     }
   }, []);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
@@ -392,7 +385,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
       <ResizableBox
         onResizeStop={onResize}
         height={pod.height || 100}
-        width={pod.width}
+        width={width}
         axis={"x"}
         minConstraints={[200, 200]}
       >
@@ -411,11 +404,10 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
         backgroundColor: "rgb(244, 246, 248)",
         borderColor: pod.ispublic
           ? "green"
-          : isEditorBlur
+          : !isPodFocused
           ? "#d6dee6"
           : "#3182ce",
       }}
-      ref={ref}
     >
       <Handle
         type="source"
@@ -517,17 +509,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
           );
         }}
       >
-        <MyMonaco
-          id={id}
-          gitvalue=""
-          onBlur={() => {
-            setIsEditorBlur(true);
-          }}
-          onFocus={() => {
-            setIsEditorBlur(false);
-            setCurrentEditor(id);
-          }}
-        />
+        <MyMonaco id={id} gitvalue="" />
         {showResult && (
           <Box
             className="nowheel"
@@ -596,6 +578,7 @@ export function Canvas() {
   const repoId = useStore(store, (state) => state.repoId);
   const repoName = useStore(store, (state) => state.repoName);
   const role = useStore(store, (state) => state.role);
+  const provider = useStore(store, (state) => state.provider);
 
   const getRealNodes = useCallback(
     (id, level) => {
@@ -635,18 +618,27 @@ export function Canvas() {
     [getId2children, getPod]
   );
   useEffect(() => {
-    let nodes = getRealNodes("ROOT", -1);
-    // setNodes(nodes);
+    const init = () => {
+      let nodes = getRealNodes("ROOT", -1);
+      nodes.forEach((node) => {
+        if (!nodesMap.has(node.id)) {
+          console.log("add node", node.id, node);
+          nodesMap.set(node.id, node);
+        }
+      });
+      setNodes(Array.from(nodesMap.values()));
+    };
+
+    if (!provider) return;
+    if (provider.synced) {
+      init();
+    } else {
+      provider.once("synced", init);
+    }
     // check if the nodesMap on the websocket has already been initialized with node info
-    nodes.forEach((node) => {
-      if (!nodesMap.has(node.id)) {
-        console.log("add node", node.id, node);
-        nodesMap.set(node.id, node);
-      }
-    });
-    setNodes(Array.from(nodesMap.values()));
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [provider]);
 
   // const onNodesChange = useCallback(
   //   (changes) => {

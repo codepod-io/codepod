@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useContext } from "react";
 import { applyNodeChanges, Node } from "reactflow";
-import { RepoContext } from "./store";
+import { RepoContext, RoleType } from "./store";
 import { useStore } from "zustand";
 
 const isNodeAddChange = (change) => change.type === "add";
@@ -12,7 +12,9 @@ export function useNodesStateSynced(nodeList) {
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const addPod = useStore(store, (state) => state.addPod);
   const deletePod = useStore(store, (state) => state.deletePod);
+  const updatePod = useStore(store, (state) => state.updatePod);
   const setSelected = useStore(store, (state) => state.setSelected);
+  const role = useStore(store, (state) => state.role);
   const ydoc = useStore(store, (state) => state.ydoc);
   const nodesMap = ydoc.getMap<Node>("pods");
 
@@ -24,6 +26,12 @@ export function useNodesStateSynced(nodeList) {
     const nodes = Array.from(nodesMap.values());
 
     const nextNodes = applyNodeChanges(changes, nodes);
+
+    // prevent updates from guest users
+    if (role === RoleType.GUEST) {
+      setNodes(nextNodes);
+      return;
+    }
 
     changes.forEach((change) => {
       if (!isNodeAddChange(change) && !isNodeResetChange(change)) {
@@ -41,8 +49,13 @@ export function useNodesStateSynced(nodeList) {
         }
 
         if (change.type === "dimensions" && node.type === "code") {
-          console.log("dimensions", change);
-          // the re-size event of codeNode don't need to be sync, just skip.
+          // only sync width
+          updatePod({
+            id: node.id,
+            data: {
+              width: node.style?.width as number,
+            },
+          });
           return;
         }
 
@@ -84,8 +97,6 @@ export function useNodesStateSynced(nodeList) {
         )
       );
       // setNodes(Array.from(nodesMap.values()));
-
-      console.log("nodes", Array.from(nodesMap.values()));
     };
 
     // setNodes(Array.from(nodesMap.values()));

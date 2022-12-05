@@ -136,6 +136,7 @@ export type Pod = {
   height: number;
   ns?: string;
   running?: boolean;
+  focus?: boolean;
 };
 
 export interface RepoSlice {
@@ -206,6 +207,8 @@ export interface RepoSlice {
   getPods: () => Record<string, Pod>;
   getId2children: (string) => string[];
   setPodVisibility: (id, visible) => void;
+  setPodFocus: (id) => void;
+  setPodBlur: (id) => void;
 }
 
 type BearState = RepoSlice & RuntimeSlice;
@@ -713,7 +716,6 @@ const createRepoSlice: StateCreator<
             name: state.user.firstname,
             color: state.user.color,
           });
-          console.log("awareness", awareness);
         }
 
         // fill in the parent/children relationships
@@ -801,7 +803,6 @@ const createRepoSlice: StateCreator<
         if (state.provider) {
           state.provider.destroy();
           // just for debug usage, remove it later
-          console.log("remove awareness", state.provider.awareness);
           state.provider = null;
         }
         state.ydoc.destroy();
@@ -810,6 +811,22 @@ const createRepoSlice: StateCreator<
   getPod: (id: string) => get().pods[id],
   getPods: () => get().pods,
   getId2children: (id: string) => get().id2children[id],
+  setPodFocus: (id: string) =>
+    set(
+      produce((state) => {
+        if (state.pods[id]) {
+          state.pods[id].focus = true;
+        }
+      })
+    ),
+  setPodBlur: (id: string) =>
+    set(
+      produce((state) => {
+        if (state.pods[id]) {
+          state.pods[id].focus = false;
+        }
+      })
+    ),
 });
 
 export const createRepoStore = () =>
