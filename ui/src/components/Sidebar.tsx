@@ -22,6 +22,7 @@ import { usePrompt } from "../lib/prompt";
 import { RepoContext, selectNumDirty, RoleType } from "../lib/store";
 
 import useMe from "../lib/me";
+import { Stack } from "@mui/material";
 
 function Flex(props) {
   return (
@@ -148,13 +149,13 @@ function SidebarKernel() {
 function SyncStatus() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const numDirty = useStore(store, selectNumDirty());
+  const dirtyIds = useStore(store, selectNumDirty());
   const clearAllResults = useStore(store, (s) => s.clearAllResults);
   const remoteUpdateAllPods = useStore(store, (s) => s.remoteUpdateAllPods);
   const client = useApolloClient();
   usePrompt(
-    `You have unsaved ${numDirty} changes. Are you sure you want to leave?`,
-    numDirty > 0
+    `You have unsaved ${dirtyIds.length} changes. Are you sure you want to leave?`,
+    dirtyIds.length > 0
   );
 
   useEffect(() => {
@@ -173,24 +174,26 @@ function SyncStatus() {
 
   return (
     <Box>
-      <Button
-        size="small"
-        disabled={numDirty === 0}
-        onClick={() => {
-          remoteUpdateAllPods(client);
+      <Stack
+        direction="row"
+        spacing={2}
+        color={dirtyIds.length === 0 ? "gray" : "blue"}
+        sx={{
+          alignItems: "center",
         }}
       >
         <CloudUploadIcon />
-        {numDirty > 0 ? (
+        {dirtyIds.length > 0 ? (
           <Box component="span" color="blue" mx={1}>
-            saving {numDirty} to cloud
+            saving {dirtyIds.length} to cloud
+            {/* <pre>{JSON.stringify(dirtyIds)}</pre> */}
           </Box>
         ) : (
           <Box component="span" color="grey" mx={1}>
             Saved to cloud.
           </Box>
         )}
-      </Button>
+      </Stack>
     </Box>
   );
 }

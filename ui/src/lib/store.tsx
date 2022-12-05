@@ -38,28 +38,14 @@ export const RepoContext = createContext<StoreApi<
   RepoSlice & RuntimeSlice
 > | null>(null);
 
-// TODO use a selector to compute and retrieve the status
-// TODO this need to cooperate with syncing indicator
-export function selectIsDirty(id) {
-  return (state) => {
-    let pod = state.pods[id];
-    // console.log("selectIsDirty");
-    if (pod.remoteHash === hashPod(pod)) {
-      return false;
-    } else {
-      return true;
-    }
-  };
-}
-
 // FIXME performance
 export function selectNumDirty() {
   return (state) => {
-    let res = 0;
+    let res: string[] = [];
     if (state.repoLoaded) {
       for (const id in state.pods) {
         if (state.pods[id].dirty) {
-          res += 1;
+          res.push(id);
         }
       }
     }
