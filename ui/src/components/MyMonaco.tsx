@@ -311,15 +311,11 @@ async function updateGitGutter(editor) {
 interface MyMonacoProps {
   id: string;
   gitvalue: string;
-  onBlur?: Function;
-  onFocus?: Function;
 }
 
 export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   id = "0",
   gitvalue = null,
-  onBlur = () => {},
-  onFocus = () => {},
 }) {
   // there's no racket language support
   const store = useContext(RepoContext);
@@ -330,6 +326,8 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const setPodContent = useStore(store, (state) => state.setPodContent);
   const clearResults = useStore(store, (s) => s.clearResults);
   const wsRun = useStore(store, (state) => state.wsRun);
+  const setPodFocus = useStore(store, (state) => state.setPodFocus);
+  const setPodBlur = useStore(store, (state) => state.setPodBlur);
 
   const value = getPod(id).content || "";
   let lang = getPod(id).lang || "javascript";
@@ -377,10 +375,10 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       // onLayout(`${contentHeight}px`);
     };
     editor.onDidBlurEditorText(() => {
-      onBlur();
+      setPodBlur(id);
     });
     editor.onDidFocusEditorText(() => {
-      onFocus();
+      setPodFocus(id);
     });
     editor.onDidContentSizeChange(updateHeight);
     // FIXME clean up?

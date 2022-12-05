@@ -1,6 +1,6 @@
 import { gql } from "@apollo/client";
 
-import { hashPod, computeNamespace } from "./utils";
+import { computeNamespace } from "./utils";
 import { Pod } from "./store";
 
 /**
@@ -154,7 +154,6 @@ export function normalize(pods) {
     if (pod.midports) {
       pod.midports = JSON.parse(pod.midports);
     }
-    pod.remoteHash = hashPod(pod);
     // DEBUG the deck's content seems to be a long string of escaped \
     if (pod.type === "DECK" && pod.content) {
       console.log(

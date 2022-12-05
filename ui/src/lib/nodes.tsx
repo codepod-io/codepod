@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useContext } from "react";
 import { applyNodeChanges, Node } from "reactflow";
-import { RepoContext } from "./store";
+import { RepoContext, RoleType } from "./store";
 import { useStore } from "zustand";
 
 const isNodeAddChange = (change) => change.type === "add";
@@ -11,8 +11,11 @@ export function useNodesStateSynced(nodeList) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const addPod = useStore(store, (state) => state.addPod);
+  const getPod = useStore(store, (state) => state.getPod);
   const deletePod = useStore(store, (state) => state.deletePod);
+  const updatePod = useStore(store, (state) => state.updatePod);
   const setSelected = useStore(store, (state) => state.setSelected);
+  const role = useStore(store, (state) => state.role);
   const ydoc = useStore(store, (state) => state.ydoc);
   const nodesMap = ydoc.getMap<Node>("pods");
 
@@ -24,6 +27,12 @@ export function useNodesStateSynced(nodeList) {
     const nodes = Array.from(nodesMap.values());
 
     const nextNodes = applyNodeChanges(changes, nodes);
+
+    // prevent updates from guest users
+    if (role === RoleType.GUEST) {
+      setNodes(nextNodes);
+      return;
+    }
 
     changes.forEach((change) => {
       if (!isNodeAddChange(change) && !isNodeResetChange(change)) {
@@ -41,7 +50,18 @@ export function useNodesStateSynced(nodeList) {
         }
 
         if (change.type === "dimensions" && node.type === "code") {
-          // the re-size event of codeNode don't need to be sync, just skip.
+          // There is a (seemingly unnecessary) dimension change at the very
+          // beginning of canvas page, which causes dirty status of all
+          // CodeNodes to be set. This is a workaround to prevent that.
+          if (getPod(node.id).width !== node.width) {
+            // only sync width
+            updatePod({
+              id: node.id,
+              data: {
+                width: node.style?.width as number,
+              },
+            });
+          }
           return;
         }
 
@@ -66,8 +86,8 @@ export function useNodesStateSynced(nodeList) {
             lang: "python",
             x: node.position.x,
             y: node.position.y,
-            width: node.width,
-            height: node.height,
+            width: node.style?.width,
+            height: node.style?.height,
           });
         } else if (change.action === "delete") {
           const node = change.oldValue;

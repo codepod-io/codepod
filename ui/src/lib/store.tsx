@@ -1,8 +1,9 @@
 import { createStore, StateCreator, StoreApi } from "zustand";
+import { devtools } from "zustand/middleware";
 import produce from "immer";
 import { createContext } from "react";
 
-import { hashPod, computeNamespace } from "./utils";
+import { computeNamespace } from "./utils";
 
 import {
   normalize,
@@ -38,28 +39,14 @@ export const RepoContext = createContext<StoreApi<
   RepoSlice & RuntimeSlice
 > | null>(null);
 
-// TODO use a selector to compute and retrieve the status
-// TODO this need to cooperate with syncing indicator
-export function selectIsDirty(id) {
-  return (state) => {
-    let pod = state.pods[id];
-    // console.log("selectIsDirty");
-    if (pod.remoteHash === hashPod(pod)) {
-      return false;
-    } else {
-      return true;
-    }
-  };
-}
-
 // FIXME performance
 export function selectNumDirty() {
   return (state) => {
-    let res = 0;
+    let res: string[] = [];
     if (state.repoLoaded) {
       for (const id in state.pods) {
         if (state.pods[id].dirty) {
-          res += 1;
+          res.push(id);
         }
       }
     }
@@ -106,7 +93,6 @@ export type Pod = {
   name: string;
   type: string;
   content: string;
-  remoteHash?: string;
   dirty?: boolean;
   children: { id: string; type: string }[];
   parent?: string;
@@ -136,6 +122,7 @@ export type Pod = {
   height: number;
   ns?: string;
   running?: boolean;
+  focus?: boolean;
 };
 
 export interface RepoSlice {
@@ -206,6 +193,8 @@ export interface RepoSlice {
   getPods: () => Record<string, Pod>;
   getId2children: (string) => string[];
   setPodVisibility: (id, visible) => void;
+  setPodFocus: (id) => void;
+  setPodBlur: (id) => void;
 }
 
 type BearState = RepoSlice & RuntimeSlice;
@@ -307,8 +296,6 @@ const createRepoSlice: StateCreator<
       width,
       height,
     };
-    // compute the remotehash
-    pod.remoteHash = hashPod(pod);
     set(
       produce((state: BearState) => {
         // 1. do local update
@@ -395,8 +382,11 @@ const createRepoSlice: StateCreator<
           // pod.content = slackGetPlainText(pod.content);
         }
         pod.type = type;
-        pod.dirty = pod.remoteHash !== hashPod(pod);
-      })
+        pod.dirty = true;
+      }),
+      false,
+      // @ts-ignore
+      "setPodType"
     ),
   toggleFold: ({ id }) =>
     set(
@@ -408,8 +398,11 @@ const createRepoSlice: StateCreator<
         } else {
           pod.fold = !pod.fold;
         }
-        pod.dirty = pod.remoteHash !== hashPod(pod);
-      })
+        pod.dirty = true;
+      }),
+      false,
+      // @ts-ignore
+      "toggleFold"
     ),
   foldAll: () =>
     set(
@@ -417,19 +410,25 @@ const createRepoSlice: StateCreator<
         for (const [, pod] of Object.entries(state.pods)) {
           if (pod) {
             pod.fold = true;
-            pod.dirty = pod.remoteHash !== hashPod(pod);
+            pod.dirty = true;
           }
         }
-      })
+      }),
+      false,
+      // @ts-ignore
+      "foldAll"
     ),
   unfoldAll: () =>
     set(
       produce((state: BearState) => {
         for (const [, pod] of Object.entries(state.pods)) {
           pod.fold = false;
-          pod.dirty = pod.remoteHash !== hashPod(pod);
+          pod.dirty = true;
         }
-      })
+      }),
+      false,
+      // @ts-ignore
+      "unfoldAll"
     ),
   toggleThundar: ({ id }) =>
     set(
@@ -440,8 +439,11 @@ const createRepoSlice: StateCreator<
         } else {
           pod.thundar = !pod.thundar;
         }
-        pod.dirty = pod.remoteHash !== hashPod(pod);
-      })
+        pod.dirty = true;
+      }),
+      false,
+      // @ts-ignore
+      "toggleThundar"
     ),
   toggleUtility: ({ id }) =>
     set(
@@ -452,32 +454,44 @@ const createRepoSlice: StateCreator<
         } else {
           pod.utility = !pod.utility;
         }
-        pod.dirty = pod.remoteHash !== hashPod(pod);
-      })
+        pod.dirty = true;
+      }),
+      false,
+      // @ts-ignore
+      "toggleUtility"
     ),
   setName: ({ id, name }) =>
     set(
       produce((state) => {
         let pod = state.pods[id];
         pod.name = name;
-        pod.dirty = pod.remoteHash !== hashPod(pod);
-      })
+        pod.dirty = true;
+      }),
+      false,
+      // @ts-ignore
+      "setName"
     ),
   setPodLang: ({ id, lang }) =>
     set(
       produce((state) => {
         let pod = state.pods[id];
         pod.lang = lang;
-        pod.dirty = pod.remoteHash !== hashPod(pod);
-      })
+        pod.dirty = true;
+      }),
+      false,
+      // @ts-ignore
+      "setPodLang"
     ),
   setPodContent: ({ id, content }) =>
     set(
       produce((state) => {
         let pod = state.pods[id];
         pod.content = content;
-        pod.dirty = pod.remoteHash !== hashPod(pod);
-      })
+        pod.dirty = true;
+      }),
+      false,
+      // @ts-ignore
+      "setPodContent"
     ),
   setPodRender: ({ id, value }) =>
     set(
@@ -491,21 +505,21 @@ const createRepoSlice: StateCreator<
         let pod = state.pods[id];
         pod.x = x;
         pod.y = y;
-        pod.dirty = pod.remoteHash !== hashPod(pod);
-      })
-    ),
-  setPodDirty: ({ id, dirty }) =>
-    set(
-      produce((state) => {
-        state.pods[id].dirty = dirty;
-      })
+        pod.dirty = true;
+      }),
+      false,
+      // @ts-ignore
+      "setPodPosition"
     ),
   updatePod: ({ id, data }) =>
     set(
       produce((state) => {
         state.pods[id] = { ...state.pods[id], ...data };
         state.pods[id].dirty = true;
-      })
+      }),
+      false,
+      // @ts-ignore
+      "updatePod"
     ),
   setPodStdout: ({ id, stdout }) =>
     set(
@@ -658,7 +672,10 @@ const createRepoSlice: StateCreator<
         state.pods[parent].children.push(state.pods[id]);
         let idx = oldparent.children.findIndex(({ id: _id }) => _id === id);
         oldparent.children.splice(idx, 1);
-      })
+      }),
+      false,
+      // @ts-ignore
+      "setPodParent"
     ),
   resizeScopeSize: ({ id }) =>
     set(
@@ -674,7 +691,10 @@ const createRepoSlice: StateCreator<
         state.pods[id].width = Math.max(state.pods[id].width, width + 20);
         state.pods[id].height = Math.max(state.pods[id].height, height + 20);
         state.pods[id].dirty = true;
-      })
+      }),
+      false,
+      // @ts-ignore
+      "resizeScopeSize"
     ),
   setPodVisibility: (id, ispublic) => {
     set(
@@ -698,7 +718,7 @@ const createRepoSlice: StateCreator<
         state.pods = normalize(pods);
         state.repoName = name;
         // set the user role in this repo
-        if (userId == state.user.id) {
+        if (userId === state.user.id) {
           state.role = RoleType.OWNER;
         } else if (state.user && collaboratorIds.indexOf(state.user.id) >= 0) {
           state.role = RoleType.COLLABORATOR;
@@ -713,7 +733,6 @@ const createRepoSlice: StateCreator<
             name: state.user.firstname,
             color: state.user.color,
           });
-          console.log("awareness", awareness);
         }
 
         // fill in the parent/children relationships
@@ -743,13 +762,11 @@ const createRepoSlice: StateCreator<
       if (!pod) return;
       pod.children?.map(({ id }) => helper(id));
       if (id !== "ROOT") {
-        // console.log("hashPod at remoteUpdateAllPods");
-        if (pod.remoteHash !== hashPod(pod)) {
+        if (pod.dirty) {
           await doRemoteUpdatePod(client, { pod });
           set(
             produce((state) => {
               let pod = state.pods[id];
-              pod.remoteHash = hashPod(pod);
               pod.isSyncing = false;
               pod.dirty = false;
             })
@@ -758,13 +775,6 @@ const createRepoSlice: StateCreator<
       }
     }
     await helper("ROOT");
-    // FIXME replace?
-    // set pod hash
-    // state.pods[action.meta.arg.id].remoteHash = hashPod(
-    //   state.pods[action.meta.arg.id]
-    // );
-    // state.pods[action.meta.arg.id].isSyncing = false;
-    // state.pods[action.meta.arg.id].dirty = false;
   },
   addClient: (clientID, name, color) =>
     set((state) => {
@@ -801,7 +811,6 @@ const createRepoSlice: StateCreator<
         if (state.provider) {
           state.provider.destroy();
           // just for debug usage, remove it later
-          console.log("remove awareness", state.provider.awareness);
           state.provider = null;
         }
         state.ydoc.destroy();
@@ -810,10 +819,28 @@ const createRepoSlice: StateCreator<
   getPod: (id: string) => get().pods[id],
   getPods: () => get().pods,
   getId2children: (id: string) => get().id2children[id],
+  setPodFocus: (id: string) =>
+    set(
+      produce((state) => {
+        if (state.pods[id]) {
+          state.pods[id].focus = true;
+        }
+      })
+    ),
+  setPodBlur: (id: string) =>
+    set(
+      produce((state) => {
+        if (state.pods[id]) {
+          state.pods[id].focus = false;
+        }
+      })
+    ),
 });
 
 export const createRepoStore = () =>
-  createStore<BearState>((...a) => ({
-    ...createRepoSlice(...a),
-    ...createRuntimeSlice(...a),
-  }));
+  createStore(
+    devtools<BearState>((...a) => ({
+      ...createRepoSlice(...a),
+      ...createRuntimeSlice(...a),
+    }))
+  );
