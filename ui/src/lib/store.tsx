@@ -1,8 +1,9 @@
 import { createStore, StateCreator, StoreApi } from "zustand";
+import { devtools } from "zustand/middleware";
 import produce from "immer";
 import { createContext } from "react";
 
-import { hashPod, computeNamespace } from "./utils";
+import { computeNamespace } from "./utils";
 
 import {
   normalize,
@@ -92,7 +93,6 @@ export type Pod = {
   name: string;
   type: string;
   content: string;
-  remoteHash?: string;
   dirty?: boolean;
   children: { id: string; type: string }[];
   parent?: string;
@@ -296,8 +296,6 @@ const createRepoSlice: StateCreator<
       width,
       height,
     };
-    // compute the remotehash
-    pod.remoteHash = hashPod(pod);
     set(
       produce((state: BearState) => {
         // 1. do local update
@@ -384,8 +382,11 @@ const createRepoSlice: StateCreator<
           // pod.content = slackGetPlainText(pod.content);
         }
         pod.type = type;
-        pod.dirty = pod.remoteHash !== hashPod(pod);
-      })
+        pod.dirty = true;
+      }),
+      false,
+      // @ts-ignore
+      "setPodType"
     ),
   toggleFold: ({ id }) =>
     set(
@@ -397,8 +398,11 @@ const createRepoSlice: StateCreator<
         } else {
           pod.fold = !pod.fold;
         }
-        pod.dirty = pod.remoteHash !== hashPod(pod);
-      })
+        pod.dirty = true;
+      }),
+      false,
+      // @ts-ignore
+      "toggleFold"
     ),
   foldAll: () =>
     set(
@@ -406,19 +410,25 @@ const createRepoSlice: StateCreator<
         for (const [, pod] of Object.entries(state.pods)) {
           if (pod) {
             pod.fold = true;
-            pod.dirty = pod.remoteHash !== hashPod(pod);
+            pod.dirty = true;
           }
         }
-      })
+      }),
+      false,
+      // @ts-ignore
+      "foldAll"
     ),
   unfoldAll: () =>
     set(
       produce((state: BearState) => {
         for (const [, pod] of Object.entries(state.pods)) {
           pod.fold = false;
-          pod.dirty = pod.remoteHash !== hashPod(pod);
+          pod.dirty = true;
         }
-      })
+      }),
+      false,
+      // @ts-ignore
+      "unfoldAll"
     ),
   toggleThundar: ({ id }) =>
     set(
@@ -429,8 +439,11 @@ const createRepoSlice: StateCreator<
         } else {
           pod.thundar = !pod.thundar;
         }
-        pod.dirty = pod.remoteHash !== hashPod(pod);
-      })
+        pod.dirty = true;
+      }),
+      false,
+      // @ts-ignore
+      "toggleThundar"
     ),
   toggleUtility: ({ id }) =>
     set(
@@ -441,32 +454,44 @@ const createRepoSlice: StateCreator<
         } else {
           pod.utility = !pod.utility;
         }
-        pod.dirty = pod.remoteHash !== hashPod(pod);
-      })
+        pod.dirty = true;
+      }),
+      false,
+      // @ts-ignore
+      "toggleUtility"
     ),
   setName: ({ id, name }) =>
     set(
       produce((state) => {
         let pod = state.pods[id];
         pod.name = name;
-        pod.dirty = pod.remoteHash !== hashPod(pod);
-      })
+        pod.dirty = true;
+      }),
+      false,
+      // @ts-ignore
+      "setName"
     ),
   setPodLang: ({ id, lang }) =>
     set(
       produce((state) => {
         let pod = state.pods[id];
         pod.lang = lang;
-        pod.dirty = pod.remoteHash !== hashPod(pod);
-      })
+        pod.dirty = true;
+      }),
+      false,
+      // @ts-ignore
+      "setPodLang"
     ),
   setPodContent: ({ id, content }) =>
     set(
       produce((state) => {
         let pod = state.pods[id];
         pod.content = content;
-        pod.dirty = pod.remoteHash !== hashPod(pod);
-      })
+        pod.dirty = true;
+      }),
+      false,
+      // @ts-ignore
+      "setPodContent"
     ),
   setPodRender: ({ id, value }) =>
     set(
@@ -480,21 +505,21 @@ const createRepoSlice: StateCreator<
         let pod = state.pods[id];
         pod.x = x;
         pod.y = y;
-        pod.dirty = pod.remoteHash !== hashPod(pod);
-      })
-    ),
-  setPodDirty: ({ id, dirty }) =>
-    set(
-      produce((state) => {
-        state.pods[id].dirty = dirty;
-      })
+        pod.dirty = true;
+      }),
+      false,
+      // @ts-ignore
+      "setPodPosition"
     ),
   updatePod: ({ id, data }) =>
     set(
       produce((state) => {
         state.pods[id] = { ...state.pods[id], ...data };
         state.pods[id].dirty = true;
-      })
+      }),
+      false,
+      // @ts-ignore
+      "updatePod"
     ),
   setPodStdout: ({ id, stdout }) =>
     set(
@@ -647,7 +672,10 @@ const createRepoSlice: StateCreator<
         state.pods[parent].children.push(state.pods[id]);
         let idx = oldparent.children.findIndex(({ id: _id }) => _id === id);
         oldparent.children.splice(idx, 1);
-      })
+      }),
+      false,
+      // @ts-ignore
+      "setPodParent"
     ),
   resizeScopeSize: ({ id }) =>
     set(
@@ -663,7 +691,10 @@ const createRepoSlice: StateCreator<
         state.pods[id].width = Math.max(state.pods[id].width, width + 20);
         state.pods[id].height = Math.max(state.pods[id].height, height + 20);
         state.pods[id].dirty = true;
-      })
+      }),
+      false,
+      // @ts-ignore
+      "resizeScopeSize"
     ),
   setPodVisibility: (id, ispublic) => {
     set(
@@ -731,13 +762,11 @@ const createRepoSlice: StateCreator<
       if (!pod) return;
       pod.children?.map(({ id }) => helper(id));
       if (id !== "ROOT") {
-        // console.log("hashPod at remoteUpdateAllPods");
-        if (pod.remoteHash !== hashPod(pod)) {
+        if (pod.dirty) {
           await doRemoteUpdatePod(client, { pod });
           set(
             produce((state) => {
               let pod = state.pods[id];
-              pod.remoteHash = hashPod(pod);
               pod.isSyncing = false;
               pod.dirty = false;
             })
@@ -746,13 +775,6 @@ const createRepoSlice: StateCreator<
       }
     }
     await helper("ROOT");
-    // FIXME replace?
-    // set pod hash
-    // state.pods[action.meta.arg.id].remoteHash = hashPod(
-    //   state.pods[action.meta.arg.id]
-    // );
-    // state.pods[action.meta.arg.id].isSyncing = false;
-    // state.pods[action.meta.arg.id].dirty = false;
   },
   addClient: (clientID, name, color) =>
     set((state) => {
@@ -816,7 +838,9 @@ const createRepoSlice: StateCreator<
 });
 
 export const createRepoStore = () =>
-  createStore<BearState>((...a) => ({
-    ...createRepoSlice(...a),
-    ...createRuntimeSlice(...a),
-  }));
+  createStore(
+    devtools<BearState>((...a) => ({
+      ...createRepoSlice(...a),
+      ...createRuntimeSlice(...a),
+    }))
+  );
