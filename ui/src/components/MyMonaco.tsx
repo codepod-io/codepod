@@ -323,6 +323,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const readOnly = useStore(store, (state) => state.role === RoleType.GUEST);
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
   const getPod = useStore(store, (state) => state.getPod);
+  const setCurrentEditor = useStore(store, (state) => state.setCurrentEditor);
   const setPodContent = useStore(store, (state) => state.setPodContent);
   const clearResults = useStore(store, (s) => s.clearResults);
   const wsRun = useStore(store, (state) => state.wsRun);
@@ -335,8 +336,10 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const onRun = () => {
     // it's MonacoEditor's bug microsoft/monaco-editor#2947, it always triggered the last created instance
     const activeId = store.getState().currentEditor;
-    clearResults(activeId);
-    wsRun(activeId);
+    if (activeId) {
+      clearResults(activeId);
+      wsRun(activeId);
+    }
   };
 
   if (lang === "racket") {
@@ -379,6 +382,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     });
     editor.onDidFocusEditorText(() => {
       setPodFocus(id);
+      setCurrentEditor(id);
     });
     editor.onDidContentSizeChange(updateHeight);
     // FIXME clean up?
