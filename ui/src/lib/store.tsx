@@ -18,6 +18,7 @@ import { createRuntimeSlice, RuntimeSlice } from "./runtime";
 import { ApolloClient } from "@apollo/client";
 import { addAwarenessStyle } from "./styles";
 import { analyzeCode } from "./parser";
+import { User } from "@auth0/auth0-react";
 
 // Tofix: can't connect to http://codepod.127.0.0.1.sslip.io/socket/, but it works well on webbrowser or curl
 let serverURL;
@@ -71,7 +72,6 @@ const initialState = {
   id2children: {},
   queue: [],
   showdiff: false,
-  sessionId: null,
   runtimeConnected: false,
   user: {},
   kernels: {
@@ -138,18 +138,15 @@ export interface RepoSlice {
   // runtime: string;
   repoId: string | null;
   loadError: any;
-  // sessionId?: string;
 
   resetState: () => void;
   setRepo: (repoId: string) => void;
   loadRepo: (client: ApolloClient<object>, repoId: string) => void;
-  setSessionId: (sessionId: string) => void;
   addError: (error: { type: string; msg: string }) => void;
   repoLoaded: boolean;
   repoName: string | null;
   queue: string[];
   showdiff: boolean;
-  sessionId: string | null;
   runtimeConnected: boolean;
   kernels: Record<string, { status: string | null }>;
   // queueProcessing: boolean;
@@ -244,7 +241,6 @@ const createRepoSlice: StateCreator<
         }
       })
     ),
-  setSessionId: (id) => set({ sessionId: id }),
   addError: (error) => set({ error }),
   clearError: () => set({ error: null }),
   setSelected: (id) => set({ selected: id }),
@@ -757,14 +753,17 @@ const createRepoSlice: StateCreator<
       clients.delete(clientID);
       return { clients: clients };
     }),
-  setUser: (user) =>
+  setUser: (user: User) =>
     set(
       produce((state: BearState) => {
         const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
         // if (!state.ydoc) state.ydoc = new Doc();
         if (state.provider) {
           const awareness = state.provider.awareness;
-          awareness.setLocalStateField("user", { name: user.firstname, color });
+          awareness.setLocalStateField("user", {
+            name: user.given_name,
+            color,
+          });
         }
         state.user = { ...user, color };
       })

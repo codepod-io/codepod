@@ -25,7 +25,7 @@ import ShareIcon from "@mui/icons-material/Share";
 import Chip from "@mui/material/Chip";
 import { ShareProjDialog } from "../../components/ShareProjDialog";
 import CreateRepoForm from "./CreateRepoForm";
-import useMe from "../../lib/me";
+import { useAuth0 } from "@auth0/auth0-react";
 
 enum RepoTypes {
   repo = "myRepos",
@@ -60,7 +60,8 @@ const FETCH_COLLAB_REPOS = gql`
 `;
 
 function RepoLine({ repo, deletable, sharable }) {
-  const { me } = useMe();
+  const { user } = useAuth0();
+
   const [open, setOpen] = useState(false);
   const [deleteRepo] = useMutation(
     gql`
@@ -96,6 +97,7 @@ function RepoLine({ repo, deletable, sharable }) {
     }
   `);
   const [killing, setKilling] = useState(false);
+  if (!user) return null;
   const status = !rt_loading && rt_data.listAllRuntimes.includes(repo.id);
   return (
     <TableRow
@@ -155,7 +157,7 @@ function RepoLine({ repo, deletable, sharable }) {
                 setKilling(true);
                 killRuntime({
                   variables: {
-                    sessionId: `${me.id}_${repo.id}`,
+                    sessionId: `${repo.id}`,
                   },
                 });
               }}
@@ -196,7 +198,7 @@ function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
   if (error) {
     return null;
   }
-  const repos = data[type].slice().reverse();
+  const repos = data[type].slice();
   return (
     <Box>
       <Box
@@ -262,11 +264,13 @@ function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
 function NoLogginErrorAlert() {
   const nevigate = useNavigate();
   const [seconds, setSeconds] = useState<number | null>(3);
+  const { loginWithRedirect } = useAuth0();
 
   useEffect(() => {
     if (seconds === 0) {
       setSeconds(null);
-      nevigate("/login");
+      // nevigate("/login");
+      loginWithRedirect();
       return;
     }
     if (seconds === null) return;
@@ -282,17 +286,26 @@ function NoLogginErrorAlert() {
     <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
       <Alert severity="error">
         Please login first! Automatically jump to{" "}
-        <Link component={ReactLink} to="/login">
+        <Link onClick={() => loginWithRedirect()} component={ReactLink} to="#">
           login
-        </Link>{" "}
+        </Link>
         page in {seconds} seconds.
       </Alert>
     </Box>
   );
 }
 export default function Page() {
-  const { me } = useMe();
-  if (!me) {
+  const { user, isLoading, isAuthenticated, loginWithRedirect } = useAuth0();
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) loginWithRedirect();
+  }, [isAuthenticated, isLoading, loginWithRedirect]);
+  if (isLoading) {
+    return <CircularProgress />;
+  }
+  // FIXME the behavior of auth0 seems to be different for different browsers.
+  // In chrome, user can be loaded, but in firefox, the user is undefined first
+  // with isLoading=false. loginWithRedirect must be called to really log in.
+  if (!user) {
     return <NoLogginErrorAlert />;
   }
   return (
@@ -308,7 +321,7 @@ export default function Page() {
           position: "relative",
         }}
       >
-        👋 Welcome, {me?.firstname}! Please open or create a repository to get
+        👋 Welcome, {user.given_name}! Please open or create a repository to get
         started.
       </Box>
       <Repos />

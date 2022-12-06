@@ -1,4 +1,3 @@
-import { login, me, signup, updateUser, users } from "./resolver_user";
 import {
   addPod,
   createRepo,
@@ -9,7 +8,6 @@ import {
   addCollaborator,
   pod,
   repo,
-  repos,
   updatePod,
 } from "./resolver_repo";
 import { listAllRuntimes } from "./resolver_runtime";
@@ -29,9 +27,6 @@ export const resolvers = {
     hello: () => {
       return "Hello world!";
     },
-    users,
-    me,
-    repos,
     myRepos,
     repo,
     pod,
@@ -39,9 +34,6 @@ export const resolvers = {
     myCollabRepos,
   },
   Mutation: {
-    signup,
-    updateUser,
-    login,
     createRepo,
     deleteRepo,
     clearUser: () => {},

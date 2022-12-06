@@ -83,7 +83,7 @@ export default function CreateRepoForm(props: form = {}) {
               console.log(values);
               setError("");
               console.log("creating the repo ..");
-              const id = "repo_" + nanoid();
+              const id = nanoid();
               try {
                 const res = await createRepo({
                   variables: {

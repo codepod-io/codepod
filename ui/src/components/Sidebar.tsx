@@ -23,8 +23,8 @@ import { usePrompt } from "../lib/prompt";
 
 import { RepoContext, selectNumDirty } from "../lib/store";
 
-import useMe from "../lib/me";
 import { Grid } from "@mui/material";
+import { useAuth0 } from "@auth0/auth0-react";
 
 function Flex(props) {
   return (
@@ -35,13 +35,9 @@ function Flex(props) {
 }
 
 function SidebarSession() {
-  let { id } = useParams();
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  let sessionId = useStore(store, (state) => state.sessionId);
   const repoName = useStore(store, (state) => state.repoName);
-
-  console.log(`Repo ID: ${id} Session ID: ${sessionId}`);
 
   return (
     <Box>
@@ -61,16 +57,15 @@ function SidebarRuntime() {
   const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
   const wsConnect = useStore(store, (state) => state.wsConnect);
   const client = useApolloClient();
-  const wsDisconnect = useStore(store, (state) => state.wsDisconnect);
-  const { loading, me } = useMe();
+  const { user } = useAuth0();
   let { id: repoId } = useParams();
   useEffect(() => {
-    if (me) {
+    if (user) {
       console.log("Connecting to runtime at the beginning ..");
-      wsConnect(client, `${me.id}_${repoId}`);
+      wsConnect(client, `${repoId}`);
     }
-  }, []);
-  if (loading) return <Box>loading</Box>;
+  }, [client, repoId, user, wsConnect]);
+  if (!user) return <Box>loading</Box>;
   return (
     <Box>
       <Box>
@@ -84,7 +79,7 @@ function SidebarRuntime() {
             <Button
               size="small"
               onClick={() => {
-                wsConnect(client, `${me.id}_${repoId}`);
+                wsConnect(client, `${repoId}`);
               }}
             >
               Connect
@@ -194,60 +189,6 @@ function SyncStatus() {
           </Box>
         )}
       </Button>
-    </Box>
-  );
-}
-
-function ActiveSessions() {
-  const { loading, data, refetch } = useQuery(gql`
-    query GetActiveSessions {
-      activeSessions
-    }
-  `);
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
-  useEffect(() => {
-    console.log("----- refetching active sessions ..");
-    refetch();
-  }, [runtimeConnected, refetch]);
-  const [killSession] = useMutation(
-    gql`
-      mutation KillSession($sessionId: String!) {
-        killSession(sessionId: $sessionId)
-      }
-    `,
-    {
-      refetchQueries: ["GetActiveSessions"],
-    }
-  );
-  if (loading) {
-    return <Box>Loading</Box>;
-  }
-  return (
-    <Box>
-      {data.activeSessions && (
-        <Box>
-          <Box>Active Sessions:</Box>
-          {data.activeSessions.map((k) => (
-            <Flex key={k}>
-              <Box color="blue">{k}</Box>
-              <Button
-                size="small"
-                onClick={() => {
-                  killSession({
-                    variables: {
-                      sessionId: k,
-                    },
-                  });
-                }}
-              >
-                Kill
-              </Button>
-            </Flex>
-          ))}
-        </Box>
-      )}
     </Box>
   );
 }

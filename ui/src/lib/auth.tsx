@@ -6,147 +6,36 @@ import {
   HttpLink,
   gql,
 } from "@apollo/client";
+import { Auth0Provider, useAuth0 } from "@auth0/auth0-react";
 
 import { customAlphabet } from "nanoid";
 import { nolookalikes } from "nanoid-dictionary";
 
 const nanoid = customAlphabet(nolookalikes, 10);
 
-type AuthContextType = ReturnType<typeof useProvideAuth>;
-
-const authContext = createContext<AuthContextType | null>(null);
-
-export function AuthProvider({ children }) {
-  const auth = useProvideAuth();
-
-  return (
-    <authContext.Provider value={auth}>
-      <ApolloProvider client={auth.createApolloClient()}>
-        {children}
-      </ApolloProvider>
-    </authContext.Provider>
-  );
-}
-
-export const useAuth = () => {
-  return useContext(authContext)!;
-};
-
-function useProvideAuth() {
-  const [authToken, setAuthToken] = useState<String | null>(null);
-
+export function ApolloWrapper({ children }) {
+  const { isAuthenticated, getAccessTokenSilently } = useAuth0();
+  const [token, setToken] = useState("");
   useEffect(() => {
-    // load initial state from local storage
-    setAuthToken(localStorage.getItem("token") || null);
-  }, []);
-
-  const getAuthHeaders = () => {
-    if (!authToken) return null;
-
-    return {
-      authorization: `Bearer ${authToken}`,
-    };
-  };
-
-  function createApolloClient() {
-    const link = new HttpLink({
-      uri: "/graphql",
-      headers: getAuthHeaders(),
-    });
-
-    return new ApolloClient({
-      link,
-      cache: new InMemoryCache(),
-    });
-  }
-
-  const signOut = () => {
-    console.log("sign out");
-    setAuthToken(null);
-    // HEBI CAUTION this must be removed. Otherwise, when getItem back, it is not null, but "null"
-    // localStorage.setItem("token", null);
-    localStorage.removeItem("token");
-  };
-
-  const signIn = async ({ email, password }) => {
-    const client = createApolloClient();
-    const LoginMutation = gql`
-      mutation LoginMutation($email: String!, $password: String!) {
-        login(email: $email, password: $password) {
-          token
-        }
+    async function getToken() {
+      if (isAuthenticated) {
+        const _token = await getAccessTokenSilently();
+        setToken(_token);
       }
-    `;
-    const result = await client.mutate({
-      mutation: LoginMutation,
-      variables: { email, password },
-    });
-
-    console.log(result);
-
-    if (result?.data?.login?.token) {
-      const token = result.data.login.token;
-      setAuthToken(token);
-      localStorage.setItem("token", token);
     }
-  };
+    getToken();
+  }, [getAccessTokenSilently, isAuthenticated]);
 
-  const signUp = async ({ firstname, lastname, email, password }) => {
-    const client = createApolloClient();
-    const LoginMutation = gql`
-      mutation SignupMutation(
-        $firstname: String!
-        $lastname: String!
-        $email: String!
-        $password: String!
-        $id: ID
-      ) {
-        signup(
-          firstname: $firstname
-          lastname: $lastname
-          email: $email
-          password: $password
-          id: $id
-        ) {
-          token
-        }
-      }
-    `;
-    const result = await client.mutate({
-      mutation: LoginMutation,
-      variables: {
-        firstname,
-        lastname,
-        password,
-        email,
-        id: "user_" + nanoid(),
-      },
-    });
+  const link = new HttpLink({
+    uri: "/graphql",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
-    if (result.errors) {
-      throw Error(result.errors[0].message);
-    }
-
-    if (result?.data?.signup?.token) {
-      const token = result.data.signup.token;
-      setAuthToken(token);
-      localStorage.setItem("token", token);
-    }
-  };
-
-  const isSignedIn = () => {
-    if (authToken) {
-      return true;
-    } else {
-      return false;
-    }
-  };
-
-  return {
-    createApolloClient,
-    signIn,
-    signOut,
-    signUp,
-    isSignedIn,
-  };
+  const client = new ApolloClient({
+    link,
+    cache: new InMemoryCache(),
+  });
+  return <ApolloProvider client={client}>{children}</ApolloProvider>;
 }

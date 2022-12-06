@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 
+import { useAuth0 } from "@auth0/auth0-react";
+
 import Box from "@mui/material/Box";
 import MenuIcon from "@mui/icons-material/Menu";
 import Menu from "@mui/material/Menu";
@@ -20,32 +22,35 @@ import Tooltip from "@mui/material/Tooltip";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import AppBar from "@mui/material/AppBar";
 
-import { useAuth } from "../lib/auth";
+const LoginButton = () => {
+  const { loginWithRedirect } = useAuth0();
 
-import useMe from "../lib/me";
+  return <button onClick={() => loginWithRedirect()}>Log In</button>;
+};
+
+const LogoutButton = () => {
+  const { logout } = useAuth0();
+
+  return (
+    <button onClick={() => logout({ returnTo: window.location.origin })}>
+      Log Out
+    </button>
+  );
+};
 
 export function Header() {
   const [anchorElNav, setAnchorElNav] = useState(null);
-  const [anchorElUser, setAnchorElUser] = useState(null);
 
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
-  };
-  const handleOpenUserMenu = (event) => {
-    setAnchorElUser(event.currentTarget);
   };
 
   const handleCloseNavMenu = () => {
     setAnchorElNav(null);
   };
 
-  const handleCloseUserMenu = () => {
-    setAnchorElUser(null);
-  };
-
-  const { isSignedIn, signOut } = useAuth();
-  let navigate = useNavigate();
-  const { me } = useMe();
+  const { user, isLoading } = useAuth0();
+  const { isAuthenticated } = useAuth0();
 
   return (
     <AppBar position="fixed" color="inherit">
@@ -157,7 +162,7 @@ export function Header() {
             </Link>
           </Box>
 
-          {isSignedIn() ? (
+          {isAuthenticated && user ? (
             <Box
               sx={{
                 display: "flex",
@@ -167,36 +172,25 @@ export function Header() {
             >
               <Box sx={{ mr: 2 }}>
                 <Link component={ReactLink} to="/profile" underline="none">
-                  {me?.firstname}
+                  <Avatar
+                    alt={user.given_name}
+                    src={user.picture}
+                    imgProps={{
+                      referrerPolicy: "no-referrer",
+                    }}
+                  />
                 </Link>
               </Box>
-              <Button
-                onClick={() => {
-                  signOut();
-                  navigate("/login");
-                }}
-              >
-                Logout
-              </Button>
+              <LogoutButton />
             </Box>
           ) : (
-            <MyMenuItem to="/login">Login</MyMenuItem>
+            <LoginButton />
           )}
         </Toolbar>
       </Container>
     </AppBar>
   );
 }
-
-const MyMenuItem = ({ children, to = "/" }) => {
-  return (
-    <Box display="block">
-      <Link to={to} component={ReactLink} underline="none">
-        {children}
-      </Link>
-    </Box>
-  );
-};
 
 export function Footer() {
   return (

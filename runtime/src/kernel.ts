@@ -224,13 +224,11 @@ export function listenOnMessage(socket, useMQ = false) {
   socket.on("message", async (msg) => {
     let { type, payload } = JSON.parse(msg.toString());
     if (type === "ping") return;
-    let { sessionId, lang } = payload;
     let kernel = new CodePodKernel();
     switch (type) {
       case "runCode":
         {
-          let { sessionId, lang, raw, code, podId, namespace, midports } =
-            payload;
+          let { raw, code, podId, namespace, midports } = payload;
           if (!code) {
             console.log("Code is empty");
             return;
@@ -244,7 +242,6 @@ export function listenOnMessage(socket, useMQ = false) {
         }
         break;
       case "requestKernelStatus":
-        console.log("requestKernelStatus", sessionId, lang);
         requestKernelStatus();
         break;
       case "interruptKernel":

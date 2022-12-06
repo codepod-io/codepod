@@ -1,3 +1,5 @@
+import { useAuth0 } from "@auth0/auth0-react";
+
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
 import Typography from "@mui/material/Typography";
@@ -5,41 +7,25 @@ import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
 import { Container, Stack } from "@mui/material";
 
-import useMe from "../lib/me";
+const Profile = () => {
+  const { user, isAuthenticated, isLoading } = useAuth0();
 
-export default function Profile() {
-  const { loading, me } = useMe();
-
-  if (!me) {
-    // router.push("/login");
-    // return null;
-    return (
-      <Box>
-        <Box>Profile Page</Box>
-        <Box>Please Log In</Box>
-      </Box>
-    );
+  if (isLoading) {
+    return <div>Loading ...</div>;
   }
 
+  if (!isAuthenticated) return <div>Not isAuthenticated</div>;
+  if (!user) return <div>Cannot retrieve user information.</div>;
+
   return (
-    <Container maxWidth="lg" sx={{ mt: 2 }}>
-      {loading ? (
-        "Loading"
-      ) : (
-        <Box>
-          <Paper elevation={3} sx={{ p: 2 }}>
-            <Stack>
-              <Typography variant="h4">User profile</Typography>
-              <Box>
-                Name {me.firstname} {me.lastname}
-              </Box>
-              <Box> Email: {me.email}</Box>
-              <Box>CodePod version 0.4.6</Box>
-            </Stack>
-          </Paper>
-          <Divider />
-        </Box>
-      )}
-    </Container>
+    isAuthenticated && (
+      <div>
+        <img src={user.picture} alt={user.name} referrerPolicy="no-referrer" />
+        <h2>{user.name}</h2>
+        <p>{user.email}</p>
+      </div>
+    )
   );
-}
+};
+
+export default Profile;

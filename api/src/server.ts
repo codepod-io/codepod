@@ -6,6 +6,14 @@ import http from "http";
 import { ApolloServer, gql } from "apollo-server-express";
 import jwt from "jsonwebtoken";
 
+import jwks from "jwks-rsa";
+
+import Prisma from "@prisma/client";
+
+const { PrismaClient } = Prisma;
+
+const prisma = new PrismaClient();
+
 import {
   ApolloServerPluginLandingPageProductionDefault,
   ApolloServerPluginLandingPageLocalDefault,
@@ -15,26 +23,77 @@ import { typeDefs } from "./typedefs";
 import { resolvers } from "./resolver";
 
 interface TokenInterface {
-  id: string;
+  sub: string;
+}
+
+const client = jwks({
+  jwksUri: `https://${process.env.AUTH0_DOMAIN}/.well-known/jwks.json`,
+});
+
+function getKey(header, callback) {
+  client.getSigningKey(header.kid, function (error, key) {
+    const signingKey = key?.getPublicKey();
+    callback(null, signingKey);
+  });
+}
+
+async function isTokenValid(token) {
+  if (token) {
+    const bearerToken = token.split(" ");
+
+    const result = new Promise((resolve, reject) => {
+      jwt.verify(
+        bearerToken[1],
+        getKey,
+        {
+          audience: process.env.API_IDENTIFIER,
+          issuer: `https://${process.env.AUTH0_DOMAIN}/`,
+          algorithms: ["RS256"],
+        },
+        (error, decoded) => {
+          if (error) {
+            resolve({ error });
+          }
+          if (decoded) {
+            resolve({ decoded });
+          }
+        }
+      );
+    });
+
+    return result;
+  }
+
+  return { error: "No token provided" };
 }
 
 async function startServer() {
   const apollo = new ApolloServer({
     typeDefs,
     resolvers,
-    context: ({ req }) => {
-      const token = req?.headers?.authorization?.slice(7);
-      let userId;
+    context: async ({ req }) => {
+      const token = req?.headers?.authorization;
+      if (!token) return {};
+      const { error, decoded } = (await isTokenValid(token)) as {
+        error: string;
+        decoded: jwt.JwtPayload;
+      };
 
-      if (token) {
-        const decoded = jwt.verify(
-          token,
-          process.env.JWT_SECRET as string
-        ) as TokenInterface;
-        userId = decoded.id;
+      if (error) {
+        console.log("Error", error);
+        return {};
+      }
+      let email = decoded["email"];
+      let user = await prisma.user.findFirst({ where: { email } });
+      if (!user) {
+        user = await prisma.user.create({
+          data: {
+            email,
+          },
+        });
       }
       return {
-        userId,
+        email,
       };
     },
     plugins: [ApolloServerPluginLandingPageLocalDefault({ embed: true })],

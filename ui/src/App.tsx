@@ -13,17 +13,17 @@ import Home from "./pages/index";
 import Repos from "./pages/repos";
 import Repo from "./pages/repo";
 import Test from "./pages/test";
-import Login from "./pages/login";
-import Signup from "./pages/signup";
 import Profile from "./pages/profile";
 
-import { AuthProvider } from "./lib/auth";
+import { Auth0Provider } from "@auth0/auth0-react";
 import { Header, Footer } from "./components/Header";
 
 import Box from "@mui/material/Box";
 import { SnackbarProvider } from "notistack";
 
 import Docs from "./pages/docs";
+import { ApolloWrapper } from "./lib/auth";
+import { Container } from "@mui/material";
 
 const theme = createTheme({
   typography: {
@@ -37,7 +37,9 @@ function NormalLayout({ children }: any) {
   return (
     <Box>
       <Header />
-      <Box pt="50px">{children}</Box>
+      <Box pt="50px">
+        <Container>{children}</Container>
+      </Box>
       {/* <Footer /> */}
     </Box>
   );
@@ -49,14 +51,6 @@ const router = createBrowserRouter([
     element: (
       <NormalLayout>
         <Docs />
-      </NormalLayout>
-    ),
-  },
-  {
-    path: "repos",
-    element: (
-      <NormalLayout>
-        <Repos />
       </NormalLayout>
     ),
   },
@@ -78,22 +72,6 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "login",
-    element: (
-      <NormalLayout>
-        <Login />
-      </NormalLayout>
-    ),
-  },
-  {
-    path: "signup",
-    element: (
-      <NormalLayout>
-        <Signup />
-      </NormalLayout>
-    ),
-  },
-  {
     path: "profile",
     element: (
       <NormalLayout>
@@ -105,7 +83,6 @@ const router = createBrowserRouter([
     path: "/",
     element: (
       <NormalLayout>
-        {/* <Home /> */}
         <Repos />
       </NormalLayout>
     ),
@@ -115,11 +92,18 @@ const router = createBrowserRouter([
 export default function App() {
   return (
     <ThemeProvider theme={theme}>
-      <AuthProvider>
-        <SnackbarProvider maxSnack={5}>
-          <RouterProvider router={router} />
-        </SnackbarProvider>
-      </AuthProvider>
+      <Auth0Provider
+        domain="<MY_DOMAIN>"
+        clientId="<MY_CLIENT_ID>"
+        redirectUri={window.location.origin}
+        audience="<MY_AUDIENCE>"
+      >
+        <ApolloWrapper>
+          <SnackbarProvider maxSnack={5}>
+            <RouterProvider router={router} />
+          </SnackbarProvider>
+        </ApolloWrapper>
+      </Auth0Provider>
     </ThemeProvider>
   );
 }

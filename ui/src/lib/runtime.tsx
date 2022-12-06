@@ -50,7 +50,6 @@ function doRun({ id, socket, set, get }) {
         namespace: pod.ns,
         raw: true,
         podId: pod.id,
-        sessionId: get().sessionId,
       },
     })
   );
@@ -160,7 +159,6 @@ const onOpen = (set, get) => {
     Object.keys(get().kernels).forEach((k) => {
       get().wsRequestStatus({
         lang: k,
-        sessionId: get().sessionId,
       });
     });
   };
@@ -235,8 +233,6 @@ export const createRuntimeSlice: StateCreator<
 > = (set, get) => ({
   wsConnect: async (client, sessionId) => {
     // 0. ensure the runtime is created
-    // let sessionId = get().sessionId;
-    console.log("sessionId", sessionId);
     let runtimeCreated = await spawnRuntime({ client, sessionId });
     if (!runtimeCreated) {
       throw Error("ERROR: runtime not ready");
@@ -314,7 +310,6 @@ export const createRuntimeSlice: StateCreator<
         JSON.stringify({
           type: "requestKernelStatus",
           payload: {
-            sessionId: get().sessionId,
             lang,
           },
         })
@@ -355,7 +350,6 @@ export const createRuntimeSlice: StateCreator<
       JSON.stringify({
         type: "interruptKernel",
         payload: {
-          sessionId: get().sessionId,
           lang,
         },
       })

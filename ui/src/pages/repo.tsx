@@ -12,10 +12,10 @@ import { useStore } from "zustand";
 
 import { createRepoStore, RepoContext } from "../lib/store";
 
-import useMe from "../lib/me";
 import { Canvas } from "../components/Canvas";
 import { Sidebar } from "../components/Sidebar";
 import { useApolloClient } from "@apollo/client";
+import { useAuth0 } from "@auth0/auth0-react";
 
 function RepoWrapper({ children }) {
   // this component is used to provide foldable sidebar
@@ -127,19 +127,16 @@ function RepoImpl() {
   const client = useApolloClient();
   const loadRepo = useStore(store, (state) => state.loadRepo);
   const loadError = useStore(store, (state) => state.loadError);
-  const setSessionId = useStore(store, (state) => state.setSessionId);
   const repoLoaded = useStore(store, (state) => state.repoLoaded);
   const setUser = useStore(store, (state) => state.setUser);
   const provider = useStore(store, (state) => state.provider);
   const addClient = useStore(store, (state) => state.addClient);
   const deleteClient = useStore(store, (state) => state.deleteClient);
-
-  const { loading, me } = useMe();
+  const { user, isLoading, isAuthenticated, loginWithRedirect } = useAuth0();
   useEffect(() => {
-    if (me) {
-      setSessionId(`${me.id}_${id}`);
-    }
-  }, [me, id, setSessionId]);
+    if (!isLoading && !isAuthenticated)
+      loginWithRedirect({ appState: { targetUrl: window.location.pathname } });
+  }, [isAuthenticated, isLoading, loginWithRedirect]);
 
   useEffect(() => {
     if (provider) {
@@ -159,23 +156,23 @@ function RepoImpl() {
         });
       });
     }
-  }, [provider]);
+  }, [addClient, deleteClient, provider]);
 
   useEffect(() => {
     resetState();
     setRepo(id!);
     // load the repo. It is actually not a queue, just an async thunk
     loadRepo(client, id!);
-    if (!loading && me) {
-      setUser(me);
+    if (user) {
+      setUser(user);
     }
-  }, [client, id, loadRepo, resetState, setRepo, me, loading, setUser]);
+  }, [client, id, loadRepo, resetState, setRepo, setUser, user]);
 
   // FIXME Removing queueL. This will cause Repo to be re-rendered a lot of
   // times, particularly the delete pod action would cause syncstatus and repo
   // to be re-rendered in conflict, which is weird.
-
-  if (loading) return <Box>Loading</Box>;
+  if (isLoading) return <Box>Loading user</Box>;
+  if (!user) return <Box>Loading</Box>;
 
   // TOFIX: consider more types of error and display detailed error message in the future
   // TOFIX: if the repo is not found, sidebar should not be rendered and runtime should not be lanuched.
