@@ -68,6 +68,29 @@ function useProvideAuth() {
     localStorage.removeItem("token");
   };
 
+  const handleGoogle = async (response) => {
+    console.log("Google Encoded JWT ID token: " + response.credential);
+    const client = createApolloClient();
+    const LoginMutation = gql`
+      mutation LoginWithGoogleMutation($idToken: String!) {
+        loginWithGoogle(idToken: $idToken) {
+          token
+        }
+      }
+    `;
+    const result = await client.mutate({
+      mutation: LoginMutation,
+      variables: { idToken: response.credential },
+    });
+    console.log("LoginMutation result:", result);
+
+    if (result?.data?.loginWithGoogle?.token) {
+      const token = result.data.loginWithGoogle.token;
+      setAuthToken(token);
+      localStorage.setItem("token", token);
+    }
+  };
+
   const signIn = async ({ email, password }) => {
     const client = createApolloClient();
     const LoginMutation = gql`
@@ -146,6 +169,7 @@ function useProvideAuth() {
     createApolloClient,
     signIn,
     signOut,
+    handleGoogle,
     signUp,
     isSignedIn,
   };

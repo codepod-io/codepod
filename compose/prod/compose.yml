@@ -22,6 +22,7 @@ services:
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
       JWT_SECRET: ${JWT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       KERNEL_NETWORK: "codepod"
       PROXY_API_URL: "http://proxy:4011/graphql"
       ZMQ_KERNEL_IMAGE: "lihebi/codepod-kernel-python:latest"
@@ -29,6 +30,8 @@ services:
 
   ui:
     build: ../../ui
+    environment:
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     restart: always
 
   proxy:
@@ -40,7 +43,7 @@ services:
     ports:
       - 80:80
     volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/nginx.conf
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
 
 volumes:
   db-data:

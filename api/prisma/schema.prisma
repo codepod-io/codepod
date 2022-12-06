@@ -40,7 +40,8 @@ model User {
     username       String?  @unique
     firstname      String
     lastname       String
-    hashedPassword String
+    // A user might not have a password, if they login via OAuth.
+    hashedPassword String?
     posts          Post[]
     profile        Profile?
     Repo           Repo[]
