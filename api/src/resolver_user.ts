@@ -1,6 +1,13 @@
 import Prisma from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { OAuth2Client } from "google-auth-library";
+
+// nanoid v4 does not work with nodejs. https://github.com/ai/nanoid/issues/365
+import { customAlphabet } from "nanoid/async";
+import { nolookalikes } from "nanoid-dictionary";
+
+const nanoid = customAlphabet(nolookalikes, 10);
 
 const { PrismaClient } = Prisma;
 
@@ -79,7 +86,8 @@ export async function login(_, { email, password }) {
     },
   });
   if (!user) throw Error(`User does not exist`);
-  const match = await bcrypt.compare(password, user.hashedPassword);
+  if (!user.hashedPassword) throw Error(`User does not have a password`);
+  const match = await bcrypt.compare(password, user.hashedPassword!);
   if (!match) {
     throw Error(`Email and password do not match.`);
   } else {
@@ -91,4 +99,44 @@ export async function login(_, { email, password }) {
       }),
     };
   }
+}
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+export async function loginWithGoogle(_, { idToken }) {
+  const ticket = await client.verifyIdToken({
+    idToken: idToken,
+    audience: process.env.GOOGLE_CLIENT_ID, // Specify the CLIENT_ID of the app that accesses the backend
+    // Or, if multiple clients access the backend:
+    //[CLIENT_ID_1, CLIENT_ID_2, CLIENT_ID_3]
+  });
+  const payload = ticket.getPayload();
+  if (!payload) throw Error(`Invalid token`);
+  // check if registered
+  let user = await prisma.user.findFirst({
+    where: {
+      email: payload["email"]!,
+    },
+  });
+  if (!user) {
+    // create a new user
+    user = await prisma.user.create({
+      data: {
+        id: await nanoid(),
+        // id: "dfs",
+        email: payload["email"]!,
+        firstname: payload["given_name"]!,
+        lastname: payload["family_name"]!,
+      },
+    });
+  }
+  if (!user) throw Error("User create failed.");
+  // return a token
+  return {
+    id: user.id,
+    email: user.email,
+    token: jwt.sign({ id: user.id }, process.env.JWT_SECRET as string, {
+      expiresIn: "30d",
+    }),
+  };
 }

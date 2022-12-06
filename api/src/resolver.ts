@@ -1,4 +1,11 @@
-import { login, me, signup, updateUser, users } from "./resolver_user";
+import {
+  login,
+  loginWithGoogle,
+  me,
+  signup,
+  updateUser,
+  users,
+} from "./resolver_user";
 import {
   addPod,
   createRepo,
@@ -42,6 +49,7 @@ export const resolvers = {
     signup,
     updateUser,
     login,
+    loginWithGoogle,
     createRepo,
     deleteRepo,
     clearUser: () => {},

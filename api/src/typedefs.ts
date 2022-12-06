@@ -98,6 +98,7 @@ export const typeDefs = gql`
       firstname: String
       lastname: String
     ): AuthData
+    loginWithGoogle(idToken: String): AuthData
     updateUser(email: String, firstname: String, lastname: String): Boolean
     createRepo(name: String, id: ID, isPublic: Boolean): Repo
     deleteRepo(name: String): Boolean

@@ -41,9 +41,11 @@ function Copyright(props: any) {
 
 const theme = createTheme();
 
+declare var google: any;
+
 export default function SignIn() {
   /* eslint-disable no-unused-vars */
-  const { signIn, isSignedIn } = useAuth();
+  const { signIn, isSignedIn, handleGoogle } = useAuth();
   const [error, setError] = useState(null);
 
   let navigate = useNavigate();
@@ -71,6 +73,23 @@ export default function SignIn() {
     },
   });
 
+  useEffect(() => {
+    console.log("nodeenv", process.env.NODE_ENV);
+    let client_id =
+      process.env.NODE_ENV === "development"
+        ? process.env.REACT_APP_GOOGLE_CLIENT_ID
+        : window.GOOGLE_CLIENT_ID || null;
+    console.log("google client_id", client_id);
+    google.accounts.id.initialize({
+      client_id,
+      callback: handleGoogle,
+    });
+    google.accounts.id.renderButton(
+      document.getElementById("googleLoginDiv"),
+      { theme: "outline", size: "large" } // customization attributes
+    );
+  }, [handleGoogle]);
+
   return (
     <ThemeProvider theme={theme}>
       <Container component="main" maxWidth="xs">
@@ -83,6 +102,7 @@ export default function SignIn() {
             alignItems: "center",
           }}
         >
+          <Box id="googleLoginDiv"></Box>
           <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
             <LockOutlinedIcon />
           </Avatar>
