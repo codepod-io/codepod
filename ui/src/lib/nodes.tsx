@@ -14,7 +14,7 @@ export function useNodesStateSynced(nodeList) {
   const getPod = useStore(store, (state) => state.getPod);
   const deletePod = useStore(store, (state) => state.deletePod);
   const updatePod = useStore(store, (state) => state.updatePod);
-  const setSelected = useStore(store, (state) => state.setSelected);
+  const setPodSelected = useStore(store, (state) => state.setPodSelected);
   const role = useStore(store, (state) => state.role);
   const ydoc = useStore(store, (state) => state.ydoc);
   const nodesMap = ydoc.getMap<Node>("pods");
@@ -35,17 +35,17 @@ export function useNodesStateSynced(nodeList) {
     }
 
     changes.forEach((change) => {
-      if (!isNodeAddChange(change) && !isNodeResetChange(change)) {
+      if (!isNodeAddChange(change)) {
         if (isNodeRemoveChange(change)) {
           nodesMap.delete(change.id);
           return;
         }
         const node = nextNodes.find((n) => n.id === change.id);
+
         if (!node) return;
 
-        if (change.type === "select" && change.selected) {
-          // FIXME: consider the case where only unselect is called
-          setSelected(node.id);
+        if (isNodeResetChange(change) || change.type === "select") {
+          setPodSelected(node.id, change.selected as boolean);
           return;
         }
 
@@ -98,10 +98,11 @@ export function useNodesStateSynced(nodeList) {
 
       // TOFIX: a node may be shadowed behind its parent, due to the order to render reactflow node, to fix this, comment out the following sorted method, which brings in a large overhead.
       setNodes(
-        Array.from(nodesMap.values()).sort(
-          (a: Node & { level }, b: Node & { level }) => a.level - b.level
-        )
+        Array.from(nodesMap.values())
+          .sort((a: Node & { level }, b: Node & { level }) => a.level - b.level)
+          .map((node) => ({ ...node, selected: getPod(node.id)?.selected }))
       );
+
       // setNodes(Array.from(nodesMap.values()));
     };
 
