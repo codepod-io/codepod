@@ -77,7 +77,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
   const [frame] = React.useState({
     translate: [0, 0],
   });
-  const selected = useStore(store, (state) => state.selected);
+  const selected = useStore(store, (state) => state.pods[id]?.selected);
   const role = useStore(store, (state) => state.role);
 
   const onResize = useCallback(({ width, height, offx, offy }) => {
@@ -154,7 +154,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
         id="right"
         isConnectable={isConnectable}
       />
-      {selected === id && role !== RoleType.GUEST && (
+      {selected && role !== RoleType.GUEST && (
         <Moveable
           target={target}
           resizable={true}
@@ -339,7 +339,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const isRightLayout = layout === "right";
   const { setNodes } = useReactFlow();
   // const selected = useStore(store, (state) => state.selected);
-  const setSelected = useStore(store, (state) => state.setSelected);
+  const setPodSelected = useStore(store, (state) => state.setPodSelected);
   const setCurrentEditor = useStore(store, (state) => state.setCurrentEditor);
   const getPod = useStore(store, (state) => state.getPod);
   const pod = getPod(id);
@@ -494,7 +494,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
         onClick={(e) => {
           // If the node is selected (for resize), the cursor is not shown. So
           // we need to deselect it when we re-focus on the editor.
-          setSelected(null);
+          setPodSelected(id, false);
           setNodes((nds) =>
             applyNodeChanges(
               [
@@ -717,6 +717,8 @@ export function Canvas() {
         },
         level: 0,
         extent: "parent",
+        //otherwise, throws a lot of warnings, see https://reactflow.dev/docs/guides/troubleshooting/#only-child-nodes-can-use-a-parent-extent
+        parentNode: undefined,
         dragHandle: ".custom-drag-handle",
       };
 
@@ -782,18 +784,6 @@ export function Canvas() {
           },
         });
       }
-      setNodes((nds) =>
-        applyNodeChanges(
-          [
-            {
-              id: node.id,
-              type: "select",
-              selected: true,
-            },
-          ],
-          nds
-        )
-      );
     },
     [nodesMap, setNodes, userColor]
   );
@@ -888,19 +878,6 @@ export function Canvas() {
 
         nodesMap.set(node.id, currentNode);
       }
-
-      setNodes((nds) =>
-        applyNodeChanges(
-          [
-            {
-              id: node.id,
-              type: "select",
-              selected: true,
-            },
-          ],
-          nds
-        )
-      );
     },
     // We need to monitor nodes, so that getScopeAt can have all the nodes.
     [
@@ -970,6 +947,7 @@ export function Canvas() {
           nodesDraggable={role !== RoleType.GUEST}
           // disable node delete on backspace when the user is a guest.
           deleteKeyCode={role === RoleType.GUEST ? null : "Backspace"}
+          multiSelectionKeyCode={"Control"}
         >
           <Box>
             <MiniMap

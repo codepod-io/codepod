@@ -78,7 +78,6 @@ const initialState = {
   socket: null,
   socketIntervalId: null,
   // keep different seletced info on each user themselves
-  selected: null,
   // to fixed maco editor command bug
   currentEditor: null,
   //TODO: all presence information are now saved in clients map for future usage. create a modern UI to show those information from clients (e.g., online users)
@@ -123,6 +122,7 @@ export type Pod = {
   ns?: string;
   running?: boolean;
   focus?: boolean;
+  selected?: boolean;
 };
 
 export interface RepoSlice {
@@ -180,8 +180,6 @@ export interface RepoSlice {
   }) => void;
   setPodPosition: ({ id, x, y }: any) => void;
   setPodParent: ({ id, parent }: any) => void;
-  selected: string | null;
-  setSelected: (id: string | null) => void;
   currentEditor: string | null;
   setCurrentEditor: (id: string | null) => void;
   setUser: (user: any) => void;
@@ -189,12 +187,13 @@ export interface RepoSlice {
   deleteClient: (clientId: any) => void;
   flipShowLineNumbers: () => void;
   disconnect: () => void;
-  getPod: (string) => Pod;
+  getPod: (id: string) => Pod;
   getPods: () => Record<string, Pod>;
   getId2children: (string) => string[];
-  setPodVisibility: (id, visible) => void;
-  setPodFocus: (id) => void;
-  setPodBlur: (id) => void;
+  setPodVisibility: (id: any, visible: any) => void;
+  setPodFocus: (id: string) => void;
+  setPodBlur: (id: string) => void;
+  setPodSelected: (id: string, target: boolean) => void;
 }
 
 type BearState = RepoSlice & RuntimeSlice;
@@ -244,7 +243,6 @@ const createRepoSlice: StateCreator<
   setSessionId: (id) => set({ sessionId: id }),
   addError: (error) => set({ error }),
   clearError: () => set({ error: null }),
-  setSelected: (id) => set({ selected: id }),
   setCurrentEditor: (id) => set({ currentEditor: id }),
   addPod: async (
     client,
@@ -286,6 +284,8 @@ const createRepoSlice: StateCreator<
       // the backend instead.
       children: [],
       io: {},
+      selected: false,
+      focus: false,
       // from payload
       parent,
       index,
@@ -835,6 +835,16 @@ const createRepoSlice: StateCreator<
         }
       })
     ),
+  setPodSelected: (id: string, target: boolean) => {
+    set(
+      produce((state) => {
+        if (state.pods[id]) {
+          state.pods[id].selected = target;
+        }
+      })
+    );
+  },
+  getPodSelected: (id: string) => get().pods[id]?.selected as boolean,
 });
 
 export const createRepoStore = () =>
