@@ -31,9 +31,9 @@ enum RepoTypes {
   repo = "myRepos",
   collab = "myCollabRepos",
 }
-enum RepoHint {
+enum RepoHintTemplate {
   myRepos = "Please create a new repo",
-  myCollabRepos = "Shared repos is empty",
+  myCollabRepos = "No shared repo yet. Invite your friend! ",
 }
 enum RepoTitleHint {
   myRepos = "Your repos",
@@ -188,6 +188,26 @@ function RepoLine({ repo, deletable, sharable }) {
   );
 }
 
+function RepoHintText({type=RepoTypes.repo}){
+  return (
+    <Box
+    sx={{
+      padding: "20px",
+      color: "#6B87A2",
+      fontSize: "18px",
+      fontWeight: 600,
+      display: "flex",
+      // width: "100%",
+      justifyContent: "center",
+      alignContent: 'center'
+    }}
+  >
+    {RepoHintTemplate[type]}
+  </Box>
+  );
+}
+
+
 function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
   const { loading, error, data } = useQuery(url);
   if (loading) {
@@ -215,7 +235,7 @@ function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
         >
           {RepoTitleHint[type]} ({repos.length})
         </Box>
-        {type === RepoTypes.repo && <CreateRepoForm />}
+        {type === RepoTypes.repo && <CreateRepoForm variant="contained" />}
       </Box>
 
       <TableContainer component={Paper}>
@@ -240,20 +260,7 @@ function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
           </TableBody>
         </Table>
         {repos.length === 0 ? ( // If no repos
-          <Box
-            sx={{
-              padding: "20px",
-              color: "#6B87A2",
-              fontSize: "18px",
-              fontWeight: 600,
-              display: "flex",
-              // width: "100%",
-              justifyContent: "center",
-              alignContent: 'center'
-            }}
-          >
-            {RepoHint[type]}
-          </Box>
+          <RepoHintText type={type} />
         ) : null}
       </TableContainer>
     </Box>

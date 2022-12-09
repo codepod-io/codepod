@@ -21,7 +21,7 @@ interface form {
   button?: any;
 }
 
-export default function CreateRepoForm(props: form = {}) {
+export default function CreateRepoForm(props) {
   const [isPrivate, setIsPrivate] = useState(true);
   const [error, setError] = useState("");
   const [createRepo] = useMutation(
@@ -52,11 +52,10 @@ export default function CreateRepoForm(props: form = {}) {
   return (
     <div>
       <Button
-        variant="contained"
-        sx={props.button ? props.button : {}}
+        variant={props.variant}
         onClick={handleClickOpen}
       >
-        Create new repo
+        Create a repo
       </Button>
       <Dialog open={open} onClose={handleClose} fullWidth={true} maxWidth="sm">
         <DialogTitle
@@ -65,7 +64,7 @@ export default function CreateRepoForm(props: form = {}) {
             fontWeight: 500,
           }}
         >
-          New {isPrivate ? " Private " : " Public "} Repo
+          Create a {isPrivate ? " Private " : " Public "} Repo
         </DialogTitle>
         <DialogContent>
           <Formik
