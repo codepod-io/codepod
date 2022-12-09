@@ -219,7 +219,7 @@ function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
       </Box>
 
       <TableContainer component={Paper}>
-        <Table sx={{ minWidth: 650 }}>
+        <Table>
           <TableHead>
             <TableRow>
               <TableCell align="left">Name</TableCell>
@@ -239,7 +239,7 @@ function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
             ))}
           </TableBody>
         </Table>
-        {repos.length === 0 ? (
+        {repos.length === 0 ? ( // If no repos
           <Box
             sx={{
               padding: "20px",
@@ -247,8 +247,9 @@ function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
               fontSize: "18px",
               fontWeight: 600,
               display: "flex",
-              width: "100%",
+              // width: "100%",
               justifyContent: "center",
+              alignContent: 'center'
             }}
           >
             {RepoHint[type]}
