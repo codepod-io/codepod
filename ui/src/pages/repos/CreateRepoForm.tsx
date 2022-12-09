@@ -17,10 +17,6 @@ import { nolookalikes } from "nanoid-dictionary";
 import { customAlphabet } from "nanoid";
 const nanoid = customAlphabet(nolookalikes, 10);
 
-interface form {
-  button?: any;
-}
-
 export default function CreateRepoForm(props) {
   const [isPrivate, setIsPrivate] = useState(true);
   const [error, setError] = useState("");
@@ -51,10 +47,7 @@ export default function CreateRepoForm(props) {
   };
   return (
     <div>
-      <Button
-        variant={props.variant}
-        onClick={handleClickOpen}
-      >
+      <Button variant={props.variant} onClick={handleClickOpen}>
         Create a repo
       </Button>
       <Dialog open={open} onClose={handleClose} fullWidth={true} maxWidth="sm">

@@ -188,25 +188,24 @@ function RepoLine({ repo, deletable, sharable }) {
   );
 }
 
-function RepoHintText({type=RepoTypes.repo}){
+function RepoHintText({ type = RepoTypes.repo }) {
   return (
     <Box
-    sx={{
-      padding: "20px",
-      color: "#6B87A2",
-      fontSize: "18px",
-      fontWeight: 600,
-      display: "flex",
-      // width: "100%",
-      justifyContent: "center",
-      alignContent: 'center'
-    }}
-  >
-    {RepoHintTemplate[type]}
-  </Box>
+      sx={{
+        padding: "20px",
+        color: "#6B87A2",
+        fontSize: "18px",
+        fontWeight: 600,
+        display: "flex",
+        // width: "100%",
+        justifyContent: "center",
+        alignContent: "center",
+      }}
+    >
+      {RepoHintTemplate[type]}
+    </Box>
   );
 }
-
 
 function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
   const { loading, error, data } = useQuery(url);
