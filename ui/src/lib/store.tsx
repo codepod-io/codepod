@@ -166,9 +166,9 @@ export interface RepoSlice {
     { parent, index, anchor, shift, id, type, lang, x, y, width, height }: any
   ) => void;
   deletePod: (
-    client,
-    { id, toDelete }: { id: string; toDelete: any[] }
-  ) => void;
+    client: ApolloClient<object> | null,
+    { id, toDelete }: { id: string; toDelete: string[] }
+  ) => Promise<void>;
   setPodResult: ({
     id,
     content,
@@ -324,13 +324,15 @@ const createRepoSlice: StateCreator<
     }
   },
   deletePod: async (
-    client,
+    client: ApolloClient<object> | null,
     { id, toDelete }: { id: string; toDelete: string[] }
   ) => {
     const pods = get().pods;
+
     // get all ids to delete. Gathering them here is easier than on the server
 
-    // TOFIX: check pods[id] exists before deleting
+    if (!pods[id]) return
+
     const dfs = (id) => {
       const pod = pods[id];
       if (pod) {
