@@ -24,6 +24,7 @@ import ReactFlow, {
 import "reactflow/dist/style.css";
 
 import Box from "@mui/material/Box";
+import InputBase from "@mui/material/InputBase";
 import CircularProgress from "@mui/material/CircularProgress";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
@@ -71,6 +72,9 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
   const ref = useRef(null);
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const getPod = useStore(store, (state) => state.getPod);
+  const pod = getPod(id);
+  const setPodName = useStore(store, (state) => state.setPodName);
   const updatePod = useStore(store, (state) => state.updatePod);
   const [target, setTarget] = React.useState<any>();
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
@@ -130,7 +134,21 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
                 justifyContent: "center",
               }}
             >
-              Scope
+              <InputBase
+                defaultValue={pod.name || "Scope"}
+                onBlur={(e) => {
+                  const name = e.target.value;
+                  if (name === pod.name) return;
+                  setPodName({ id, name });
+                }}
+                inputProps={{
+                  style: {
+                    padding: "0px",
+                    textAlign: "center",
+                    textOverflow: "ellipsis",
+                  },
+                }}
+              ></InputBase>
             </Box>
           </Grid>
           <Grid item xs={4}></Grid>
@@ -339,6 +357,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const isRightLayout = layout === "right";
   const { setNodes } = useReactFlow();
   // const selected = useStore(store, (state) => state.selected);
+  const setPodName = useStore(store, (state) => state.setPodName);
   const setPodSelected = useStore(store, (state) => state.setPodSelected);
   const setCurrentEditor = useStore(store, (state) => state.setCurrentEditor);
   const getPod = useStore(store, (state) => state.getPod);
@@ -435,6 +454,28 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
       />
       {/* The header of code pods. */}
       <Box className="custom-drag-handle">
+        <Box
+          sx={{
+            position: "absolute",
+            top: "-24px",
+            width: "50%",
+          }}
+        >
+          <InputBase
+            defaultValue={pod.name}
+            onBlur={(e) => {
+              const name = e.target.value;
+              if (name === pod.name) return;
+              setPodName({ id, name });
+            }}
+            inputProps={{
+              style: {
+                padding: "0px",
+                textOverflow: "ellipsis",
+              },
+            }}
+          ></InputBase>
+        </Box>
         <Box sx={styles["pod-index"]}>[{pod.index}]</Box>
         <Box
           sx={{
@@ -581,7 +622,7 @@ export function Canvas() {
   const provider = useStore(store, (state) => state.provider);
 
   const getRealNodes = useCallback(
-    (id, level) => {
+    (id: string, level: number) => {
       let res: any[] = [];
       let children = getId2children(id) || [];
       const pod = getPod(id);
@@ -683,7 +724,7 @@ export function Canvas() {
   const userColor = useStore(store, (state) => state.user?.color);
 
   const addNode = useCallback(
-    (x, y, type) => {
+    (x: number, y: number, type: string) => {
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       let style;
 
