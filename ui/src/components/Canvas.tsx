@@ -72,6 +72,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
   const ref = useRef(null);
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const flow = useReactFlow();
   const getPod = useStore(store, (state) => state.getPod);
   const pod = getPod(id);
   const setPodName = useStore(store, (state) => state.setPodName);
@@ -83,6 +84,19 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
   });
   const selected = useStore(store, (state) => state.pods[id]?.selected);
   const role = useStore(store, (state) => state.role);
+
+  const deleteNodeById = useCallback(
+    (id: string) => {
+      flow.deleteElements({
+        nodes: [
+          {
+            id,
+          },
+        ],
+      });
+    },
+    [flow]
+  );
 
   const onResize = useCallback(({ width, height, offx, offy }) => {
     const node = nodesMap.get(id);
@@ -97,6 +111,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
   React.useEffect(() => {
     setTarget(ref.current);
   }, []);
+
   return (
     <Box
       ref={ref}
@@ -108,6 +123,35 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
       }}
       className="custom-drag-handle"
     >
+      <Box
+        sx={{
+          display: "flex",
+          marginLeft: "10px",
+          borderRadius: "4px",
+          position: "absolute",
+          border: "solid 1px #d6dee6",
+          right: "25px",
+          top: "-15px",
+          background: "white",
+          zIndex: 250,
+          justifyContent: "center",
+        }}
+      >
+        {role !== RoleType.GUEST && (
+          <Tooltip title="Delete">
+            <IconButton
+              size="small"
+              onClick={(e: any) => {
+                e.stopPropagation();
+                e.preventDefault();
+                deleteNodeById(id);
+              }}
+            >
+              <DeleteIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        )}
+      </Box>
       <Handle
         type="source"
         position={Position.Top}
@@ -181,7 +225,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
           renderDirections={["e", "s", "se"]}
           edge={false}
           zoom={1}
-          origin={true}
+          origin={false}
           padding={{ left: 0, top: 0, right: 0, bottom: 0 }}
           onResizeStart={(e) => {
             e.setOrigin(["%", "%"]);
@@ -580,11 +624,11 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
 const nodeTypes = { scope: ScopeNode, code: CodeNode };
 
 const level2color = {
-  0: "rgba(255, 0, 0, 0.2)",
-  1: "rgba(255, 0, 255, 0.2)",
-  2: "rgba(0, 255, 255, 0.2)",
-  3: "rgba(0, 255, 0, 0.2)",
-  4: "rgba(255, 255, 0, 0.2)",
+  0: "rgba(187, 222, 251, 0.5)",
+  1: "rgba(144, 202, 249, 0.5)",
+  2: "rgba(100, 181, 246, 0.5)",
+  3: "rgba(66, 165, 245, 0.5)",
+  4: "rgba(33, 150, 243, 0.5)",
   // default: "rgba(255, 255, 255, 0.2)",
   default: "rgba(240,240,240,0.25)",
 };
@@ -993,16 +1037,16 @@ export function Canvas() {
           <Box>
             <MiniMap
               nodeStrokeColor={(n) => {
-                if (n.style?.background) return n.style.background as string;
-                if (n.type === "code") return "#0041d0";
-                if (n.type === "scope") return "#ff0072";
+                if (n.style?.borderColor) return n.style.borderColor;
+                if (n.type === "code") return "#d6dee6";
+                if (n.type === "scope") return "#f4f6f8";
 
-                return "#1a192b";
+                return "#d6dee6";
               }}
               nodeColor={(n) => {
                 if (n.style?.backgroundColor) return n.style.backgroundColor;
 
-                return "#1a192b";
+                return "#f4f6f8";
               }}
               nodeBorderRadius={2}
             />
