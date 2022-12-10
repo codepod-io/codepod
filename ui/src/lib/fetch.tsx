@@ -95,7 +95,6 @@ export function normalize(pods) {
       y: 0,
       width: 0,
       height: 0,
-      index: 0,
     },
   };
 
@@ -129,7 +128,7 @@ export function normalize(pods) {
     // pod.children = pod.children.map(({ id }) => id);
     //
     // sort according to index
-    pod.children.sort((a, b) => res[a.id].index - res[b.id].index);
+    // pod.children.sort((a, b) => res[a.id].index - res[b.id].index);
     // if (pod.type === "WYSIWYG" || pod.type === "CODE") {
     //   pod.content = JSON.parse(pod.content);
     // }
@@ -180,7 +179,6 @@ function serializePodInput(pod) {
     column,
     lang,
     parent,
-    // index,
     children,
     result,
     stdout,
@@ -223,7 +221,7 @@ function serializePodInput(pod) {
   }))(pod);
 }
 
-export async function doRemoteAddPod(client, { repoId, parent, index, pod }) {
+export async function doRemoteAddPod(client, { repoId, parent, pod }) {
   const mutation = gql`
     mutation addPod(
       $repoId: String
@@ -240,7 +238,6 @@ export async function doRemoteAddPod(client, { repoId, parent, index, pod }) {
     variables: {
       repoId,
       parent,
-      index,
       input: serializePodInput(pod),
     },
     // FIXME the query is not refetched.
