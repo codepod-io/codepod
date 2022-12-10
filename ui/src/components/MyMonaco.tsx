@@ -5,6 +5,8 @@ import { monaco } from "react-monaco-editor";
 import { useStore } from "zustand";
 import { RepoContext, RoleType } from "../lib/store";
 import { MonacoBinding } from "y-monaco";
+import { resetSelection } from "../lib/nodes";
+import { useReactFlow } from "reactflow";
 
 const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",
@@ -329,6 +331,8 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const wsRun = useStore(store, (state) => state.wsRun);
   const setPodFocus = useStore(store, (state) => state.setPodFocus);
   const setPodBlur = useStore(store, (state) => state.setPodBlur);
+  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+  const { setNodes } = useReactFlow();
 
   const value = getPod(id).content || "";
   let lang = getPod(id).lang || "javascript";
@@ -382,6 +386,9 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     });
     editor.onDidFocusEditorText(() => {
       setPodFocus(id);
+
+      // FIXME: this is ugly, but useReactFlow.setNodes doesn't work to reset the selection
+      if (resetSelection()) nodesMap.set(id, nodesMap.get(id) as Node);
       setCurrentEditor(id);
     });
     editor.onDidContentSizeChange(updateHeight);

@@ -63,11 +63,10 @@ interface Props {
   data: any;
   id: string;
   isConnectable: boolean;
-
-  // selected: boolean;
+  selected: boolean;
 }
 
-const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
+const ScopeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
   // add resize to the node
   const ref = useRef(null);
   const store = useContext(RepoContext);
@@ -80,7 +79,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
   const [frame] = React.useState({
     translate: [0, 0],
   });
-  const selected = useStore(store, (state) => state.pods[id]?.selected);
+  // const selected = useStore(store, (state) => state.pods[id]?.selected);
   const role = useStore(store, (state) => state.role);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -399,7 +398,7 @@ function ResultBlock({ pod, id }) {
   );
 }
 
-const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
+const CodeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   // const pod = useStore(store, (state) => state.pods[id]);
@@ -416,7 +415,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const { setNodes } = useReactFlow();
   // const selected = useStore(store, (state) => state.selected);
   const setPodName = useStore(store, (state) => state.setPodName);
-  const setPodSelected = useStore(store, (state) => state.setPodSelected);
   const setCurrentEditor = useStore(store, (state) => state.setCurrentEditor);
   const getPod = useStore(store, (state) => state.getPod);
   const pod = getPod(id);
@@ -428,6 +426,10 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
     (state) => state.pods[id]?.result?.count || " "
   );
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    console.log(setNodes);
+  }, [setNodes]);
 
   const showResult = useStore(
     store,
@@ -495,9 +497,11 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
         backgroundColor: "rgb(244, 246, 248)",
         borderColor: pod.ispublic
           ? "green"
+          : selected
+          ? "#003c8f"
           : !isPodFocused
           ? "#d6dee6"
-          : "#3182ce",
+          : "#5e92f3",
       }}
     >
       <Handle
@@ -610,23 +614,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
         sx={{
           height: "90%",
         }}
-        onClick={(e) => {
-          // If the node is selected (for resize), the cursor is not shown. So
-          // we need to deselect it when we re-focus on the editor.
-          setPodSelected(id, false);
-          setNodes((nds) =>
-            applyNodeChanges(
-              [
-                {
-                  id,
-                  type: "select",
-                  selected: false,
-                },
-              ],
-              nds
-            )
-          );
-        }}
       >
         <MyMonaco id={id} gitvalue="" />
         {showResult && (
@@ -698,6 +685,7 @@ export function Canvas() {
   const repoName = useStore(store, (state) => state.repoName);
   const role = useStore(store, (state) => state.role);
   const provider = useStore(store, (state) => state.provider);
+  const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
 
   const getRealNodes = useCallback(
     (id: string, level: number) => {
@@ -746,7 +734,11 @@ export function Canvas() {
           nodesMap.set(node.id, node);
         }
       });
-      setNodes(Array.from(nodesMap.values()));
+      setNodes(
+        Array.from(nodesMap.values()).sort(
+          (a: Node & { level }, b: Node & { level }) => a.level - b.level
+        )
+      );
     };
 
     if (!provider) return;
@@ -1020,6 +1012,12 @@ export function Canvas() {
     [apolloClient, deletePod]
   );
 
+  const onSelectionChange = useCallback(({ nodes, edges }) => {
+    // just for debug
+    console.log("selection changed", nodes, edges);
+    // setSelection({nodes, edges});
+  }, []);
+
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [points, setPoints] = useState({ x: 0, y: 0 });
   const [client, setClient] = useState({ x: 0, y: 0 });
@@ -1056,6 +1054,7 @@ export function Canvas() {
           onNodeDragStart={onNodeDragStart}
           onNodeDragStop={onNodeDragStop}
           onNodesDelete={onNodesDelete}
+          onSelectionChange={onSelectionChange}
           fitView
           attributionPosition="top-right"
           maxZoom={5}
@@ -1067,7 +1066,7 @@ export function Canvas() {
           nodesDraggable={role !== RoleType.GUEST}
           // disable node delete on backspace when the user is a guest.
           deleteKeyCode={role === RoleType.GUEST ? null : "Backspace"}
-          multiSelectionKeyCode={"Control"}
+          multiSelectionKeyCode={isMac ? "Meta" : "Control"}
         >
           <Box>
             <MiniMap
