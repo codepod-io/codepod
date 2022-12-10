@@ -238,6 +238,7 @@ export async function doRemoteAddPod(client, { repoId, parent, pod }) {
     variables: {
       repoId,
       parent,
+      index: 0,
       input: serializePodInput(pod),
     },
     // FIXME the query is not refetched.
