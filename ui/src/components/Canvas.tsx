@@ -73,8 +73,6 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const flow = useReactFlow();
-  const getPod = useStore(store, (state) => state.getPod);
-  const pod = getPod(id);
   const setPodName = useStore(store, (state) => state.setPodName);
   const updatePod = useStore(store, (state) => state.updatePod);
   const [target, setTarget] = React.useState<any>();
@@ -321,8 +319,8 @@ function ResultBlock({ pod, id }) {
       {showOutput ? (
         <Box
           sx={{ paddingBottom: "2px" }}
-          overflow="scroll"
-          maxHeight="145px"
+          overflow="auto"
+          maxHeight="140px"
           border="1px"
         >
           {/* <Box bgcolor="lightgray">Error</Box> */}
@@ -424,6 +422,10 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const role = useStore(store, (state) => state.role);
   const width = useStore(store, (state) => state.pods[id]?.width);
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
+  const index = useStore(
+    store,
+    (state) => state.pods[id]?.result?.count || " "
+  );
   const inputRef = useRef<HTMLInputElement>(null);
 
   const showResult = useStore(
@@ -550,7 +552,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
             }}
           ></InputBase>
         </Box>
-        <Box sx={styles["pod-index"]}>[{pod.index}]</Box>
+        <Box sx={styles["pod-index"]}>[{index}]</Box>
         <Box
           sx={{
             display: "flex",
@@ -634,7 +636,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
               position: "absolute",
               top: isRightLayout ? 0 : "100%",
               left: isRightLayout ? "100%" : 0,
-              maxHeight: "158px",
+              maxHeight: "160px",
               maxWidth: isRightLayout ? "300px" : "100%",
               minWidth: isRightLayout ? "150px" : "100%",
               boxSizing: "border-box",
@@ -845,7 +847,6 @@ export function Canvas() {
       addPod(apolloClient, {
         id,
         parent: "ROOT",
-        index: nodesMap.size + 1,
         type: type === "code" ? "CODE" : "DECK",
         lang: "python",
         x: position.x,

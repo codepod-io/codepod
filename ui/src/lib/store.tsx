@@ -114,7 +114,6 @@ export type Pod = {
   midports?: {};
   isSyncing: boolean;
   io: {};
-  index: number;
   x: number;
   y: number;
   width: number;
@@ -164,7 +163,7 @@ export interface RepoSlice {
   setPodContent: ({ id, content }: { id: string; content: string }) => void;
   addPod: (
     client: ApolloClient<object> | null,
-    { parent, index, anchor, shift, id, type, lang, x, y, width, height }: any
+    { parent, anchor, shift, id, type, lang, x, y, width, height }: any
   ) => void;
   deletePod: (
     client: ApolloClient<object> | null,
@@ -247,14 +246,8 @@ const createRepoSlice: StateCreator<
   setCurrentEditor: (id) => set({ currentEditor: id }),
   addPod: async (
     client,
-    { parent, index, anchor, shift, id, type, lang, x, y, width, height }
+    { parent, anchor, shift, id, type, lang, x, y, width, height }
   ) => {
-    if (index === undefined) {
-      index = get().pods[parent].children.findIndex(({ id }) => id === anchor);
-      if (index === -1) throw new Error("Cannot find anchoar pod:", anchor);
-      index += shift | 0;
-    }
-
     if (!parent) {
       parent = "ROOT";
     }
@@ -289,7 +282,6 @@ const createRepoSlice: StateCreator<
       focus: false,
       // from payload
       parent,
-      index,
       id,
       type,
       x,
@@ -306,7 +298,7 @@ const createRepoSlice: StateCreator<
           // TODO the children no longer need to be ordered
           // TODO the frontend should handle differently for the children
           // state.pods[parent].children.splice(index, 0, id);
-          state.pods[parent].children.splice(index, 0, { id, type: pod.type });
+          state.pods[parent].children.push({ id, type: pod.type });
           // DEBUG sort-in-place
           // TODO I can probably insert
           // CAUTION the sort expects -1,0,1, not true/false
@@ -319,7 +311,6 @@ const createRepoSlice: StateCreator<
       await doRemoteAddPod(client, {
         repoId: get().repoId,
         parent,
-        index,
         pod,
       });
     }
@@ -467,8 +458,10 @@ const createRepoSlice: StateCreator<
     set(
       produce((state) => {
         let pod = state.pods[id];
-        pod.name = name;
-        pod.dirty = true;
+        if (pod) {
+          pod.name = name;
+          pod.dirty = true;
+        }
       }),
       false,
       // @ts-ignore
@@ -707,13 +700,8 @@ const createRepoSlice: StateCreator<
     );
   },
   loadRepo: async (client, id) => {
-    const {
-      pods,
-      name,
-      error,
-      userId,
-      collaboratorIds,
-    } = await doRemoteLoadRepo({ id, client });
+    const { pods, name, error, userId, collaboratorIds } =
+      await doRemoteLoadRepo({ id, client });
     set(
       produce((state) => {
         // TODO the children ordered by index
