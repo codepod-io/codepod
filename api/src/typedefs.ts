@@ -76,6 +76,13 @@ export const typeDefs = gql`
     children: [ID]
   }
 
+  type RuntimeInfo {
+    startedAt: String
+    lastActive: String
+    sessionId: String
+    ttl: Int
+  }
+
   type Query {
     hello: String
     users: [User]
@@ -85,8 +92,9 @@ export const typeDefs = gql`
     pod(id: ID!): Pod
     myRepos: [Repo]
     activeSessions: [String]
-    listAllRuntimes: [String]
+    listAllRuntimes: [RuntimeInfo]
     myCollabRepos: [Repo]
+    infoRuntime(sessionId: String!): RuntimeInfo
   }
 
   type Mutation {

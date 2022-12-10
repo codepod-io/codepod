@@ -215,11 +215,18 @@ async function getRouteTarget(req) {
   return null;
 }
 
+// In memory store for active routes.
+const activeTable: Record<string, Date> = {};
+
 async function startAPIServer() {
   const apollo = new ApolloServer({
     typeDefs: gql`
+      type RouteInfo {
+        url: String
+        lastActive: String
+      }
       type Query {
-        getUrls: [String]
+        getUrls: [RouteInfo]
         getRoute(url: String): String
       }
 
@@ -233,7 +240,11 @@ async function startAPIServer() {
         getUrls: async () => {
           // return all routes
           const res = await _routes.getAll();
-          return Object.keys(res);
+          let urls = Object.keys(res);
+          return urls.map((url) => ({
+            url: url,
+            lastActive: activeTable[url],
+          }));
         },
         getRoute: async (_, { url }) => {
           return await _routes.get(url);
@@ -253,6 +264,9 @@ async function startAPIServer() {
         deleteRoute: async (_, { url }) => {
           console.log("Delete route", url);
           await _routes.remove(url);
+          if (activeTable[url]) {
+            delete activeTable[url];
+          }
           return true;
         },
       },
@@ -289,7 +303,12 @@ function startProxyServer() {
   });
 
   server.on("upgrade", async (req, socket, head) => {
+    if (!req.url) {
+      return;
+    }
     console.log("proxy ws req", req.url);
+    // FIXME why there're two leading slashes? "//user_xxx_repo_xxx"
+    activeTable[req.url.substring(1)] = new Date();
     let match = await getRouteTarget(req);
     if (!match) {
       return;
