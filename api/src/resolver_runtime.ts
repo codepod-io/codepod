@@ -1,8 +1,6 @@
 import { ApolloClient, InMemoryCache, gql } from "@apollo/client/core";
 import Prisma from "@prisma/client";
 
-import { loadOrCreateContainer, removeContainer } from "./spawner-docker";
-
 const { PrismaClient } = Prisma;
 
 const prisma = new PrismaClient();
@@ -29,16 +27,23 @@ export async function listAllRuntimes(_, {}, { userId }) {
     // `,
     query: gql`
       query {
-        getUrls
+        getUrls {
+          url
+          lastActive
+        }
       }
     `,
     fetchPolicy: "network-only",
   });
   let res = urls.data.getUrls
-    .map((url) => {
+    .map(({ url, lastActive }) => {
       let match_res = url.match(/\/user_(.*)_repo_(.*)/);
       if (match_res) {
-        if (`user_${match_res[1]}` === userId) return `repo_${match_res[2]}`;
+        if (`user_${match_res[1]}` === userId)
+          return {
+            sessionId: `user_${match_res[1]}_repo_${match_res[2]}`,
+            lastActive,
+          };
       }
       return false;
     })

@@ -1,4 +1,4 @@
-import { useEffect, useContext } from "react";
+import { useEffect, useContext, useState } from "react";
 import { useParams } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
@@ -23,6 +23,7 @@ import { RepoContext, selectNumDirty, RoleType } from "../lib/store";
 
 import useMe from "../lib/me";
 import { Stack } from "@mui/material";
+import { getUpTime } from "../lib/utils";
 
 function Flex(props) {
   return (
@@ -59,7 +60,6 @@ function SidebarRuntime() {
   const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
   const wsConnect = useStore(store, (state) => state.wsConnect);
   const client = useApolloClient();
-  const wsDisconnect = useStore(store, (state) => state.wsDisconnect);
   const { loading, me } = useMe();
   let { id: repoId } = useParams();
   useEffect(() => {
@@ -67,26 +67,67 @@ function SidebarRuntime() {
       console.log("Connecting to runtime at the beginning ..");
       wsConnect(client, `${me.id}_${repoId}`);
     }
-  }, []);
+  }, [client, me, repoId, wsConnect]);
+  // periodically check if the runtime is still connected
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (me && !runtimeConnected) {
+        console.log("Runtime disconnected, reconnecting ...");
+        wsConnect(client, `${me.id}_${repoId}`);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [client, me, repoId, runtimeConnected, wsConnect]);
+  // get runtime information
+  const { data } = useQuery(gql`
+    query GetRuntimeInfo {
+      infoRuntime(sessionId: "${me.id}_${repoId}") {
+        startedAt
+      }
+    }
+  `);
+  // update time every second
+  let [uptime, setUptime] = useState("");
+  useEffect(() => {
+    if (data?.infoRuntime.startedAt) {
+      setUptime(getUpTime(data.infoRuntime.startedAt));
+    }
+  }, [data]);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (data?.infoRuntime.startedAt) {
+        setUptime(getUpTime(data.infoRuntime.startedAt));
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [data]);
+
   if (loading) return <Box>loading</Box>;
   return (
     <Box>
       <Box>
-        Runtime{" "}
         {runtimeConnected ? (
-          <Box component="span" color="green">
-            connected
-          </Box>
+          <Stack>
+            <Box>
+              Runtime{" "}
+              <Box component="span" color="green">
+                connected
+              </Box>
+            </Box>
+            <Box>Uptime: {uptime}</Box>
+            <SidebarKernel />
+          </Stack>
         ) : (
-          <Box component="span" color="red">
-            <Button
+          <Box>
+            connecting ..
+            {/* <Button
               size="small"
               onClick={() => {
                 wsConnect(client, `${me.id}_${repoId}`);
               }}
             >
               Connect
-            </Button>
+            </Button> */}
           </Box>
         )}
       </Box>
@@ -361,7 +402,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </Grid>
                 <Grid item xs={12}>
                   <SidebarRuntime />
-                  <SidebarKernel />
                 </Grid>
                 <ToastError />
               </>

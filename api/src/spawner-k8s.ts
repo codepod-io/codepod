@@ -285,3 +285,16 @@ export async function killRuntime(_, { sessionId }) {
   });
   return true;
 }
+
+/**
+ * Get the runtime info.
+ * @param sessionId the session ID
+ * @returns {startedAt} the time when the runtime is started.
+ */
+export async function infoRuntime(_, { sessionId }) {
+  // TODO implement
+  throw new Error("Not implemented");
+  return {
+    startedAt: null,
+  };
+}

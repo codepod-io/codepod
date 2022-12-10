@@ -9,7 +9,7 @@ const apollo_client = new ApolloClient({
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export async function removeContainer(name) {
+async function removeContainer(name) {
   return new Promise((resolve, reject) => {
     var docker = new Docker();
     console.log("remove if already exist");
@@ -65,12 +65,7 @@ export async function removeContainer(name) {
  * @param Env additional optional env for the container
  * @returns Boolean for whether a new container is created.
  */
-export async function loadOrCreateContainer(
-  image,
-  name,
-  network,
-  Env: string[] = []
-) {
+async function loadOrCreateContainer(image, name, network, Env: string[] = []) {
   console.log("loading container", name);
   let ip = await loadContainer(name, network);
   if (ip) return false;
@@ -79,6 +74,23 @@ export async function loadOrCreateContainer(
   console.log("creating container ..");
   await createContainer(image, name, network, Env);
   return true;
+}
+
+async function getContainerInfo(name): Promise<string | null> {
+  return new Promise((resolve, reject) => {
+    var docker = new Docker();
+    let container = docker.getContainer(name);
+    container.inspect((err, data) => {
+      if (err) {
+        console.log("getContainerInfo: container seems not exist.");
+        return resolve(null);
+      }
+      if (data?.State.Running) {
+        return resolve(data.State.StartedAt);
+      }
+      return resolve(null);
+    });
+  });
 }
 
 async function loadContainer(name, network) {
@@ -177,6 +189,24 @@ async function createContainer(image, name, network, Env) {
   });
 }
 
+async function scanRunningSessions(): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    var docker = new Docker();
+    docker.listContainers((err, containers) => {
+      if (err) {
+        console.log("ERR:", err);
+        return;
+      }
+      let sessionIds = containers
+        ?.filter(
+          (c) => c.Names[0].startsWith("/cpkernel_") && c.State === "running"
+        )
+        .map((c) => c.Names[0].substring("/cpkernel_".length));
+      return resolve(sessionIds || []);
+    });
+  });
+}
+
 export async function spawnRuntime(_, { sessionId }) {
   // launch the kernel
   console.log("Spawning ");
@@ -259,4 +289,106 @@ export async function killRuntime(_, { sessionId }) {
     // refetchQueries: [{ query: GET_URLS_QUERY }],
   });
   return true;
+}
+
+/**
+ * Get the runtime info.
+ * @param sessionId the session ID
+ * @returns {startedAt} the time when the runtime is started.
+ */
+export async function infoRuntime(_, { sessionId }) {
+  let zmq_host = `cpkernel_${sessionId}`;
+  let ws_host = `cpruntime_${sessionId}`;
+  let startedAt = await getContainerInfo(ws_host);
+  return {
+    startedAt: startedAt ? new Date(startedAt).getTime() : null,
+  };
+}
+
+async function killInactiveRoutes() {
+  let { data } = await apollo_client.query({
+    query: gql`
+      query GetUrls {
+        getUrls {
+          url
+          lastActive
+        }
+      }
+    `,
+    fetchPolicy: "network-only",
+  });
+  const now = new Date();
+  let inactiveRoutes = data.getUrls
+    .filter(({ url, lastActive }) => {
+      if (!lastActive) return false;
+      let d2 = new Date(parseInt(lastActive));
+      // Prod: 12 hours TTL
+      let ttl = 1000 * 60 * 60 * 12;
+      // DEBUG: 1 minute TTL
+      // let ttl = 1000 * 60 * 3;
+      let activeTime = now.getTime() - d2.getTime();
+      return activeTime > ttl;
+    })
+    .map(({ url }) => url);
+  console.log("Inactive routes", inactiveRoutes);
+  for (let url of inactiveRoutes) {
+    let sessionId = url.substring(1);
+    let zmq_host = `cpkernel_${sessionId}`;
+    let ws_host = `cpruntime_${sessionId}`;
+    await removeContainer(zmq_host);
+    await removeContainer(ws_host);
+    await apollo_client.mutate({
+      mutation: gql`
+        mutation deleteRoute($url: String) {
+          deleteRoute(url: $url)
+        }
+      `,
+      variables: {
+        url,
+      },
+    });
+  }
+}
+
+/**
+ * Periodically kill inactive routes every minute.
+ */
+export function loopKillInactiveRoutes() {
+  setInterval(async () => {
+    await killInactiveRoutes();
+  }, 1000 * 60 * 1);
+}
+
+/**
+ * At startup, check all active containers and add them to the table.
+ */
+export async function initRoutes() {
+  let sessionIds = await scanRunningSessions();
+  console.log("initRoutes sessionIds", sessionIds);
+  for (let id of sessionIds) {
+    let url = `/${id}`;
+    let ws_host = `cpruntime_${id}`;
+    await apollo_client.mutate({
+      mutation: gql`
+        mutation addRoute($url: String, $target: String) {
+          addRoute(url: $url, target: $target)
+        }
+      `,
+      variables: {
+        url,
+        // This 4020 is the WS listening port in WS_RUNTIME_IMAGE
+        target: `${ws_host}:4020`,
+      },
+      // refetchQueries: ["getUrls"],
+      refetchQueries: [
+        {
+          query: gql`
+            query getUrls {
+              getUrls
+            }
+          `,
+        },
+      ],
+    });
+  }
 }

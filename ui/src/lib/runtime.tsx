@@ -183,15 +183,7 @@ async function spawnRuntime({ client, sessionId }) {
     // https://lightrun.com/answers/apollographql-apollo-client-refetchqueries-not-working-when-using-string-array-after-mutation
     //
     // refetchQueries: ["listAllRuntimes"],
-    refetchQueries: [
-      {
-        query: gql`
-          query {
-            listAllRuntimes
-          }
-        `,
-      },
-    ],
+    refetchQueries: ["ListAllRuntimes", "GetRuntimeInfo"],
   });
   console.log("spawnRuntime res", res);
   if (res.errors) {

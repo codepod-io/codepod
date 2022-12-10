@@ -26,6 +26,7 @@ import Chip from "@mui/material/Chip";
 import { ShareProjDialog } from "../../components/ShareProjDialog";
 import CreateRepoForm from "./CreateRepoForm";
 import useMe from "../../lib/me";
+import { getUpTime } from "../../lib/utils";
 
 enum RepoTypes {
   repo = "myRepos",
@@ -59,7 +60,7 @@ const FETCH_COLLAB_REPOS = gql`
   }
 `;
 
-function RepoLine({ repo, deletable, sharable }) {
+function RepoLine({ repo, deletable, sharable, runtimeInfo }) {
   const { me } = useMe();
   const [open, setOpen] = useState(false);
   const [deleteRepo] = useMutation(
@@ -79,24 +80,11 @@ function RepoLine({ repo, deletable, sharable }) {
       }
     `,
     {
-      refetchQueries: [
-        {
-          query: gql`
-            query {
-              listAllRuntimes
-            }
-          `,
-        },
-      ],
+      refetchQueries: ["ListAllRuntimes"],
     }
   );
-  const { loading: rt_loading, data: rt_data } = useQuery(gql`
-    query {
-      listAllRuntimes
-    }
-  `);
+
   const [killing, setKilling] = useState(false);
-  const status = !rt_loading && rt_data.listAllRuntimes.includes(repo.id);
   return (
     <TableRow
       key={repo.id}
@@ -126,7 +114,13 @@ function RepoLine({ repo, deletable, sharable }) {
           variant={repo.public ? "outlined" : "filled"}
         ></Chip>
       </TableCell>
-      <TableCell align="left">{status ? "Running" : "NA"}</TableCell>
+      <TableCell align="left">
+        {runtimeInfo
+          ? runtimeInfo.lastActive
+            ? "last active: " + getUpTime(runtimeInfo.lastActive)
+            : "running"
+          : "-"}
+      </TableCell>
       <TableCell align="left">
         {deletable && (
           <Tooltip title="Delete Repo">
@@ -145,7 +139,7 @@ function RepoLine({ repo, deletable, sharable }) {
             </IconButton>
           </Tooltip>
         )}
-        {status ? (
+        {runtimeInfo ? (
           <Tooltip title="Kill runtime">
             <IconButton
               disabled={killing}
@@ -209,7 +203,27 @@ function RepoHintText({ type = RepoTypes.repo }) {
 
 function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
   const { loading, error, data } = useQuery(url);
-  if (loading) {
+  const { me } = useMe();
+  const { loading: rt_loading, data: rt_data } = useQuery(gql`
+    query ListAllRuntimes {
+      listAllRuntimes {
+        sessionId
+        lastActive
+      }
+    }
+  `);
+  // peiredically update so that the last active time is updated
+  //
+  // FIXME once ttl is reached, the runtime is killed, but this rt_query is not
+  // updated.
+  const [counter, setCounter] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCounter(counter + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [counter]);
+  if (loading || rt_loading) {
     return <CircularProgress />;
   }
   if (error) {
@@ -243,7 +257,7 @@ function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
             <TableRow>
               <TableCell align="left">Name</TableCell>
               <TableCell align="left">Visibility</TableCell>
-              <TableCell align="left">Status</TableCell>
+              <TableCell align="left">Status (TTL: 12h)</TableCell>
               <TableCell align="left">Operations</TableCell>
             </TableRow>
           </TableHead>
@@ -253,6 +267,9 @@ function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
                 repo={repo}
                 deletable={type === RepoTypes.repo}
                 sharable={type === RepoTypes.repo}
+                runtimeInfo={rt_data.listAllRuntimes.find(
+                  ({ sessionId }) => sessionId === `${me.id}_${repo.id}`
+                )}
                 key={repo.id}
               />
             ))}

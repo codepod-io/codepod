@@ -25,10 +25,14 @@ import { listAllRuntimes } from "./resolver_runtime";
 import {
   spawnRuntime as spawnRuntime_docker,
   killRuntime as killRuntime_docker,
+  infoRuntime as infoRuntime_docker,
+  loopKillInactiveRoutes as loopKillInactiveRoutes_docker,
+  initRoutes as initRoutes_docker,
 } from "./spawner-docker";
 import {
   spawnRuntime as spawnRuntime_k8s,
   killRuntime as killRuntime_k8s,
+  infoRuntime as infoRuntime_k8s,
 } from "./spawner-k8s";
 
 export const resolvers = {
@@ -44,6 +48,13 @@ export const resolvers = {
     pod,
     listAllRuntimes,
     myCollabRepos,
+    ...(process.env.RUNTIME_SPAWNER === "k8s"
+      ? {
+          infoRuntime: infoRuntime_k8s,
+        }
+      : {
+          infoRuntime: infoRuntime_docker,
+        }),
   },
   Mutation: {
     signup,
@@ -57,13 +68,19 @@ export const resolvers = {
     updatePod,
     deletePod,
     addCollaborator,
-    spawnRuntime:
-      process.env.RUNTIME_SPAWNER === "k8s"
-        ? spawnRuntime_k8s
-        : spawnRuntime_docker,
-    killRuntime:
-      process.env.RUNTIME_SPAWNER === "k8s"
-        ? killRuntime_k8s
-        : killRuntime_docker,
+    ...(process.env.RUNTIME_SPAWNER === "k8s"
+      ? {
+          spawnRuntime: spawnRuntime_k8s,
+          killRuntime: killRuntime_k8s,
+        }
+      : {
+          spawnRuntime: spawnRuntime_docker,
+          killRuntime: killRuntime_docker,
+        }),
   },
 };
+
+if (process.env.RUNTIME_SPAWNER !== "k8s") {
+  initRoutes_docker();
+  loopKillInactiveRoutes_docker();
+}
