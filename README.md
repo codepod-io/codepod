@@ -47,3 +47,12 @@ npx prisma migrate dev
 ```
 
 This command is also needed after the database schema is changed.
+
+## Contributing
+
+CodePod is open source under MIT license. Feel free to contribute! We can make
+it better together. You can contribute by opening an issue, discussion, or
+submit a pull request. Please use [Prettier](https://prettier.io/) (e.g., [its
+VSCode
+plugin](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode))
+to format your code before checking in.
