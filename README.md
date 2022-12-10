@@ -48,7 +48,7 @@ npx prisma migrate dev
 
 This command is also needed after the database schema is changed.
 
-## Contributing
+# Contributing
 
 CodePod is open source under MIT license. Feel free to contribute! We can make
 it better together. You can contribute by opening an issue, discussion, or
