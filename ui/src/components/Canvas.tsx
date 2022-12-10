@@ -84,6 +84,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
   });
   const selected = useStore(store, (state) => state.pods[id]?.selected);
   const role = useStore(store, (state) => state.role);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const deleteNodeById = useCallback(
     (id: string) => {
@@ -108,9 +109,16 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
     }
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     setTarget(ref.current);
   }, []);
+
+  useEffect(() => {
+    setPodName({ id, name: data.name || "" });
+    if (inputRef?.current) {
+      inputRef.current.value = data.name;
+    }
+  }, [data.name, id, setPodName]);
 
   return (
     <Box
@@ -179,12 +187,19 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
               }}
             >
               <InputBase
-                defaultValue={pod.name || "Scope"}
+                className="nodrag"
+                defaultValue={data.name || "Scope"}
                 onBlur={(e) => {
                   const name = e.target.value;
-                  if (name === pod.name) return;
-                  setPodName({ id, name });
+                  if (name === data.name) return;
+                  const node = nodesMap.get(id);
+                  if (node) {
+                    nodesMap.set(id, { ...node, data: { ...node.data, name } });
+                  }
+                  // setPodName({ id, name });
                 }}
+                inputRef={inputRef}
+                disabled={role === RoleType.GUEST}
                 inputProps={{
                   style: {
                     padding: "0px",
@@ -409,6 +424,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const role = useStore(store, (state) => state.role);
   const width = useStore(store, (state) => state.pods[id]?.width);
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const showResult = useStore(
     store,
@@ -438,6 +454,14 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   useEffect(() => {
     setTarget(ref.current);
   }, []);
+
+  useEffect(() => {
+    setPodName({ id, name: data.name });
+    if (inputRef?.current) {
+      inputRef.current.value = data.name || "";
+    }
+  }, [data.name, setPodName, id]);
+
   if (!pod) return null;
 
   // onsize is banned for a guest, FIXME: ugly code
@@ -506,11 +530,17 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
           }}
         >
           <InputBase
-            defaultValue={pod.name}
+            inputRef={inputRef}
+            className="nodrag"
+            defaultValue={data.name || ""}
+            disabled={role === RoleType.GUEST}
             onBlur={(e) => {
               const name = e.target.value;
-              if (name === pod.name) return;
-              setPodName({ id, name });
+              if (name === data.name) return;
+              const node = nodesMap.get(id);
+              if (node) {
+                nodesMap.set(id, { ...node, data: { ...node.data, name } });
+              }
             }}
             inputProps={{
               style: {
@@ -677,6 +707,7 @@ export function Canvas() {
           data: {
             // label: `ID: ${id}, parent: ${pods[id].parent}, pos: ${pods[id].x}, ${pods[id].y}`,
             label: id,
+            name: pod.name,
           },
           // position: { x: 100, y: 100 },
           position: { x: pod.x, y: pod.y },
@@ -799,6 +830,7 @@ export function Canvas() {
         style,
         data: {
           label: id,
+          name: "",
         },
         level: 0,
         extent: "parent",
@@ -870,7 +902,7 @@ export function Canvas() {
         });
       }
     },
-    [nodesMap, setNodes, userColor]
+    [setNodes, userColor]
   );
 
   const onNodeDragStop = useCallback(
