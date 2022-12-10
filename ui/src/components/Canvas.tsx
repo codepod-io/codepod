@@ -112,6 +112,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
   }, []);
 
   useEffect(() => {
+    if (!data.name) return;
     setPodName({ id, name: data.name || "" });
     if (inputRef?.current) {
       inputRef.current.value = data.name;
@@ -458,6 +459,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   }, []);
 
   useEffect(() => {
+    if (!data.name) return;
     setPodName({ id, name: data.name });
     if (inputRef?.current) {
       inputRef.current.value = data.name || "";
