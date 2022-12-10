@@ -71,7 +71,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
   const ref = useRef(null);
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const flow = useReactFlow()
+  const flow = useReactFlow();
   const updatePod = useStore(store, (state) => state.updatePod);
   const [target, setTarget] = React.useState<any>();
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
@@ -81,13 +81,18 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
   const selected = useStore(store, (state) => state.pods[id]?.selected);
   const role = useStore(store, (state) => state.role);
 
-  const deleteNodeById = useCallback((id: string) => {
-    flow.deleteElements({
-      nodes: [{
-        id,
-      }]
-    })
-  }, [flow]);
+  const deleteNodeById = useCallback(
+    (id: string) => {
+      flow.deleteElements({
+        nodes: [
+          {
+            id,
+          },
+        ],
+      });
+    },
+    [flow]
+  );
 
   const onResize = useCallback(({ width, height, offx, offy }) => {
     const node = nodesMap.get(id);
@@ -133,8 +138,8 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
             <IconButton
               size="small"
               onClick={(e: any) => {
-                e.stopPropagation()
-                e.preventDefault()
+                e.stopPropagation();
+                e.preventDefault();
                 deleteNodeById(id);
               }}
             >
@@ -418,8 +423,8 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
         borderColor: pod.ispublic
           ? "green"
           : !isPodFocused
-            ? "#d6dee6"
-            : "#3182ce",
+          ? "#d6dee6"
+          : "#3182ce",
       }}
     >
       <Handle
@@ -552,7 +557,7 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
 const nodeTypes = { scope: ScopeNode, code: CodeNode };
 
 const level2color = {
-  0: 'rgba(187, 222, 251, 0.5)',
+  0: "rgba(187, 222, 251, 0.5)",
   1: "rgba(144, 202, 249, 0.5)",
   2: "rgba(100, 181, 246, 0.5)",
   3: "rgba(66, 165, 245, 0.5)",

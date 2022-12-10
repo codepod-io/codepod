@@ -331,7 +331,7 @@ const createRepoSlice: StateCreator<
 
     // get all ids to delete. Gathering them here is easier than on the server
 
-    if (!pods[id]) return
+    if (!pods[id]) return;
 
     const dfs = (id) => {
       const pod = pods[id];
@@ -706,8 +706,13 @@ const createRepoSlice: StateCreator<
     );
   },
   loadRepo: async (client, id) => {
-    const { pods, name, error, userId, collaboratorIds } =
-      await doRemoteLoadRepo({ id, client });
+    const {
+      pods,
+      name,
+      error,
+      userId,
+      collaboratorIds,
+    } = await doRemoteLoadRepo({ id, client });
     set(
       produce((state) => {
         // TODO the children ordered by index
