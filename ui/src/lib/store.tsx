@@ -458,7 +458,7 @@ const createRepoSlice: StateCreator<
     set(
       produce((state) => {
         let pod = state.pods[id];
-        if (pod) {
+        if (pod && pod.name !== name) {
           pod.name = name;
           pod.dirty = true;
         }

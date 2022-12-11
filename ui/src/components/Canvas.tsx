@@ -427,10 +427,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
   );
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    console.log(setNodes);
-  }, [setNodes]);
-
   const showResult = useStore(
     store,
     (state) =>
@@ -856,13 +852,14 @@ export function Canvas() {
   );
 
   const getScopeAt = useCallback(
-    (x, y, id) => {
+    (x: number, y: number, ids: string[]) => {
       const scope = nodes.findLast((node) => {
+        console.log("getScopeAt", node.id, ids);
         let [x1, y1] = getAbsPos({ node, nodesMap });
         return (
           node.type === "scope" &&
-          node.id !== id &&
           x >= x1 &&
+          !ids.includes(node.id) &&
           x <= x1 + node.style.width &&
           y >= y1 &&
           y <= y1 + node.style.height
@@ -882,114 +879,105 @@ export function Canvas() {
    * 2. Check if the node is moved into a scope. If so, update the parent of the node.
    */
 
-  const onNodeDragStart = useCallback(
-    (_, node) => {
-      const currentNode = nodesMap.get(node.id);
-
-      if (currentNode) {
-        nodesMap.set(node.id, {
-          ...currentNode,
-          // selected: false,
-          style: {
-            ...currentNode.style,
-            // boxShadow: `${userColor} 0px 15px 25px`,
-          },
-        });
-      }
-    },
-    [setNodes, userColor]
-  );
+  // FIXME: add awareness info when dragging
+  const onNodeDragStart = () => {};
 
   const onNodeDragStop = useCallback(
-    (event, node: Node) => {
+    // handle nodes list as multiple nodes can be dragged together at once
+    (event, _n: Node, nodes: Node[]) => {
+      console.log("onNodeDragStop", nodes);
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       // This mouse position is absolute within the canvas.
       const mousePos = reactFlowInstance.project({
         x: event.clientX - reactFlowBounds.left,
         y: event.clientY - reactFlowBounds.top,
       });
-      // check if this position is inside parent scope
-      if (
-        mousePos.x < node.positionAbsolute!.x ||
-        mousePos.y < node.positionAbsolute!.y ||
-        mousePos.x > node.positionAbsolute!.x + node.width! ||
-        mousePos.y > node.positionAbsolute!.y + node.height!
-      ) {
-        // console.log("Cannot drop outside parent scope");
-        return;
-      }
-      // Check which group is at this position.
-      const scope = getScopeAt(mousePos.x, mousePos.y, node.id);
-      let absX = node.position.x;
-      let absY = node.position.y;
-      if (scope) {
-        console.log("dropped into scope:", scope);
-        // compute the actual position
-        let [dx, dy] = getAbsPos({ node: scope, nodesMap });
-        absX = node.positionAbsolute!.x - dx;
-        absY = node.positionAbsolute!.y - dy;
-      }
-      // first, dispatch this to the store
-      setPodPosition({
-        id: node.id,
-        x: absX,
-        y: absY,
-      });
 
-      if (scope) {
-        // TOFIX: to enable collaborative editing, consider how to sync dropping scope immediately.
-        setPodParent({
+      const scope = getScopeAt(
+        mousePos.x,
+        mousePos.y,
+        nodes.map((n) => n.id)
+      );
+      // check if this position is inside parent scope
+      nodes.forEach((node) => {
+        // if (
+        //   mousePos.x < node.positionAbsolute!.x ||
+        //   mousePos.y < node.positionAbsolute!.y ||
+        //   mousePos.x > node.positionAbsolute!.x + node.width! ||
+        //   mousePos.y > node.positionAbsolute!.y + node.height!
+        // ) {
+        //   console.log("Cannot drop outside parent scope");
+        //   return;
+        // }
+        // Check which group is at this position.
+        let absX = node.position.x;
+        let absY = node.position.y;
+        console.log("drop", node);
+        if (scope) {
+          console.log("dropped into scope:", scope);
+          // compute the actual position
+          let [dx, dy] = getAbsPos({ node: scope, nodesMap });
+          absX = node.positionAbsolute!.x - dx;
+          absY = node.positionAbsolute!.y - dy;
+        }
+        // first, dispatch this to the store
+        setPodPosition({
           id: node.id,
-          parent: scope.id,
+          x: absX,
+          y: absY,
         });
 
-        // enlarge the parent node
-        // FIXME this is not working, because we will have to enlarge all the ancestor nodes.
-        // dispatch(repoSlice.actions.resizeScopeSize({ id: scope.id }));
-
-        // 1. Put the node into the scope, i.e., set the parentNode field.
-        // 2. Use position relative to the scope.
-        // setNodes((nds) =>
-        //   nds
-        //     .map((nd) => {
-        //       if (nd.id === node.id) {
-        //         return {
-        //           ...nd,
-        //           parentNode: scope.id,
-        //           level: scope.level + 1,
-        //           style: {
-        //             ...nd.style,
-        //             backgroundColor: level2color[scope.level + 1],
-        //           },
-        //           position: {
-        //             x: absX,
-        //             y: absY,
-        //           },
-        //         };
-        //       }
-        //       return nd;
-        //     })
-        //     // Sort the nodes by level, so that the scope is rendered first.
-        //     .sort((a, b) => a.level - b.level)
-
-        // );
-      }
-
-      const currentNode = nodesMap.get(node.id);
-      if (currentNode) {
         if (scope) {
-          currentNode.style!.backgroundColor = level2color[scope.level + 1];
-          (currentNode as any).level = scope.level + 1;
-          currentNode.parentNode = scope.id;
-        }
-        currentNode.position = { x: absX, y: absY };
+          // TOFIX: to enable collaborative editing, consider how to sync dropping scope immediately.
+          setPodParent({
+            id: node.id,
+            parent: scope.id,
+          });
 
-        if (currentNode.style!["boxShadow"]) {
-          delete currentNode.style!.boxShadow;
+          // enlarge the parent node
+          // FIXME this is not working, because we will have to enlarge all the ancestor nodes.
+          // dispatch(repoSlice.actions.resizeScopeSize({ id: scope.id }));
+
+          // 1. Put the node into the scope, i.e., set the parentNode field.
+          // 2. Use position relative to the scope.
+          // setNodes((nds) =>
+          //   nds
+          //     .map((nd) => {
+          //       if (nd.id === node.id) {
+          //         return {
+          //           ...nd,
+          //           parentNode: scope.id,
+          //           level: scope.level + 1,
+          //           style: {
+          //             ...nd.style,
+          //             backgroundColor: level2color[scope.level + 1],
+          //           },
+          //           position: {
+          //             x: absX,
+          //             y: absY,
+          //           },
+          //         };
+          //       }
+          //       return nd;
+          //     })
+          //     // Sort the nodes by level, so that the scope is rendered first.
+          //     .sort((a, b) => a.level - b.level)
+
+          // );
         }
 
-        nodesMap.set(node.id, currentNode);
-      }
+        const currentNode = nodesMap.get(node.id);
+        if (currentNode) {
+          if (scope) {
+            currentNode.style!.backgroundColor = level2color[scope.level + 1];
+            (currentNode as any).level = scope.level + 1;
+            currentNode.parentNode = scope.id;
+          }
+          currentNode.position = { x: absX, y: absY };
+
+          nodesMap.set(node.id, currentNode);
+        }
+      });
     },
     // We need to monitor nodes, so that getScopeAt can have all the nodes.
     [
