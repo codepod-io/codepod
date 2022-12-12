@@ -48,7 +48,7 @@ import { nolookalikes } from "nanoid-dictionary";
 import { useStore } from "zustand";
 
 import { RepoContext, RoleType } from "../lib/store";
-import { useNodesStateSynced } from "../lib/nodes";
+import { useNodesStateSynced, parent as commonParent } from "../lib/nodes";
 
 import { MyMonaco } from "./MyMonaco";
 import { useApolloClient } from "@apollo/client";
@@ -63,11 +63,10 @@ interface Props {
   data: any;
   id: string;
   isConnectable: boolean;
-
-  // selected: boolean;
+  selected: boolean;
 }
 
-const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
+const ScopeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
   // add resize to the node
   const ref = useRef(null);
   const store = useContext(RepoContext);
@@ -80,7 +79,7 @@ const ScopeNode = memo<Props>(({ data, id, isConnectable }) => {
   const [frame] = React.useState({
     translate: [0, 0],
   });
-  const selected = useStore(store, (state) => state.pods[id]?.selected);
+  // const selected = useStore(store, (state) => state.pods[id]?.selected);
   const role = useStore(store, (state) => state.role);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -399,7 +398,7 @@ function ResultBlock({ pod, id }) {
   );
 }
 
-const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
+const CodeNode = memo<Props>(({ data, id, isConnectable, selected }) => {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   // const pod = useStore(store, (state) => state.pods[id]);
@@ -416,7 +415,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
   const { setNodes } = useReactFlow();
   // const selected = useStore(store, (state) => state.selected);
   const setPodName = useStore(store, (state) => state.setPodName);
-  const setPodSelected = useStore(store, (state) => state.setPodSelected);
   const setCurrentEditor = useStore(store, (state) => state.setCurrentEditor);
   const getPod = useStore(store, (state) => state.getPod);
   const pod = getPod(id);
@@ -495,9 +493,11 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
         backgroundColor: "rgb(244, 246, 248)",
         borderColor: pod.ispublic
           ? "green"
+          : selected
+          ? "#003c8f"
           : !isPodFocused
           ? "#d6dee6"
-          : "#3182ce",
+          : "#5e92f3",
       }}
     >
       <Handle
@@ -610,23 +610,6 @@ const CodeNode = memo<Props>(({ data, id, isConnectable }) => {
         sx={{
           height: "90%",
         }}
-        onClick={(e) => {
-          // If the node is selected (for resize), the cursor is not shown. So
-          // we need to deselect it when we re-focus on the editor.
-          setPodSelected(id, false);
-          setNodes((nds) =>
-            applyNodeChanges(
-              [
-                {
-                  id,
-                  type: "select",
-                  selected: false,
-                },
-              ],
-              nds
-            )
-          );
-        }}
       >
         <MyMonaco id={id} gitvalue="" />
         {showResult && (
@@ -698,6 +681,7 @@ export function Canvas() {
   const repoName = useStore(store, (state) => state.repoName);
   const role = useStore(store, (state) => state.role);
   const provider = useStore(store, (state) => state.provider);
+  const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
 
   const getRealNodes = useCallback(
     (id: string, level: number) => {
@@ -746,7 +730,11 @@ export function Canvas() {
           nodesMap.set(node.id, node);
         }
       });
-      setNodes(Array.from(nodesMap.values()));
+      setNodes(
+        Array.from(nodesMap.values()).sort(
+          (a: Node & { level }, b: Node & { level }) => a.level - b.level
+        )
+      );
     };
 
     if (!provider) return;
@@ -864,13 +852,13 @@ export function Canvas() {
   );
 
   const getScopeAt = useCallback(
-    (x, y, id) => {
+    (x: number, y: number, ids: string[]) => {
       const scope = nodes.findLast((node) => {
         let [x1, y1] = getAbsPos({ node, nodesMap });
         return (
           node.type === "scope" &&
-          node.id !== id &&
           x >= x1 &&
+          !ids.includes(node.id) &&
           x <= x1 + node.style.width &&
           y >= y1 &&
           y <= y1 + node.style.height
@@ -890,114 +878,86 @@ export function Canvas() {
    * 2. Check if the node is moved into a scope. If so, update the parent of the node.
    */
 
-  const onNodeDragStart = useCallback(
-    (_, node) => {
-      const currentNode = nodesMap.get(node.id);
-
-      if (currentNode) {
-        nodesMap.set(node.id, {
-          ...currentNode,
-          // selected: false,
-          style: {
-            ...currentNode.style,
-            // boxShadow: `${userColor} 0px 15px 25px`,
-          },
-        });
-      }
-    },
-    [setNodes, userColor]
-  );
+  // FIXME: add awareness info when dragging
+  const onNodeDragStart = () => {};
 
   const onNodeDragStop = useCallback(
-    (event, node: Node) => {
+    // handle nodes list as multiple nodes can be dragged together at once
+    (event, _n: Node, nodes: Node[]) => {
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       // This mouse position is absolute within the canvas.
       const mousePos = reactFlowInstance.project({
         x: event.clientX - reactFlowBounds.left,
         y: event.clientY - reactFlowBounds.top,
       });
+
+      const scope = getScopeAt(
+        mousePos.x,
+        mousePos.y,
+        nodes.map((n) => n.id)
+      );
+
+      if (!scope || scope.id === commonParent) return;
+
       // check if this position is inside parent scope
-      if (
-        mousePos.x < node.positionAbsolute!.x ||
-        mousePos.y < node.positionAbsolute!.y ||
-        mousePos.x > node.positionAbsolute!.x + node.width! ||
-        mousePos.y > node.positionAbsolute!.y + node.height!
-      ) {
-        // console.log("Cannot drop outside parent scope");
-        return;
+
+      // FIXME: a better way to do this: check if the commonParent is the ancestor of the scope
+
+      if (commonParent !== undefined && commonParent !== "ROOT") {
+        const currentParent = nodesMap.get(commonParent);
+        if (currentParent) {
+          if (
+            mousePos.x < currentParent.positionAbsolute!.x ||
+            mousePos.x >
+              currentParent.positionAbsolute!.x + currentParent.width! ||
+            mousePos.y < currentParent.positionAbsolute!.y ||
+            mousePos.y >
+              currentParent.positionAbsolute!.y + currentParent.height!
+          ) {
+            // the mouse is outside the current parent, the nodes can't be dragged out
+            // console.log("Cannot drop outside parent scope");
+            return;
+          }
+        }
       }
-      // Check which group is at this position.
-      const scope = getScopeAt(mousePos.x, mousePos.y, node.id);
-      let absX = node.position.x;
-      let absY = node.position.y;
-      if (scope) {
+
+      // check if this position is inside parent scope
+      nodes.forEach((node) => {
+        let absX = node.position.x;
+        let absY = node.position.y;
         console.log("dropped into scope:", scope);
+
         // compute the actual position
         let [dx, dy] = getAbsPos({ node: scope, nodesMap });
         absX = node.positionAbsolute!.x - dx;
         absY = node.positionAbsolute!.y - dy;
-      }
-      // first, dispatch this to the store
-      setPodPosition({
-        id: node.id,
-        x: absX,
-        y: absY,
-      });
 
-      if (scope) {
-        // TOFIX: to enable collaborative editing, consider how to sync dropping scope immediately.
+        // auto-align the node to, keep it bound in the scope
+        // FIXME: it assumes the scope must be larger than the node
+
+        absX = Math.max(absX, 0);
+        absX = Math.min(absX, scope.width! - node.width!);
+        absY = Math.max(absY, 0);
+        absY = Math.min(absY, scope.height! - node.height!);
+
+        // FIXME: to enable collaborative editing, consider how to sync dropping scope immediately. consider useEffect in each node when data.parent or parent changes.
         setPodParent({
           id: node.id,
           parent: scope.id,
         });
 
-        // enlarge the parent node
-        // FIXME this is not working, because we will have to enlarge all the ancestor nodes.
-        // dispatch(repoSlice.actions.resizeScopeSize({ id: scope.id }));
+        const currentNode = nodesMap.get(node.id);
+        if (currentNode) {
+          if (scope) {
+            currentNode.style!.backgroundColor = level2color[scope.level + 1];
+            (currentNode as any).level = scope.level + 1;
+            currentNode.parentNode = scope.id;
+          }
+          currentNode.position = { x: absX, y: absY };
 
-        // 1. Put the node into the scope, i.e., set the parentNode field.
-        // 2. Use position relative to the scope.
-        // setNodes((nds) =>
-        //   nds
-        //     .map((nd) => {
-        //       if (nd.id === node.id) {
-        //         return {
-        //           ...nd,
-        //           parentNode: scope.id,
-        //           level: scope.level + 1,
-        //           style: {
-        //             ...nd.style,
-        //             backgroundColor: level2color[scope.level + 1],
-        //           },
-        //           position: {
-        //             x: absX,
-        //             y: absY,
-        //           },
-        //         };
-        //       }
-        //       return nd;
-        //     })
-        //     // Sort the nodes by level, so that the scope is rendered first.
-        //     .sort((a, b) => a.level - b.level)
-
-        // );
-      }
-
-      const currentNode = nodesMap.get(node.id);
-      if (currentNode) {
-        if (scope) {
-          currentNode.style!.backgroundColor = level2color[scope.level + 1];
-          (currentNode as any).level = scope.level + 1;
-          currentNode.parentNode = scope.id;
+          nodesMap.set(node.id, currentNode);
         }
-        currentNode.position = { x: absX, y: absY };
-
-        if (currentNode.style!["boxShadow"]) {
-          delete currentNode.style!.boxShadow;
-        }
-
-        nodesMap.set(node.id, currentNode);
-      }
+      });
     },
     // We need to monitor nodes, so that getScopeAt can have all the nodes.
     [
@@ -1019,6 +979,12 @@ export function Canvas() {
     },
     [apolloClient, deletePod]
   );
+
+  const onSelectionChange = useCallback(({ nodes, edges }) => {
+    // just for debug
+    // console.log("selection changed", nodes, edges);
+    // setSelection({nodes, edges});
+  }, []);
 
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [points, setPoints] = useState({ x: 0, y: 0 });
@@ -1056,6 +1022,7 @@ export function Canvas() {
           onNodeDragStart={onNodeDragStart}
           onNodeDragStop={onNodeDragStop}
           onNodesDelete={onNodesDelete}
+          onSelectionChange={onSelectionChange}
           fitView
           attributionPosition="top-right"
           maxZoom={5}
@@ -1067,7 +1034,7 @@ export function Canvas() {
           nodesDraggable={role !== RoleType.GUEST}
           // disable node delete on backspace when the user is a guest.
           deleteKeyCode={role === RoleType.GUEST ? null : "Backspace"}
-          multiSelectionKeyCode={"Control"}
+          multiSelectionKeyCode={isMac ? "Meta" : "Control"}
         >
           <Box>
             <MiniMap

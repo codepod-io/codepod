@@ -7,6 +7,19 @@ const isNodeAddChange = (change) => change.type === "add";
 const isNodeRemoveChange = (change) => change.type === "remove";
 const isNodeResetChange = (change) => change.type === "reset";
 
+const selectedPods = new Set();
+
+// apply the same-parent rule, make sure all selected nodes have the same parent
+export var parent: string | undefined = undefined;
+
+// clear all selections
+export function resetSelection() {
+  if (selectedPods.size === 0) return false;
+  selectedPods.clear();
+  parent = undefined;
+  return true;
+}
+
 export function useNodesStateSynced(nodeList) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -14,7 +27,6 @@ export function useNodesStateSynced(nodeList) {
   const getPod = useStore(store, (state) => state.getPod);
   const deletePod = useStore(store, (state) => state.deletePod);
   const updatePod = useStore(store, (state) => state.updatePod);
-  const setPodSelected = useStore(store, (state) => state.setPodSelected);
   const role = useStore(store, (state) => state.role);
   const ydoc = useStore(store, (state) => state.ydoc);
   const nodesMap = ydoc.getMap<Node>("pods");
@@ -22,6 +34,24 @@ export function useNodesStateSynced(nodeList) {
   const [nodes, setNodes] = useState(nodeList);
   // const setNodeId = useStore((state) => state.setSelectNode);
   // const selected = useStore((state) => state.selectNode);
+
+  function selectPod(id, selected) {
+    if (selected) {
+      const p = getPod(id)?.parent;
+
+      // if you select a node that has a different parent, clear all previous selections
+      if (parent !== undefined && parent !== p) {
+        selectedPods.clear();
+        setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
+      }
+      parent = p;
+      selectedPods.add(id);
+    } else {
+      if (!selectedPods.delete(id)) return;
+      if (selectedPods.size === 0) parent = undefined;
+    }
+    setNodes((nds) => nds.map((n) => (n.id === id ? { ...n, selected } : n)));
+  }
 
   const onNodesChanges = useCallback((changes) => {
     const nodes = Array.from(nodesMap.values());
@@ -45,7 +75,7 @@ export function useNodesStateSynced(nodeList) {
         if (!node) return;
 
         if (isNodeResetChange(change) || change.type === "select") {
-          setPodSelected(node.id, change.selected as boolean);
+          selectPod(node.id, change.selected);
           return;
         }
 
@@ -100,7 +130,7 @@ export function useNodesStateSynced(nodeList) {
       setNodes(
         Array.from(nodesMap.values())
           .sort((a: Node & { level }, b: Node & { level }) => a.level - b.level)
-          .map((node) => ({ ...node, selected: getPod(node.id)?.selected }))
+          .map((node) => ({ ...node, selected: selectedPods.has(node.id) }))
       );
 
       // setNodes(Array.from(nodesMap.values()));
@@ -111,6 +141,7 @@ export function useNodesStateSynced(nodeList) {
 
     return () => {
       nodesMap.unobserve(observer);
+      resetSelection();
     };
   }, []);
 
