@@ -48,7 +48,7 @@ import { nolookalikes } from "nanoid-dictionary";
 import { useStore } from "zustand";
 
 import { RepoContext, RoleType } from "../lib/store";
-import { useNodesStateSynced } from "../lib/nodes";
+import { useNodesStateSynced, parent as commonParent } from "../lib/nodes";
 
 import { MyMonaco } from "./MyMonaco";
 import { useApolloClient } from "@apollo/client";
@@ -854,7 +854,6 @@ export function Canvas() {
   const getScopeAt = useCallback(
     (x: number, y: number, ids: string[]) => {
       const scope = nodes.findLast((node) => {
-        console.log("getScopeAt", node.id, ids);
         let [x1, y1] = getAbsPos({ node, nodesMap });
         return (
           node.type === "scope" &&
@@ -885,7 +884,6 @@ export function Canvas() {
   const onNodeDragStop = useCallback(
     // handle nodes list as multiple nodes can be dragged together at once
     (event, _n: Node, nodes: Node[]) => {
-      console.log("onNodeDragStop", nodes);
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       // This mouse position is absolute within the canvas.
       const mousePos = reactFlowInstance.project({
@@ -898,73 +896,55 @@ export function Canvas() {
         mousePos.y,
         nodes.map((n) => n.id)
       );
+
+      if (!scope || scope.id === commonParent) return;
+
+      // check if this position is inside parent scope
+
+      // FIXME: a better way to do this: check if the commonParent is the ancestor of the scope
+
+      if (commonParent !== undefined && commonParent !== "ROOT") {
+        const currentParent = nodesMap.get(commonParent);
+        if (currentParent) {
+          if (
+            mousePos.x < currentParent.positionAbsolute!.x ||
+            mousePos.x >
+              currentParent.positionAbsolute!.x + currentParent.width! ||
+            mousePos.y < currentParent.positionAbsolute!.y ||
+            mousePos.y >
+              currentParent.positionAbsolute!.y + currentParent.height!
+          ) {
+            // the mouse is outside the current parent, the nodes can't be dragged out
+            // console.log("Cannot drop outside parent scope");
+            return;
+          }
+        }
+      }
+
       // check if this position is inside parent scope
       nodes.forEach((node) => {
-        // if (
-        //   mousePos.x < node.positionAbsolute!.x ||
-        //   mousePos.y < node.positionAbsolute!.y ||
-        //   mousePos.x > node.positionAbsolute!.x + node.width! ||
-        //   mousePos.y > node.positionAbsolute!.y + node.height!
-        // ) {
-        //   console.log("Cannot drop outside parent scope");
-        //   return;
-        // }
-        // Check which group is at this position.
         let absX = node.position.x;
         let absY = node.position.y;
-        console.log("drop", node);
-        if (scope) {
-          console.log("dropped into scope:", scope);
-          // compute the actual position
-          let [dx, dy] = getAbsPos({ node: scope, nodesMap });
-          absX = node.positionAbsolute!.x - dx;
-          absY = node.positionAbsolute!.y - dy;
-        }
-        // first, dispatch this to the store
-        setPodPosition({
+        console.log("dropped into scope:", scope);
+
+        // compute the actual position
+        let [dx, dy] = getAbsPos({ node: scope, nodesMap });
+        absX = node.positionAbsolute!.x - dx;
+        absY = node.positionAbsolute!.y - dy;
+
+        // auto-align the node to, keep it bound in the scope
+        // FIXME: it assumes the scope must be larger than the node
+
+        absX = Math.max(absX, 0);
+        absX = Math.min(absX, scope.width! - node.width!);
+        absY = Math.max(absY, 0);
+        absY = Math.min(absY, scope.height! - node.height!);
+
+        // FIXME: to enable collaborative editing, consider how to sync dropping scope immediately. consider useEffect in each node when data.parent or parent changes.
+        setPodParent({
           id: node.id,
-          x: absX,
-          y: absY,
+          parent: scope.id,
         });
-
-        if (scope) {
-          // TOFIX: to enable collaborative editing, consider how to sync dropping scope immediately.
-          setPodParent({
-            id: node.id,
-            parent: scope.id,
-          });
-
-          // enlarge the parent node
-          // FIXME this is not working, because we will have to enlarge all the ancestor nodes.
-          // dispatch(repoSlice.actions.resizeScopeSize({ id: scope.id }));
-
-          // 1. Put the node into the scope, i.e., set the parentNode field.
-          // 2. Use position relative to the scope.
-          // setNodes((nds) =>
-          //   nds
-          //     .map((nd) => {
-          //       if (nd.id === node.id) {
-          //         return {
-          //           ...nd,
-          //           parentNode: scope.id,
-          //           level: scope.level + 1,
-          //           style: {
-          //             ...nd.style,
-          //             backgroundColor: level2color[scope.level + 1],
-          //           },
-          //           position: {
-          //             x: absX,
-          //             y: absY,
-          //           },
-          //         };
-          //       }
-          //       return nd;
-          //     })
-          //     // Sort the nodes by level, so that the scope is rendered first.
-          //     .sort((a, b) => a.level - b.level)
-
-          // );
-        }
 
         const currentNode = nodesMap.get(node.id);
         if (currentNode) {
@@ -1002,7 +982,7 @@ export function Canvas() {
 
   const onSelectionChange = useCallback(({ nodes, edges }) => {
     // just for debug
-    console.log("selection changed", nodes, edges);
+    // console.log("selection changed", nodes, edges);
     // setSelection({nodes, edges});
   }, []);
 

@@ -8,8 +8,11 @@ const isNodeRemoveChange = (change) => change.type === "remove";
 const isNodeResetChange = (change) => change.type === "reset";
 
 const selectedPods = new Set();
-var parent: string | undefined = undefined;
 
+// apply the same-parent rule, make sure all selected nodes have the same parent
+export var parent: string | undefined = undefined;
+
+// clear all selections
 export function resetSelection() {
   if (selectedPods.size === 0) return false;
   selectedPods.clear();
@@ -72,7 +75,6 @@ export function useNodesStateSynced(nodeList) {
         if (!node) return;
 
         if (isNodeResetChange(change) || change.type === "select") {
-          console.log(change.type, change);
           selectPod(node.id, change.selected);
           return;
         }

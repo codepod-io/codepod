@@ -121,7 +121,6 @@ export type Pod = {
   ns?: string;
   running?: boolean;
   focus?: boolean;
-  selected?: boolean;
 };
 
 export interface RepoSlice {
@@ -193,7 +192,6 @@ export interface RepoSlice {
   setPodVisibility: (id: any, visible: any) => void;
   setPodFocus: (id: string) => void;
   setPodBlur: (id: string) => void;
-  setPodSelected: (id: string, target: boolean) => void;
 }
 
 type BearState = RepoSlice & RuntimeSlice;
@@ -278,7 +276,6 @@ const createRepoSlice: StateCreator<
       // the backend instead.
       children: [],
       io: {},
-      selected: false,
       focus: false,
       // from payload
       parent,
@@ -831,16 +828,6 @@ const createRepoSlice: StateCreator<
         }
       })
     ),
-  setPodSelected: (id: string, target: boolean) => {
-    set(
-      produce((state) => {
-        if (state.pods[id]) {
-          state.pods[id].selected = target;
-        }
-      })
-    );
-  },
-  getPodSelected: (id: string) => get().pods[id]?.selected as boolean,
 });
 
 export const createRepoStore = () =>
