@@ -897,12 +897,7 @@ export function Canvas() {
         nodes.map((n) => n.id)
       );
 
-      if (!scope || scope.id === commonParent) return;
-
-      // check if this position is inside parent scope
-
       // FIXME: a better way to do this: check if the commonParent is the ancestor of the scope
-
       if (commonParent !== undefined && commonParent !== "ROOT") {
         const currentParent = nodesMap.get(commonParent);
         if (currentParent) {
@@ -925,26 +920,35 @@ export function Canvas() {
       nodes.forEach((node) => {
         let absX = node.position.x;
         let absY = node.position.y;
-        console.log("dropped into scope:", scope);
 
-        // compute the actual position
-        let [dx, dy] = getAbsPos({ node: scope, nodesMap });
-        absX = node.positionAbsolute!.x - dx;
-        absY = node.positionAbsolute!.y - dy;
+        if (scope) {
+          console.log("dropped into scope:", scope);
+          // compute the actual position
+          let [dx, dy] = getAbsPos({ node: scope, nodesMap });
+          absX = node.positionAbsolute!.x - dx;
+          absY = node.positionAbsolute!.y - dy;
+          // auto-align the node to, keep it bound in the scope
+          // FIXME: it assumes the scope must be larger than the node
 
-        // auto-align the node to, keep it bound in the scope
-        // FIXME: it assumes the scope must be larger than the node
-
-        absX = Math.max(absX, 0);
-        absX = Math.min(absX, scope.width! - node.width!);
-        absY = Math.max(absY, 0);
-        absY = Math.min(absY, scope.height! - node.height!);
-
-        // FIXME: to enable collaborative editing, consider how to sync dropping scope immediately. consider useEffect in each node when data.parent or parent changes.
-        setPodParent({
+          absX = Math.max(absX, 0);
+          absX = Math.min(absX, scope.width! - node.width!);
+          absY = Math.max(absY, 0);
+          absY = Math.min(absY, scope.height! - node.height!);
+        }
+        setPodPosition({
           id: node.id,
-          parent: scope.id,
+          x: absX,
+          y: absY,
         });
+
+        // check if this position is inside parent scope
+        if (scope && scope.id !== commonParent) {
+          // FIXME: to enable collaborative editing, consider how to sync dropping scope immediately. consider useEffect in each node when data.parent or parent changes.
+          setPodParent({
+            id: node.id,
+            parent: scope.id,
+          });
+        }
 
         const currentNode = nodesMap.get(node.id);
         if (currentNode) {
@@ -960,14 +964,7 @@ export function Canvas() {
       });
     },
     // We need to monitor nodes, so that getScopeAt can have all the nodes.
-    [
-      reactFlowInstance,
-      getScopeAt,
-      setPodPosition,
-      nodesMap,
-      setNodes,
-      setPodParent,
-    ]
+    [reactFlowInstance, getScopeAt, setPodPosition, nodesMap, setPodParent]
   );
 
   const onNodesDelete = useCallback(
