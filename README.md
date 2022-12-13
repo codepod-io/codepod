@@ -2,6 +2,10 @@
 
 ![screenshot](./screenshot.png)
 
+# We are on Beta testing
+
+And we are actively polishing everything. You might want to take a look at the [known issues](https://github.com/codepod-io/codepod/wiki/Known-Issues) along your adventure with Codepod.
+
 # Developing CodePod using docker-compose
 
 The docker compose files are in `compose/dev` folder. The `dev` stack mounts the
