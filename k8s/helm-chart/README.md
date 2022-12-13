@@ -9,7 +9,7 @@ We need to create one more namespace manually:
     kubectl create ns codepod-staging
     kubectl create ns codepod-staging-runtime
 
-### Apply the secrets
+### (DEPRECATED) Apply the secrets
 
 Need the secrets:
 
@@ -39,7 +39,7 @@ Need to manually apply these secrets:
 kubectl apply -f secrets.yaml
 ```
 
-### Install longhorn
+### (DEPRECATED) Install longhorn
 
 Longhorn is needed to dynamically allocate volumes for DB.
 
@@ -80,3 +80,50 @@ Uninstall:
 Prod:
 
     helm upgrade codepod-prod . --namespace codepod-prod --values=./values.prod.yaml
+
+## Helper scripts
+
+Alpha:
+
+    kubectl apply -f secrets.yaml -n codepod-alpha
+    helm install codepod-alpha . --namespace codepod-alpha --create-namespace --values=./values.alpha.yaml
+
+    helm upgrade codepod-alpha . --namespace codepod-alpha --values=./values.alpha.yaml
+
+Rollback:
+
+    helm rollback -n codepod-alpha codepod-alpha
+    helm rollback -n codepod-alpha codepod-alpha 11
+    helm ls -n codepod-alpha
+
+To access prisma:
+
+    kubectl port-forward prisma-deployment-5c9ccfc6b8-962vq 5555:5555 -n codepod-alpha
+
+## Config maps and secrets
+
+```
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+ name: mysecret
+data:
+ POSTGRES_PASSWORD:
+ JWT_SECRET:
+
+```
+
+```
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: myconfig
+  namespace: codepod-alpha
+data:
+  POSTGRES_USER:
+  POSTGRES_HOST:
+  POSTGRES_DB:
+  POSTGRES_PORT:
+  GOOGLE_CLIENT_ID:
+```
