@@ -338,7 +338,8 @@ async function killInactiveRoutes() {
   const now = new Date();
   let inactiveRoutes = data.getUrls
     .filter(({ url, lastActive }) => {
-      if (!lastActive) return false;
+      // If the lastActive is null, it means the route is not active.
+      if (!lastActive) return true;
       let d2 = new Date(parseInt(lastActive));
       let activeTime = now.getTime() - d2.getTime();
       return activeTime > kernel_ttl;
