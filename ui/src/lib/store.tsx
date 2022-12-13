@@ -177,7 +177,17 @@ export interface RepoSlice {
     content: { data: { html: string; text: string; image: string } };
     count: number;
   }) => void;
-  setPodPosition: ({ id, x, y }: any) => void;
+  setPodPosition: ({
+    id,
+    x,
+    y,
+    dirty,
+  }: {
+    id: string;
+    x: number;
+    y: number;
+    dirty: boolean;
+  }) => void;
   setPodParent: ({ id, parent }: any) => void;
   currentEditor: string | null;
   setCurrentEditor: (id: string | null) => void;
@@ -492,13 +502,14 @@ const createRepoSlice: StateCreator<
         state.pods[id].render = value;
       })
     ),
-  setPodPosition: ({ id, x, y }) =>
+  setPodPosition: ({ id, x, y, dirty = true }) =>
     set(
       produce((state) => {
+        console.log("setPodPosition", id, x, y, dirty);
         let pod = state.pods[id];
         pod.x = x;
         pod.y = y;
-        pod.dirty = true;
+        pod.dirty = dirty;
       }),
       false,
       // @ts-ignore
