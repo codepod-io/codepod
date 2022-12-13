@@ -304,6 +304,14 @@ export async function infoRuntime(_, { sessionId }) {
     startedAt: startedAt ? new Date(startedAt).getTime() : null,
   };
 }
+// debug: 3 min: 1000 * 60 * 3;
+// prod: 12 hours: 1000 * 60 * 60 * 12;
+let kernel_ttl: number = process.env.KERNEL_TTL
+  ? parseInt(process.env.KERNEL_TTL)
+  : 1000 * 60 * 60 * 12;
+let loop_interval = process.env.LOOP_INTERVAL
+  ? parseInt(process.env.LOOP_INTERVAL)
+  : 1000 * 60 * 1;
 
 async function killInactiveRoutes() {
   let { data } = await apollo_client.query({
@@ -322,12 +330,8 @@ async function killInactiveRoutes() {
     .filter(({ url, lastActive }) => {
       if (!lastActive) return false;
       let d2 = new Date(parseInt(lastActive));
-      // Prod: 12 hours TTL
-      let ttl = 1000 * 60 * 60 * 12;
-      // DEBUG: 1 minute TTL
-      // let ttl = 1000 * 60 * 3;
       let activeTime = now.getTime() - d2.getTime();
-      return activeTime > ttl;
+      return activeTime > kernel_ttl;
     })
     .map(({ url }) => url);
   console.log("Inactive routes", inactiveRoutes);
@@ -356,7 +360,7 @@ async function killInactiveRoutes() {
 export function loopKillInactiveRoutes() {
   setInterval(async () => {
     await killInactiveRoutes();
-  }, 1000 * 60 * 1);
+  }, loop_interval);
 }
 
 /**

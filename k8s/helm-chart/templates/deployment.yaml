@@ -99,6 +99,16 @@ spec:
               value: k8s
             - name: RUNTIME_NS
               value: {{ .Release.Namespace }}-runtime
+            - name: KERNEL_TTL
+              # 1000 * 60 * 60 * 12: 12 hours
+              # value: "43200000"
+              # 1000 * 60 * 3: 3 minutes
+              value: "180000"
+            - name: LOOP_INTERVAL
+              # 1000 * 60 * 1: 1 minute
+              # value: "60000"
+              # 1000 * 5: 5 seconds
+              value: "5000"
           resources:
             limits:
               memory: 512Mi

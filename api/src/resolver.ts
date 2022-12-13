@@ -33,6 +33,8 @@ import {
   spawnRuntime as spawnRuntime_k8s,
   killRuntime as killRuntime_k8s,
   infoRuntime as infoRuntime_k8s,
+  loopKillInactiveRoutes as loopKillInactiveRoutes_k8s,
+  initRoutes as initRoutes_k8s,
 } from "./spawner-k8s";
 
 export const resolvers = {
@@ -83,4 +85,7 @@ export const resolvers = {
 if (process.env.RUNTIME_SPAWNER !== "k8s") {
   initRoutes_docker();
   loopKillInactiveRoutes_docker();
+} else {
+  initRoutes_k8s();
+  loopKillInactiveRoutes_k8s();
 }

@@ -118,40 +118,20 @@ function getServiceSpec(name) {
   };
 }
 
-export async function spawnRuntime(_, { sessionId }) {
-  let url = `/${sessionId}`;
-  sessionId = sessionId.replaceAll("_", "-").toLowerCase();
-  // sessionId = "runtime-k8s-user-UGY6YAk7TM-repo-34prxrgkKG-kernel";
-  // sessionId = "k8s-user-UGY6YAk7TM";
-  let k8s_name = `k8s-${sessionId}`;
-  console.log("spawnRuntime", url, k8s_name);
-  // check if exist?
-  // 1. create a jupyter kernel pod
-  // 2. create a ws pod
-  console.log("Creating namespaced pod ..");
-
-  let ns =
-    process.env.RUNTIME_NS ||
-    fs
-      .readFileSync("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
-      .toString();
-  console.log("Using k8s ns:", ns);
+async function createDeployment(ns, deploy_spec) {
   try {
     // TODO if exists, skip
     // await k8sApi.createNamespacedPod(ns, getPodSpec(k8s_name));
-    await k8sAppsApi.createNamespacedDeployment(
-      ns,
-      getDeploymentSpec(k8s_name)
-    );
+    await k8sAppsApi.createNamespacedDeployment(ns, deploy_spec);
     // FIXME would this also do creation?
   } catch (e: any) {
     if (e.body.reason === "AlreadyExists") {
       console.log("Already exists, patching ..");
       try {
         await k8sAppsApi.patchNamespacedDeployment(
-          getDeploymentSpec(k8s_name).metadata.name,
+          deploy_spec.metadata.name,
           ns,
-          getDeploymentSpec(k8s_name),
+          deploy_spec,
           undefined,
           undefined,
           undefined,
@@ -172,9 +152,11 @@ export async function spawnRuntime(_, { sessionId }) {
       return false;
     }
   }
-  console.log("Creating service ..");
+}
+
+async function createService(ns: string, service_spec) {
   try {
-    await k8sApi.createNamespacedService(ns, getServiceSpec(k8s_name));
+    await k8sApi.createNamespacedService(ns, service_spec);
 
     // The DNS name of the service is
   } catch (e: any) {
@@ -182,9 +164,9 @@ export async function spawnRuntime(_, { sessionId }) {
       console.log("Already exists, patching ..");
       try {
         await k8sApi.patchNamespacedService(
-          getServiceSpec(k8s_name).metadata.name,
+          service_spec.metadata.name,
           ns,
-          getServiceSpec(k8s_name),
+          service_spec,
           undefined,
           undefined,
           undefined,
@@ -210,9 +192,10 @@ export async function spawnRuntime(_, { sessionId }) {
       return false;
     }
   }
-  let dnsname = `${
-    getServiceSpec(k8s_name).metadata.name
-  }.${ns}.svc.cluster.local`;
+}
+
+async function addRoute(ns: string, service_spec, url: string) {
+  let dnsname = `${service_spec.metadata.name}.${ns}.svc.cluster.local`;
   console.log("Created, dns:", dnsname);
   // let ws_host = `${k8s_name}-deployment`;
   let ws_host = dnsname;
@@ -241,6 +224,26 @@ export async function spawnRuntime(_, { sessionId }) {
       },
     ],
   });
+}
+
+export async function spawnRuntime(_, { sessionId }) {
+  let url = `/${sessionId}`;
+  sessionId = sessionId.replaceAll("_", "-").toLowerCase();
+  let k8s_name = `k8s-${sessionId}`;
+  console.log("spawnRuntime", url, k8s_name);
+  console.log("Creating namespaced pod ..");
+  let ns =
+    process.env.RUNTIME_NS ||
+    fs
+      .readFileSync("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+      .toString();
+  console.log("Using k8s ns:", ns);
+  let deploy_spec = getDeploymentSpec(k8s_name);
+  let service_spec = getServiceSpec(k8s_name);
+  await createDeployment(ns, deploy_spec);
+  console.log("Creating service ..");
+  await createService(ns, service_spec);
+  await addRoute(ns, service_spec, url);
   return true;
 }
 
@@ -292,9 +295,108 @@ export async function killRuntime(_, { sessionId }) {
  * @returns {startedAt} the time when the runtime is started.
  */
 export async function infoRuntime(_, { sessionId }) {
-  // TODO implement
-  throw new Error("Not implemented");
+  sessionId = sessionId.replaceAll("_", "-").toLowerCase();
+  let k8s_name = `k8s-${sessionId}`;
+  let ns =
+    process.env.RUNTIME_NS ||
+    fs
+      .readFileSync("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+      .toString();
+  let deploy_spec = getDeploymentSpec(k8s_name);
+  // read the startTime from the deployment status
+  let status = await k8sAppsApi.readNamespacedDeployment(
+    deploy_spec.metadata.name,
+    ns
+  );
+  let startedAt = status.body.metadata?.creationTimestamp;
   return {
-    startedAt: null,
+    startedAt: startedAt ? new Date(startedAt).getTime() : null,
   };
+}
+
+// debug: 3 min: 1000 * 60 * 3;
+// prod: 12 hours: 1000 * 60 * 60 * 12;
+let kernel_ttl: number = process.env.KERNEL_TTL
+  ? parseInt(process.env.KERNEL_TTL)
+  : 1000 * 60 * 60 * 12;
+let loop_interval = process.env.LOOP_INTERVAL
+  ? parseInt(process.env.LOOP_INTERVAL)
+  : 1000 * 60 * 1;
+
+async function killInactiveRoutes() {
+  let { data } = await apollo_client.query({
+    query: gql`
+      query GetUrls {
+        getUrls {
+          url
+          lastActive
+        }
+      }
+    `,
+    fetchPolicy: "network-only",
+  });
+  const now = new Date();
+  let inactiveRoutes = data.getUrls
+    .filter(({ url, lastActive }) => {
+      if (!lastActive) return false;
+      let d2 = new Date(parseInt(lastActive));
+      let activeTime = now.getTime() - d2.getTime();
+      return activeTime > kernel_ttl;
+    })
+    .map(({ url }) => url);
+  console.log("Inactive routes", inactiveRoutes);
+  for (let url of inactiveRoutes) {
+    let sessionId = url.substring(1);
+    await killRuntime(null, { sessionId });
+  }
+}
+
+/**
+ * Periodically kill inactive routes every minute.
+ */
+export function loopKillInactiveRoutes() {
+  setInterval(async () => {
+    await killInactiveRoutes();
+  }, loop_interval);
+}
+
+function deploymentName2sessionId(deploymentName: string) {
+  // NOTE: this is sessionId.replaceAll("_", "-").toLowerCase()
+  return deploymentName.match(/runtime-k8s-(.*)-deployment/)![1];
+}
+
+async function scanRunningSessions(): Promise<string[]> {
+  let ns =
+    process.env.RUNTIME_NS ||
+    fs
+      .readFileSync("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+      .toString();
+  let deployments = await k8sAppsApi.listNamespacedDeployment(ns);
+  let sessionIds = deployments.body.items
+    .map((d) => d.metadata!.name!)
+    .filter((x) => x)
+    .map((name) => deploymentName2sessionId(name));
+
+  return new Promise((resolve, reject) => {
+    resolve(sessionIds || []);
+  });
+}
+
+/**
+ * At startup, check all active containers and add them to the table.
+ */
+export async function initRoutes() {
+  let ns =
+    process.env.RUNTIME_NS ||
+    fs
+      .readFileSync("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+      .toString();
+  let sessionIds = await scanRunningSessions();
+  console.log("initRoutes sessionIds", sessionIds);
+  for (let id of sessionIds) {
+    let url = `/${id}`;
+    let k8s_name = `k8s-${id}`;
+    let service_spec = getServiceSpec(k8s_name);
+    await addRoute(ns, service_spec, url);
+  }
 }
