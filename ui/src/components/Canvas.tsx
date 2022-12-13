@@ -37,6 +37,7 @@ import Grid from "@mui/material/Grid";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
+import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 
 import Moveable from "react-moveable";
 import { ResizableBox } from "react-resizable";
@@ -497,6 +498,23 @@ const CodeNode = memo<Props>(function ({
     nodesMap.delete(id);
   };
 
+  const toggleExtentByNodeById = (id) => {
+    const node = nodesMap.get(id)
+    if(node?.parentNode){
+      if(node.extent)
+        delete  node.extent
+      else {
+        const parentNode = nodesMap.get(node.parentNode)
+        node.extent = 'parent'
+        const x = node.position.x
+        const y = node.position.y
+        if(x < 0 || x > parentNode?.width! || y < 0 || y > parentNode?.height!){
+          node.position = {x: 0, y: 0}
+        }
+      }
+    }
+  };
+
   useEffect(() => {
     setTarget(ref.current);
   }, []);
@@ -670,6 +688,18 @@ const CodeNode = memo<Props>(function ({
                 }}
               >
                 <DeleteIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          )}
+          {role !== RoleType.GUEST && (
+            <Tooltip title="remove extent">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  toggleExtentByNodeById(id);
+                }}
+              >
+                <SplitscreenIcon fontSize="inherit" />
               </IconButton>
             </Tooltip>
           )}
