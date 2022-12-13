@@ -17,7 +17,9 @@ export async function doRemoteLoadRepo({ id, client }) {
         id
         name
         userId
-        collaboratorIds
+        collaborators {
+          id
+        }
         pods {
           id
           type
@@ -68,11 +70,11 @@ export async function doRemoteLoadRepo({ id, client }) {
       name: res.data.repo.name,
       error: null,
       userId: res.data.repo.userId,
-      collaboratorIds: res.data.repo.collaboratorIds,
+      collaborators: res.data.repo.collaborators,
     };
   } catch (e) {
     console.log(e);
-    return { pods: [], name: "", error: e, userId: null, collaboratorIds: [] };
+    return { pods: [], name: "", error: e, userId: null, collaborators: [] };
   }
 }
 

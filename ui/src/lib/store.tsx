@@ -723,8 +723,9 @@ const createRepoSlice: StateCreator<
     );
   },
   loadRepo: async (client, id) => {
-    const { pods, name, error, userId, collaboratorIds } =
-      await doRemoteLoadRepo({ id, client });
+    const { pods, name, error, userId, collaborators } = await doRemoteLoadRepo(
+      { id, client }
+    );
     set(
       produce((state) => {
         // TODO the children ordered by index
@@ -739,7 +740,10 @@ const createRepoSlice: StateCreator<
         // set the user role in this repo
         if (userId === state.user.id) {
           state.role = RoleType.OWNER;
-        } else if (state.user && collaboratorIds.indexOf(state.user.id) >= 0) {
+        } else if (
+          state.user &&
+          collaborators.findIndex(({ id }) => state.user.id === id) >= 0
+        ) {
           state.role = RoleType.COLLABORATOR;
         } else {
           state.role = RoleType.GUEST;
