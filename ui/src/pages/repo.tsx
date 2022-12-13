@@ -18,6 +18,7 @@ import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { Stack, TextField } from "@mui/material";
+import { useAuth } from "../lib/auth";
 
 const DrawerWidth = 240;
 const SIDEBAR_KEY = "sidebar";
@@ -160,6 +161,7 @@ function RepoImpl() {
   const deleteClient = useStore(store, (state) => state.deleteClient);
 
   const { loading, me } = useMe();
+  const { hasToken } = useAuth();
   useEffect(() => {
     if (me) {
       setSessionId(`${me.id}_${id}`);
@@ -184,17 +186,32 @@ function RepoImpl() {
         });
       });
     }
-  }, [provider]);
+  }, [addClient, deleteClient, provider]);
 
   useEffect(() => {
     resetState();
     setRepo(id!);
-    // load the repo. It is actually not a queue, just an async thunk
-    loadRepo(client, id!);
-    if (!loading && me) {
-      setUser(me);
+    if (hasToken()) {
+      if (!loading && me) {
+        setUser(me);
+        // load the repo. It is actually not a queue, just an async thunk
+        loadRepo(client, id!);
+      }
+    } else {
+      // not signed in, just load the repo
+      loadRepo(client, id!);
     }
-  }, [client, id, loadRepo, resetState, setRepo, me, loading, setUser]);
+  }, [
+    client,
+    id,
+    loadRepo,
+    resetState,
+    setRepo,
+    me,
+    loading,
+    setUser,
+    hasToken,
+  ]);
 
   // FIXME Removing queueL. This will cause Repo to be re-rendered a lot of
   // times, particularly the delete pod action would cause syncstatus and repo

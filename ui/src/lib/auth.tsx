@@ -149,6 +149,9 @@ function useProvideAuth() {
     }
   };
 
+  /**
+   * This is not immediately set onrefresh.
+   */
   const isSignedIn = () => {
     if (authToken) {
       return true;
@@ -157,6 +160,13 @@ function useProvideAuth() {
     }
   };
 
+  /**
+   * This is set immediately on refresh.
+   */
+  function hasToken() {
+    return localStorage.getItem("token") !== null;
+  }
+
   return {
     createApolloClient,
     signIn,
@@ -164,5 +174,6 @@ function useProvideAuth() {
     handleGoogle,
     signUp,
     isSignedIn,
+    hasToken,
   };
 }
