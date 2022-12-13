@@ -72,8 +72,8 @@ function RepoWrapper({ children, id }) {
             <Stack direction="row">
               <TextField
                 hiddenLabel
-                defaultValue={"Untitled"}
-                value={repoName}
+                placeholder="Untitled"
+                value={repoName || ""}
                 size="small"
                 sx={{
                   maxWidth: "100%",
