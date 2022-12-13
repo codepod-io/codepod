@@ -64,6 +64,7 @@ interface Props {
   id: string;
   isConnectable: boolean;
   selected: boolean;
+  // note that xPos and yPos are the absolute position of the node
   xPos: number;
   yPos: number;
 }
@@ -77,6 +78,8 @@ const ScopeNode = memo<Props>(
     const flow = useReactFlow();
     const setPodName = useStore(store, (state) => state.setPodName);
     const updatePod = useStore(store, (state) => state.updatePod);
+    const setPodPosition = useStore(store, (state) => state.setPodPosition);
+    const setPodParent = useStore(store, (state) => state.setPodParent);
     const [target, setTarget] = React.useState<any>();
     const nodesMap = useStore(store, (state) =>
       state.ydoc.getMap<Node>("pods")
@@ -122,6 +125,26 @@ const ScopeNode = memo<Props>(
         inputRef.current.value = data.name;
       }
     }, [data.name, id, setPodName]);
+
+    useEffect(() => {
+      // get relative position
+      const node = nodesMap.get(id);
+      if (node?.position) {
+        // update pods[id].position but don't trigger DB update (dirty: false)
+        setPodPosition({
+          id,
+          x: node.position.x,
+          y: node.position.y,
+          dirty: false,
+        });
+      }
+    }, [xPos, yPos, setPodPosition, id]);
+
+    useEffect(() => {
+      if (data.parent && data.parent !== "ROOT") {
+        setPodParent({ id, parent: data.parent, dirty: false });
+      }
+    }, [data.parent, setPodParent, id]);
 
     return (
       <Box
@@ -422,10 +445,10 @@ const CodeNode = memo<Props>(
     // right, bottom
     const [layout, setLayout] = useState("bottom");
     const isRightLayout = layout === "right";
-    const { setNodes } = useReactFlow();
-    // const selected = useStore(store, (state) => state.selected);
     const setPodName = useStore(store, (state) => state.setPodName);
+    const setPodPosition = useStore(store, (state) => state.setPodPosition);
     const setCurrentEditor = useStore(store, (state) => state.setCurrentEditor);
+    const setPodParent = useStore(store, (state) => state.setPodParent);
     const getPod = useStore(store, (state) => state.getPod);
     const pod = getPod(id);
     const role = useStore(store, (state) => state.role);
@@ -477,9 +500,24 @@ const CodeNode = memo<Props>(
     }, [data.name, setPodName, id]);
 
     useEffect(() => {
-      console.log("position", xPos, yPos);
-      console.log(nodesMap.get(id));
-    }, [xPos, yPos]);
+      // get relative position
+      const node = nodesMap.get(id);
+      if (node?.position) {
+        // update pods[id].position but don't trigger DB update (dirty: false)
+        setPodPosition({
+          id,
+          x: node.position.x,
+          y: node.position.y,
+          dirty: false,
+        });
+      }
+    }, [xPos, yPos, setPodPosition, id]);
+
+    useEffect(() => {
+      if (data.parent !== undefined) {
+        setPodParent({ id, parent: data.parent, dirty: false });
+      }
+    }, [data.parent, setPodParent, id]);
 
     if (!pod) return null;
 
@@ -715,6 +753,7 @@ export function Canvas() {
             // label: `ID: ${id}, parent: ${pods[id].parent}, pos: ${pods[id].x}, ${pods[id].y}`,
             label: id,
             name: pod.name,
+            parent: pod.parent,
           },
           // position: { x: 100, y: 100 },
           position: { x: pod.x, y: pod.y },
@@ -842,6 +881,7 @@ export function Canvas() {
         data: {
           label: id,
           name: "",
+          parent: "ROOT",
         },
         level: 0,
         extent: "parent",
@@ -920,6 +960,7 @@ export function Canvas() {
       if (commonParent !== undefined && commonParent !== "ROOT") {
         const currentParent = nodesMap.get(commonParent);
         if (currentParent) {
+          console.log("currentParent", currentParent);
           if (
             mousePos.x < currentParent.positionAbsolute!.x ||
             mousePos.x >
@@ -930,9 +971,32 @@ export function Canvas() {
           ) {
             // the mouse is outside the current parent, the nodes can't be dragged out
             // console.log("Cannot drop outside parent scope");
+            // but position should also be updated
+            nodes.forEach((node) => {
+              setPodPosition({
+                id: node.id,
+                x: node.position.x,
+                y: node.position.y,
+                dirty: true,
+              });
+            });
             return;
           }
         }
+      }
+
+      // no target scope, or the target scope is the same as the current parent
+      if (!scope || scope.id === commonParent) {
+        // only update position and exit, avoid updating parentNode
+        nodes.forEach((node) => {
+          setPodPosition({
+            id: node.id,
+            x: node.position.x,
+            y: node.position.y,
+            dirty: true,
+          });
+        });
+        return;
       }
 
       // check if this position is inside parent scope
@@ -940,46 +1004,42 @@ export function Canvas() {
         let absX = node.position.x;
         let absY = node.position.y;
 
-        if (scope) {
-          console.log("dropped into scope:", scope);
-          // compute the actual position
-          let [dx, dy] = getAbsPos({ node: scope, nodesMap });
-          absX = node.positionAbsolute!.x - dx;
-          absY = node.positionAbsolute!.y - dy;
-          // auto-align the node to, keep it bound in the scope
-          // FIXME: it assumes the scope must be larger than the node
+        console.log("dropped into scope:", scope);
+        // compute the actual position
+        let [dx, dy] = getAbsPos({ node: scope, nodesMap });
+        absX = node.positionAbsolute!.x - dx;
+        absY = node.positionAbsolute!.y - dy;
+        // auto-align the node to, keep it bound in the scope
+        // FIXME: it assumes the scope must be larger than the node
 
-          absX = Math.max(absX, 0);
-          absX = Math.min(absX, scope.width! - node.width!);
-          absY = Math.max(absY, 0);
-          absY = Math.min(absY, scope.height! - node.height!);
+        absX = Math.max(absX, 0);
+        absX = Math.min(absX, scope.width! - node.width!);
+        absY = Math.max(absY, 0);
+        absY = Math.min(absY, scope.height! - node.height!);
+
+        setPodParent({
+          id: node.id,
+          parent: scope.id,
+          dirty: true,
+        });
+
+        const currentNode = nodesMap.get(node.id);
+        if (currentNode) {
+          currentNode.style!.backgroundColor = level2color[scope.level + 1];
+          (currentNode as any).level = scope.level + 1;
+          currentNode.parentNode = scope.id;
+          currentNode.data!.parent = scope.id;
+          currentNode.position = { x: absX, y: absY };
+          nodesMap.set(node.id, currentNode);
         }
+
+        // update
         setPodPosition({
           id: node.id,
           x: absX,
           y: absY,
+          dirty: true,
         });
-
-        // check if this position is inside parent scope
-        if (scope && scope.id !== commonParent) {
-          // FIXME: to enable collaborative editing, consider how to sync dropping scope immediately. consider useEffect in each node when data.parent or parent changes.
-          setPodParent({
-            id: node.id,
-            parent: scope.id,
-          });
-        }
-
-        const currentNode = nodesMap.get(node.id);
-        if (currentNode) {
-          if (scope) {
-            currentNode.style!.backgroundColor = level2color[scope.level + 1];
-            (currentNode as any).level = scope.level + 1;
-            currentNode.parentNode = scope.id;
-          }
-          currentNode.position = { x: absX, y: absY };
-
-          nodesMap.set(node.id, currentNode);
-        }
       });
     },
     // We need to monitor nodes, so that getScopeAt can have all the nodes.
