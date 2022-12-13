@@ -5,14 +5,14 @@ const prisma = new PrismaClient();
 
 // console.log("resolver_repo.ts", Prisma.RepoInclude);
 
-function checkWriteAccess({repo, userId}) {
+function checkWriteAccess({ repo, userId }) {
   console.log(repo, userId);
   if (repo.userId !== userId && repo.collaboratorIds.indexOf(userId) === -1) {
     throw new Error("You do not have write access to this repo.");
   }
 }
 
-async function ensurePodAccess({ id, userId, read=true}) {
+async function ensurePodAccess({ id, userId, read = true }) {
   let pod = await prisma.pod.findFirst({
     where: { id },
     // HEBI: select is used to select a subset of fields
@@ -41,11 +41,14 @@ async function ensurePodAccess({ id, userId, read=true}) {
   }
   // public repo can be accessed by everyone
   // if the user is the owner or one of the collaborators, then it is ok
-  if (pod.repo.owner.id !== userId && pod.repo.collaboratorIds.indexOf(userId) === -1) {
-    if( !read || !pod.repo.public) {
-    throw new Error("You do not have access to this pod.");
+  if (
+    pod.repo.owner.id !== userId &&
+    pod.repo.collaboratorIds.indexOf(userId) === -1
+  ) {
+    if (!read || !pod.repo.public) {
+      throw new Error("You do not have access to this pod.");
+    }
   }
-}
 }
 
 export async function repos() {
@@ -70,13 +73,13 @@ export async function myRepos(_, __, { userId }) {
   return repos;
 }
 
-export async function myCollabRepos(_, __, {userId}) {
+export async function myCollabRepos(_, __, { userId }) {
   if (!userId) throw Error("Unauthenticated");
   // console.log("myCollabRepos", userId);
   const repos = await prisma.repo.findMany({
     where: {
       collaboratorIds: {
-        has:userId,
+        has: userId,
       },
     },
   });
@@ -86,11 +89,12 @@ export async function myCollabRepos(_, __, {userId}) {
 export async function repo(_, { id }, { userId }) {
   // a user can only access a private repo if he is the owner or a collaborator
   const repo = await prisma.repo.findFirst({
-    where: { OR: [
-      { id, public: true },
-      { id, owner: { id: userId || "undefined"} },
-      { id, collaboratorIds: { has: userId || "undefined"} },
-    ]
+    where: {
+      OR: [
+        { id, public: true },
+        { id, owner: { id: userId || "undefined" } },
+        { id, collaboratorIds: { has: userId || "undefined" } },
+      ],
     },
     include: {
       owner: true,
@@ -105,7 +109,7 @@ export async function repo(_, { id }, { userId }) {
       },
     },
   });
-  if(!repo) throw Error("Repo not found");
+  if (!repo) throw Error("Repo not found");
   return repo;
 }
 
@@ -118,7 +122,7 @@ export async function pod(_, { id }) {
   });
 }
 
-export async function createRepo(_, { id, name, isPublic}, { userId }) {
+export async function createRepo(_, { id, name, isPublic }, { userId }) {
   if (!userId) throw Error("Unauthenticated");
   const repo = await prisma.repo.create({
     data: {
@@ -170,7 +174,7 @@ export async function deleteRepo(_, { name }, { userId }) {
   return true;
 }
 
-export async function addCollaborator(_, { repoId, email }, { userId}) {
+export async function addCollaborator(_, { repoId, email }, { userId }) {
   // make sure the repo is writable by this user
   if (!userId) throw new Error("Not authenticated.");
   // 1. find the repo
@@ -185,20 +189,21 @@ export async function addCollaborator(_, { repoId, email }, { userId}) {
   const user = await prisma.user.findFirst({
     where: {
       email,
-    }
+    },
   });
   if (!user) throw new Error("User not found");
   if (user.id === userId) throw new Error("You are already the owner.");
-  if (repo.collaboratorIds.indexOf(user.id) !== -1) throw new Error("The user is already a collaborator.");
+  if (repo.collaboratorIds.indexOf(user.id) !== -1)
+    throw new Error("The user is already a collaborator.");
   // 3. add the user to the repo
   const res = await prisma.repo.update({
     where: {
       id: repoId,
     },
     data: {
-      collaboratorIds: {push: user.id},
-    }
-  })
+      collaboratorIds: { push: user.id },
+    },
+  });
   return true;
 }
 
@@ -212,8 +217,8 @@ export async function addPod(_, { repoId, parent, index, input }, { userId }) {
     },
   });
   if (!repo) throw new Error("Repo not found");
-  
-  checkWriteAccess({repo, userId});
+
+  checkWriteAccess({ repo, userId });
   // update all other records
   await prisma.pod.updateMany({
     where: {
@@ -266,7 +271,7 @@ export async function addPod(_, { repoId, parent, index, input }, { userId }) {
 
 export async function updatePod(_, { id, input }, { userId }) {
   if (!userId) throw new Error("Not authenticated.");
-  await ensurePodAccess({ id, userId, read:false });
+  await ensurePodAccess({ id, userId, read: false });
   const pod = await prisma.pod.update({
     where: {
       id,
@@ -292,7 +297,7 @@ export async function updatePod(_, { id, input }, { userId }) {
 
 export async function deletePod(_, { id, toDelete }, { userId }) {
   if (!userId) throw new Error("Not authenticated.");
-  await ensurePodAccess({ id, userId, read:false});
+  await ensurePodAccess({ id, userId, read: false });
   // find all children of this ID
   // FIXME how to ensure atomic
   // 1. find the parent of this node
