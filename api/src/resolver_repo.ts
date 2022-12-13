@@ -1,4 +1,9 @@
 import Prisma from "@prisma/client";
+// nanoid v4 does not work with nodejs. https://github.com/ai/nanoid/issues/365
+import { customAlphabet } from "nanoid/async";
+import { lowercase, numbers } from "nanoid-dictionary";
+
+const nanoid = customAlphabet(lowercase + numbers, 20);
 const { PrismaClient } = Prisma;
 
 const prisma = new PrismaClient();
@@ -126,9 +131,8 @@ export async function createRepo(_, { id, name, isPublic }, { userId }) {
   if (!userId) throw Error("Unauthenticated");
   const repo = await prisma.repo.create({
     data: {
-      id,
-      name,
-      public: isPublic,
+      id: await nanoid(),
+      name: "Untitled",
       owner: {
         connect: {
           id: userId,
@@ -142,7 +146,30 @@ export async function createRepo(_, { id, name, isPublic }, { userId }) {
   return repo;
 }
 
-export async function deleteRepo(_, { name }, { userId }) {
+export async function updateRepo(_, { id, name }, { userId }) {
+  if (!userId) throw Error("Unauthenticated");
+  const repo = await prisma.repo.findFirst({
+    where: {
+      id,
+      owner: {
+        id: userId,
+      },
+    },
+  });
+  if (!repo) throw new Error("Repo not found");
+  const updatedRepo = await prisma.repo.update({
+    where: {
+      id,
+    },
+    data: {
+      name,
+    },
+  });
+  console.log("updatedRepo", updatedRepo);
+  return true;
+}
+
+export async function deleteRepo(_, { id }, { userId }) {
   if (!userId) throw Error("Unauthenticated");
   const user = await prisma.user.findFirst({
     where: {
@@ -151,7 +178,7 @@ export async function deleteRepo(_, { name }, { userId }) {
   });
   const repo = await prisma.repo.findFirst({
     where: {
-      name,
+      id,
       owner: {
         id: userId,
       },

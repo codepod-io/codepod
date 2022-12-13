@@ -135,6 +135,7 @@ export interface RepoSlice {
 
   resetState: () => void;
   setRepo: (repoId: string) => void;
+  setRepoName: (name: string) => void;
   loadRepo: (client: ApolloClient<object>, repoId: string) => void;
   setSessionId: (sessionId: string) => void;
   addError: (error: { type: string; msg: string }) => void;
@@ -711,6 +712,13 @@ const createRepoSlice: StateCreator<
     set(
       produce((state) => {
         state.pods[id].ispublic = ispublic;
+      })
+    );
+  },
+  setRepoName: (name) => {
+    set(
+      produce((state) => {
+        state.repoName = name;
       })
     );
   },

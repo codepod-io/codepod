@@ -48,16 +48,15 @@ model User {
 }
 
 model Repo {
-    id     String   @id
-    name   String
+    id              String   @id
+    name            String?
     // fullname String  @unique
-    owner  User     @relation(fields: [userId], references: [id])
-    userId String
-    pods   Pod[]    @relation("BELONG")
-    podsId String[]
-    public Boolean @default(false)
-    collaboratorIds String[] 
-    
+    owner           User     @relation(fields: [userId], references: [id])
+    userId          String
+    pods            Pod[]    @relation("BELONG")
+    podsId          String[]
+    public          Boolean  @default(false)
+    collaboratorIds String[]
 
     @@unique([name, userId])
 }

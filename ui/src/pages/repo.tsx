@@ -4,7 +4,7 @@ import Box from "@mui/material/Box";
 import Link from "@mui/material/Link";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
-import { useApolloClient } from "@apollo/client";
+import { gql, useApolloClient, useMutation } from "@apollo/client";
 
 import { useEffect, useState, useRef, useContext } from "react";
 
@@ -17,17 +17,28 @@ import { Canvas } from "../components/Canvas";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import { useLocalStorage } from "../hooks/useLocalStorage";
+import { Stack, TextField } from "@mui/material";
 
 const DrawerWidth = 240;
 const SIDEBAR_KEY = "sidebar";
 
-function RepoWrapper({ children }) {
+function RepoWrapper({ children, id }) {
   // this component is used to provide a foldable layout
   const [open, setOpen] = useLocalStorage(SIDEBAR_KEY, true);
 
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const repoName = useStore(store, (state) => state.repoName);
+  const setRepoName = useStore(store, (state) => state.setRepoName);
+
+  const [updateRepo, { error }] = useMutation(
+    gql`
+      mutation UpdateRepo($id: ID!, $name: String) {
+        updateRepo(id: $id, name: $name)
+      }
+    `,
+    { refetchQueries: ["GetRepos", "GetCollabRepos"] }
+  );
 
   return (
     <Box
@@ -54,7 +65,34 @@ function RepoWrapper({ children }) {
           ml: open ? `${DrawerWidth}px` : 0,
         }}
       >
-        <Header open={open} drawerWidth={DrawerWidth} currentPage={repoName} />
+        <Header
+          open={open}
+          drawerWidth={DrawerWidth}
+          breadcrumbItem={
+            <Stack direction="row">
+              <TextField
+                hiddenLabel
+                defaultValue={"Untitled"}
+                value={repoName}
+                size="small"
+                sx={{
+                  maxWidth: "100%",
+                }}
+                onChange={(e) => {
+                  const name = e.target.value;
+                  setRepoName(name);
+                  updateRepo({
+                    variables: {
+                      id,
+                      name,
+                    },
+                  });
+                }}
+              />
+              {error && <Box>ERROR: {error.message}</Box>}
+            </Stack>
+          }
+        />
         <Box
           sx={{
             boxSizing: "border-box",
@@ -171,7 +209,7 @@ function RepoImpl() {
   }
 
   return (
-    <RepoWrapper>
+    <RepoWrapper id={id}>
       {!repoLoaded && <Box>Repo Loading ...</Box>}
       {repoLoaded && (
         <Box

@@ -23,10 +23,10 @@ import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import ShareIcon from "@mui/icons-material/Share";
 import Chip from "@mui/material/Chip";
-import { ShareProjDialog } from "../../components/ShareProjDialog";
-import CreateRepoForm from "./CreateRepoForm";
-import useMe from "../../lib/me";
-import { getUpTime } from "../../lib/utils";
+import { ShareProjDialog } from "../components/ShareProjDialog";
+import useMe from "../lib/me";
+import { getUpTime } from "../lib/utils";
+import { Button } from "@mui/material";
 
 enum RepoTypes {
   repo = "myRepos",
@@ -103,7 +103,7 @@ function RepoLine({ repo, deletable, sharable, runtimeInfo }) {
                 marginRight: "5px",
               }}
             />
-            {`${repo.name}`}
+            {repo.name || "Untitled"}
           </Box>
         </Link>
       </TableCell>
@@ -201,6 +201,37 @@ function RepoHintText({ type = RepoTypes.repo }) {
   );
 }
 
+function CreateRepoForm(props) {
+  const [createRepo] = useMutation(
+    gql`
+      mutation CreateRepo {
+        createRepo {
+          id
+        }
+      }
+    `,
+    {
+      refetchQueries: ["GetRepos"],
+    }
+  );
+  const navigate = useNavigate();
+  return (
+    <Box>
+      <Button
+        variant="contained"
+        onClick={async () => {
+          let res = await createRepo();
+          if (res.data.createRepo.id) {
+            navigate(`/repo/${res.data.createRepo.id}`);
+          }
+        }}
+      >
+        Create New Project
+      </Button>
+    </Box>
+  );
+}
+
 function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
   const { loading, error, data } = useQuery(url);
   const { me } = useMe();
@@ -248,7 +279,7 @@ function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
         >
           {RepoTitleHint[type]} ({repos.length})
         </Box>
-        {type === RepoTypes.repo && <CreateRepoForm variant="contained" />}
+        {type === RepoTypes.repo && <CreateRepoForm />}
       </Box>
 
       <TableContainer component={Paper}>

@@ -43,7 +43,7 @@ import { ResizableBox } from "react-resizable";
 import Ansi from "ansi-to-react";
 
 import { customAlphabet } from "nanoid";
-import { nolookalikes } from "nanoid-dictionary";
+import { lowercase, numbers } from "nanoid-dictionary";
 
 import { useStore } from "zustand";
 
@@ -57,7 +57,7 @@ import styles from "./canvas.style.js";
 import { ShareProjDialog } from "./ShareProjDialog";
 import { analyzeCode } from "../lib/parser";
 
-const nanoid = customAlphabet(nolookalikes, 10);
+const nanoid = customAlphabet(lowercase + numbers, 20);
 
 interface Props {
   data: any;
@@ -878,7 +878,7 @@ export function Canvas() {
         x: x - reactFlowBounds.left,
         y: y - reactFlowBounds.top,
       });
-      let id = "pod_" + nanoid();
+      let id = nanoid();
       const newNode = {
         id,
         type,

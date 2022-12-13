@@ -7,11 +7,6 @@ import {
   gql,
 } from "@apollo/client";
 
-import { customAlphabet } from "nanoid";
-import { nolookalikes } from "nanoid-dictionary";
-
-const nanoid = customAlphabet(nolookalikes, 10);
-
 type AuthContextType = ReturnType<typeof useProvideAuth>;
 
 const authContext = createContext<AuthContextType | null>(null);
@@ -122,14 +117,12 @@ function useProvideAuth() {
         $lastname: String!
         $email: String!
         $password: String!
-        $id: ID
       ) {
         signup(
           firstname: $firstname
           lastname: $lastname
           email: $email
           password: $password
-          id: $id
         ) {
           token
         }
@@ -142,7 +135,6 @@ function useProvideAuth() {
         lastname,
         password,
         email,
-        id: "user_" + nanoid(),
       },
     });
 
