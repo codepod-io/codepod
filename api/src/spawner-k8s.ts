@@ -262,15 +262,27 @@ export async function killRuntime(_, { sessionId }) {
   console.log("Using k8s ns:", ns);
   console.log("Killing pod ..");
   // await k8sApi.deleteNamespacedPod(getPodSpec(k8s_name).metadata.name, ns);
-  await k8sAppsApi.deleteNamespacedDeployment(
-    getDeploymentSpec(k8s_name).metadata.name,
-    ns
-  );
+  try {
+    await k8sAppsApi.deleteNamespacedDeployment(
+      getDeploymentSpec(k8s_name).metadata.name,
+      ns
+    );
+  } catch (e: any) {
+    console.log("[ERROR] cannot kill pod", url, e);
+    return false;
+  }
+
   console.log("Killing service ..");
-  await k8sApi.deleteNamespacedService(
-    getServiceSpec(k8s_name).metadata.name,
-    ns
-  );
+  try {
+    await k8sApi.deleteNamespacedService(
+      getServiceSpec(k8s_name).metadata.name,
+      ns
+    );
+  } catch (e: any) {
+    console.log("[ERROR] cannot kill route", url, e);
+    return false;
+  }
+
   // remote route
   console.log("Removing route ..");
   await apollo_client.mutate({
