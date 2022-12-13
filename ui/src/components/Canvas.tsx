@@ -1005,6 +1005,17 @@ export function Canvas() {
         return;
       }
 
+      // update the level of a node as well as its all descendants
+      function updateLevel(id: string, level: number) {
+        const node = nodesMap.get(id);
+        if (node) {
+          (node as any).level = level;
+          node.style!.backgroundColor = level2color[level];
+          nodesMap.set(id, node);
+          getPod(id)?.children.forEach(({ id }) => updateLevel(id, level + 1));
+        }
+      }
+
       // check if this position is inside parent scope
       nodes.forEach((node) => {
         let absX = node.position.x;
@@ -1031,13 +1042,13 @@ export function Canvas() {
 
         const currentNode = nodesMap.get(node.id);
         if (currentNode) {
-          currentNode.style!.backgroundColor = level2color[scope.level + 1];
-          (currentNode as any).level = scope.level + 1;
           currentNode.parentNode = scope.id;
           currentNode.data!.parent = scope.id;
           currentNode.position = { x: absX, y: absY };
           nodesMap.set(node.id, currentNode);
         }
+
+        updateLevel(node.id, scope.level + 1);
 
         // update
         setPodPosition({
@@ -1049,7 +1060,14 @@ export function Canvas() {
       });
     },
     // We need to monitor nodes, so that getScopeAt can have all the nodes.
-    [reactFlowInstance, getScopeAt, setPodPosition, nodesMap, setPodParent]
+    [
+      reactFlowInstance,
+      getScopeAt,
+      setPodPosition,
+      nodesMap,
+      setPodParent,
+      getPod,
+    ]
   );
 
   const onNodesDelete = useCallback(
