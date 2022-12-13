@@ -1,10 +1,27 @@
 # CodePod: coding on a canvas, organized.
 
-![screenshot](./screenshot.png)
+Codepod provides the interactive coding experience popularized by Jupyter, but
+with scalability and production-readiness. Users can still incrementally build
+up code by trying out a small code snippet each time. But they would not be
+overwhelmed by the great number of code snippets as the projects grow.
+
+![screenshot](./screenshot-canvas.png)
 
 # We are on Beta testing
 
-And we are actively polishing everything. You might want to take a look at the [known issues](https://github.com/codepod-io/codepod/wiki/Known-Issues) along your adventure with Codepod.
+And we are actively polishing everything. You might want to take a look at the
+[known
+issues](<https://github.com/codepod-io/codepod/wiki/Known-Issues-(and-we-are-fixing-them!)>)
+along your adventure with Codepod.
+
+# Contributing
+
+CodePod is open source under MIT license. Feel free to contribute! We can make
+it better together. You can contribute by opening an issue, discussion, or
+submit a pull request. Please use [Prettier](https://prettier.io/) (e.g., [its
+VSCode
+plugin](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode))
+to format your code before checking in.
 
 # Developing CodePod using docker-compose
 
@@ -50,13 +67,18 @@ initialize the database. To do that, open a shell into the API container and run
 npx prisma migrate dev
 ```
 
-This command is also needed after the database schema is changed.
+This command is also needed after the database schema is changed. The protocol is:
 
-# Contributing
+- One developer changed [the schema](./api/prisma/schema.prisma). He will run
+  `npx prisma migrate dev --name add_a_new_field`. This will generate a
+  migration, e.g. [this
+  migration](./api/prisma/migrations/20221206194247_add_google_login/migration.sql).
+  The schema change along with this migration need to be checked in to git.
+- Another developer pull the change, then run `npx prisma migrate dev` (in the
+  api container's shell) to apply the schema change.
 
-CodePod is open source under MIT license. Feel free to contribute! We can make
-it better together. You can contribute by opening an issue, discussion, or
-submit a pull request. Please use [Prettier](https://prettier.io/) (e.g., [its
-VSCode
-plugin](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode))
-to format your code before checking in.
+## Auto-completion & Linting
+
+Although we develop using docker, we still want auto-complete and linting while
+coding. For that to work, you need to install the node packages locally, i.e.,
+run `yarn` in `api/`, `ui/`, etc.
