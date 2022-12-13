@@ -307,7 +307,16 @@ function startProxyServer() {
       return;
     }
     console.log("proxy ws req", req.url);
-    // FIXME why there're two leading slashes? "//user_xxx_repo_xxx"
+    if (req.url.startsWith("//")) {
+      // FIXME why there're two leading slashes? "//user_xxx_repo_xxx"
+      // UPDATE: for docker runtime, there's double slashes
+      // console.log("active docker connection", req.url.substring(1));
+      activeTable[req.url.substring(1)] = new Date();
+    } else {
+      // For k8s runtime, there's only one slash
+      // console.log("active k8s connection", req.url);
+      activeTable[req.url] = new Date();
+    }
     activeTable[req.url.substring(1)] = new Date();
     let match = await getRouteTarget(req);
     if (!match) {
@@ -342,7 +351,7 @@ function startWebServer() {
   //
   const WEB_PORT = process.env.WEB_PORT || 4012;
   // _routes.add("/", { target: "http://127.0.0.1:9000" });
-  _routes.add("/test", `http://localhost:${WEB_PORT}`);
+  // _routes.add("/test", `http://localhost:${WEB_PORT}`);
   // Now http://localhost:4010/test should redirect to localhost:4012 and show some response.
   console.log(`Demo web server listenning on http://localhost:${WEB_PORT}`);
   http
