@@ -25,48 +25,18 @@ import { useAuth } from "../lib/auth";
 
 import useMe from "../lib/me";
 
-type HeaderTitleProps = {
-  currentPage: string | null;
-};
-
-const HeaderTitle: React.FC<HeaderTitleProps> = ({ currentPage = null }) => {
-  if (!currentPage) {
-    return (
-      <Typography variant="h6" sx={{ display: "flex", flexGrow: 1 }}>
-        <Link component={ReactLink} underline="none" to="/">
-          CodePod
-        </Link>
-      </Typography>
-    );
-  }
-
-  return (
-    <Breadcrumbs
-      aria-label="breadcrumb"
-      sx={{
-        alignItems: "baseline",
-        display: "flex",
-        flexGrow: 1,
-      }}
-    >
-      <Link component={ReactLink} underline="hover" to="/">
-        <Typography noWrap>CodePod</Typography>
-      </Link>
-      <Typography color="text.primary">{currentPage}</Typography>
-    </Breadcrumbs>
-  );
-};
-
 type HeaderProps = {
   open?: boolean;
   drawerWidth?: number;
   currentPage?: string | null;
+  breadcrumbItem?: React.ReactNode;
 };
 
 export const Header: React.FC<HeaderProps> = ({
   open = false,
   drawerWidth = 0,
   currentPage = null,
+  breadcrumbItem = null,
 }) => {
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
@@ -107,56 +77,22 @@ export const Header: React.FC<HeaderProps> = ({
             maxHeight: "10px",
           }}
         >
-          <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
-            <IconButton
-              size="large"
-              aria-label="account of current user"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={handleOpenNavMenu}
-              color="primary"
-            >
-              <MenuIcon />
-            </IconButton>
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorElNav}
-              anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "left",
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: "top",
-                horizontal: "left",
-              }}
-              open={Boolean(anchorElNav)}
-              onClose={handleCloseNavMenu}
-            >
-              {/* The toggle menu */}
-              <MenuItem onClick={handleCloseNavMenu}>
-                <Link to="/repos" component={ReactLink} underline="none">
-                  Repos
-                </Link>
-              </MenuItem>
-              <MenuItem onClick={handleCloseNavMenu}>
-                <Link to="/test" component={ReactLink} underline="none">
-                  Test
-                </Link>
-              </MenuItem>
-              <MenuItem onClick={handleCloseNavMenu}>
-                <Link to="/docs" component={ReactLink} underline="none">
-                  Docs
-                </Link>
-              </MenuItem>
-              <MenuItem onClick={handleCloseNavMenu}>
-                <Link to="/about" component={ReactLink} underline="none">
-                  About
-                </Link>
-              </MenuItem>
-            </Menu>
-          </Box>
-          <HeaderTitle currentPage={currentPage} />
+          <Breadcrumbs
+            aria-label="breadcrumb"
+            sx={{
+              alignItems: "baseline",
+              display: "flex",
+              flexGrow: 1,
+            }}
+          >
+            <Link component={ReactLink} underline="hover" to="/">
+              <Typography noWrap>CodePod</Typography>
+            </Link>
+            {currentPage && (
+              <Typography color="text.primary">{currentPage}</Typography>
+            )}
+            {breadcrumbItem}
+          </Breadcrumbs>
 
           {/* The navigation on desktop */}
           <Box

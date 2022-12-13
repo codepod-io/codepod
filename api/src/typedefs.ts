@@ -16,11 +16,11 @@ export const typeDefs = gql`
 
   type Repo {
     id: ID!
-    name: String!
+    name: String
     pods: [Pod]
     userId: ID!
     collaboratorIds: [ID!]
-    public: Boolean!
+    public: Boolean
   }
 
   type Pod {
@@ -100,7 +100,6 @@ export const typeDefs = gql`
   type Mutation {
     login(email: String, password: String): AuthData
     signup(
-      id: ID
       email: String
       password: String
       firstname: String
@@ -108,8 +107,9 @@ export const typeDefs = gql`
     ): AuthData
     loginWithGoogle(idToken: String): AuthData
     updateUser(email: String, firstname: String, lastname: String): Boolean
-    createRepo(name: String, id: ID, isPublic: Boolean): Repo
-    deleteRepo(name: String): Boolean
+    createRepo: Repo
+    updateRepo(id: ID, name: String): Boolean
+    deleteRepo(id: ID): Boolean
     addPod(repoId: String, parent: String, index: Int, input: PodInput): Boolean
     deletePod(id: String, toDelete: [String]): Boolean
     updatePod(id: String, input: PodInput): Boolean

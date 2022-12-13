@@ -18,6 +18,7 @@ import {
   repo,
   repos,
   updatePod,
+  updateRepo,
 } from "./resolver_repo";
 import { listAllRuntimes } from "./resolver_runtime";
 
@@ -64,6 +65,7 @@ export const resolvers = {
     login,
     loginWithGoogle,
     createRepo,
+    updateRepo,
     deleteRepo,
     clearUser: () => {},
     addPod,

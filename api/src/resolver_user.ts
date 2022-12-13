@@ -5,9 +5,9 @@ import { OAuth2Client } from "google-auth-library";
 
 // nanoid v4 does not work with nodejs. https://github.com/ai/nanoid/issues/365
 import { customAlphabet } from "nanoid/async";
-import { nolookalikes } from "nanoid-dictionary";
+import { lowercase, numbers } from "nanoid-dictionary";
 
-const nanoid = customAlphabet(nolookalikes, 10);
+const nanoid = customAlphabet(lowercase + numbers, 20);
 
 const { PrismaClient } = Prisma;
 
@@ -30,12 +30,12 @@ export async function me(_, __, { userId }) {
   return user;
 }
 
-export async function signup(_, { id, email, password, firstname, lastname }) {
+export async function signup(_, { email, password, firstname, lastname }) {
   const salt = await bcrypt.genSalt(10);
   const hashed = await bcrypt.hash(password, salt);
   const user = await prisma.user.create({
     data: {
-      id,
+      id: await nanoid(),
       email,
       firstname,
       lastname,
@@ -123,7 +123,6 @@ export async function loginWithGoogle(_, { idToken }) {
     user = await prisma.user.create({
       data: {
         id: await nanoid(),
-        // id: "dfs",
         email: payload["email"]!,
         firstname: payload["given_name"]!,
         lastname: payload["family_name"]!,

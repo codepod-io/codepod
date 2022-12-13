@@ -33,27 +33,6 @@ function Flex(props) {
   );
 }
 
-function SidebarSession() {
-  let { id } = useParams();
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  let sessionId = useStore(store, (state) => state.sessionId);
-  const repoName = useStore(store, (state) => state.repoName);
-
-  console.log(`Repo ID: ${id} Session ID: ${sessionId}`);
-
-  return (
-    <Box>
-      <Box>
-        Name:{" "}
-        <Box component="span" color="blue">
-          {repoName || "Error"}
-        </Box>
-      </Box>
-    </Box>
-  );
-}
-
 function SidebarRuntime() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -386,19 +365,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <Grid item xs={12}>
                   <Box> Read-only Mode: You are a guest. </Box>
                 </Grid>
-                <Grid item xs={12}>
-                  {" "}
-                  <SidebarSession />
-                </Grid>
               </>
             ) : (
               <>
                 <Grid item xs={12}>
                   <SyncStatus />
-                </Grid>
-                <Grid item xs={12}>
-                  {" "}
-                  <SidebarSession />
                 </Grid>
                 <Grid item xs={12}>
                   <SidebarRuntime />

@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Repo" ALTER COLUMN "name" DROP NOT NULL;
