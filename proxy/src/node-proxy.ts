@@ -351,7 +351,7 @@ function startWebServer() {
   //
   const WEB_PORT = process.env.WEB_PORT || 4012;
   // _routes.add("/", { target: "http://127.0.0.1:9000" });
-  _routes.add("/test", `http://localhost:${WEB_PORT}`);
+  // _routes.add("/test", `http://localhost:${WEB_PORT}`);
   // Now http://localhost:4010/test should redirect to localhost:4012 and show some response.
   console.log(`Demo web server listenning on http://localhost:${WEB_PORT}`);
   http
