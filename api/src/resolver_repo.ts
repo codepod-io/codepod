@@ -120,7 +120,6 @@ export async function createRepo(_, { id, name, isPublic }, { userId }) {
   const repo = await prisma.repo.create({
     data: {
       id: await nanoid(),
-      name: "Untitled",
       owner: {
         connect: {
           id: userId,
@@ -153,7 +152,6 @@ export async function updateRepo(_, { id, name }, { userId }) {
       name,
     },
   });
-  console.log("updatedRepo", updatedRepo);
   return true;
 }
 
