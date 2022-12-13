@@ -37,13 +37,13 @@ export async function listAllRuntimes(_, {}, { userId }) {
   });
   let res = urls.data.getUrls
     .map(({ url, lastActive }) => {
-      let match_res = url.match(/\/user_(.*)_repo_(.*)/);
-      if (match_res) {
-        if (`user_${match_res[1]}` === userId)
-          return {
-            sessionId: `user_${match_res[1]}_repo_${match_res[2]}`,
-            lastActive,
-          };
+      // Just find userId in the session ID
+      let sessionId = url.substring(1);
+      if (sessionId.indexOf(userId) !== -1) {
+        return {
+          sessionId,
+          lastActive,
+        };
       }
       return false;
     })
