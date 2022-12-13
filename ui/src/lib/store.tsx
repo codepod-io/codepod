@@ -177,8 +177,26 @@ export interface RepoSlice {
     content: { data: { html: string; text: string; image: string } };
     count: number;
   }) => void;
-  setPodPosition: ({ id, x, y }: any) => void;
-  setPodParent: ({ id, parent }: any) => void;
+  setPodPosition: ({
+    id,
+    x,
+    y,
+    dirty,
+  }: {
+    id: string;
+    x: number;
+    y: number;
+    dirty: boolean;
+  }) => void;
+  setPodParent: ({
+    id,
+    parent,
+    dirty,
+  }: {
+    id: string;
+    parent: string;
+    dirty: boolean;
+  }) => void;
   currentEditor: string | null;
   setCurrentEditor: (id: string | null) => void;
   setUser: (user: any) => void;
@@ -492,13 +510,13 @@ const createRepoSlice: StateCreator<
         state.pods[id].render = value;
       })
     ),
-  setPodPosition: ({ id, x, y }) =>
+  setPodPosition: ({ id, x, y, dirty = true }) =>
     set(
       produce((state) => {
         let pod = state.pods[id];
         pod.x = x;
         pod.y = y;
-        pod.dirty = true;
+        pod.dirty ||= dirty;
       }),
       false,
       // @ts-ignore
@@ -653,7 +671,7 @@ const createRepoSlice: StateCreator<
         }
       })
     ),
-  setPodParent: ({ id, parent }) =>
+  setPodParent: ({ id, parent, dirty = true }) =>
     set(
       produce((state) => {
         // FIXME I need to modify many pods here.
@@ -661,7 +679,7 @@ const createRepoSlice: StateCreator<
         const oldparent = state.pods[state.pods[id].parent];
         state.pods[id].parent = parent;
         // FXME I'm marking all the pods as dirty here.
-        state.pods[id].dirty = true;
+        state.pods[id].dirty ||= dirty;
         state.pods[parent].children.push(state.pods[id]);
         let idx = oldparent.children.findIndex(({ id: _id }) => _id === id);
         oldparent.children.splice(idx, 1);
