@@ -1105,7 +1105,6 @@ export function Canvas() {
           onNodeDragStop={onNodeDragStop}
           onNodesDelete={onNodesDelete}
           onSelectionChange={onSelectionChange}
-          fitView
           attributionPosition="top-right"
           maxZoom={5}
           onPaneContextMenu={onPaneContextMenu}
