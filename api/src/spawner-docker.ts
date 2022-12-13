@@ -266,13 +266,24 @@ export async function spawnRuntime(_, { sessionId }) {
 }
 
 export async function killRuntime(_, { sessionId }) {
+  if (!sessionId) return false;
   // TODO kill the runtime server.
   // FIXME handle exception, and kill zombie containers
   let url = `/${sessionId!}`;
   let zmq_host = `cpkernel_${sessionId}`;
-  await removeContainer(zmq_host);
+  try {
+    await removeContainer(zmq_host);
+  } catch (e) {
+    console.log("Error removing container", zmq_host, e);
+    return false;
+  }
   let ws_host = `cpruntime_${sessionId}`;
-  await removeContainer(ws_host);
+  try {
+    await removeContainer(ws_host);
+  } catch (e) {
+    console.log("Error removing container", ws_host, e);
+    return false;
+  }
   // remote route
   console.log("Removing route ..");
   await apollo_client.mutate({
@@ -337,20 +348,7 @@ async function killInactiveRoutes() {
   console.log("Inactive routes", inactiveRoutes);
   for (let url of inactiveRoutes) {
     let sessionId = url.substring(1);
-    let zmq_host = `cpkernel_${sessionId}`;
-    let ws_host = `cpruntime_${sessionId}`;
-    await removeContainer(zmq_host);
-    await removeContainer(ws_host);
-    await apollo_client.mutate({
-      mutation: gql`
-        mutation deleteRoute($url: String) {
-          deleteRoute(url: $url)
-        }
-      `,
-      variables: {
-        url,
-      },
-    });
+    await killRuntime(null, { sessionId });
   }
 }
 
