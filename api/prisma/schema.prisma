@@ -58,6 +58,7 @@ model Repo {
     podsId        String[]
     public        Boolean  @default(false)
     collaborators User[]   @relation("COLLABORATOR")
+    edges         Edge[]
 }
 
 enum PodType {
@@ -75,6 +76,9 @@ model Edge {
     to     Pod    @relation("TO", fields: [toId], references: [id])
     toId   String
 
+    repo   Repo   @relation(fields: [repoId], references: [id])
+    repoId String
+    
     @@id([fromId, toId])
 }
 

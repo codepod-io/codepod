@@ -110,8 +110,8 @@ export const Header: React.FC<HeaderProps> = ({
                 display: "flex",
               }}
               alignItems="center"
-              // alignContent="center"
-              // textAlign={"center"}
+            // alignContent="center"
+            // textAlign={"center"}
             >
               {/* <span>Docs</span> */}
               Docs <OpenInNewIcon fontSize="small" sx={{ ml: "1px" }} />
