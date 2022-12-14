@@ -68,7 +68,6 @@ interface Props {
   // note that xPos and yPos are the absolute position of the node
   xPos: number;
   yPos: number;
-  dragging:boolean;
 }
 
 const ScopeNode = memo<Props>(function ScopeNode({
@@ -78,7 +77,6 @@ const ScopeNode = memo<Props>(function ScopeNode({
   selected,
   xPos,
   yPos,
-  dragging
 }) {
   // add resize to the node
   const ref = useRef(null);
@@ -443,7 +441,6 @@ const CodeNode = memo<Props>(function ({
   selected,
   xPos,
   yPos,
-  dragging
 }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -540,19 +537,6 @@ const CodeNode = memo<Props>(function ({
       });
     }
   }, [xPos, yPos, setPodPosition, id]);
-
-  useEffect(() => {
-    // get relative position
-    const node = nodesMap.get(id);
-    const parentNode = nodesMap.get(node?.parentNode??'');
-    // console.log(node, parentNode)
-    if(node?.parentNode && !node.position.x && dragging){
-      node.parentNode = undefined
-      node.data!.parent = 'ROOT'
-      setPodParent({ id, parent: 'ROOT', dirty: false });
-    }
-  }, [xPos, yPos, setPodPosition, id]);
-
 
   useEffect(() => {
     if (data.parent !== undefined) {
@@ -1182,24 +1166,24 @@ export function Canvas() {
           multiSelectionKeyCode={isMac ? "Meta" : "Control"}
         >
           <Box>
-            {/*<MiniMap*/}
-            {/*  nodeStrokeColor={(n) => {*/}
-            {/*    if (n.style?.borderColor) return n.style.borderColor;*/}
-            {/*    if (n.type === "code") return "#d6dee6";*/}
-            {/*    if (n.type === "scope") return "#f4f6f8";*/}
+            <MiniMap
+              nodeStrokeColor={(n) => {
+                if (n.style?.borderColor) return n.style.borderColor;
+                if (n.type === "code") return "#d6dee6";
+                if (n.type === "scope") return "#f4f6f8";
 
-            {/*    return "#d6dee6";*/}
-            {/*  }}*/}
-            {/*  nodeColor={(n) => {*/}
-            {/*    if (n.style?.backgroundColor) return n.style.backgroundColor;*/}
+                return "#d6dee6";
+              }}
+              nodeColor={(n) => {
+                if (n.style?.backgroundColor) return n.style.backgroundColor;
 
-            {/*    return "#f4f6f8";*/}
-            {/*  }}*/}
-            {/*  nodeBorderRadius={2}*/}
-            {/*/>*/}
-            {/*<Controls showInteractive={role !== RoleType.GUEST} />*/}
+                return "#f4f6f8";
+              }}
+              nodeBorderRadius={2}
+            />
+            <Controls showInteractive={role !== RoleType.GUEST} />
 
-            {/*<Background />*/}
+            <Background />
           </Box>
         </ReactFlow>
         {showContextMenu && (
