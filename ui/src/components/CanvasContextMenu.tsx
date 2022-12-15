@@ -68,14 +68,12 @@ export function CanvasContextMenu(props) {
             {showLineNumbers ? "Hide " : "Show "} Line Numbers
           </ListItemText>
         </MenuItem>
-        {role === RoleType.OWNER && (
-          <MenuItem onClick={props.onShareClick} sx={ItemStyle}>
-            <ListItemIcon>
-              <ShareOutlinedIcon />
-            </ListItemIcon>
-            <ListItemText> Share with Collaborators </ListItemText>
-          </MenuItem>
-        )}
+        <MenuItem onClick={props.onShareClick} sx={ItemStyle}>
+          <ListItemIcon>
+            <ShareOutlinedIcon />
+          </ListItemIcon>
+          <ListItemText> Share </ListItemText>
+        </MenuItem>
       </MenuList>
     </Box>
   );

@@ -162,7 +162,7 @@ function RepoLine({ repo, deletable, sharable, runtimeInfo }) {
             </IconButton>
           </Tooltip>
         ) : null}
-        {sharable && (
+        {/* {sharable && (
           <>
             <Tooltip title="Share">
               <IconButton size="small" onClick={() => setOpen(true)}>
@@ -176,7 +176,7 @@ function RepoLine({ repo, deletable, sharable, runtimeInfo }) {
               id={repo.id}
             />
           </>
-        )}
+        )} */}
       </TableCell>
     </TableRow>
   );

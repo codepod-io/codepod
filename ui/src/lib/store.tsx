@@ -11,6 +11,10 @@ import {
   doRemoteUpdatePod,
   doRemoteAddPod,
   doRemoteDeletePod,
+  doRemoteLoadVisibility,
+  doRemoteUpdateVisibility,
+  doRemoteAddCollaborator,
+  doRemoteDeleteCollaborator,
 } from "./fetch";
 
 import { Doc } from "yjs";
@@ -85,6 +89,9 @@ const initialState = {
   showLineNumbers: false,
   loadError: null,
   role: RoleType.GUEST,
+  collaborators: [],
+  isPublic: false,
+  shareOpen: false,
 };
 
 export type Pod = {
@@ -131,6 +138,8 @@ export interface RepoSlice {
   repoId: string | null;
   loadError: any;
   role: RoleType;
+  collaborators: any[];
+  shareOpen: boolean;
   // sessionId?: string;
 
   resetState: () => void;
@@ -154,6 +163,7 @@ export interface RepoSlice {
   clients: Map<string, any>;
   user: any;
   ydoc: Doc;
+
   updatePod: ({ id, data }: { id: string; data: Partial<Pod> }) => void;
   remoteUpdateAllPods: (client) => void;
   clearError: () => void;
@@ -211,6 +221,15 @@ export interface RepoSlice {
   setPodVisibility: (id: any, visible: any) => void;
   setPodFocus: (id: string) => void;
   setPodBlur: (id: string) => void;
+  isPublic: boolean;
+  updateVisibility: (
+    client: ApolloClient<object>,
+    isPublic: boolean
+  ) => Promise<boolean>;
+  addCollaborator: (client: ApolloClient<object>, email: string) => any;
+  deleteCollaborator: (client: ApolloClient<object>, id: string) => any;
+  loadVisibility: (client: ApolloClient<object>, repoId: string) => void;
+  setShareOpen: (open: boolean) => void;
 }
 
 type BearState = RepoSlice & RuntimeSlice;
@@ -723,9 +742,8 @@ const createRepoSlice: StateCreator<
     );
   },
   loadRepo: async (client, id) => {
-    const { pods, name, error, userId, collaborators } = await doRemoteLoadRepo(
-      { id, client }
-    );
+    const { pods, name, error, userId, collaborators, isPublic } =
+      await doRemoteLoadRepo({ id, client });
     set(
       produce((state) => {
         // TODO the children ordered by index
@@ -737,6 +755,8 @@ const createRepoSlice: StateCreator<
         }
         state.pods = normalize(pods);
         state.repoName = name;
+        state.isPublic = isPublic;
+        state.collaborators = collaborators;
         // set the user role in this repo
         if (userId === state.user.id) {
           state.role = RoleType.OWNER;
@@ -858,6 +878,48 @@ const createRepoSlice: StateCreator<
         }
       })
     ),
+  setShareOpen: (open: boolean) => set({ shareOpen: open }),
+  loadVisibility: async (client, repoId) => {
+    if (!repoId) return;
+    const { collaborators, isPublic } = await doRemoteLoadVisibility(client, {
+      repoId: get().repoId,
+    });
+    set(
+      produce((state) => {
+        state.collaborators = collaborators;
+        state.isPublic = isPublic;
+      })
+    );
+  },
+  updateVisibility: async (client, isPublic) => {
+    const res = await doRemoteUpdateVisibility(client, {
+      repoId: get().repoId,
+      isPublic,
+    });
+    console.log(res);
+    if (res) await get().loadVisibility(client, get().repoId || "");
+    return res;
+  },
+  addCollaborator: async (client, email) => {
+    const { success, error } = await doRemoteAddCollaborator(client, {
+      repoId: get().repoId,
+      email,
+    });
+    if (success) {
+      await get().loadVisibility(client, get().repoId || "");
+    }
+    return { success, error };
+  },
+  deleteCollaborator: async (client, collaboratorId) => {
+    const { success, error } = await doRemoteDeleteCollaborator(client, {
+      repoId: get().repoId,
+      collaboratorId,
+    });
+    if (success) {
+      await get().loadVisibility(client, get().repoId || "");
+    }
+    return { success, error };
+  },
 });
 
 export const createRepoStore = () =>

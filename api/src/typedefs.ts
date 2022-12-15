@@ -14,6 +14,11 @@ export const typeDefs = gql`
     lastname: String!
   }
 
+  type Visibility {
+    collaborators: [User]
+    isPublic: Boolean
+  }
+
   type Repo {
     id: ID!
     name: String
@@ -92,6 +97,7 @@ export const typeDefs = gql`
     pod(id: ID!): Pod
     myRepos: [Repo]
     activeSessions: [String]
+    getVisibility(repoId: String): Visibility
     listAllRuntimes: [RuntimeInfo]
     myCollabRepos: [Repo]
     infoRuntime(sessionId: String!): RuntimeInfo
@@ -118,6 +124,8 @@ export const typeDefs = gql`
     clearPod: Boolean
     spawnRuntime(sessionId: String): Boolean
     killRuntime(sessionId: String!): Boolean
+    updateVisibility(repoId: String, isPublic: Boolean): Boolean
     addCollaborator(repoId: String, email: String): Boolean
+    deleteCollaborator(repoId: String, collaboratorId: String): Boolean
   }
 `;

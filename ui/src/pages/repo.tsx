@@ -31,6 +31,7 @@ function RepoWrapper({ children, id }) {
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const repoName = useStore(store, (state) => state.repoName);
   const setRepoName = useStore(store, (state) => state.setRepoName);
+  const setShareOpen = useStore(store, (state) => state.setShareOpen);
 
   const [updateRepo, { error }] = useMutation(
     gql`
@@ -69,6 +70,8 @@ function RepoWrapper({ children, id }) {
         <Header
           open={open}
           drawerWidth={DrawerWidth}
+          inRepo={true}
+          setShareOpen={() => setShareOpen(true)}
           breadcrumbItem={
             <Stack direction="row">
               <TextField

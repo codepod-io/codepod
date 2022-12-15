@@ -12,6 +12,7 @@ import Avatar from "@mui/material/Avatar";
 import Breadcrumbs from "@mui/material/Breadcrumbs";
 import Link from "@mui/material/Link";
 import Button from "@mui/material/Button";
+import ShareIcon from "@mui/icons-material/Share";
 
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
@@ -30,6 +31,8 @@ type HeaderProps = {
   drawerWidth?: number;
   currentPage?: string | null;
   breadcrumbItem?: React.ReactNode;
+  inRepo?: boolean;
+  setShareOpen?: () => void;
 };
 
 export const Header: React.FC<HeaderProps> = ({
@@ -37,6 +40,8 @@ export const Header: React.FC<HeaderProps> = ({
   drawerWidth = 0,
   currentPage = null,
   breadcrumbItem = null,
+  inRepo = false,
+  setShareOpen = () => {},
 }) => {
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
@@ -93,6 +98,24 @@ export const Header: React.FC<HeaderProps> = ({
             )}
             {breadcrumbItem}
           </Breadcrumbs>
+
+          {inRepo && (
+            <Box
+              sx={{
+                display: { xs: "none", md: "flex" },
+                alignItems: "center",
+                paddingRight: "10px",
+              }}
+            >
+              <Button
+                endIcon={<ShareIcon />}
+                onClick={setShareOpen}
+                variant="contained"
+              >
+                Share
+              </Button>
+            </Box>
+          )}
 
           {/* The navigation on desktop */}
           <Box

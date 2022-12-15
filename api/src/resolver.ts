@@ -11,8 +11,11 @@ import {
   createRepo,
   deletePod,
   deleteRepo,
+  deleteCollaborator,
   myRepos,
   myCollabRepos,
+  getVisibility,
+  updateVisibility,
   addCollaborator,
   pod,
   repo,
@@ -50,7 +53,9 @@ export const resolvers = {
     repo,
     pod,
     listAllRuntimes,
+    getVisibility,
     myCollabRepos,
+
     ...(process.env.RUNTIME_SPAWNER === "k8s"
       ? {
           infoRuntime: infoRuntime_k8s,
@@ -72,6 +77,8 @@ export const resolvers = {
     updatePod,
     deletePod,
     addCollaborator,
+    updateVisibility,
+    deleteCollaborator,
     ...(process.env.RUNTIME_SPAWNER === "k8s"
       ? {
           spawnRuntime: spawnRuntime_k8s,
