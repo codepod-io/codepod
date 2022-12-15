@@ -509,6 +509,7 @@ const CodeNode = memo<Props>(function ({
           node.position = {x: 0, y: 0}
         }
       }
+      nodesMap.set(id,node)
     }
   };
 
