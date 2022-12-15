@@ -676,7 +676,7 @@ const CodeNode = memo<Props>(function ({
             </Tooltip>
           )}
           {role !== RoleType.GUEST && (
-            <Tooltip title="remove extent">
+            <Tooltip title="toggle extent">
               <IconButton
                 size="small"
                 onClick={() => {
