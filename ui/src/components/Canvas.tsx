@@ -459,7 +459,7 @@ const CodeNode = memo<Props>(function ({
   const setPodPosition = useStore(store, (state) => state.setPodPosition);
   const setCurrentEditor = useStore(store, (state) => state.setCurrentEditor);
   const setPodParent = useStore(store, (state) => state.setPodParent);
-  const getPod = useStore(store, (state) => state.getPod);
+  const getPod = useStore(store, (state) => state.getPod);;
   const pod = getPod(id);
   const role = useStore(store, (state) => state.role);
   const width = useStore(store, (state) => state.pods[id]?.width);
@@ -495,12 +495,24 @@ const CodeNode = memo<Props>(function ({
     nodesMap.delete(id);
   };
 
+  // update the level of a node as well as it's all descendants
+  function updateLevel(id: string, level: number) {
+    const node = nodesMap.get(id);
+    if (node) {
+      (node as any).level = level;
+      node.style!.backgroundColor = level2color[level];
+      nodesMap.set(id, node);
+      getPod(id)?.children.forEach(({ id }) => updateLevel(id, level - 1));
+    }
+  }
+
   const removeParentByNodeById = (id) => {
     const node = nodesMap.get(id)
     if(node?.parentNode){
       node.parentNode = undefined
       node.data!.parent = 'ROOT'
       nodesMap.set(id,node)
+      updateLevel(node.id, (node as any).level - 1);
     }
   };
 
@@ -1027,7 +1039,7 @@ export function Canvas() {
         return;
       }
 
-      // update the level of a node as well as its all descendants
+      // update the level of a node as well as it's all descendants
       function updateLevel(id: string, level: number) {
         const node = nodesMap.get(id);
         if (node) {
