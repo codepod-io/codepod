@@ -19,7 +19,11 @@ export async function doRemoteLoadRepo({ id, client }) {
         userId
         collaborators {
           id
+          email
+          firstname
+          lastname
         }
+        public
         pods {
           id
           type
@@ -71,10 +75,18 @@ export async function doRemoteLoadRepo({ id, client }) {
       error: null,
       userId: res.data.repo.userId,
       collaborators: res.data.repo.collaborators,
+      isPublic: res.data.repo.public,
     };
   } catch (e) {
     console.log(e);
-    return { pods: [], name: "", error: e, userId: null, collaborators: [] };
+    return {
+      pods: [],
+      name: "",
+      error: e,
+      userId: null,
+      collaborators: [],
+      isPublic: false,
+    };
   }
 }
 
@@ -278,4 +290,91 @@ export async function doRemoteUpdatePod(client, { pod }) {
     },
   });
   return true;
+}
+
+export async function doRemoteLoadVisibility(client, { repoId }) {
+  const query = gql`
+    query ExampleQuery($repoId: String) {
+      getVisibility(repoId: $repoId) {
+        collaborators {
+          id
+          email
+          firstname
+          lastname
+        }
+        isPublic
+      }
+    }
+  `;
+  try {
+    const res = await client.query({
+      query,
+      variables: {
+        repoId,
+      },
+      fetchPolicy: "no-cache",
+    });
+    return { ...res.data.getVisibility, error: null };
+  } catch (e) {
+    return { collaborators: [], isPublic: false, error: e };
+  }
+}
+
+export async function doRemoteUpdateVisibility(client, { repoId, isPublic }) {
+  const mutation = gql`
+    mutation updateVisibility($repoId: String, $isPublic: Boolean) {
+      updateVisibility(repoId: $repoId, isPublic: $isPublic)
+    }
+  `;
+  const res = await client.mutate({
+    mutation,
+    variables: {
+      repoId,
+      isPublic,
+    },
+  });
+  return res.data.updateVisibility;
+}
+
+export async function doRemoteAddCollaborator(client, { repoId, email }) {
+  const mutation = gql`
+    mutation addCollaborator($repoId: String, $email: String) {
+      addCollaborator(repoId: $repoId, email: $email)
+    }
+  `;
+  try {
+    const res = await client.mutate({
+      mutation,
+      variables: {
+        repoId,
+        email,
+      },
+    });
+    return { success: true, error: null };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+}
+
+export async function doRemoteDeleteCollaborator(
+  client,
+  { repoId, collaboratorId }
+) {
+  const mutation = gql`
+    mutation deleteCollaborator($repoId: String, $collaboratorId: String) {
+      deleteCollaborator(repoId: $repoId, collaboratorId: $collaboratorId)
+    }
+  `;
+  try {
+    const res = await client.mutate({
+      mutation,
+      variables: {
+        repoId,
+        collaboratorId,
+      },
+    });
+    return { success: true, error: null };
+  } catch (e) {
+    return { success: false, error: e };
+  }
 }

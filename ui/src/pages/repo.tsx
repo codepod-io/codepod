@@ -4,6 +4,8 @@ import Box from "@mui/material/Box";
 import Link from "@mui/material/Link";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
+import ShareIcon from "@mui/icons-material/Share";
+import Button from "@mui/material/Button";
 import { gql, useApolloClient, useMutation } from "@apollo/client";
 
 import { useEffect, useState, useRef, useContext } from "react";
@@ -31,6 +33,7 @@ function RepoWrapper({ children, id }) {
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const repoName = useStore(store, (state) => state.repoName);
   const setRepoName = useStore(store, (state) => state.setRepoName);
+  const setShareOpen = useStore(store, (state) => state.setShareOpen);
 
   const [updateRepo, { error }] = useMutation(
     gql`
@@ -92,6 +95,15 @@ function RepoWrapper({ children, id }) {
               />
               {error && <Box>ERROR: {error.message}</Box>}
             </Stack>
+          }
+          shareButton={
+            <Button
+              endIcon={<ShareIcon />}
+              onClick={() => setShareOpen(true)}
+              variant="contained"
+            >
+              Share
+            </Button>
           }
         />
         <Box

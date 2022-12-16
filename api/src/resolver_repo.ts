@@ -133,6 +133,41 @@ export async function createRepo(_, { id, name, isPublic }, { userId }) {
   return repo;
 }
 
+export async function getVisibility(_, { repoId }, { userId }) {
+  if (!userId) throw Error("Unauthenticated");
+  const repo = await prisma.repo.findFirst({
+    where: {
+      id: repoId,
+      owner:  { id: userId || "undefined" } 
+    },
+    include: {
+      collaborators: true,
+    },
+  });
+  if (!repo) throw Error("Repo not found");
+  return {collaborators: repo.collaborators, isPublic: repo.public};
+}
+
+export async function updateVisibility(_, { repoId, isPublic }, { userId }) {
+  if (!userId) throw Error("Unauthenticated"); 
+  const repo = await prisma.repo.findFirst({
+    where: {
+      id: repoId,
+      owner:  { id: userId || "undefined" }
+    },
+  });
+  if (!repo) throw Error("Repo not found");
+  await prisma.repo.update({
+    where: {
+      id: repoId,
+    },
+    data: {
+      public: isPublic,
+    },
+  });
+  return true;
+}
+
 export async function updateRepo(_, { id, name }, { userId }) {
   if (!userId) throw Error("Unauthenticated");
   const repo = await prisma.repo.findFirst({
@@ -220,6 +255,28 @@ export async function addCollaborator(_, { repoId, email }, { userId }) {
       collaborators: { connect: { id: other.id } },
     },
   });
+  return true;
+}
+
+export async function deleteCollaborator(_, { repoId, collaboratorId }, { userId }) {
+  if(!userId) throw new Error("Not authenticated.")
+  // 1. find the repo
+  const repo = await prisma.repo.findFirst({
+    where: {
+      id: repoId,
+      owner: { id: userId },
+    },
+  });
+  // 2. delete the user from the repo
+  if (!repo) throw new Error("Repo not found or you are not the owner.");
+  const res = await prisma.repo.update({
+    where: {
+      id: repoId,
+    },
+    data: {
+      collaborators: { disconnect: { id: collaboratorId } },
+    }
+  })
   return true;
 }
 

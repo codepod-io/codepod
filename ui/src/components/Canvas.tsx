@@ -739,12 +739,12 @@ export function Canvas() {
   // const pods = useStore(store, (state) => state.pods);
   const getPod = useStore(store, (state) => state.getPod);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
-  const [showShareDialog, setShowShareDialog] = useState(false);
   const repoId = useStore(store, (state) => state.repoId);
-  const repoName = useStore(store, (state) => state.repoName);
   const role = useStore(store, (state) => state.role);
   const provider = useStore(store, (state) => state.provider);
   const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+  const shareOpen = useStore(store, (state) => state.shareOpen);
+  const setShareOpen = useStore(store, (state) => state.setShareOpen);
 
   const getRealNodes = useCallback(
     (id: string, level: number) => {
@@ -1163,16 +1163,11 @@ export function Canvas() {
             addCode={() => addNode(client.x, client.y, "code")}
             addScope={() => addNode(client.x, client.y, "scope")}
             onShareClick={() => {
-              setShowShareDialog(true);
+              setShareOpen(true);
             }}
           />
         )}
-        <ShareProjDialog
-          open={showShareDialog}
-          onClose={() => setShowShareDialog(false)}
-          title={repoName || ""}
-          id={repoId || ""}
-        />
+        {shareOpen && <ShareProjDialog open={shareOpen} id={repoId || ""} />}
       </Box>
     </Box>
   );
