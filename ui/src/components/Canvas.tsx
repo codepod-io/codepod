@@ -10,7 +10,6 @@ import * as React from "react";
 import ReactFlow, {
   addEdge,
   applyEdgeChanges,
-  applyNodeChanges,
   Background,
   MiniMap,
   Controls,
@@ -28,8 +27,6 @@ import InputBase from "@mui/material/InputBase";
 import CircularProgress from "@mui/material/CircularProgress";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import CircleIcon from "@mui/icons-material/Circle";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
@@ -56,7 +53,6 @@ import { useApolloClient } from "@apollo/client";
 import { CanvasContextMenu } from "./CanvasContextMenu";
 import styles from "./canvas.style.js";
 import { ShareProjDialog } from "./ShareProjDialog";
-import { analyzeCode } from "../lib/parser";
 
 const nanoid = customAlphabet(lowercase + numbers, 20);
 
@@ -459,7 +455,7 @@ const CodeNode = memo<Props>(function ({
   const setPodPosition = useStore(store, (state) => state.setPodPosition);
   const setCurrentEditor = useStore(store, (state) => state.setCurrentEditor);
   const setPodParent = useStore(store, (state) => state.setPodParent);
-  const getPod = useStore(store, (state) => state.getPod);;
+  const getPod = useStore(store, (state) => state.getPod);
   const pod = getPod(id);
   const role = useStore(store, (state) => state.role);
   const width = useStore(store, (state) => state.pods[id]?.width);
