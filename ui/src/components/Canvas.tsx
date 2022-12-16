@@ -495,20 +495,11 @@ const CodeNode = memo<Props>(function ({
     nodesMap.delete(id);
   };
 
-  const toggleExtentByNodeById = (id) => {
+  const removeParentByNodeById = (id) => {
     const node = nodesMap.get(id)
     if(node?.parentNode){
-      if(node.extent)
-        delete  node.extent
-      else {
-        const parentNode = nodesMap.get(node.parentNode)
-        node.extent = 'parent'
-        const x = node.position.x
-        const y = node.position.y
-        if(x < 0 || x > parentNode?.width! || y < 0 || y > parentNode?.height!){
-          node.position = {x: 0, y: 0}
-        }
-      }
+      node.parentNode = undefined
+      node.data!.parent = 'ROOT'
       nodesMap.set(id,node)
     }
   };
@@ -677,11 +668,11 @@ const CodeNode = memo<Props>(function ({
             </Tooltip>
           )}
           {role !== RoleType.GUEST && (
-            <Tooltip title="toggle extent">
+            <Tooltip title="remove scope">
               <IconButton
                 size="small"
                 onClick={() => {
-                  toggleExtentByNodeById(id);
+                  removeParentByNodeById(id);
                 }}
               >
                 <SplitscreenIcon fontSize="inherit" />
