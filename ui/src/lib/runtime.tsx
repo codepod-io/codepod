@@ -4,58 +4,86 @@ import { createStore, StateCreator, StoreApi } from "zustand";
 
 // FIXME cyclic import
 import { RepoSlice } from "./store";
-import { analyzeCode, rewriteCode } from "./parser";
+import { analyzeCode, analyzeCodeViaQuery } from "./parser";
 
-function doRun({ id, socket, set, get }) {
-  // 1. rewrite the code
+/**
+ * Collect symbol tables from all the pods in scope.
+ */
+function collectSymbolTables({
+  id,
+  get,
+}: {
+  id: string;
+  get: () => RepoSlice & RuntimeSlice;
+}) {
   let pods = get().pods;
   let pod = pods[id];
-  let code = pod.content;
-  // get symbol tables
-  //
-  // TODO currently, I'm using only the symbol table from the current pod. I'll
-  // need to get the symbol table from all the children as well.
-
-  // I should get symbol table of:
-  // - all sibling nodes
-  console.log("rewriting code ..");
-  // console.log("my id", id, pod.symbolTable);
-  // console.log("=== children", pods[pod.parent].children);
-  // FIXME what if there are conflicts?
+  if (!pod.parent) return {};
   let allSymbolTables = pods[pod.parent].children.map(({ id, type }) => {
     // FIXME make this consistent, CODE, POD, DECK, SCOPE; use enums
     if (pods[id].type === "CODE") {
       return pods[id].symbolTable || {};
     } else {
+      // FIXME dfs, or re-export?
       let tables = pods[id].children
         .filter(({ id }) => pods[id].ispublic)
         .map(({ id }) => pods[id].symbolTable || {});
       return Object.assign({}, ...tables);
     }
   });
-  // console.log("=== allSymbolTables", allSymbolTables);
-  let combinedSymbolTable = Object.assign({}, ...allSymbolTables);
-  // console.log("=== combinedSymbolTable", combinedSymbolTable);
-  let { ispublic, newcode } = rewriteCode(code, combinedSymbolTable);
-  get().setPodVisibility(id, ispublic);
-  console.log("new code:\n", newcode);
+  let res = Object.assign({}, pods[id].symbolTable, ...allSymbolTables);
+  return res;
+}
 
-  get().setRunning(pod.id);
-  socket.send(
-    JSON.stringify({
-      type: "runCode",
-      payload: {
-        lang: pod.lang,
-        code: newcode,
-        namespace: pod.ns,
-        raw: true,
-        podId: pod.id,
-        sessionId: get().sessionId,
-      },
-    })
-  );
-
-  // 2. send for evaluation
+/**
+ * 1. parse the code, get: (defs, refs) to functions & variables
+ * 2. consult symbol table to resolve them
+ * 3. if all resolved, rewrite the code; otherwise, return null.
+ * @param code
+ * @param symbolTable
+ * @returns
+ */
+function rewriteCode(id: string, get: () => RepoSlice & RuntimeSlice) {
+  let pods = get().pods;
+  let pod = pods[id];
+  let code = pod.content;
+  if (code.trim().startsWith("@export")) {
+    code = code.slice(7).trim();
+  }
+  if (code.startsWith("!")) return code;
+  // replace with symbol table
+  let newcode = "";
+  let index = 0;
+  pod.annotations?.forEach((annotation) => {
+    newcode += code.slice(index, annotation.startIndex);
+    switch (annotation.type) {
+      case "vardef":
+      case "varuse":
+        // directly replace with _SCOPE if we can resolve it
+        if (annotation.origin) {
+          newcode += `${annotation.name}_${pod.parent}`;
+        } else {
+          newcode += annotation.name;
+        }
+        break;
+      case "function":
+      case "callsite":
+        // directly replace with _SCOPE too
+        if (annotation.origin) {
+          newcode += `${annotation.name}_${pods[annotation.origin].parent}`;
+        } else {
+          console.log("function not found", annotation.name);
+          newcode += annotation.name;
+        }
+        break;
+      default:
+        throw new Error("unknown annotation type: " + annotation.type);
+    }
+    index = annotation.endIndex;
+  });
+  newcode += code.slice(index);
+  console.debug("newcode", newcode);
+  return newcode;
 }
 
 function onMessage(set, get) {
@@ -154,7 +182,6 @@ const onOpen = (set, get) => {
       // websocket resets after 60s of idle by most firewalls
     }, 30000);
     set({ socketIntervalId: id });
-    console.log("get()", get());
 
     // request kernel status after connection
     Object.keys(get().kernels).forEach((k) => {
@@ -200,12 +227,15 @@ export interface RuntimeSlice {
   wsConnect: (client, sessionId) => void;
   wsDisconnect: () => void;
   wsRequestStatus: ({ lang }) => void;
+  parsePod: (id: string) => void;
+  parseAllPods: () => void;
+  resolvePod: (id) => void;
+  resolveAllPods: () => void;
   wsRun: (id) => void;
   wsInterruptKernel: ({ lang }) => void;
   clearResults: (id) => void;
   clearAllResults: () => void;
   setRunning: (id) => void;
-  setSymbolTable: (id: string, names: string[]) => void;
   addPodExport: (id, exports, reexports) => void;
   clearAllExports: () => void;
   setPodExport: ({ id, exports, reexports }) => void;
@@ -315,6 +345,60 @@ export const createRuntimeSlice: StateCreator<
       console.log("ERROR: not connected");
     }
   },
+  /**
+   * Parse the code for defined variables and functions.
+   * @param id paod
+   */
+  parsePod: (id) => {
+    set(
+      produce((state) => {
+        // const { ispublic, annotations } = analyzeCode(state.pods[id].content);
+        const { ispublic, annotations } = analyzeCodeViaQuery(
+          state.pods[id].content
+        );
+        state.pods[id].ispublic = ispublic;
+
+        state.pods[id].symbolTable = Object.assign(
+          {},
+          ...annotations
+            .filter(({ type }) => ["function", "vardef"].includes(type))
+            .map(({ name }) => ({
+              [name]: id,
+            }))
+        );
+
+        state.pods[id].annotations = annotations;
+      })
+    );
+  },
+  parseAllPods: () => {
+    Object.keys(get().pods).forEach((id) => {
+      get().parsePod(id);
+    });
+  },
+  resolvePod: (id) => {
+    // 1. collect symbol table
+    let st = collectSymbolTables({ id, get });
+    // 2. resolve symbols
+    set(
+      produce((state) => {
+        // update the origin field of the annotations
+        state.pods[id].annotations.forEach((annotation) => {
+          let { name } = annotation;
+          if (st[name]) {
+            annotation.origin = st[name];
+          } else {
+            annotation.origin = null;
+          }
+        });
+      })
+    );
+  },
+  resolveAllPods: () => {
+    Object.keys(get().pods).forEach((id) => {
+      get().resolvePod(id);
+    });
+  },
   wsRun: async (id) => {
     if (!get().socket) {
       get().addError({
@@ -324,23 +408,27 @@ export const createRuntimeSlice: StateCreator<
       return;
     }
     // Analyze code and set symbol table
-    let { ispublic, names } = analyzeCode(get().pods[id].content);
-    get().setPodVisibility(id, ispublic);
-    if (names) {
-      get().setSymbolTable(id, names);
-    }
+    get().parsePod(id);
+    // update anontations according to st
+    get().resolvePod(id);
+    // rewrite the code
+    const newcode = rewriteCode(id, get);
     // Run the code in remote kernel.
-    doRun({
-      id,
-      socket: {
-        send: (payload) => {
-          console.log("sending", payload);
-          get().socket?.send(payload);
+    get().setRunning(id);
+    let pod = get().pods[id];
+    get().socket?.send(
+      JSON.stringify({
+        type: "runCode",
+        payload: {
+          lang: pod.lang,
+          code: newcode,
+          namespace: pod.ns,
+          raw: true,
+          podId: pod.id,
+          sessionId: get().sessionId,
         },
-      },
-      set,
-      get,
-    });
+      })
+    );
   },
   wsInterruptKernel: ({ lang }) => {
     get().socket!.send(
@@ -382,19 +470,6 @@ export const createRuntimeSlice: StateCreator<
   },
   // ==========
   // exports
-  setSymbolTable: (id: string, names: string[]) => {
-    set(
-      produce((state) => {
-        // a symbol table is foo->foo_<podid>
-        state.pods[id].symbolTable = Object.assign(
-          {},
-          ...names.map((name) => ({
-            [name]: `${name}_${id}`,
-          }))
-        );
-      })
-    );
-  },
   addPodExport: ({ id, name }) => {
     set(
       produce((state) => {

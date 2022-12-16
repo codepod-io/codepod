@@ -36,3 +36,41 @@
     transform: rotate(360deg);
   }
 }
+
+.myLineDecoration-modified {
+  background: lightblue;
+  width: 5px !important;
+  margin-left: 3px;
+}
+
+.myLineDecoration-add {
+  background: green;
+  width: 5px !important;
+  margin-left: 3px;
+}
+
+.myLineDecoration-delete {
+  background: red;
+  width: 5px !important;
+  margin-left: 3px;
+}
+
+.myDecoration-function {
+  background: yellow;
+}
+
+.myDecoration-callsite {
+  background: orange;
+}
+
+.myDecoration-vardef {
+  background: cyan;
+}
+
+.myDecoration-varuse {
+  background: rgb(221, 247, 255);
+}
+
+.my-underline {
+  text-decoration: wavy underline red;
+}

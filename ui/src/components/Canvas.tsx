@@ -55,7 +55,6 @@ import { useApolloClient } from "@apollo/client";
 import { CanvasContextMenu } from "./CanvasContextMenu";
 import styles from "./canvas.style.js";
 import { ShareProjDialog } from "./ShareProjDialog";
-import { analyzeCode } from "../lib/parser";
 
 const nanoid = customAlphabet(lowercase + numbers, 20);
 
