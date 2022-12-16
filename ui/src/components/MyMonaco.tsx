@@ -277,7 +277,9 @@ function highlightAnnotations(
               case "vardef":
                 return "myDecoration-vardef";
               case "callsite":
-                return "myDecoration-callsite";
+                // NOTE using the same style for both callsite and varuse.
+                // return "myDecoration-callsite";
+                return "myDecoration-varuse";
               case "varuse":
                 return "myDecoration-varuse";
               default:

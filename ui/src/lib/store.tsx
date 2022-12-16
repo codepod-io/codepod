@@ -92,6 +92,9 @@ const initialState = {
   collaborators: [],
   isPublic: false,
   shareOpen: false,
+  scopedVars: localStorage.getItem("scopedVars")
+    ? JSON.parse(localStorage.getItem("scopedVars")!)
+    : true,
 };
 
 export type Pod = {

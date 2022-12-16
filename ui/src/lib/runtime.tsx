@@ -228,6 +228,8 @@ export interface RuntimeSlice {
   wsDisconnect: () => void;
   wsRequestStatus: ({ lang }) => void;
   parsePod: (id: string) => void;
+  scopedVars?: boolean;
+  setScopedVars: (b: boolean) => void;
   parseAllPods: () => void;
   resolvePod: (id) => void;
   resolveAllPods: () => void;
@@ -345,6 +347,12 @@ export const createRuntimeSlice: StateCreator<
       console.log("ERROR: not connected");
     }
   },
+  setScopedVars: (b: boolean) => {
+    // set it
+    set({ scopedVars: b });
+    // also write to local storage
+    localStorage.setItem("scopedVars", JSON.stringify(b));
+  },
   /**
    * Parse the code for defined variables and functions.
    * @param id paod
@@ -352,10 +360,8 @@ export const createRuntimeSlice: StateCreator<
   parsePod: (id) => {
     set(
       produce((state) => {
-        // const { ispublic, annotations } = analyzeCode(state.pods[id].content);
-        const { ispublic, annotations } = analyzeCodeViaQuery(
-          state.pods[id].content
-        );
+        let analyze = get().scopedVars ? analyzeCode : analyzeCodeViaQuery;
+        let { ispublic, annotations } = analyze(state.pods[id].content);
         state.pods[id].ispublic = ispublic;
 
         state.pods[id].symbolTable = Object.assign(

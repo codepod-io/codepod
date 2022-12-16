@@ -22,13 +22,45 @@ import { usePrompt } from "../lib/prompt";
 import { RepoContext, selectNumDirty, RoleType } from "../lib/store";
 
 import useMe from "../lib/me";
-import { Stack } from "@mui/material";
+import { FormControlLabel, FormGroup, Stack, Switch } from "@mui/material";
 import { getUpTime } from "../lib/utils";
 
 function Flex(props) {
   return (
     <Box sx={{ display: "flex" }} {...props}>
       {props.children}
+    </Box>
+  );
+}
+
+function SidebarSettings() {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const scopedVars = useStore(store, (state) => state.scopedVars);
+  const setScopedVars = useStore(store, (state) => state.setScopedVars);
+  return (
+    <Box>
+      Settings
+      <Box>
+        <FormGroup>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={scopedVars}
+                size="small"
+                color="warning"
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  setScopedVars(event.target.checked);
+                }}
+              />
+            }
+            label="Scoped Vars"
+          />
+        </FormGroup>
+        <Box className="myDecoration-function">Function Def</Box>
+        <Box className="myDecoration-vardef">Variable Def</Box>
+        <Box className="myDecoration-varuse">Function/Var Use</Box>
+      </Box>
     </Box>
   );
 }
@@ -373,6 +405,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </Grid>
                 <Grid item xs={12}>
                   <SidebarRuntime />
+                </Grid>
+                <Grid item xs={12}>
+                  <SidebarSettings />
                 </Grid>
                 <ToastError />
               </>

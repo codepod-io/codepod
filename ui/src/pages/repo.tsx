@@ -166,6 +166,7 @@ function RepoImpl() {
   const loadRepo = useStore(store, (state) => state.loadRepo);
   const parseAllPods = useStore(store, (state) => state.parseAllPods);
   const resolveAllPods = useStore(store, (state) => state.resolveAllPods);
+  const scopedVars = useStore(store, (state) => state.scopedVars);
   const loadError = useStore(store, (state) => state.loadError);
   const setSessionId = useStore(store, (state) => state.setSessionId);
   const repoLoaded = useStore(store, (state) => state.repoLoaded);
@@ -207,7 +208,7 @@ function RepoImpl() {
       parseAllPods();
       resolveAllPods();
     }
-  }, [parseAllPods, repoLoaded, resolveAllPods]);
+  }, [parseAllPods, repoLoaded, resolveAllPods, scopedVars]);
 
   useEffect(() => {
     resetState();
