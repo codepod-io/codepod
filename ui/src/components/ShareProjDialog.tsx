@@ -22,28 +22,90 @@ import Tooltip from "@mui/material/Tooltip";
 import FileCopyIcon from "@mui/icons-material/FileCopy";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import CloseIcon from "@mui/icons-material/Close";
-import React, { useContext } from "react";
+import React, { useContext, useReducer } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { useStore } from "zustand";
 import { RepoContext, RoleType } from "../lib/store";
 import { useApolloClient } from "@apollo/client";
 
+const initialState = { showInfo: false, status: "info", message: "wait..." };
+
 interface ShareProjDialogProps {
   open?: boolean;
-  title?: String;
   id?: string;
 }
 
-function CollaboratorList({
-  collaborators,
-  setStatus,
-  setMessage,
-  setInfoOpen,
-}) {
+function reducer(state, action) {
+  switch (action.type) {
+    case "init": {
+      return { ...initialState };
+    }
+    case "inivite success": {
+      return {
+        showInfo: true,
+        status: "success",
+        message: `Invitation to ${action.email} is sent successfully!`,
+      };
+    }
+    case "inivite error": {
+      return {
+        showInfo: true,
+        status: "error",
+        message: "Invitation failed: " + action.message,
+      };
+    }
+    case "copy success": {
+      return {
+        showInfo: true,
+        status: "success",
+        message: "Link is copied to clipboard!",
+      };
+    }
+
+    case "delete success": {
+      return {
+        showInfo: true,
+        status: "success",
+        message: `Remove the collaborator ${action.name} successfully!`,
+      };
+    }
+
+    case "delete error": {
+      return {
+        showInfo: true,
+        status: "error",
+        message: "Remove collaborator failed: " + action.message,
+      };
+    }
+
+    case "change visibility success": {
+      return {
+        showInfo: true,
+        status: "success",
+        message: `Change visibility successfully!`,
+      };
+    }
+
+    case "change visibility error": {
+      return {
+        showInfo: true,
+        status: "error",
+        message: "Change visibility failed: " + action.message,
+      };
+    }
+
+    case "close info": {
+      return { ...state, showInfo: false };
+    }
+    default:
+      return { ...initialState };
+  }
+}
+
+function CollaboratorList({ collaborators, dispatch, isOwner }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const apolloClient = useApolloClient();
-  const role = useStore(store, (state) => state.role);
   const deleteCollaborator = useStore(
     store,
     (state) => state.deleteCollaborator
@@ -67,16 +129,13 @@ function CollaboratorList({
     );
   }
 
-  async function handleDeleteCollaborator(userId) {
+  async function handleDeleteCollaborator(userId, name) {
     const { success, error } = await deleteCollaborator(apolloClient, userId);
     if (success) {
-      setStatus("success");
-      setMessage("Remove the collaborator successfully");
+      dispatch({ type: "delete success", name });
     } else {
-      setStatus("error");
-      setMessage(error.message);
+      dispatch({ type: "delete error", message: error.message });
     }
-    setInfoOpen(true);
   }
 
   return (
@@ -91,11 +150,16 @@ function CollaboratorList({
       {collaborators?.map((collab) => (
         <ListItem
           secondaryAction={
-            role === RoleType.OWNER && (
+            isOwner && (
               <IconButton
                 edge="end"
                 aria-label="delete"
-                onClick={() => handleDeleteCollaborator(collab.id)}
+                onClick={() =>
+                  handleDeleteCollaborator(
+                    collab.id,
+                    collab.firstname + " " + collab.lastname
+                  )
+                }
               >
                 <CloseIcon />
               </IconButton>
@@ -118,56 +182,47 @@ function CollaboratorList({
   );
 }
 
-const infoAboutPublicOrPrivate =
+const aboutVisibility =
   "A private project is only visible to you and collaborators, while a public project is visible to everyone. For both of them, only the owner can invite collaborators by their email addresses, and only collaborators can edit the project. The owner can change the visibility of a project at any time.";
 
 export function ShareProjDialog({
   open = false,
-  title = "Untitled",
   id = "",
 }: ShareProjDialogProps) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const [status, setStatus] = useState<AlertColor>("info");
-  const [message, setMessage] = useState("inviting...");
-  const [infoOpen, setInfoOpen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [feedback, dispatch] = useReducer(reducer, initialState);
   const apolloClient = useApolloClient();
   const isPublic = useStore(store, (state) => state.isPublic);
   const collaborators = useStore(store, (state) => state.collaborators);
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
   const updateVisibility = useStore(store, (state) => state.updateVisibility);
   const addCollaborator = useStore(store, (state) => state.addCollaborator);
-  const role = useStore(store, (state) => state.role);
+  const isOwner = useStore(store, (state) => state.role === RoleType.OWNER);
+  const title = useStore(store, (state) => state.repoName || "Untitled");
   const url = `${window.location.protocol}//${window.location.host}/repo/${id}`;
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   async function flipVisibility() {
     if (await updateVisibility(apolloClient, !isPublic)) {
-      setStatus("success");
-      setMessage("Visibility changed successfully");
+      dispatch({ type: "change visibility success" });
     } else {
-      setStatus("error");
-      setMessage("Visibility change failed");
+      dispatch({ type: "change visibility error", message: "Unknown error" });
     }
-    setInfoOpen(true);
   }
 
   async function onShare() {
     const email = inputRef?.current?.value;
-    setInfoOpen(true);
     if (!email) {
-      setStatus("error");
-      setMessage("Please enter an email address");
+      dispatch({ type: "error", message: "Email cannot be empty" });
       return;
     }
     const { success, error } = await addCollaborator(apolloClient, email);
     if (success) {
-      setStatus("success");
-      setMessage("Invited successfully");
+      dispatch({ type: "inivite success", email });
     } else {
-      setStatus("error");
-      setMessage(error?.message || "Unknown error");
+      dispatch({ type: "inivite error", message: error.message });
     }
   }
 
@@ -175,7 +230,7 @@ export function ShareProjDialog({
     if (reason === "clickaway") {
       return;
     }
-    setInfoOpen(false);
+    dispatch({ type: "close info" });
   }
 
   return (
@@ -206,9 +261,7 @@ export function ShareProjDialog({
                 <CopyToClipboard
                   text={url}
                   onCopy={() => {
-                    setStatus("success");
-                    setMessage("Link Copied");
-                    setInfoOpen(true);
+                    dispatch({ type: "copy success" });
                   }}
                 >
                   <Tooltip title="Copy link">
@@ -223,14 +276,19 @@ export function ShareProjDialog({
 
           <DialogContentText>
             The project is currently {isPublic ? "public" : "private"}.
-            <IconButton
-              onClick={() => setShowHelp((prev) => !prev)}
-              color={showHelp ? "primary" : "inherit"}
-              sx={{ marginBottom: 1, marginLeft: 0 }}
+            <Tooltip
+              title="learn more?"
+              placement="top"
+              sx={{ marginBottom: 1, marginLeft: -1 }}
             >
-              <HelpOutlineOutlinedIcon fontSize="small" />
-            </IconButton>
-            {role === RoleType.OWNER && (
+              <IconButton
+                onClick={() => setShowHelp((prev) => !prev)}
+                color={showHelp ? "primary" : "inherit"}
+              >
+                <HelpOutlineOutlinedIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            {isOwner && (
               <Button sx={{ float: "right" }} onClick={flipVisibility}>
                 Make it {isPublic ? "private" : "public"}
               </Button>
@@ -244,15 +302,14 @@ export function ShareProjDialog({
               fontSize="small"
               sx={{ maxWidth: 500 }}
             >
-              {infoAboutPublicOrPrivate}
+              {aboutVisibility}
             </DialogContentText>
           )}
 
           <CollaboratorList
             collaborators={collaborators}
-            setStatus={setStatus}
-            setMessage={setMessage}
-            setInfoOpen={setInfoOpen}
+            isOwner={isOwner}
+            dispatch={dispatch}
           />
 
           <DialogContentText>
@@ -269,6 +326,7 @@ export function ShareProjDialog({
             variant="standard"
             fullWidth
             inputRef={inputRef}
+            disabled={!isOwner}
           />
           <DialogActions>
             <Button
@@ -278,18 +336,20 @@ export function ShareProjDialog({
             >
               Cancel
             </Button>
-            <Button onClick={onShare}> Share</Button>
+            <Button onClick={onShare} disabled={!isOwner}>
+              Share
+            </Button>
           </DialogActions>
         </DialogContent>
       </Dialog>
       <Snackbar
-        open={infoOpen}
+        open={feedback?.showInfo}
         autoHideDuration={3000}
         onClose={onCloseAlert}
         anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert severity={status} onClose={onCloseAlert}>
-          {message}
+        <Alert severity={feedback?.status as AlertColor} onClose={onCloseAlert}>
+          {feedback?.message}
         </Alert>
       </Snackbar>
     </>

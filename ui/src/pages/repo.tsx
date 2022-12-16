@@ -4,6 +4,8 @@ import Box from "@mui/material/Box";
 import Link from "@mui/material/Link";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
+import ShareIcon from "@mui/icons-material/Share";
+import Button from "@mui/material/Button";
 import { gql, useApolloClient, useMutation } from "@apollo/client";
 
 import { useEffect, useState, useRef, useContext } from "react";
@@ -70,8 +72,6 @@ function RepoWrapper({ children, id }) {
         <Header
           open={open}
           drawerWidth={DrawerWidth}
-          inRepo={true}
-          setShareOpen={() => setShareOpen(true)}
           breadcrumbItem={
             <Stack direction="row">
               <TextField
@@ -95,6 +95,15 @@ function RepoWrapper({ children, id }) {
               />
               {error && <Box>ERROR: {error.message}</Box>}
             </Stack>
+          }
+          shareButton={
+            <Button
+              endIcon={<ShareIcon />}
+              onClick={() => setShareOpen(true)}
+              variant="contained"
+            >
+              Share
+            </Button>
           }
         />
         <Box

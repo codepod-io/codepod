@@ -9,7 +9,6 @@ import React, { useContext } from "react";
 import CodeIcon from "@mui/icons-material/Code";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import FormatListNumberedIcon from "@mui/icons-material/FormatListNumbered";
-import ShareOutlinedIcon from "@mui/icons-material/ShareOutlined";
 
 const paneMenuStyle = (left, top) => {
   return {
@@ -67,12 +66,6 @@ export function CanvasContextMenu(props) {
           <ListItemText>
             {showLineNumbers ? "Hide " : "Show "} Line Numbers
           </ListItemText>
-        </MenuItem>
-        <MenuItem onClick={props.onShareClick} sx={ItemStyle}>
-          <ListItemIcon>
-            <ShareOutlinedIcon />
-          </ListItemIcon>
-          <ListItemText> Share </ListItemText>
         </MenuItem>
       </MenuList>
     </Box>

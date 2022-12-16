@@ -740,7 +740,6 @@ export function Canvas() {
   const getPod = useStore(store, (state) => state.getPod);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const repoId = useStore(store, (state) => state.repoId);
-  const repoName = useStore(store, (state) => state.repoName);
   const role = useStore(store, (state) => state.role);
   const provider = useStore(store, (state) => state.provider);
   const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
@@ -1168,13 +1167,7 @@ export function Canvas() {
             }}
           />
         )}
-        {shareOpen && (
-          <ShareProjDialog
-            open={shareOpen}
-            title={repoName || ""}
-            id={repoId || ""}
-          />
-        )}
+        {shareOpen && <ShareProjDialog open={shareOpen} id={repoId || ""} />}
       </Box>
     </Box>
   );
