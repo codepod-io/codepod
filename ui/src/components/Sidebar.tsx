@@ -57,9 +57,12 @@ function SidebarSettings() {
             label="Scoped Vars"
           />
         </FormGroup>
-        <Box className="myDecoration-function">Function Def</Box>
-        <Box className="myDecoration-vardef">Variable Def</Box>
-        <Box className="myDecoration-varuse">Function/Var Use</Box>
+        <Stack spacing={0.5}>
+          <Box className="myDecoration-function">Function Def</Box>
+          <Box className="myDecoration-vardef">Variable Def</Box>
+          <Box className="myDecoration-varuse">Function/Var Use</Box>
+          <Box className="myDecoration-varuse my-underline">Undefined Vars</Box>
+        </Stack>
       </Box>
     </Box>
   );
