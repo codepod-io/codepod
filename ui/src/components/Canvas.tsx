@@ -556,10 +556,10 @@ const CodeNode = memo<Props>(function ({
         borderColor: pod.ispublic
           ? "green"
           : selected
-            ? "#003c8f"
-            : !isPodFocused
-              ? "#d6dee6"
-              : "#5e92f3",
+          ? "#003c8f"
+          : !isPodFocused
+          ? "#d6dee6"
+          : "#5e92f3",
       }}
     >
       <Handle
@@ -944,7 +944,7 @@ export function Canvas() {
    */
 
   // FIXME: add awareness info when dragging
-  const onNodeDragStart = () => { };
+  const onNodeDragStart = () => {};
 
   const onNodeDragStop = useCallback(
     // handle nodes list as multiple nodes can be dragged together at once
@@ -970,10 +970,10 @@ export function Canvas() {
           if (
             mousePos.x < currentParent.positionAbsolute!.x ||
             mousePos.x >
-            currentParent.positionAbsolute!.x + currentParent.width! ||
+              currentParent.positionAbsolute!.x + currentParent.width! ||
             mousePos.y < currentParent.positionAbsolute!.y ||
             mousePos.y >
-            currentParent.positionAbsolute!.y + currentParent.height!
+              currentParent.positionAbsolute!.y + currentParent.height!
           ) {
             // the mouse is outside the current parent, the nodes can't be dragged out
             // console.log("Cannot drop outside parent scope");
