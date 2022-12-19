@@ -21,6 +21,7 @@ import { Sidebar } from "../components/Sidebar";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { Stack, TextField } from "@mui/material";
 import { useAuth } from "../lib/auth";
+import { initParser } from "../lib/parser";
 
 const DrawerWidth = 240;
 const SIDEBAR_KEY = "sidebar";
@@ -166,6 +167,7 @@ function RepoImpl() {
   const loadRepo = useStore(store, (state) => state.loadRepo);
   const parseAllPods = useStore(store, (state) => state.parseAllPods);
   const resolveAllPods = useStore(store, (state) => state.resolveAllPods);
+  const [parserLoaded, setParserLoaded] = useState(false);
   const scopedVars = useStore(store, (state) => state.scopedVars);
   const loadError = useStore(store, (state) => state.loadError);
   const setSessionId = useStore(store, (state) => state.setSessionId);
@@ -204,11 +206,17 @@ function RepoImpl() {
   }, [addClient, deleteClient, provider]);
 
   useEffect(() => {
-    if (repoLoaded) {
+    initParser("/", () => {
+      setParserLoaded(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (repoLoaded && parserLoaded) {
       parseAllPods();
       resolveAllPods();
     }
-  }, [parseAllPods, repoLoaded, resolveAllPods, scopedVars]);
+  }, [parseAllPods, parserLoaded, repoLoaded, resolveAllPods, scopedVars]);
 
   useEffect(() => {
     resetState();

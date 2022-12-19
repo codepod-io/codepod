@@ -1,18 +1,36 @@
 import Parser from "web-tree-sitter";
+import { match, P } from "ts-pattern";
 import keywords from "./python-keywords";
 
 let parser: Parser | null = null;
-Parser.init({
-  locateFile(scriptName: string, scriptDirectory: string) {
-    return "/" + scriptName;
-  },
-}).then(async () => {
-  /* the library is ready */
-  console.log("tree-sitter is ready");
-  parser = new Parser();
-  const Python = await Parser.Language.load("/tree-sitter-python.wasm");
-  parser.setLanguage(Python);
-});
+let parser_loading = false;
+
+export async function initParser(prefix = "/", callback = () => {}) {
+  if (parser_loading) return false;
+  if (parser) {
+    callback();
+    return true;
+  }
+  return new Promise((resolve, reject) => {
+    parser_loading = true;
+    Parser.init({
+      locateFile(scriptName: string, scriptDirectory: string) {
+        return "/" + scriptName;
+      },
+    }).then(async () => {
+      /* the library is ready */
+      console.log("tree-sitter is ready");
+      parser = new Parser();
+      const Python = await Parser.Language.load(
+        `${prefix}tree-sitter-python.wasm`
+      );
+      parser.setLanguage(Python);
+      parser_loading = false;
+      callback();
+      resolve(true);
+    });
+  });
+}
 
 export type Annotation = {
   name: string;
@@ -140,29 +158,33 @@ export function analyzeCode(code) {
       });
     });
 
-  try {
-    let unbound_vars = compileModule(tree.rootNode);
-    unbound_vars
-      .filter((node) => !keywords.has(node.text))
-      .forEach((node) => {
-        let annotation = {
-          name: node.text,
-          type: "varuse",
-          startIndex: node.startIndex,
-          endIndex: node.endIndex,
-          startPosition: node.startPosition,
-          endPosition: node.endPosition,
-        };
-        annotations.push(annotation);
-      });
-  } catch (e) {
-    console.log("SymbolTable compiles failed:", e);
+  let { unbound, errors } = compileModule(tree.rootNode);
+  if (errors.length > 0) {
+    console.log("ERROR in compileModule", errors);
   }
+  unbound
+    .filter((node) => !keywords.has(node.text))
+    .forEach((node) => {
+      let annotation = {
+        name: node.text,
+        type: "varuse",
+        startIndex: node.startIndex,
+        endIndex: node.endIndex,
+        startPosition: node.startPosition,
+        endPosition: node.endPosition,
+      };
+      annotations.push(annotation);
+    });
 
   // Sort the annotations so that rewrite can be done in order.
   annotations.sort((a, b) => a.startIndex - b.startIndex);
 
-  return { ispublic, annotations };
+  return {
+    ispublic,
+    annotations,
+    errors,
+    error_messages: errors.map((e) => e.message),
+  };
 }
 
 /**
@@ -177,19 +199,44 @@ function union(setA, setB) {
   return _union;
 }
 
+function pp0(node: Parser.SyntaxNode) {
+  return {
+    type: node.type,
+    text: node.text,
+  };
+}
+
+function pp1(node: Parser.SyntaxNode) {
+  return {
+    type: node.type,
+    text: node.text,
+    namedChildren: node.namedChildren.map(pp0),
+  };
+}
+
 function pp(node: Parser.SyntaxNode) {
   return {
     type: node.type,
     text: node.text,
-    children: node.children.map(pp),
+    parent: node.parent && pp1(node.parent),
     namedChildren: node.namedChildren.map(pp),
   };
 }
 
-let global_unbound;
+function mysubstr(text: string) {
+  return text.slice(0, 40);
+}
+
+function notComment(n: Parser.SyntaxNode) {
+  return n.type !== "comment";
+}
+
+let global_unbound: Parser.SyntaxNode[] = [];
+let global_errors: any[] = [];
 
 export function compileModule(node: Parser.SyntaxNode) {
   global_unbound = [];
+  global_errors = [];
   let st: Set<any> = new Set();
   switch (node.type) {
     case "module":
@@ -202,10 +249,17 @@ export function compileModule(node: Parser.SyntaxNode) {
       // node.namedChildren.reduce((acc, n) => {
       //   return union(acc, compileModuleItem(n, acc));
       // }, st);
-      return global_unbound;
+      break;
     default:
-      throw Error(`unknown top node type: ${node.type}`);
+      global_errors.push({
+        message: `unknown top node type: ${node.type} in ${mysubstr(
+          node.text
+        )}`,
+        node: pp(node),
+      });
+      break;
   }
+  return { unbound: global_unbound, errors: global_errors };
 }
 
 function compileForIn(node: Parser.SyntaxNode, st: any, named_expr) {
@@ -233,17 +287,87 @@ function compileForStatement(node: Parser.SyntaxNode, st: any) {
   return new Set();
 }
 
+function compileAsPattern(node: Parser.SyntaxNode, st: any) {
+  let [source, target] = node.namedChildren;
+  compileExpression(source, st);
+  if (target) {
+    return new Set([target.text]);
+  }
+  return new Set();
+}
+
+function compileExceptClause(node: Parser.SyntaxNode, st: any) {
+  match(node.namedChildren.filter(notComment))
+    .with([{ type: "as_pattern" }, P._], ([pattern, body]) => {
+      st = union(st, compileAsPattern(pattern, st));
+      compileBlock(body, st);
+    })
+    .with([P._, P._], ([pattern, body]) => {
+      compileBlock(body, st);
+    })
+    .with([P._], ([body]) => {
+      compileBlock(body, st);
+    })
+    .otherwise(() => {
+      global_errors.push({
+        message: `unknown except clause: ${node.type} in ${mysubstr(
+          node.text
+        )}`,
+        node: pp(node),
+      });
+    });
+  return new Set();
+}
+
 function compileTryStatement(node: Parser.SyntaxNode, st: any) {
-  throw new Error("Function not implemented.");
+  let [tryClause, ...clauses] = node.namedChildren;
+  compileBlock(tryClause, st);
+  clauses.forEach((clause) => {
+    switch (clause.type) {
+      case "except_clause":
+        compileExceptClause(clause, st);
+        break;
+      case "else_clause":
+      case "finally_clause":
+        compileBlock(clause.namedChildren.filter(notComment)[0], st);
+        break;
+      default:
+        global_errors.push({
+          message: `unknown try clause: ${clause.type} in ${mysubstr(
+            clause.text
+          )}`,
+          node: pp(clause),
+        });
+    }
+  });
+  return new Set();
 }
 
 function compileIfStatement(node: Parser.SyntaxNode, st: any) {
-  let [comp, ifClause, elseClause] = node.namedChildren;
+  // There's no way to get the children by field names. let cond =
+  // node.childForFieldName("condition"); let alt =
+  // node.childForFieldName("alternative");
+  //
+  // NOTE: When the if body starts with comment, it is passed as the children of
+  // ifclause, not the children of the block.
+  let [comp, ifClause, ...elseClauses] = node.namedChildren.filter(notComment);
   compileExpression(comp, st);
   compileBlock(ifClause, st);
-  if (elseClause) {
-    compileBlock(elseClause, st);
-  }
+  elseClauses.forEach((n) => {
+    if (n.type === "else_clause") {
+      // else
+      compileBlock(n.namedChild(0)!, st);
+    } else if (n.type === "elif_clause") {
+      // else if
+      compileExpression(n.namedChild(0)!, st);
+      compileBlock(n.namedChild(1)!, st);
+    } else {
+      global_errors.push({
+        message: `unknown if clause type: ${n.type} in ${n.text}`,
+        node: pp(n),
+      });
+    }
+  });
   // FIXME if-statement can introduce variable bindings to outside world.
   return new Set();
 }
@@ -261,12 +385,21 @@ function compileLHS(node, st) {
       return new Set([node.text]);
     case "pattern_list":
       return new Set(node.namedChildren.map((n) => n.text));
+    case "tuple_pattern":
+      return new Set(node.namedChildren.map((n) => n.text));
     case "subscript":
       let [l, r] = node.namedChildren;
       compileExpression(r, st);
       return compileLHS(l, st);
+    case "attribute":
+      let [obj, attr] = node.namedChildren;
+      return compileLHS(obj, st);
     default:
-      throw new Error("compileLHS: " + node.type);
+      global_errors.push({
+        message: `unknown LHS type: ${node.type} in ${mysubstr(node.text)}`,
+        node: pp(node),
+      });
+      return new Set();
   }
 }
 
@@ -283,12 +416,75 @@ function compileAugmentedAssignment(node: Parser.SyntaxNode, st: any) {
   return new Set();
 }
 
-function compileClassDefinition(node: Parser.SyntaxNode) {
-  throw new Error("Function not implemented.");
+function compileClassDefinition(node: Parser.SyntaxNode, st) {
+  match(node.namedChildren.filter(notComment))
+    .with(
+      [{ type: "identifier" }, { type: "argument_list" }, { type: "block" }],
+
+      ([name, bases, body]) => {
+        bases.namedChildren.forEach((n) => {
+          compileExpression(n, st);
+        });
+        compileBlock(body, st);
+        return new Set([name.text]);
+      }
+    )
+    .with(
+      [{ type: "identifier" }, { type: "block" }],
+
+      ([name, body]) => {
+        compileBlock(body, st);
+        return new Set([name.text]);
+      }
+    )
+    .otherwise(() => {
+      global_errors.push({
+        message: `unknown class definition: ${node.namedChildren.map(
+          (n) => n.type
+        )} in ${mysubstr(node.text)}`,
+        node: pp(node),
+      });
+    });
+  return new Set();
+}
+
+function compileWithStatement(node: Parser.SyntaxNode, st: any) {
+  match(node.namedChildren)
+    .with(
+      [{ type: "with_clause" }, { type: "block" }],
+      ([withClause, body]) => {
+        st = withClause.namedChildren.reduce((acc, item) => {
+          let n = item.namedChild(0)!;
+          switch (n.type) {
+            case "as_pattern":
+              return union(acc, compileAsPattern(n, acc));
+            default:
+              return union(acc, compileExpression(n, acc));
+          }
+        }, st);
+        // with body
+        compileBlock(body, st);
+      }
+    )
+    .otherwise(() => {
+      global_errors.push({
+        message: `unknown with statement: ${node.namedChildren.map(
+          (n) => n.type
+        )} in ${mysubstr(node.text)}`,
+        node: pp(node),
+      });
+    });
+  return new Set();
 }
 
 function compileStatement(node: Parser.SyntaxNode, st) {
   switch (node.type) {
+    case "function_definition":
+      return compileFunctionDefinition(node, st);
+    case "class_definition":
+      return compileClassDefinition(node, st);
+    case "decorated_definition":
+      return compileStatement(node.namedChild(1)!, st);
     case "expression_statement":
       return compileExpression(node.firstChild!, st);
     case "if_statement":
@@ -301,9 +497,13 @@ function compileStatement(node: Parser.SyntaxNode, st) {
       return compileTryStatement(node, st);
     case "raise_statement":
       return compileRaiseStatement(node, st);
+    case "with_statement":
+      return compileWithStatement(node, st);
     case "break_statement":
     case "continue_statement":
     case "import_statement":
+    case "import_from_statement":
+    case "pass_statement":
     case "comment":
       return new Set();
     case "block":
@@ -313,8 +513,19 @@ function compileStatement(node: Parser.SyntaxNode, st) {
         return compileExpression(node.firstNamedChild, st);
       }
       return new Set();
+    case "assert_statement":
+    case "delete_statement":
+    case "nonlocal_statement":
+    case "global_statement":
+      return compileExpression(node.firstNamedChild!, st);
     default:
-      throw Error(`unknown statement node type: ${node.type}`);
+      global_errors.push({
+        message: `unknown statement node type: ${node.type} in ${mysubstr(
+          node.text
+        )}`,
+        node: pp(node),
+      });
+      return new Set();
   }
 }
 
@@ -326,7 +537,10 @@ function compileWhileStatement(node: Parser.SyntaxNode, st) {
 }
 
 function compileRaiseStatement(node: Parser.SyntaxNode, st) {
-  throw new Error("Function not implemented.");
+  node.namedChildren.forEach((n) => {
+    compileExpression(n, st);
+  });
+  return new Set();
 }
 
 function compileBlock(node: Parser.SyntaxNode, st) {
@@ -335,64 +549,161 @@ function compileBlock(node: Parser.SyntaxNode, st) {
   }, st);
 }
 
+function compileArgs(node: Parser.SyntaxNode, st) {
+  let argnames = node.namedChildren
+    .map((arg) => {
+      switch (arg.type) {
+        case "identifier":
+          return arg.text;
+        case "typed_parameter":
+          return arg.namedChild(0)!.text;
+        case "list_splat_pattern":
+          return arg.namedChild(0)!.text;
+        case "default_parameter":
+          return arg.namedChild(0)!.text;
+        case "typed_default_parameter":
+          return arg.namedChild(0)!.text;
+        case "dictionary_splat_pattern":
+          return arg.namedChild(0)!.text;
+        case "keyword_separator":
+          // def f(a, *, b,): pass
+          return null;
+        default:
+          global_errors.push({
+            message: `unknown function parameter type: ${arg.type} in ${arg.text}`,
+            node: pp(arg),
+          });
+          return null;
+      }
+    })
+    .filter((n) => n);
+  return new Set(argnames);
+}
+
 function compileFunctionDefinition(node: Parser.SyntaxNode, st) {
   let name = node.namedChildren[0];
   let args = node.namedChildren[1];
   // there may be (return) "type" or "comment" nodes in between.
   let body = node.namedChildren[node.namedChildren.length - 1];
   // parse parameters
-  let argnames = args.namedChildren.map((arg) => {
-    switch (arg.type) {
-      case "identifier":
-        return arg.text;
-      case "typed_parameter":
-        return arg.namedChild(0)!.text;
-      default:
-        throw new Error("function parameters: " + arg.type);
-    }
-  });
-  compileBlock(body, union(st, new Set([name.text, ...argnames])));
+  st = union(st, compileArgs(args, st));
+  compileBlock(body, union(st, new Set([name.text])));
   return new Set(name.text);
 }
 
-function compilePrimaryExpression(node: Parser.SyntaxNode, st) {
-  switch (node.type) {
-    case "attribute":
-      let [obj, attr] = node.namedChildren;
-      return compilePrimaryExpression(obj, st);
-    default:
-      return compileExpression(node, st);
-  }
+function compileGeneratorExpression(node: Parser.SyntaxNode, st) {
+  let [exp, forin] = node.namedChildren;
+  compileForIn(forin, st, exp);
+  return new Set();
 }
 
 function compileCall(node: Parser.SyntaxNode, st) {
   let [callee, args] = node.children;
-  compilePrimaryExpression(callee, st);
-  args.namedChildren.forEach((n) => {
-    switch (n.type) {
-      case "keyword_argument":
-        compileExpression(n.namedChild(1)!, st);
-        break;
-      default:
+  compileExpression(callee, st);
+  switch (args.type) {
+    case "argument_list":
+      args.namedChildren.forEach((n) => {
         compileExpression(n, st);
-    }
+      });
+      break;
+    case "generator_expression":
+      compileGeneratorExpression(args, st);
+      break;
+    default:
+      global_errors.push({
+        message: `unknown call argument type: ${args.type} in ${args.text}`,
+        node: pp(args),
+      });
+  }
+  return new Set();
+}
+
+function compileDictionary(node: Parser.SyntaxNode, st) {
+  node.namedChildren.forEach((n) => {
+    compileExpression(n, st);
   });
+  return new Set();
+}
+
+function compileConditionalExpression(node: Parser.SyntaxNode, st) {
+  let [left, cond, right] = node.namedChildren;
+  compileExpression(cond, st);
+  compileExpression(left, st);
+  compileExpression(right, st);
+  return new Set();
+}
+
+function compileLambda(node: Parser.SyntaxNode, st) {
+  match(node.namedChildren)
+    .with([{ type: "lambda_parameters" }, P._], ([args, exp]) => {
+      compileExpression(exp, union(st, compileArgs(args, st)));
+      // compile exp
+    })
+    .with([P._], ([exp]) => {
+      compileExpression(exp, st);
+    })
+    .otherwise(() => {
+      global_errors.push({
+        message: `unknown lambda node type: ${node.type} in ${mysubstr(
+          node.text
+        )}`,
+        node: pp(node),
+      });
+    });
   return new Set();
 }
 
 function compileExpression(node: Parser.SyntaxNode, st) {
   switch (node.type) {
+    case "comment":
+      return new Set();
     case "integer":
     case "float":
     case "string":
     case "boolean":
+    case "ellipsis":
+    case "none":
+    case "false":
+    case "true":
+    case "concatenated_string":
+    case "self":
+    case "super":
       return new Set();
-    case "binary_operator": {
+    // FIXME we should allow custom type names.
+    case "type":
+      return new Set();
+    case "lambda":
+      return compileLambda(node, st);
+    case "keyword_argument":
+      return compileExpression(node.namedChild(1)!, st);
+    case "yield":
+      if (node.firstNamedChild) {
+        return compileExpression(node.firstNamedChild, st);
+      }
+      return new Set();
+
+    case "generator_expression":
+      return compileGeneratorExpression(node, st);
+    case "dictionary":
+      return compileDictionary(node, st);
+    case "not_operator":
+    case "await":
+      return compileExpression(node.firstNamedChild!, st);
+    case "attribute":
+      let [obj, attr] = node.namedChildren;
+      return compileExpression(obj, st);
+    case "binary_operator":
+    case "boolean_operator": {
       let [left, , right] = node.children;
       compileExpression(left, st);
       compileExpression(right, st);
       return new Set();
     }
+    case "list_splat":
+    case "dictionary_splat":
+      return compileExpression(node.namedChild(0)!, st);
+    case "unary_operator":
+      return compileExpression(node.namedChild(0)!, st);
     case "comparison_operator": {
       let [left, right] = node.namedChildren;
       compileExpression(left, st);
@@ -400,6 +711,7 @@ function compileExpression(node: Parser.SyntaxNode, st) {
       return new Set();
     }
     case "list":
+    case "set":
       return node.namedChildren.reduce((acc, n) => {
         return union(acc, compileExpression(n, acc));
       }, st);
@@ -434,12 +746,25 @@ function compileExpression(node: Parser.SyntaxNode, st) {
       return compileListComprehension(node, st);
     case "parenthesized_expression":
       return compileExpression(node.firstNamedChild!, st);
+    case "conditional_expression":
+      return compileConditionalExpression(node, st);
+    case "slice":
+      node.namedChildren.forEach((n) => {
+        compileExpression(n, st);
+      });
+      return new Set();
     case "subscript":
       return node.namedChildren
         .map((n) => compileExpression(n, st))
         .reduce(union);
     default:
-      throw Error(`unknown expression node type: ${node.type}`);
+      global_errors.push({
+        message: `unknown expression node type: ${node.type} in ${mysubstr(
+          node.text
+        )}`,
+        node: pp(node),
+      });
+      return new Set();
   }
 }
 
@@ -450,9 +775,7 @@ function compileModuleItem(node, st) {
     case "comment":
       return new Set();
     case "function_definition":
-      return compileFunctionDefinition(node, st);
     case "class_definition":
-      return compileClassDefinition(node);
     case "expression_statement":
     case "return_statement":
     case "if_statement":
@@ -465,6 +788,12 @@ function compileModuleItem(node, st) {
     case "expression":
       return compileExpression(node, st);
     default:
-      throw Error(`unknown module node type: ${node.type}`);
+      global_errors.push({
+        message: `unknown module node type: ${node.type} in ${mysubstr(
+          node.text
+        )}`,
+        node: pp(node),
+      });
+      return new Set();
   }
 }
