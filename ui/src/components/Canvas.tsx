@@ -37,6 +37,7 @@ import Grid from "@mui/material/Grid";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 
 import Moveable from "react-moveable";
 import { ResizableBox } from "react-resizable";
@@ -56,6 +57,7 @@ import { CanvasContextMenu } from "./CanvasContextMenu";
 import styles from "./canvas.style.js";
 import { ShareProjDialog } from "./ShareProjDialog";
 import { analyzeCode } from "../lib/parser";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 
 const nanoid = customAlphabet(lowercase + numbers, 20);
 
@@ -528,6 +530,20 @@ const CodeNode = memo<Props>(function ({
 
   if (!pod) return null;
 
+  // This is a hack, copy actually occurs in this function, "text=todo" is a dummy behavior
+  const onCopy = () => {
+    const pod = getPod(id);
+    const data = { type: "pod", data: pod };
+    const item = new ClipboardItem({
+      "text/plain": new Blob([pod.content], { type: "text/plain" }),
+      "web text/plain": new Blob([JSON.stringify(data)], {
+        type: "text/plain",
+      }),
+    });
+    navigator.clipboard.write([item]);
+    // navigator.clipboard.write([v]);
+  };
+
   // onsize is banned for a guest, FIXME: ugly code
   const Wrap = (child) =>
     role === RoleType.GUEST ? (
@@ -645,6 +661,15 @@ const CodeNode = memo<Props>(function ({
               </IconButton>
             </Tooltip>
           )}
+
+          {/* <CopyToClipboard text="todo" options={{ debug: true, onCopy }}> */}
+          <Tooltip title="Copy">
+            <IconButton size="small" onClick={onCopy}>
+              <ContentCopyIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+          {/* </CopyToClipboard> */}
+
           {role !== RoleType.GUEST && (
             <Tooltip title="Delete">
               <IconButton
@@ -908,6 +933,7 @@ export function Canvas() {
         y: position.y,
         width: style.width,
         height: style.height,
+        dirty: true,
       });
 
       nodesMap.set(id, newNode as any);
@@ -1080,6 +1106,68 @@ export function Canvas() {
     [apolloClient, deletePod]
   );
 
+  const pasteCodePod = useCallback(
+    (x: number, y: number, pod: any, center: boolean = false) => {
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+
+      let [posX, posY] = center
+        ? [reactFlowBounds.width / 2, reactFlowBounds.height / 2]
+        : [x - reactFlowBounds.left, y - reactFlowBounds.top];
+
+      const position = reactFlowInstance.project({
+        x: posX,
+        y: posY,
+      });
+
+      if (center) {
+        position.x -= pod.width! / 2;
+        position.y -= pod.height ?? 0 / 2;
+      }
+
+      const style = {
+        width: pod.width,
+        height: undefined,
+      };
+      const id = nanoid();
+      const newNode = {
+        id,
+        type: "code",
+        position,
+        data: {
+          ...pod.data,
+          label: id,
+          parent: "ROOT",
+        },
+        level: 0,
+        extent: "parent",
+        parentNode: undefined,
+        dragHandle: ".custom-drag-handle",
+        style,
+      };
+
+      addPod(apolloClient, {
+        id,
+        parent: "ROOT",
+        type: "CODE",
+        lang: "python",
+        x: position.x,
+        y: position.y,
+        width: pod.width,
+        height: pod.height,
+        content: pod.content,
+        error: pod.error,
+        stdout: pod.stdout,
+        result: pod.result,
+        dirty: true,
+      });
+
+      console.log("new pod", getPod(id));
+
+      nodesMap.set(id, newNode as any);
+    },
+    [addPod, apolloClient, nodesMap, reactFlowInstance]
+  );
+
   const onSelectionChange = useCallback(({ nodes, edges }) => {
     // just for debug
     // console.log("selection changed", nodes, edges);
@@ -1093,15 +1181,75 @@ export function Canvas() {
   const onPaneContextMenu = (event) => {
     event.preventDefault();
     setShowContextMenu(true);
+    console.log("contextmenu", event, event.window);
     setPoints({ x: event.pageX, y: event.pageY });
     setClient({ x: event.clientX, y: event.clientY });
   };
 
   useEffect(() => {
     const handleClick = () => setShowContextMenu(false);
+    const handleCopy = (event) => {
+      console.log(event);
+      console.log("copy", event.clipboardData);
+      const types = event.clipboardData.types;
+      console.log("types", types);
+      console.log(
+        types.forEach((type) => {
+          const data = event.clipboardData.getData(type);
+          console.log("type", type, data);
+        })
+      );
+    };
+
     document.addEventListener("click", handleClick);
-    return () => document.removeEventListener("click", handleClick);
+    document.addEventListener("copy", handleCopy);
+
+    const pane = document.getElementsByClassName("react-flow__pane");
+    if (pane) {
+    }
+
+    return () => {
+      document.removeEventListener("click", handleClick);
+      document.removeEventListener("copy", handleCopy);
+    };
   }, []);
+
+  useEffect(() => {
+    const pane = document.getElementsByClassName("react-flow__pane");
+    if (!pane || !pane[0]) return;
+    const handlePaste = async (event) => {
+      console.log(event);
+      console.log("paste", event.clipboardData);
+      console.log(
+        "clipboardData[text/plain]: ",
+        event.clipboardData.getData("web text/plain")
+      );
+      // clipboardData can't get "web text/plain" data
+      const clipboardItems = await navigator?.clipboard?.read();
+      if (
+        !clipboardItems ||
+        clipboardItems[0].types.indexOf("web text/plain") === -1
+      )
+        return;
+      try {
+        const blob = await clipboardItems[0].getType("web text/plain");
+        const text = await blob.text();
+        const playload = JSON.parse(text);
+        console.log("web text/plain", playload);
+        if (playload?.type === "pod") {
+          pasteCodePod(0, 0, playload?.data, true);
+        }
+      } catch (e) {
+        console.error("Error pasting text", e);
+      }
+    };
+    pane[0].addEventListener("paste", handlePaste);
+    return () => {
+      if (pane && pane[0]) {
+        pane[0].removeEventListener("paste", handlePaste);
+      }
+    };
+  }, [addPod, apolloClient, nodesMap, reactFlowInstance]);
 
   return (
     <Box
@@ -1165,6 +1313,7 @@ export function Canvas() {
             onShareClick={() => {
               setShareOpen(true);
             }}
+            onPasteClick={(pod) => pasteCodePod(client.x, client.y, pod, false)}
           />
         )}
         {shareOpen && <ShareProjDialog open={shareOpen} id={repoId || ""} />}

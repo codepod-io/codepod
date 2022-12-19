@@ -118,6 +118,8 @@ export function useNodesStateSynced(nodeList) {
             y: node.position.y,
             width: node.style?.width,
             height: node.style?.height,
+            name: node.data?.name,
+            dirty: false, // because the real DB write is done by the user create the node
           });
         } else if (change.action === "delete") {
           const node = change.oldValue;

@@ -9,6 +9,7 @@ import React, { useContext } from "react";
 import CodeIcon from "@mui/icons-material/Code";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import FormatListNumberedIcon from "@mui/icons-material/FormatListNumbered";
+import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 
 const paneMenuStyle = (left, top) => {
   return {
@@ -42,7 +43,7 @@ export function CanvasContextMenu(props) {
   const role = useStore(store, (state) => state.role);
   return (
     <Box sx={paneMenuStyle(props.x, props.y)}>
-      <MenuList className="paneContextMenu">
+      <MenuList className="paneContextMenu" dense={true}>
         {role !== RoleType.GUEST && (
           <MenuItem onClick={props.addCode} sx={ItemStyle}>
             <ListItemIcon>
@@ -67,6 +68,35 @@ export function CanvasContextMenu(props) {
             {showLineNumbers ? "Hide " : "Show "} Line Numbers
           </ListItemText>
         </MenuItem>
+        {role !== RoleType.GUEST && (
+          <MenuItem
+            sx={ItemStyle}
+            onClick={async () => {
+              const clipboardItems = await navigator?.clipboard?.read();
+              if (
+                !clipboardItems ||
+                clipboardItems[0].types.indexOf("web text/plain") === -1
+              )
+                return;
+              try {
+                const blob = await clipboardItems[0].getType("web text/plain");
+                const text = await blob.text();
+                const playload = JSON.parse(text);
+                console.log(text);
+                if (playload?.type === "pod") {
+                  props.onPasteClick(playload.data);
+                }
+              } catch (e) {
+                console.error("Error pasting text", e);
+              }
+            }}
+          >
+            <ListItemIcon>
+              <ContentPasteIcon />
+            </ListItemIcon>
+            <ListItemText>Paste Pod</ListItemText>
+          </MenuItem>
+        )}
       </MenuList>
     </Box>
   );
