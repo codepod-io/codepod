@@ -46,7 +46,7 @@ export function CanvasContextMenu(props) {
       <MenuList className="paneContextMenu" dense={true}>
         {role !== RoleType.GUEST && (
           <MenuItem onClick={props.addCode} sx={ItemStyle}>
-            <ListItemIcon>
+            <ListItemIcon sx={{ color: "inherit" }}>
               <CodeIcon />
             </ListItemIcon>
             <ListItemText>New Code</ListItemText>
@@ -54,14 +54,14 @@ export function CanvasContextMenu(props) {
         )}
         {role !== RoleType.GUEST && (
           <MenuItem onClick={props.addScope} sx={ItemStyle}>
-            <ListItemIcon>
+            <ListItemIcon sx={{ color: "inherit" }}>
               <PostAddIcon />
             </ListItemIcon>
             <ListItemText>New Scope</ListItemText>
           </MenuItem>
         )}
         <MenuItem onClick={flipShowLineNumbers} sx={ItemStyle}>
-          <ListItemIcon>
+          <ListItemIcon sx={{ color: "inherit" }}>
             <FormatListNumberedIcon />
           </ListItemIcon>
           <ListItemText>
@@ -91,7 +91,7 @@ export function CanvasContextMenu(props) {
               }
             }}
           >
-            <ListItemIcon>
+            <ListItemIcon sx={{ color: "inherit" }}>
               <ContentPasteIcon />
             </ListItemIcon>
             <ListItemText>Paste Pod</ListItemText>

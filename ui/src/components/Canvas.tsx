@@ -530,8 +530,8 @@ const CodeNode = memo<Props>(function ({
 
   if (!pod) return null;
 
-  // This is a hack, copy actually occurs in this function, "text=todo" is a dummy behavior
-  const onCopy = () => {
+  // This is a hack, copy actually occurs in this function
+  const onCopy = async () => {
     const pod = getPod(id);
     const data = { type: "pod", data: pod };
     const item = new ClipboardItem({
@@ -540,8 +540,7 @@ const CodeNode = memo<Props>(function ({
         type: "text/plain",
       }),
     });
-    navigator.clipboard.write([item]);
-    // navigator.clipboard.write([v]);
+    await navigator.clipboard.write([item]);
   };
 
   // onsize is banned for a guest, FIXME: ugly code
