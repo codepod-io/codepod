@@ -1134,7 +1134,7 @@ export function Canvas() {
         type: "code",
         position,
         data: {
-          ...pod.data,
+          name: pod?.name || "",
           label: id,
           parent: "ROOT",
         },
@@ -1158,6 +1158,8 @@ export function Canvas() {
         error: pod.error,
         stdout: pod.stdout,
         result: pod.result,
+
+        name: pod.name,
         dirty: true,
       });
 
@@ -1216,7 +1218,7 @@ export function Canvas() {
 
   useEffect(() => {
     const pane = document.getElementsByClassName("react-flow__pane");
-    if (!pane || !pane[0]) return;
+    if (role == RoleType.GUEST || !pane || !pane[0]) return;
     const handlePaste = async (event) => {
       console.log(event);
       console.log("paste", event.clipboardData);
@@ -1249,7 +1251,7 @@ export function Canvas() {
         pane[0].removeEventListener("paste", handlePaste);
       }
     };
-  }, [addPod, apolloClient, nodesMap, reactFlowInstance]);
+  }, [addPod, apolloClient, nodesMap, reactFlowInstance, role]);
 
   return (
     <Box
