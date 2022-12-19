@@ -95,6 +95,9 @@ const initialState = {
   scopedVars: localStorage.getItem("scopedVars")
     ? JSON.parse(localStorage.getItem("scopedVars")!)
     : true,
+  showAnnotations: localStorage.getItem("showAnnotations")
+    ? JSON.parse(localStorage.getItem("showAnnotations")!)
+    : false,
 };
 
 export type Pod = {

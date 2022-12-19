@@ -230,6 +230,8 @@ export interface RuntimeSlice {
   parsePod: (id: string) => void;
   scopedVars?: boolean;
   setScopedVars: (b: boolean) => void;
+  showAnnotations?: boolean;
+  setShowAnnotations: (b: boolean) => void;
   parseAllPods: () => void;
   resolvePod: (id) => void;
   resolveAllPods: () => void;
@@ -352,6 +354,12 @@ export const createRuntimeSlice: StateCreator<
     set({ scopedVars: b });
     // also write to local storage
     localStorage.setItem("scopedVars", JSON.stringify(b));
+  },
+  setShowAnnotations: (b: boolean) => {
+    // set it
+    set({ showAnnotations: b });
+    // also write to local storage
+    localStorage.setItem("showAnnotations", JSON.stringify(b));
   },
   /**
    * Parse the code for defined variables and functions.

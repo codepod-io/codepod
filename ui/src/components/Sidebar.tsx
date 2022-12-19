@@ -38,6 +38,11 @@ function SidebarSettings() {
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const scopedVars = useStore(store, (state) => state.scopedVars);
   const setScopedVars = useStore(store, (state) => state.setScopedVars);
+  const showAnnotations = useStore(store, (state) => state.showAnnotations);
+  const setShowAnnotations = useStore(
+    store,
+    (state) => state.setShowAnnotations
+  );
   return (
     <Box>
       Settings
@@ -57,12 +62,31 @@ function SidebarSettings() {
             label="Scoped Vars"
           />
         </FormGroup>
-        <Stack spacing={0.5}>
-          <Box className="myDecoration-function">Function Def</Box>
-          <Box className="myDecoration-vardef">Variable Def</Box>
-          <Box className="myDecoration-varuse">Function/Var Use</Box>
-          <Box className="myDecoration-varuse my-underline">Undefined Vars</Box>
-        </Stack>
+        <FormGroup>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={showAnnotations}
+                size="small"
+                color="warning"
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  setShowAnnotations(event.target.checked);
+                }}
+              />
+            }
+            label="Show Anotations"
+          />
+        </FormGroup>
+        {showAnnotations && (
+          <Stack spacing={0.5}>
+            <Box className="myDecoration-function">Function Def</Box>
+            <Box className="myDecoration-vardef">Variable Def</Box>
+            <Box className="myDecoration-varuse">Function/Var Use</Box>
+            <Box className="myDecoration-varuse my-underline">
+              Undefined Vars
+            </Box>
+          </Stack>
+        )}
       </Box>
     </Box>
   );
