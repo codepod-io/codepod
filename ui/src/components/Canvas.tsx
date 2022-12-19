@@ -1123,7 +1123,8 @@ export function Canvas() {
           onNodesDelete={onNodesDelete}
           onSelectionChange={onSelectionChange}
           attributionPosition="top-right"
-          maxZoom={5}
+          maxZoom={10}
+          minZoom={0.1}
           onPaneContextMenu={onPaneContextMenu}
           nodeTypes={nodeTypes}
           zoomOnScroll={false}
