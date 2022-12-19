@@ -198,14 +198,14 @@ const ScopeNode = memo<Props>(function ScopeNode({
       {/* The header of scope nodes. */}
       <Box
         className="custom-drag-handle"
-        bgcolor={"rgb(225,225,225)"}
+        // bgcolor={"rgb(225,225,225)"}
         sx={{ display: "flex" }}
       >
         <Grid container spacing={2} sx={{ alignItems: "center" }}>
           <Grid item xs={4}>
-            <IconButton size="small">
+            {/* <IconButton size="small">
               <CircleIcon sx={{ color: "red" }} fontSize="inherit" />
-            </IconButton>
+            </IconButton> */}
           </Grid>
           <Grid item xs={4}>
             <Box
