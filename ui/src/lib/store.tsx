@@ -22,7 +22,7 @@ import { WebsocketProvider } from "y-websocket";
 import { createRuntimeSlice, RuntimeSlice } from "./runtime";
 import { ApolloClient } from "@apollo/client";
 import { addAwarenessStyle } from "./styles";
-import { analyzeCode } from "./parser";
+import { Annotation } from "./parser";
 
 // Tofix: can't connect to http://codepod.127.0.0.1.sslip.io/socket/, but it works well on webbrowser or curl
 let serverURL;
@@ -92,6 +92,12 @@ const initialState = {
   collaborators: [],
   isPublic: false,
   shareOpen: false,
+  scopedVars: localStorage.getItem("scopedVars")
+    ? JSON.parse(localStorage.getItem("scopedVars")!)
+    : true,
+  showAnnotations: localStorage.getItem("showAnnotations")
+    ? JSON.parse(localStorage.getItem("showAnnotations")!)
+    : false,
 };
 
 export type Pod = {
@@ -114,6 +120,7 @@ export type Pod = {
   thundar?: boolean;
   utility?: boolean;
   symbolTable?: { [key: string]: string };
+  annotations?: Annotation[];
   ispublic?: boolean;
   exports?: { [key: string]: string[] };
   imports?: {};
@@ -218,7 +225,6 @@ export interface RepoSlice {
   getPod: (id: string) => Pod;
   getPods: () => Record<string, Pod>;
   getId2children: (string) => string[];
-  setPodVisibility: (id: any, visible: any) => void;
   setPodFocus: (id: string) => void;
   setPodBlur: (id: string) => void;
   isPublic: boolean;
@@ -727,13 +733,6 @@ const createRepoSlice: StateCreator<
       // @ts-ignore
       "resizeScopeSize"
     ),
-  setPodVisibility: (id, ispublic) => {
-    set(
-      produce((state) => {
-        state.pods[id].ispublic = ispublic;
-      })
-    );
-  },
   setRepoName: (name) => {
     set(
       produce((state) => {
@@ -785,15 +784,6 @@ const createRepoSlice: StateCreator<
             state.id2parent[pod.id] = pod.parent.id;
           }
           state.id2children[pod.id] = pod.children.map((child) => child.id);
-          // trigger analyze code for symbol table
-          let { ispublic, names } = analyzeCode(pod.content);
-          pod.ispublic = ispublic;
-          pod.symbolTable = Object.assign(
-            {},
-            ...names.map((name) => ({
-              [name]: `${name}_${id}`,
-            }))
-          );
         }
         state.repoLoaded = true;
       })

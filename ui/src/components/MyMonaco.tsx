@@ -1,5 +1,5 @@
 import { Position } from "monaco-editor";
-import { useState, useContext, memo } from "react";
+import { useState, useContext, memo, useCallback, useEffect } from "react";
 import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
 import { monaco } from "react-monaco-editor";
 import { useStore } from "zustand";
@@ -7,6 +7,7 @@ import { RepoContext, RoleType } from "../lib/store";
 import { MonacoBinding } from "y-monaco";
 import { resetSelection } from "../lib/nodes";
 import { useReactFlow } from "reactflow";
+import { Annotation } from "../lib/parser";
 
 const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",
@@ -237,6 +238,67 @@ async function computeDiff(
   });
 }
 
+/**
+ * Highlight the given symbol table annotations in the editor, including
+ * function definitions and callsites, and variable definitions and references.
+ * @param editor The Monaco editor instance.
+ * @param annotations The annotations to highlight.
+ */
+function highlightAnnotations(
+  editor: monaco.editor.IStandaloneCodeEditor & { oldDecorations?: any[] },
+  annotations: Annotation[]
+) {
+  if (!editor.oldDecorations) {
+    editor.oldDecorations = [];
+  }
+  // 1. get the positions
+  let decorations: monaco.editor.IModelDeltaDecoration[] = [];
+  for (const {
+    type,
+    name,
+    origin,
+    startPosition,
+    endPosition,
+  } of annotations) {
+    decorations.push({
+      range: new monaco.Range(
+        startPosition.row + 1,
+        startPosition.column + 1,
+        endPosition.row + 1,
+        endPosition.column + 1
+      ),
+      options: {
+        isWholeLine: false,
+        inlineClassName:
+          (() => {
+            switch (type) {
+              case "function":
+                return "myDecoration-function";
+              case "vardef":
+                return "myDecoration-vardef";
+              case "callsite":
+                // NOTE using the same style for both callsite and varuse.
+                // return "myDecoration-callsite";
+                return "myDecoration-varuse";
+              case "varuse":
+                return "myDecoration-varuse";
+              default:
+                throw new Error("unknown type: " + type);
+            }
+          })() + (origin ? "" : " my-underline"),
+        hoverMessage: {
+          value: `${name} -> ${origin}`,
+        },
+      },
+    });
+  }
+  // 2. apply decorations
+  editor.oldDecorations = editor.deltaDecorations(
+    editor.oldDecorations,
+    decorations
+  );
+}
+
 async function updateGitGutter(editor) {
   if (!editor.oldDecorations) {
     editor.oldDecorations = [];
@@ -320,6 +382,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   gitvalue = null,
 }) {
   // there's no racket language support
+  console.debug("[perf] rendering MyMonaco", id);
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const readOnly = useStore(store, (state) => state.role === RoleType.GUEST);
@@ -333,34 +396,41 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const setPodBlur = useStore(store, (state) => state.setPodBlur);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const { setNodes } = useReactFlow();
+  const annotations = useStore(store, (state) => state.pods[id].annotations);
+  const showAnnotations = useStore(store, (state) => state.showAnnotations);
 
   const value = getPod(id).content || "";
   let lang = getPod(id).lang || "javascript";
   const onChange = (value) => setPodContent({ id, content: value });
-  const onRun = () => {
+  let [editor, setEditor] =
+    useState<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const onRun = useCallback(() => {
     // it's MonacoEditor's bug microsoft/monaco-editor#2947, it always triggered the last created instance
     const activeId = store.getState().currentEditor;
     if (activeId) {
       clearResults(activeId);
       wsRun(activeId);
     }
-  };
+  }, [clearResults, store, wsRun]);
+
+  useEffect(() => {
+    if (editor && showAnnotations) {
+      highlightAnnotations(editor, annotations || []);
+    }
+  }, [annotations, editor, showAnnotations]);
 
   if (lang === "racket") {
     lang = "scheme";
   }
-  let [editor, setEditor] = useState<any>(null);
-  if (editor) {
-    // console.log("mounting gitgutter updater");
-    editor.staged = gitvalue;
-    updateGitGutter(editor);
-  }
+
   const provider = useStore(store, (state) => state.provider);
   const ydoc = useStore(store, (state) => state.ydoc);
   const awareness = provider?.awareness;
 
-  function onEditorDidMount(editor, monaco) {
-    // console.log("did mount");
+  function onEditorDidMount(
+    editor: monaco.editor.IStandaloneCodeEditor,
+    monaco
+  ) {
     setEditor(editor);
     // console.log(Math.min(1000, editor.getContentHeight()));
     const updateHeight = () => {
@@ -396,16 +466,16 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     editor.addCommand(monaco.KeyMod.Shift | monaco.KeyCode.Enter, function () {
       onRun();
     });
-    editor.onDidChangeModelContent(async (e) => {
-      // content is value?
-      updateGitGutter(editor);
-    });
+    // editor.onDidChangeModelContent(async (e) => {
+    //   // content is value?
+    //   updateGitGutter(editor);
+    // });
 
     // bind it to the ytext with pod id
     const ytext = ydoc.getText("monaco-" + id);
     const monacoBinding = new MonacoBinding(
       ytext,
-      editor.getModel(),
+      editor.getModel()!,
       new Set([editor]),
       awareness
     );

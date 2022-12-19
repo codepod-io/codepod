@@ -41,6 +41,7 @@
     "slate-react": "^0.83.2",
     "socket.io-client": "^4.5.3",
     "stompjs": "^2.3.3",
+    "ts-pattern": "^4.0.6",
     "typescript": "^4.4.2",
     "web-tree-sitter": "^0.20.7",
     "web-vitals": "^2.1.0",
