@@ -180,7 +180,24 @@ export interface RepoSlice {
   setPodContent: ({ id, content }: { id: string; content: string }) => void;
   addPod: (
     client: ApolloClient<object> | null,
-    { parent, anchor, shift, id, type, lang, x, y, width, height }: any
+    {
+      parent,
+      anchor,
+      shift,
+      id,
+      type,
+      lang,
+      x,
+      y,
+      width,
+      height,
+      name,
+      content,
+      error,
+      result,
+      stdout,
+      dirty,
+    }: any
   ) => void;
   deletePod: (
     client: ApolloClient<object> | null,
@@ -288,7 +305,24 @@ const createRepoSlice: StateCreator<
   setCurrentEditor: (id) => set({ currentEditor: id }),
   addPod: async (
     client,
-    { parent, anchor, shift, id, type, lang, x, y, width, height }
+    {
+      parent,
+      anchor,
+      shift,
+      id,
+      type,
+      lang,
+      x,
+      y,
+      width,
+      height,
+      name = "",
+      content = "",
+      stdout = "",
+      error = null,
+      result = null,
+      dirty = true,
+    }
   ) => {
     if (!parent) {
       parent = "ROOT";
@@ -296,16 +330,17 @@ const createRepoSlice: StateCreator<
     // update all other siblings' index
     // FIXME this might cause other pods to be re-rendered
     const pod: Pod = {
-      content: "",
+      content,
       column: 1,
-      stdout: "",
-      error: null,
+      stdout,
+      error,
       lang: "python",
       raw: false,
       fold: false,
       thundar: false,
       utility: false,
-      name: "",
+      name,
+      result,
       ispublic: false,
       symbolTable: {},
       exports: {},
@@ -330,6 +365,7 @@ const createRepoSlice: StateCreator<
       width,
       height,
     };
+    console.log("add pod", pod);
     set(
       produce((state: BearState) => {
         // 1. do local update
@@ -348,7 +384,7 @@ const createRepoSlice: StateCreator<
       })
     );
     // 2. do remote update
-    if (client) {
+    if (client && dirty) {
       await doRemoteAddPod(client, {
         repoId: get().repoId,
         parent,

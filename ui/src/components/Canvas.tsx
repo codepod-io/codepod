@@ -33,11 +33,12 @@ import Stack from "@mui/material/Stack";
 import Button from "@mui/material/Button";
 import CircleIcon from "@mui/icons-material/Circle";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import Grid from "@mui/material/Grid";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
-
+import { CopyToClipboard } from "react-copy-to-clipboard";
 import Moveable from "react-moveable";
 import { ResizableBox } from "react-resizable";
 import Ansi from "ansi-to-react";
@@ -525,6 +526,19 @@ const CodeNode = memo<Props>(function ({
     }
   }, [data.parent, setPodParent, id]);
 
+  const onCopy = (clipboardData: any) => {
+    const pod = getPod(id);
+    if (!pod) return;
+    clipboardData.setData("text/plain", pod.content);
+    clipboardData.setData(
+      "application/json",
+      JSON.stringify({
+        type: "pod",
+        data: pod,
+      })
+    );
+  };
+
   if (!pod) return null;
 
   // onsize is banned for a guest, FIXME: ugly code
@@ -545,6 +559,7 @@ const CodeNode = memo<Props>(function ({
 
   return Wrap(
     <Box
+      id={"reactflow_node_code_" + id}
       sx={{
         border: "solid 1px #d6dee6",
         borderWidth: pod.ispublic ? "4px" : "2px",
@@ -644,6 +659,16 @@ const CodeNode = memo<Props>(function ({
               </IconButton>
             </Tooltip>
           )}
+          <CopyToClipboard
+            text="dummy"
+            options={{ debug: true, format: "text/plain", onCopy } as any}
+          >
+            <Tooltip title="Copy">
+              <IconButton size="small">
+                <ContentCopyIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          </CopyToClipboard>
           {role !== RoleType.GUEST && (
             <Tooltip title="Delete">
               <IconButton
@@ -730,6 +755,9 @@ function getAbsPos({ node, nodesMap }) {
 export function Canvas() {
   const [nodes, setNodes, onNodesChange] = useNodesStateSynced([]);
   const [edges, setEdges] = useState<any[]>([]);
+  const [inPane, setInPane] = useState(false);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [pasting, setPasting] = useState<null | string>(null);
 
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -852,6 +880,10 @@ export function Canvas() {
   const setPodParent = useStore(store, (state) => state.setPodParent);
   const deletePod = useStore(store, (state) => state.deletePod);
   const userColor = useStore(store, (state) => state.user?.color);
+  const clientId = useStore(
+    store,
+    (state) => state.provider?.awareness?.clientID
+  );
 
   const addNode = useCallback(
     (x: number, y: number, type: string) => {
@@ -907,6 +939,7 @@ export function Canvas() {
         y: position.y,
         width: style.width,
         height: style.height,
+        dirty: true,
       });
 
       nodesMap.set(id, newNode as any);
@@ -1090,17 +1123,150 @@ export function Canvas() {
   const [client, setClient] = useState({ x: 0, y: 0 });
 
   const onPaneContextMenu = (event) => {
+    console.log("onPaneContextMenu", event);
     event.preventDefault();
     setShowContextMenu(true);
     setPoints({ x: event.pageX, y: event.pageY });
     setClient({ x: event.clientX, y: event.clientY });
+    console.log(showContextMenu, points, client);
   };
 
+  const pasteCodePod = useCallback(
+    ({ x, y, pod }) => {
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      let [posX, posY] = [
+        reactFlowBounds.width / 2,
+        reactFlowBounds.height / 2,
+      ];
+      const position = reactFlowInstance.project({ x: posX, y: posY });
+      position.x = (position.x - pod.width! / 2) as number;
+      position.y = (position.y - (pod.height ?? 0) / 2) as number;
+      console.log("pasteCodePod", position, clientId, pod);
+
+      const style = {
+        width: pod.width,
+        height: undefined,
+        opacity: 0.5,
+      };
+
+      const id = nanoid();
+      const newNode = {
+        id,
+        type: "code",
+        position,
+        data: {
+          name: pod?.name || "",
+          label: id,
+          parent: "ROOT",
+          clientId,
+        },
+        level: 0,
+        extent: "parent",
+        parentNode: undefined,
+        dragHandle: ".custom-drag-handle",
+        style,
+      };
+
+      addPod(apolloClient, {
+        id,
+        parent: "ROOT",
+        type: "CODE",
+        lang: "python",
+        x: position.x,
+        y: position.y,
+        width: pod.width,
+        height: pod.height,
+        content: pod.content,
+        error: pod.error,
+        stdout: pod.stdout,
+        result: pod.result,
+        name: pod.name,
+        dirty: true,
+      });
+
+      nodesMap.set(id, newNode as any);
+      setPasting(id);
+    },
+    [addPod, apolloClient, clientId, nodesMap, reactFlowInstance, setPasting]
+  );
+
   useEffect(() => {
-    const handleClick = () => setShowContextMenu(false);
+    const handleClick = (e) => {
+      setShowContextMenu(false);
+    };
+    const handlePaste = (event) => {
+      console.log("paste", event);
+      if (document.activeElement?.className !== "react-flow__pane") {
+        return;
+      }
+      const playload = event.clipboardData.getData("application/json");
+      const data = JSON.parse(playload);
+      if (data?.type !== "pod") {
+        return;
+      }
+      console.log("paste pod", data.data);
+      pasteCodePod({ x: 0, y: 0, pod: data.data });
+    };
+    // const handleMouseMove = (event) => {
+    //   console.log("mousemove", event);
+    // };
     document.addEventListener("click", handleClick);
-    return () => document.removeEventListener("click", handleClick);
-  }, []);
+    document.addEventListener("paste", handlePaste);
+    // document.addEventListener("mousemove", handleMouseMove);
+    return () => {
+      document.removeEventListener("click", handleClick);
+      document.removeEventListener("paste", handlePaste);
+      // document.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, [pasteCodePod]);
+
+  useEffect(() => {
+    if (!pasting || !reactFlowWrapper.current) return;
+    const mouseMove = (event) => {
+      console.log("mousemove", event);
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      const position = reactFlowInstance.project({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
+      const node = nodesMap.get(pasting);
+      if (!node) return;
+      node.position = position;
+      nodesMap.set(pasting, node);
+    };
+    const mouseClick = (event) => {
+      console.log("mouseclick", event);
+      const node = nodesMap.get(pasting);
+      if (!node) return;
+      const newNode = {
+        ...node,
+        style: {
+          width: node.style?.width,
+          height: node.style?.height,
+        },
+        data: {
+          name: node.data?.name,
+          label: node.data?.label,
+          parent: node.data?.parent,
+        },
+      };
+      nodesMap.delete(pasting);
+      nodesMap.set(pasting, newNode);
+      setPasting(null);
+    };
+    reactFlowWrapper.current.addEventListener("mousemove", mouseMove);
+    reactFlowWrapper.current.addEventListener("click", mouseClick);
+    return () => {
+      reactFlowWrapper.current.removeEventListener("mousemove", mouseMove);
+      reactFlowWrapper.current.removeEventListener("click", mouseClick);
+    };
+  }, [pasting, reactFlowWrapper, setPasting]);
+
+  const onPaneClick = (event) => {
+    console.log("onPaneClick", event);
+    event.preventDefault();
+    event.target.tabIndex = 0;
+  };
 
   return (
     <Box
@@ -1121,11 +1287,16 @@ export function Canvas() {
           onNodeDragStart={onNodeDragStart}
           onNodeDragStop={onNodeDragStop}
           onNodesDelete={onNodesDelete}
+          onPaneClick={onPaneClick}
+          // onPaneMouseMove={onPaneMouseMove}
           onSelectionChange={onSelectionChange}
           attributionPosition="top-right"
           maxZoom={10}
           minZoom={0.1}
           onPaneContextMenu={onPaneContextMenu}
+          onMoveEnd={(event) => {
+            console.log("onMoveEnd", event);
+          }}
           nodeTypes={nodeTypes}
           zoomOnScroll={false}
           panOnScroll={true}
