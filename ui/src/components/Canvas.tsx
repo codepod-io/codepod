@@ -645,6 +645,15 @@ const CodeNode = memo<Props>(function ({
             justifyContent: "center",
           }}
           className="nodrag"
+          onClick={(e) => {
+            const pane = document.getElementsByClassName(
+              "react-flow__pane"
+            )[0] as HTMLElement;
+            if (pane) {
+              pane.tabIndex = 0;
+              pane.focus();
+            }
+          }}
         >
           {role !== RoleType.GUEST && (
             <Tooltip title="Run (shift-enter)">
@@ -1181,7 +1190,7 @@ export function Canvas() {
         stdout: pod.stdout,
         result: pod.result,
         name: pod.name,
-        dirty: true,
+        dirty: false,
       });
 
       nodesMap.set(id, newNode as any);
@@ -1196,7 +1205,10 @@ export function Canvas() {
     };
     const handlePaste = (event) => {
       console.log("paste", event);
-      if (document.activeElement?.className !== "react-flow__pane") {
+      if (
+        event.target?.className !== "react-flow__pane" &&
+        document.activeElement?.className !== "react-flow__pane"
+      ) {
         return;
       }
       const playload = event.clipboardData.getData("application/json");
@@ -1250,21 +1262,49 @@ export function Canvas() {
           parent: node.data?.parent,
         },
       };
+      const pod = getPod(pasting);
       nodesMap.delete(pasting);
+      addPod(apolloClient, {
+        ...pod,
+        dirty: true,
+      } as any);
       nodesMap.set(pasting, newNode);
+      const currentNode = reactFlowInstance.getNode(pasting);
+      onNodeDragStop(event, currentNode, [currentNode]);
+      setPasting(null);
+    };
+    const keyDown = (event) => {
+      console.log("escapeDown", event);
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      // delete the temporary node
+      nodesMap.delete(pasting);
+      // delete the temporary pod in local store
+      deletePod(null, { id: pasting, toDelete: [] });
       setPasting(null);
     };
     reactFlowWrapper.current.addEventListener("mousemove", mouseMove);
     reactFlowWrapper.current.addEventListener("click", mouseClick);
+    document.addEventListener("keydown", keyDown);
     return () => {
       reactFlowWrapper.current.removeEventListener("mousemove", mouseMove);
       reactFlowWrapper.current.removeEventListener("click", mouseClick);
+      document.removeEventListener("keydown", keyDown);
     };
-  }, [pasting, reactFlowWrapper, setPasting]);
+  }, [
+    pasting,
+    reactFlowWrapper,
+    setPasting,
+    getPod,
+    deletePod,
+    addPod,
+    apolloClient,
+    reactFlowInstance,
+    nodesMap,
+  ]);
 
   const onPaneClick = (event) => {
     console.log("onPaneClick", event);
-    event.preventDefault();
     event.target.tabIndex = 0;
   };
 

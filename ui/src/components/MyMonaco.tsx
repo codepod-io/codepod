@@ -483,6 +483,9 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     const init = () => {
       if (!ytext._start && ytext.length === 0) {
         ytext.insert(0, value);
+      } else {
+        // init the pasted pod content by the code on the yjs server
+        setPodContent({ id, content: ytext.toString() });
       }
     };
 
