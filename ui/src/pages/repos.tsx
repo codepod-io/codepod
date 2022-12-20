@@ -65,8 +65,8 @@ function RepoLine({ repo, deletable, sharable, runtimeInfo }) {
   const [open, setOpen] = useState(false);
   const [deleteRepo] = useMutation(
     gql`
-      mutation deleteRepo($name: String) {
-        deleteRepo(name: $name)
+      mutation deleteRepo($id: ID) {
+        deleteRepo(id: $id)
       }
     `,
     {
@@ -130,7 +130,7 @@ function RepoLine({ repo, deletable, sharable, runtimeInfo }) {
                 // FIXME ensure the runtime is killed
                 deleteRepo({
                   variables: {
-                    name: repo.name,
+                    id: repo.id,
                   },
                 });
               }}
