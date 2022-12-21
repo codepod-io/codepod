@@ -769,6 +769,13 @@ function getAbsPos({ node, nodesMap }) {
   }
 }
 
+/**
+ * For historical reason, the state.pod.type and DB schema pod.type are "CODE",
+ * "DECK", "WYSIWYG", while the node types in react-flow are "code", "scope",
+ * "rich". These two functions document this and handle the conversion.
+ * @param dbtype
+ * @returns
+ */
 function dbtype2nodetype(dbtype: string) {
   switch (dbtype) {
     case "CODE":
@@ -836,7 +843,7 @@ export function Canvas() {
           level,
           style: {
             backgroundColor:
-              pod.type === "CODE"
+              pod.type !== "DECK"
                 ? undefined
                 : level2color[level] || level2color["default"],
             width: pod.width || undefined,
