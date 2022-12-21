@@ -142,7 +142,7 @@ const MyStyledWrapper = styled("div")(
 );
 
 // FIXME re-rendering performance
-export const MyEditor = ({
+const MyEditor = ({
   placeholder = "Start typing...",
   initialContent,
   id,
@@ -207,6 +207,9 @@ export const MyEditor = ({
                 let nextState = parameter.state;
                 setState(nextState);
                 // TODO sync with DB and yjs
+                if (parameter.tr?.docChanged) {
+                  setPodContent({ id, content: nextState.doc.toJSON() });
+                }
               }}
             >
               {/* <WysiwygToolbar /> */}
