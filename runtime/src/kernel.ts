@@ -30,13 +30,13 @@ function ensureZmqConnected() {
       host
     );
     // FIXME the path
-    console.log("executing startup code ..");
-    wire.sendShellMessage(
-      constructExecuteRequest({
-        code: readFileSync(`./kernel/codepod.py`, "utf8"),
-        msg_id: "CODEPOD",
-      })
-    );
+    // console.log("executing startup code ..");
+    // wire.sendShellMessage(
+    //   constructExecuteRequest({
+    //     code: readFileSync(`./kernel/codepod.py`, "utf8"),
+    //     msg_id: "CODEPOD",
+    //   })
+    // );
     console.log("kernel initialized successfully");
   }
 }
