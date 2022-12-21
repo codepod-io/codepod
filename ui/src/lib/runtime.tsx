@@ -61,7 +61,7 @@ function rewriteCode(id: string, get: () => RepoSlice & RuntimeSlice) {
       case "varuse":
         // directly replace with _SCOPE if we can resolve it
         if (annotation.origin) {
-          newcode += `${annotation.name}_${pod.parent}`;
+          newcode += `${annotation.name}_${pods[annotation.origin].parent}`;
         } else {
           newcode += annotation.name;
         }
