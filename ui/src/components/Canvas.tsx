@@ -55,6 +55,7 @@ import { useApolloClient } from "@apollo/client";
 import { CanvasContextMenu } from "./CanvasContextMenu";
 import styles from "./canvas.style.js";
 import { ShareProjDialog } from "./ShareProjDialog";
+import { RichNode } from "./RichNode";
 
 const nanoid = customAlphabet(lowercase + numbers, 20);
 
@@ -700,7 +701,7 @@ const CodeNode = memo<Props>(function ({
   );
 });
 
-const nodeTypes = { scope: ScopeNode, code: CodeNode };
+const nodeTypes = { scope: ScopeNode, code: CodeNode, rich: RichNode };
 
 const level2color = {
   0: "rgba(187, 222, 251, 0.5)",
@@ -724,6 +725,32 @@ function getAbsPos({ node, nodesMap }) {
     return [x + dx, y + dy];
   } else {
     return [x, y];
+  }
+}
+
+function dbtype2nodetype(dbtype: string) {
+  switch (dbtype) {
+    case "CODE":
+      return "code";
+    case "DECK":
+      return "scope";
+    case "WYSIWYG":
+      return "rich";
+    default:
+      throw new Error(`unknown dbtype ${dbtype}`);
+  }
+}
+
+function nodetype2dbtype(nodetype: string) {
+  switch (nodetype) {
+    case "code":
+      return "CODE";
+    case "scope":
+      return "DECK";
+    case "rich":
+      return "WYSIWYG";
+    default:
+      throw new Error(`unknown nodetype ${nodetype}`);
   }
 }
 
@@ -753,7 +780,7 @@ export function Canvas() {
       if (id !== "ROOT") {
         res.push({
           id: id,
-          type: pod.type === "CODE" ? "code" : "scope",
+          type: dbtype2nodetype(pod.type),
           data: {
             // label: `ID: ${id}, parent: ${pods[id].parent}, pos: ${pods[id].x}, ${pods[id].y}`,
             label: id,
@@ -854,23 +881,28 @@ export function Canvas() {
   const userColor = useStore(store, (state) => state.user?.color);
 
   const addNode = useCallback(
-    (x: number, y: number, type: string) => {
+    (x: number, y: number, type: "code" | "scope" | "rich") => {
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       let style;
 
-      // if (type === "code") type = "default";
-      if (type === "scope") {
-        style = {
-          backgroundColor: level2color[0],
-          width: 600,
-          height: 600,
-        };
-      } else {
-        style = {
-          width: 300,
-          // we must not set the height here, otherwise the auto layout will not work
-          height: undefined,
-        };
+      switch (type) {
+        case "scope":
+          style = {
+            backgroundColor: level2color[0],
+            width: 600,
+            height: 600,
+          };
+          break;
+        case "code":
+        case "rich":
+          style = {
+            width: 300,
+            // we must not set the height here, otherwise the auto layout will not work
+            height: undefined,
+          };
+          break;
+        default:
+          throw new Error(`unknown type ${type}`);
       }
 
       const position = reactFlowInstance.project({
@@ -901,7 +933,7 @@ export function Canvas() {
       addPod(apolloClient, {
         id,
         parent: "ROOT",
-        type: type === "code" ? "CODE" : "DECK",
+        type: nodetype2dbtype(type),
         lang: "python",
         x: position.x,
         y: position.y,
@@ -1162,6 +1194,7 @@ export function Canvas() {
             y={points.y}
             addCode={() => addNode(client.x, client.y, "code")}
             addScope={() => addNode(client.x, client.y, "scope")}
+            addRich={() => addNode(client.x, client.y, "rich")}
             onShareClick={() => {
               setShareOpen(true);
             }}

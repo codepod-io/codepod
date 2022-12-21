@@ -8,6 +8,7 @@ import MenuItem from "@mui/material/MenuItem";
 import React, { useContext } from "react";
 import CodeIcon from "@mui/icons-material/Code";
 import PostAddIcon from "@mui/icons-material/PostAdd";
+import NoteIcon from "@mui/icons-material/Note";
 import FormatListNumberedIcon from "@mui/icons-material/FormatListNumbered";
 
 const paneMenuStyle = (left, top) => {
@@ -49,6 +50,14 @@ export function CanvasContextMenu(props) {
               <CodeIcon />
             </ListItemIcon>
             <ListItemText>New Code</ListItemText>
+          </MenuItem>
+        )}
+        {role !== RoleType.GUEST && (
+          <MenuItem onClick={props.addRich} sx={ItemStyle}>
+            <ListItemIcon>
+              <NoteIcon />
+            </ListItemIcon>
+            <ListItemText>New Note</ListItemText>
           </MenuItem>
         )}
         {role !== RoleType.GUEST && (
