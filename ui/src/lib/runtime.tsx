@@ -48,7 +48,7 @@ function rewriteCode(id: string, get: () => RepoSlice & RuntimeSlice) {
   let pod = pods[id];
   let code = pod.content;
   if (code.trim().startsWith("@export")) {
-    code = code.slice(7).trim();
+    code = code.replace("@export", " ".repeat("@export".length));
   }
   if (code.startsWith("!")) return code;
   // replace with symbol table

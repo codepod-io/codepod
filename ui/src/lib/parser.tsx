@@ -52,7 +52,7 @@ export function analyzeCodeViaQuery(code) {
   let ispublic = false;
   if (code.trim().startsWith("@export")) {
     ispublic = true;
-    code = code.slice(7).trim();
+    code = code.replace("@export", " ".repeat("@export".length));
   }
   // magic commands
   if (code.startsWith("!")) return { ispublic, annotations };
@@ -99,7 +99,7 @@ export function analyzeCode(code) {
   let ispublic = false;
   if (code.trim().startsWith("@export")) {
     ispublic = true;
-    code = code.slice(7).trim();
+    code = code.replace("@export", " ".repeat("@export".length));
   }
   // magic commands
   if (code.startsWith("!")) return { ispublic, annotations };
