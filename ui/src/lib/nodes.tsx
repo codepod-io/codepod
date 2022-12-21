@@ -111,8 +111,7 @@ export function useNodesStateSynced(nodeList) {
       YMapEvent.changes.keys.forEach((change, key) => {
         if (change.action === "add") {
           const node = nodesMap.get(key);
-          if (!node || node.data?.clientID || getPod(key)) return;
-          console.log("toadd", node);
+          if (!node || node.data?.clientId || getPod(key)) return;
           addPod(null, {
             id: node.id,
             parent: "ROOT",
@@ -128,7 +127,6 @@ export function useNodesStateSynced(nodeList) {
           });
         } else if (change.action === "delete") {
           const node = change.oldValue;
-          if (node.data?.clientId === clientId) return;
           console.log("todelete", node);
           deletePod(null, { id: node.id, toDelete: [] });
         }

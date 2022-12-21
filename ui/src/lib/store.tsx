@@ -197,7 +197,6 @@ export interface RepoSlice {
       error,
       result,
       stdout,
-      dirty,
     }: any
   ) => void;
   deletePod: (
@@ -322,7 +321,6 @@ const createRepoSlice: StateCreator<
       stdout = "",
       error = null,
       result = null,
-      dirty = true,
     }
   ) => {
     if (!parent) {
@@ -366,7 +364,6 @@ const createRepoSlice: StateCreator<
       width,
       height,
     };
-    console.log("add pod", pod);
     set(
       produce((state: BearState) => {
         // 1. do local update
@@ -385,7 +382,7 @@ const createRepoSlice: StateCreator<
       })
     );
     // 2. do remote update
-    if (client && dirty) {
+    if (client) {
       await doRemoteAddPod(client, {
         repoId: get().repoId,
         parent,

@@ -49,7 +49,11 @@ import { lowercase, numbers } from "nanoid-dictionary";
 import { useStore } from "zustand";
 
 import { RepoContext, RoleType } from "../lib/store";
-import { useNodesStateSynced, parent as commonParent } from "../lib/nodes";
+import {
+  useNodesStateSynced,
+  resetSelection,
+  parent as commonParent,
+} from "../lib/nodes";
 
 import { MyMonaco } from "./MyMonaco";
 import { useApolloClient } from "@apollo/client";
@@ -526,18 +530,21 @@ const CodeNode = memo<Props>(function ({
     }
   }, [data.parent, setPodParent, id]);
 
-  const onCopy = (clipboardData: any) => {
-    const pod = getPod(id);
-    if (!pod) return;
-    clipboardData.setData("text/plain", pod.content);
-    clipboardData.setData(
-      "application/json",
-      JSON.stringify({
-        type: "pod",
-        data: pod,
-      })
-    );
-  };
+  const onCopy = useCallback(
+    (clipboardData: any) => {
+      const pod = getPod(id);
+      if (!pod) return;
+      clipboardData.setData("text/plain", pod.content);
+      clipboardData.setData(
+        "application/json",
+        JSON.stringify({
+          type: "pod",
+          data: pod,
+        })
+      );
+    },
+    [getPod, id]
+  );
 
   if (!pod) return null;
 
@@ -764,8 +771,6 @@ function getAbsPos({ node, nodesMap }) {
 export function Canvas() {
   const [nodes, setNodes, onNodesChange] = useNodesStateSynced([]);
   const [edges, setEdges] = useState<any[]>([]);
-  const [inPane, setInPane] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [pasting, setPasting] = useState<null | string>(null);
 
   const store = useContext(RepoContext);
@@ -831,9 +836,13 @@ export function Canvas() {
         }
       });
       setNodes(
-        Array.from(nodesMap.values()).sort(
-          (a: Node & { level }, b: Node & { level }) => a.level - b.level
-        )
+        Array.from(nodesMap.values())
+          .filter(
+            (node) =>
+              !node.data.hasOwnProperty("clientId") ||
+              node.data.clientId === clientId
+          )
+          .sort((a: Node & { level }, b: Node & { level }) => a.level - b.level)
       );
     };
 
@@ -987,9 +996,10 @@ export function Canvas() {
   // FIXME: add awareness info when dragging
   const onNodeDragStart = () => {};
 
-  const onNodeDragStop = useCallback(
-    // handle nodes list as multiple nodes can be dragged together at once
-    (event, _n: Node, nodes: Node[]) => {
+  // Check if the nodes can be dropped into a scope when moving ends
+
+  const checkNodesEndLocation = useCallback(
+    (event, nodes: Node[], commonParent: string | undefined) => {
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       // This mouse position is absolute within the canvas.
       const mousePos = reactFlowInstance.project({
@@ -1100,7 +1110,6 @@ export function Canvas() {
         });
       });
     },
-    // We need to monitor nodes, so that getScopeAt can have all the nodes.
     [
       reactFlowInstance,
       getScopeAt,
@@ -1109,6 +1118,14 @@ export function Canvas() {
       setPodParent,
       getPod,
     ]
+  );
+
+  const onNodeDragStop = useCallback(
+    // handle nodes list as multiple nodes can be dragged together at once
+    (event, _n: Node, nodes: Node[]) => {
+      checkNodesEndLocation(event, nodes, commonParent);
+    },
+    [checkNodesEndLocation]
   );
 
   const onNodesDelete = useCallback(
@@ -1141,7 +1158,7 @@ export function Canvas() {
   };
 
   const pasteCodePod = useCallback(
-    ({ x, y, pod }) => {
+    (pod) => {
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       let [posX, posY] = [
         reactFlowBounds.width / 2,
@@ -1150,11 +1167,11 @@ export function Canvas() {
       const position = reactFlowInstance.project({ x: posX, y: posY });
       position.x = (position.x - pod.width! / 2) as number;
       position.y = (position.y - (pod.height ?? 0) / 2) as number;
-      console.log("pasteCodePod", position, clientId, pod);
 
       const style = {
         width: pod.width,
         height: undefined,
+        // create a temporary half-transparent pod
         opacity: 0.5,
       };
 
@@ -1169,14 +1186,16 @@ export function Canvas() {
           parent: "ROOT",
           clientId,
         },
-        level: 0,
+        // the temporary pod should always be in the most front, set the level to a large number
+        level: 114514,
         extent: "parent",
         parentNode: undefined,
         dragHandle: ".custom-drag-handle",
         style,
       };
 
-      addPod(apolloClient, {
+      // create an informal (temporary) pod in local, without remote addPod
+      addPod(null, {
         id,
         parent: "ROOT",
         type: "CODE",
@@ -1190,13 +1209,12 @@ export function Canvas() {
         stdout: pod.stdout,
         result: pod.result,
         name: pod.name,
-        dirty: false,
       });
 
       nodesMap.set(id, newNode as any);
       setPasting(id);
     },
-    [addPod, apolloClient, clientId, nodesMap, reactFlowInstance, setPasting]
+    [addPod, clientId, nodesMap, reactFlowInstance, setPasting]
   );
 
   useEffect(() => {
@@ -1204,33 +1222,42 @@ export function Canvas() {
       setShowContextMenu(false);
     };
     const handlePaste = (event) => {
-      console.log("paste", event);
+      // avoid duplicated pastes
+      if (pasting) return;
+
+      // only paste when the pane is focused
       if (
         event.target?.className !== "react-flow__pane" &&
         document.activeElement?.className !== "react-flow__pane"
-      ) {
+      )
         return;
+
+      try {
+        // the user clipboard data is unpreditable, may have application/json from other source that can't be parsed by us, use try-catch here.
+        const playload = event.clipboardData.getData("application/json");
+        const data = JSON.parse(playload);
+        if (data?.type !== "pod") {
+          return;
+        }
+        // clear the selection, make the temporary front-most
+        resetSelection();
+        pasteCodePod(data.data);
+        // make the pane unreachable by keyboard (escape), or a black border shows up in the pane when pasting is canceled.
+        const pane = document.getElementsByClassName("react-flow__pane")[0];
+        if (pane && pane.hasAttribute("tabindex")) {
+          pane.removeAttribute("tabindex");
+        }
+      } catch (e) {
+        console.log("paste error", e);
       }
-      const playload = event.clipboardData.getData("application/json");
-      const data = JSON.parse(playload);
-      if (data?.type !== "pod") {
-        return;
-      }
-      console.log("paste pod", data.data);
-      pasteCodePod({ x: 0, y: 0, pod: data.data });
     };
-    // const handleMouseMove = (event) => {
-    //   console.log("mousemove", event);
-    // };
     document.addEventListener("click", handleClick);
     document.addEventListener("paste", handlePaste);
-    // document.addEventListener("mousemove", handleMouseMove);
     return () => {
       document.removeEventListener("click", handleClick);
       document.removeEventListener("paste", handlePaste);
-      // document.removeEventListener("mousemove", handleMouseMove);
     };
-  }, [pasteCodePod]);
+  }, [pasteCodePod, pasting]);
 
   useEffect(() => {
     if (!pasting || !reactFlowWrapper.current) {
@@ -1253,6 +1280,7 @@ export function Canvas() {
       if (!node) return;
       const newNode = {
         ...node,
+        level: 0,
         style: {
           width: node.style?.width,
           height: node.style?.height,
@@ -1264,33 +1292,38 @@ export function Canvas() {
         },
       };
       const pod = getPod(pasting);
+      // delete the temporary node
       nodesMap.delete(pasting);
+      // add the formal pod in place under root
       addPod(apolloClient, {
         ...pod,
-        dirty: true,
       } as any);
       nodesMap.set(pasting, newNode);
+
+      // check if the formal node is located in a scope, if it is, change its parent
       const currentNode = reactFlowInstance.getNode(pasting);
-      onNodeDragStop(event, currentNode, [currentNode]);
+      checkNodesEndLocation(event, [currentNode], "ROOT");
+      //clear the pasting state
       setPasting(null);
     };
     const keyDown = (event) => {
       if (event.key !== "Escape") return;
-      console.log("escapeDown", event);
-      event.preventDefault();
       // delete the temporary node
       nodesMap.delete(pasting);
-      // delete the temporary pod in local store
-      deletePod(null, { id: pasting, toDelete: [] });
       setPasting(null);
+      //clear the pasting state
+      event.preventDefault();
     };
     reactFlowWrapper.current.addEventListener("mousemove", mouseMove);
     reactFlowWrapper.current.addEventListener("click", mouseClick);
-    reactFlowWrapper.current.addEventListener("keydown", keyDown);
+    document.addEventListener("keydown", keyDown);
     return () => {
-      reactFlowWrapper.current.removeEventListener("mousemove", mouseMove);
-      reactFlowWrapper.current.removeEventListener("click", mouseClick);
-      reactFlowWrapper.current.removeEventListener("keydown", keyDown);
+      if (reactFlowWrapper.current) {
+        reactFlowWrapper.current.removeEventListener("mousemove", mouseMove);
+        reactFlowWrapper.current.removeEventListener("click", mouseClick);
+      }
+      document.removeEventListener("keydown", keyDown);
+      // FIXME(XINYI): auto focus on pane after finishing pasting should be set here, however, Escape triggers the tab selection on the element with tabindex=0, shows a black border on the pane. So I disable it.
     };
   }, [
     pasting,
@@ -1302,10 +1335,11 @@ export function Canvas() {
     apolloClient,
     reactFlowInstance,
     nodesMap,
+    checkNodesEndLocation,
   ]);
 
   const onPaneClick = (event) => {
-    console.log("onPaneClick", event);
+    // focus
     event.target.tabIndex = 0;
   };
 
@@ -1335,9 +1369,6 @@ export function Canvas() {
           maxZoom={10}
           minZoom={0.1}
           onPaneContextMenu={onPaneContextMenu}
-          onMoveEnd={(event) => {
-            console.log("onMoveEnd", event);
-          }}
           nodeTypes={nodeTypes}
           zoomOnScroll={false}
           panOnScroll={true}
