@@ -30,6 +30,10 @@ export function useNodesStateSynced(nodeList) {
   const role = useStore(store, (state) => state.role);
   const ydoc = useStore(store, (state) => state.ydoc);
   const nodesMap = ydoc.getMap<Node>("pods");
+  const clientId = useStore(
+    store,
+    (state) => state.provider?.awareness?.clientID
+  );
 
   const [nodes, setNodes] = useState(nodeList);
   // const setNodeId = useStore((state) => state.setSelectNode);
@@ -107,7 +111,7 @@ export function useNodesStateSynced(nodeList) {
       YMapEvent.changes.keys.forEach((change, key) => {
         if (change.action === "add") {
           const node = nodesMap.get(key);
-          if (!node) return;
+          if (!node || node.data?.clientId || getPod(key)) return;
           addPod(null, {
             id: node.id,
             parent: "ROOT",
@@ -118,6 +122,8 @@ export function useNodesStateSynced(nodeList) {
             y: node.position.y,
             width: node.style?.width,
             height: node.style?.height,
+            name: node.data?.name,
+            dirty: false,
           });
         } else if (change.action === "delete") {
           const node = change.oldValue;
@@ -129,6 +135,11 @@ export function useNodesStateSynced(nodeList) {
       // TOFIX: a node may be shadowed behind its parent, due to the order to render reactflow node, to fix this, comment out the following sorted method, which brings in a large overhead.
       setNodes(
         Array.from(nodesMap.values())
+          .filter(
+            (node) =>
+              !node.data.hasOwnProperty("clientId") ||
+              node.data.clientId === clientId
+          )
           .sort((a: Node & { level }, b: Node & { level }) => a.level - b.level)
           .map((node) => ({ ...node, selected: selectedPods.has(node.id) }))
       );

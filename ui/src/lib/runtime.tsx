@@ -48,7 +48,7 @@ function rewriteCode(id: string, get: () => RepoSlice & RuntimeSlice) {
   let pod = pods[id];
   let code = pod.content;
   if (code.trim().startsWith("@export")) {
-    code = code.slice(7).trim();
+    code = code.replace("@export", " ".repeat("@export".length));
   }
   if (code.startsWith("!")) return code;
   // replace with symbol table
@@ -61,7 +61,7 @@ function rewriteCode(id: string, get: () => RepoSlice & RuntimeSlice) {
       case "varuse":
         // directly replace with _SCOPE if we can resolve it
         if (annotation.origin) {
-          newcode += `${annotation.name}_${pod.parent}`;
+          newcode += `${annotation.name}_${pods[annotation.origin].parent}`;
         } else {
           newcode += annotation.name;
         }
