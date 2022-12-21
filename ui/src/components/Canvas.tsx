@@ -1223,7 +1223,7 @@ export function Canvas() {
     };
     const handlePaste = (event) => {
       // avoid duplicated pastes
-      if (pasting) return;
+      if (pasting || role === RoleType.GUEST) return;
 
       // only paste when the pane is focused
       if (
