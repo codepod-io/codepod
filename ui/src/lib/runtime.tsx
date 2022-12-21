@@ -387,7 +387,9 @@ export const createRuntimeSlice: StateCreator<
   },
   parseAllPods: () => {
     Object.keys(get().pods).forEach((id) => {
-      get().parsePod(id);
+      if (get().pods[id].type === "code") {
+        get().parsePod(id);
+      }
     });
   },
   resolvePod: (id) => {
@@ -410,7 +412,9 @@ export const createRuntimeSlice: StateCreator<
   },
   resolveAllPods: () => {
     Object.keys(get().pods).forEach((id) => {
-      get().resolvePod(id);
+      if (get().pods[id].type === "code") {
+        get().resolvePod(id);
+      }
     });
   },
   wsRun: async (id) => {
