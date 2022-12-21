@@ -178,6 +178,7 @@ export interface RepoSlice {
   unfoldAll: () => void;
   setPodName: ({ id, name }: { id: string; name: string }) => void;
   setPodContent: ({ id, content }: { id: string; content: string }) => void;
+  initPodContent: ({ id, content }: { id: string; content: string }) => void;
   addPod: (
     client: ApolloClient<object> | null,
     {
@@ -565,6 +566,16 @@ const createRepoSlice: StateCreator<
       false,
       // @ts-ignore
       "setPodContent"
+    ),
+  initPodContent: ({ id, content }) =>
+    set(
+      produce((state) => {
+        let pod = state.pods[id];
+        pod.content = content;
+      }),
+      false,
+      // @ts-ignore
+      "initPodContent"
     ),
   setPodRender: ({ id, value }) =>
     set(

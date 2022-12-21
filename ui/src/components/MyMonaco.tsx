@@ -390,6 +390,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const getPod = useStore(store, (state) => state.getPod);
   const setCurrentEditor = useStore(store, (state) => state.setCurrentEditor);
   const setPodContent = useStore(store, (state) => state.setPodContent);
+  const initPodContent = useStore(store, (state) => state.initPodContent);
   const clearResults = useStore(store, (s) => s.clearResults);
   const wsRun = useStore(store, (state) => state.wsRun);
   const setPodFocus = useStore(store, (state) => state.setPodFocus);
@@ -485,7 +486,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
         ytext.insert(0, value);
       } else {
         // init the pasted pod content by the code on the yjs server
-        setPodContent({ id, content: ytext.toString() });
+        initPodContent({ id, content: ytext.toString() });
       }
     };
 

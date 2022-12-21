@@ -1233,9 +1233,11 @@ export function Canvas() {
   }, [pasteCodePod]);
 
   useEffect(() => {
-    if (!pasting || !reactFlowWrapper.current) return;
+    if (!pasting || !reactFlowWrapper.current) {
+      return;
+    }
+
     const mouseMove = (event) => {
-      console.log("mousemove", event);
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
       const position = reactFlowInstance.project({
         x: event.clientX - reactFlowBounds.left,
@@ -1247,7 +1249,6 @@ export function Canvas() {
       nodesMap.set(pasting, node);
     };
     const mouseClick = (event) => {
-      console.log("mouseclick", event);
       const node = nodesMap.get(pasting);
       if (!node) return;
       const newNode = {
@@ -1274,8 +1275,8 @@ export function Canvas() {
       setPasting(null);
     };
     const keyDown = (event) => {
-      console.log("escapeDown", event);
       if (event.key !== "Escape") return;
+      console.log("escapeDown", event);
       event.preventDefault();
       // delete the temporary node
       nodesMap.delete(pasting);
@@ -1285,11 +1286,11 @@ export function Canvas() {
     };
     reactFlowWrapper.current.addEventListener("mousemove", mouseMove);
     reactFlowWrapper.current.addEventListener("click", mouseClick);
-    document.addEventListener("keydown", keyDown);
+    reactFlowWrapper.current.addEventListener("keydown", keyDown);
     return () => {
       reactFlowWrapper.current.removeEventListener("mousemove", mouseMove);
       reactFlowWrapper.current.removeEventListener("click", mouseClick);
-      document.removeEventListener("keydown", keyDown);
+      reactFlowWrapper.current.removeEventListener("keydown", keyDown);
     };
   }, [
     pasting,
