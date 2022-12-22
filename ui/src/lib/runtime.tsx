@@ -387,7 +387,7 @@ export const createRuntimeSlice: StateCreator<
   },
   parseAllPods: () => {
     Object.keys(get().pods).forEach((id) => {
-      if (get().pods[id].type === "code") {
+      if (get().pods[id].type === "CODE") {
         get().parsePod(id);
       }
     });
@@ -412,7 +412,7 @@ export const createRuntimeSlice: StateCreator<
   },
   resolveAllPods: () => {
     Object.keys(get().pods).forEach((id) => {
-      if (get().pods[id].type === "code") {
+      if (get().pods[id].type === "CODE") {
         get().resolvePod(id);
       }
     });
