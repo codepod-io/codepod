@@ -8,6 +8,7 @@ RUN yarn install --frozen-lockfile
 # FIXME would this copy node_modules?
 COPY . .
 
+ENV NODE_OPTIONS="--max_old_space_size=4096"
 RUN yarn build
 
 FROM nginx:1.19-alpine AS server
