@@ -34,6 +34,7 @@ import Button from "@mui/material/Button";
 import CircleIcon from "@mui/icons-material/Circle";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import ContentCutIcon from "@mui/icons-material/ContentCut";
 import Grid from "@mui/material/Grid";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -464,6 +465,7 @@ const CodeNode = memo<Props>(function ({
   const setCurrentEditor = useStore(store, (state) => state.setCurrentEditor);
   const setPodParent = useStore(store, (state) => state.setPodParent);
   const getPod = useStore(store, (state) => state.getPod);
+  const setCutting = useStore(store, (state) => state.setCutting);
   const pod = getPod(id);
   const role = useStore(store, (state) => state.role);
   const width = useStore(store, (state) => state.pods[id]?.width);
@@ -545,6 +547,14 @@ const CodeNode = memo<Props>(function ({
       );
     },
     [getPod, id]
+  );
+
+  const onCut = useCallback(
+    (clipboardData: any) => {
+      onCopy(clipboardData);
+      setCutting(id);
+    },
+    [onCopy, setCutting, id]
   );
 
   if (!pod) return null;
@@ -686,6 +696,18 @@ const CodeNode = memo<Props>(function ({
               </IconButton>
             </Tooltip>
           </CopyToClipboard>
+          <CopyToClipboard
+            text="dummy"
+            options={
+              { debug: true, format: "text/plain", onCopy: onCut } as any
+            }
+          >
+            <Tooltip title="Cut">
+              <IconButton size="small">
+                <ContentCutIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          </CopyToClipboard>
           {role !== RoleType.GUEST && (
             <Tooltip title="Delete">
               <IconButton
@@ -820,6 +842,8 @@ export function Canvas() {
   const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
   const shareOpen = useStore(store, (state) => state.shareOpen);
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
+  const cutting = useStore(store, (state) => state.cutting);
+  const setCutting = useStore(store, (state) => state.setCutting);
 
   const getRealNodes = useCallback(
     (id: string, level: number) => {
@@ -1196,17 +1220,8 @@ export function Canvas() {
     console.log(showContextMenu, points, client);
   };
 
-  const pasteCodePod = useCallback(
-    (pod) => {
-      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-      let [posX, posY] = [
-        reactFlowBounds.width / 2,
-        reactFlowBounds.height / 2,
-      ];
-      const position = reactFlowInstance.project({ x: posX, y: posY });
-      position.x = (position.x - pod.width! / 2) as number;
-      position.y = (position.y - (pod.height ?? 0) / 2) as number;
-
+  const createTemprorayNode = useCallback(
+    (pod, position) => {
       const style = {
         width: pod.width,
         height: undefined,
@@ -1252,8 +1267,30 @@ export function Canvas() {
 
       nodesMap.set(id, newNode as any);
       setPasting(id);
+
+      // make the pane unreachable by keyboard (escape), or a black border shows up in the pane when pasting is canceled.
+      const pane = document.getElementsByClassName("react-flow__pane")[0];
+      if (pane && pane.hasAttribute("tabindex")) {
+        pane.removeAttribute("tabindex");
+      }
     },
-    [addPod, clientId, nodesMap, reactFlowInstance, setPasting]
+    [addPod, clientId, nodesMap, setPasting]
+  );
+
+  const pasteCodePod = useCallback(
+    (pod) => {
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      let [posX, posY] = [
+        reactFlowBounds.width / 2,
+        reactFlowBounds.height / 2,
+      ];
+      const position = reactFlowInstance.project({ x: posX, y: posY });
+      position.x = (position.x - pod.width! / 2) as number;
+      position.y = (position.y - (pod.height ?? 0) / 2) as number;
+
+      createTemprorayNode(pod, position);
+    },
+    [createTemprorayNode, reactFlowInstance]
   );
 
   useEffect(() => {
@@ -1281,11 +1318,6 @@ export function Canvas() {
         // clear the selection, make the temporary front-most
         resetSelection();
         pasteCodePod(data.data);
-        // make the pane unreachable by keyboard (escape), or a black border shows up in the pane when pasting is canceled.
-        const pane = document.getElementsByClassName("react-flow__pane")[0];
-        if (pane && pane.hasAttribute("tabindex")) {
-          pane.removeAttribute("tabindex");
-        }
       } catch (e) {
         console.log("paste error", e);
       }
@@ -1344,12 +1376,31 @@ export function Canvas() {
       checkNodesEndLocation(event, [currentNode], "ROOT");
       //clear the pasting state
       setPasting(null);
+      if (cutting) {
+        reactFlowInstance.deleteElements({ nodes: [{ id: cutting }] });
+        setCutting(null);
+      }
     };
     const keyDown = (event) => {
       if (event.key !== "Escape") return;
       // delete the temporary node
       nodesMap.delete(pasting);
       setPasting(null);
+      if (cutting) {
+        console.log(cutting);
+        const node = nodesMap.get(cutting);
+        if (
+          node &&
+          node.hasOwnProperty("data") &&
+          node.data.hasOwnProperty("hidden")
+        ) {
+          console.log(node, node.data.hidden);
+          delete node.data.hidden;
+          nodesMap.set(cutting, node);
+        }
+
+        setCutting(null);
+      }
       //clear the pasting state
       event.preventDefault();
     };
@@ -1376,6 +1427,18 @@ export function Canvas() {
     nodesMap,
     checkNodesEndLocation,
   ]);
+
+  useEffect(() => {
+    if (cutting) {
+      console.log("cutting", cutting);
+      const node = nodesMap.get(cutting);
+      if (!node) return;
+      const position = node.positionAbsolute ?? node.position;
+      createTemprorayNode(getPod(cutting), position);
+      node.data.hidden = clientId;
+      nodesMap.set(cutting, node);
+    }
+  }, [cutting]);
 
   const onPaneClick = (event) => {
     // focus

@@ -141,7 +141,11 @@ export function useNodesStateSynced(nodeList) {
               node.data.clientId === clientId
           )
           .sort((a: Node & { level }, b: Node & { level }) => a.level - b.level)
-          .map((node) => ({ ...node, selected: selectedPods.has(node.id) }))
+          .map((node) => ({
+            ...node,
+            selected: selectedPods.has(node.id),
+            hidden: node.data?.hidden === clientId,
+          }))
       );
 
       // setNodes(Array.from(nodesMap.values()));
