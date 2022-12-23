@@ -910,7 +910,9 @@ export function Canvas() {
     } else {
       provider.once("synced", init);
     }
-    // check if the nodesMap on the websocket has already been initialized with node info
+
+    // cancel in-progress pasting when exiting the canvas
+    return cancelPaste;
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [provider]);
@@ -1284,6 +1286,7 @@ export function Canvas() {
         reactFlowBounds.width / 2,
         reactFlowBounds.height / 2,
       ];
+
       const position = reactFlowInstance.project({ x: posX, y: posY });
       position.x = (position.x - pod.width! / 2) as number;
       position.y = (position.y - (pod.height ?? 0) / 2) as number;
@@ -1328,7 +1331,22 @@ export function Canvas() {
       document.removeEventListener("click", handleClick);
       document.removeEventListener("paste", handlePaste);
     };
-  }, [pasteCodePod, pasting]);
+  }, [pasteCodePod, setShowContextMenu, pasting, role, resetSelection]);
+
+  const cancelPaste = useCallback(() => {
+    if (!pasting) return;
+    nodesMap.delete(pasting);
+    setPasting(null);
+    if (cutting) {
+      // recover the hideen original node
+      const node = nodesMap.get(cutting);
+      if (node?.data?.hidden) {
+        delete node.data.hidden;
+        nodesMap.set(cutting, node);
+      }
+      setCutting(null);
+    }
+  }, [cutting, nodesMap, pasting]);
 
   useEffect(() => {
     if (!pasting || !reactFlowWrapper.current) {
@@ -1376,6 +1394,7 @@ export function Canvas() {
       checkNodesEndLocation(event, [currentNode], "ROOT");
       //clear the pasting state
       setPasting(null);
+      // delete the original (hidden) node
       if (cutting) {
         reactFlowInstance.deleteElements({ nodes: [{ id: cutting }] });
         setCutting(null);
@@ -1384,23 +1403,7 @@ export function Canvas() {
     const keyDown = (event) => {
       if (event.key !== "Escape") return;
       // delete the temporary node
-      nodesMap.delete(pasting);
-      setPasting(null);
-      if (cutting) {
-        console.log(cutting);
-        const node = nodesMap.get(cutting);
-        if (
-          node &&
-          node.hasOwnProperty("data") &&
-          node.data.hasOwnProperty("hidden")
-        ) {
-          console.log(node, node.data.hidden);
-          delete node.data.hidden;
-          nodesMap.set(cutting, node);
-        }
-
-        setCutting(null);
-      }
+      cancelPaste();
       //clear the pasting state
       event.preventDefault();
     };
@@ -1426,11 +1429,12 @@ export function Canvas() {
     reactFlowInstance,
     nodesMap,
     checkNodesEndLocation,
+    cancelPaste,
   ]);
 
   useEffect(() => {
     if (cutting) {
-      console.log("cutting", cutting);
+      // when a pod is being cut, generate a new temporary node and hide the original node
       const node = nodesMap.get(cutting);
       if (!node) return;
       const position = node.positionAbsolute ?? node.position;
