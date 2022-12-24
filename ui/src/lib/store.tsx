@@ -92,6 +92,7 @@ const initialState = {
   collaborators: [],
   isPublic: false,
   shareOpen: false,
+  cutting: null,
   scopedVars: localStorage.getItem("scopedVars")
     ? JSON.parse(localStorage.getItem("scopedVars")!)
     : true,
@@ -147,6 +148,7 @@ export interface RepoSlice {
   role: RoleType;
   collaborators: any[];
   shareOpen: boolean;
+  cutting: string | null;
   // sessionId?: string;
 
   resetState: () => void;
@@ -253,6 +255,7 @@ export interface RepoSlice {
   deleteCollaborator: (client: ApolloClient<object>, id: string) => any;
   loadVisibility: (client: ApolloClient<object>, repoId: string) => void;
   setShareOpen: (open: boolean) => void;
+  setCutting: (id: string | null) => void;
 }
 
 type BearState = RepoSlice & RuntimeSlice;
@@ -954,6 +957,7 @@ const createRepoSlice: StateCreator<
     }
     return { success, error };
   },
+  setCutting: (id: string | null) => set({ cutting: id }),
 });
 
 export const createRepoStore = () =>
