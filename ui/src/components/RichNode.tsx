@@ -49,6 +49,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
 import RectangleIcon from "@mui/icons-material/Rectangle";
 import DisabledByDefaultIcon from "@mui/icons-material/DisabledByDefault";
+import { resetSelection } from "../lib/nodes";
 
 import {
   BoldExtension,
@@ -156,6 +157,7 @@ const MyEditor = ({
   const setPodContent = useStore(store, (state) => state.setPodContent);
   // initial content
   const getPod = useStore(store, (state) => state.getPod);
+  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const pod = getPod(id);
   const { manager, state, setState } = useRemirror({
     extensions: () => [
@@ -192,9 +194,13 @@ const MyEditor = ({
   return (
     <Box
       className="remirror-theme"
+      onFocus={() => {
+        if (resetSelection()) nodesMap.set(id, nodesMap.get(id) as Node);
+      }}
       sx={{
         cursor: "text",
       }}
+      overflow="auto"
     >
       <AllStyledComponent>
         <ThemeProvider>
@@ -203,6 +209,10 @@ const MyEditor = ({
               manager={manager}
               // initialContent={state}
               state={state}
+              // FIXME: onFocus is not working
+              // onFocus={() => {
+              //   console.log("onFocus");
+              // }}
               onChange={(parameter) => {
                 let nextState = parameter.state;
                 setState(nextState);
@@ -464,19 +474,6 @@ export const RichNode = memo<Props>(function ({
           className="nodrag"
         >
           {role !== RoleType.GUEST && (
-            <Tooltip title="Run (shift-enter)">
-              <IconButton
-                size="small"
-                onClick={() => {
-                  clearResults(id);
-                  wsRun(id);
-                }}
-              >
-                <PlayCircleOutlineIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          )}
-          {role !== RoleType.GUEST && (
             <Tooltip title="Delete">
               <IconButton
                 size="small"
@@ -488,16 +485,6 @@ export const RichNode = memo<Props>(function ({
               </IconButton>
             </Tooltip>
           )}
-          <Tooltip title="Change layout">
-            <IconButton
-              size="small"
-              onClick={() => {
-                setLayout(layout === "bottom" ? "right" : "bottom");
-              }}
-            >
-              <ViewComfyIcon fontSize="inherit" />
-            </IconButton>
-          </Tooltip>
         </Box>
       </Box>
       <Box>

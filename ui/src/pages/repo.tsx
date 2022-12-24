@@ -12,7 +12,7 @@ import { useEffect, useState, useRef, useContext } from "react";
 
 import { useStore } from "zustand";
 
-import { createRepoStore, RepoContext } from "../lib/store";
+import { createRepoStore, RepoContext, RoleType } from "../lib/store";
 
 import useMe from "../lib/me";
 import { Canvas } from "../components/Canvas";
@@ -35,6 +35,7 @@ function RepoWrapper({ children, id }) {
   const repoName = useStore(store, (state) => state.repoName);
   const setRepoName = useStore(store, (state) => state.setRepoName);
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
+  const role = useStore(store, (state) => state.role);
 
   const [updateRepo, { error }] = useMutation(
     gql`
@@ -83,6 +84,7 @@ function RepoWrapper({ children, id }) {
                 sx={{
                   maxWidth: "100%",
                 }}
+                disabled={role !== RoleType.OWNER}
                 onChange={(e) => {
                   const name = e.target.value;
                   setRepoName(name);
