@@ -311,25 +311,27 @@ const ScopeNode = memo<Props>(function ScopeNode({
   );
 });
 
-// FIXME: the resultblock is rendered every time the parent codeNode changes (e.g., dragging), we may set the result number as a state of a pod to memoize the resultblock.
-
-function ResultBlock({ pod, id }) {
-  const store = useContext(RepoContext);
+export const ResultBlock = memo<any>(function ResultBlock({ id }) {
+  const store = useContext(RepoContext)!;
+  const height = useStore(store, (state) => state.pods[id].height);
+  const result = useStore(store, (state) => state.pods[id].result);
+  const error = useStore(store, (state) => state.pods[id].error);
+  const stdout = useStore(store, (state) => state.pods[id].stdout);
+  const running = useStore(store, (state) => state.pods[id].running);
   const [showOutput, setShowOutput] = useState(true);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
   return (
     <Box
       sx={{
-        minHeight: pod.height,
+        minHeight: height,
       }}
     >
-      {pod.result && (
+      {result && (
         <Box sx={{ display: "flex", flexDirection: "column" }}>
-          {pod.result.html ? (
-            <div dangerouslySetInnerHTML={{ __html: pod.result.html }}></div>
+          {result.html ? (
+            <div dangerouslySetInnerHTML={{ __html: result.html }}></div>
           ) : (
             <>
-              {!pod.error && (
+              {!error && (
                 <Box
                   color="rgb(0, 183, 87)"
                   sx={{
@@ -347,16 +349,13 @@ function ResultBlock({ pod, id }) {
               )}
             </>
           )}
-          {pod.result.image && (
-            <img
-              src={`data:image/png;base64,${pod.result.image}`}
-              alt="output"
-            />
+          {result.image && (
+            <img src={`data:image/png;base64,${result.image}`} alt="output" />
           )}
         </Box>
       )}
 
-      {pod.running && <CircularProgress />}
+      {running && <CircularProgress />}
       {showOutput ? (
         <Box
           sx={{ paddingBottom: "2px" }}
@@ -383,12 +382,12 @@ function ResultBlock({ pod, id }) {
           >
             Hide output
           </Button>
-          {pod.stdout && (
+          {stdout && (
             <Box whiteSpace="pre-wrap" sx={{ fontSize: 10, paddingBottom: 1 }}>
-              <Ansi>{pod.stdout}</Ansi>
+              <Ansi>{stdout}</Ansi>
             </Box>
           )}
-          {pod?.result?.text && pod?.result?.count > 0 && (
+          {result?.text && result?.count > 0 && (
             <Box
               sx={{
                 display: "flex",
@@ -399,16 +398,16 @@ function ResultBlock({ pod, id }) {
               }}
             >
               <Box component="pre" whiteSpace="pre-wrap">
-                {pod.result.text}
+                {result.text}
               </Box>
             </Box>
           )}
-          {pod?.error && <Box color="red">{pod?.error?.evalue}</Box>}
-          {pod?.error?.stacktrace && (
+          {error && <Box color="red">{error?.evalue}</Box>}
+          {error?.stacktrace && (
             <Box>
               <Box>StackTrace</Box>
               <Box whiteSpace="pre-wrap" sx={{ fontSize: 10 }}>
-                <Ansi>{pod.error.stacktrace.join("\n")}</Ansi>
+                <Ansi>{error.stacktrace.join("\n")}</Ansi>
               </Box>
             </Box>
           )}
@@ -437,7 +436,7 @@ function ResultBlock({ pod, id }) {
       )}
     </Box>
   );
-}
+});
 
 const CodeNode = memo<Props>(function ({
   data,
@@ -756,7 +755,7 @@ const CodeNode = memo<Props>(function ({
               padding: "0 10px",
             }}
           >
-            <ResultBlock pod={pod} id={id} />
+            <ResultBlock id={id} />
           </Box>
         )}
       </Box>
