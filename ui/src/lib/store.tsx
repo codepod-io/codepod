@@ -243,6 +243,7 @@ export interface RepoSlice {
   disconnect: () => void;
   getPod: (id: string) => Pod;
   getPods: () => Record<string, Pod>;
+  clonePod: (id: string) => any;
   getId2children: (string) => string[];
   setPodFocus: (id: string) => void;
   setPodBlur: (id: string) => void;
@@ -386,11 +387,28 @@ const createRepoSlice: StateCreator<
     );
     // 2. do remote update
     if (client) {
-      await doRemoteAddPod(client, {
-        repoId: get().repoId,
-        parent,
-        pod,
-      });
+      try {
+        await doRemoteAddPod(client, {
+          repoId: get().repoId,
+          parent,
+          pod,
+        });
+      } catch (e) {
+        console.log("add pod error", e);
+        await doRemoteAddPod(client, {
+          repoId: get().repoId,
+          parent: "ROOT",
+          pod,
+        });
+
+        console.log("add pod error, added to root", get().pods[id]);
+
+        set(
+          produce((state) => {
+            if (state.pods[id]) state.pods[id].dirty = true;
+          })
+        );
+      }
     }
   },
   deletePod: async (
@@ -587,6 +605,7 @@ const createRepoSlice: StateCreator<
     set(
       produce((state) => {
         let pod = state.pods[id];
+        if (!pod) return;
         pod.x = x;
         pod.y = y;
         pod.dirty ||= dirty;
@@ -958,6 +977,14 @@ const createRepoSlice: StateCreator<
     return { success, error };
   },
   setCutting: (id: string | null) => set({ cutting: id }),
+  clonePod: (id: string) => {
+    const pod = get().pods[id];
+    if (!pod) return {};
+    return {
+      ...pod,
+      children: pod.children.map((child) => get().clonePod(child.id)),
+    };
+  },
 });
 
 export const createRepoStore = () =>

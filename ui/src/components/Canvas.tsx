@@ -57,7 +57,7 @@ import {
 } from "../lib/nodes";
 
 import { MyMonaco } from "./MyMonaco";
-import { useApolloClient } from "@apollo/client";
+import { ApolloClient, useApolloClient } from "@apollo/client";
 import { CanvasContextMenu } from "./CanvasContextMenu";
 import styles from "./canvas.style.js";
 import { ShareProjDialog } from "./ShareProjDialog";
@@ -92,6 +92,8 @@ const ScopeNode = memo<Props>(function ScopeNode({
   const updatePod = useStore(store, (state) => state.updatePod);
   const setPodPosition = useStore(store, (state) => state.setPodPosition);
   const setPodParent = useStore(store, (state) => state.setPodParent);
+  const clonePod = useStore(store, (state) => state.clonePod);
+  const setCutting = useStore(store, (state) => state.setCutting);
   const [target, setTarget] = React.useState<any>();
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const [frame] = React.useState({
@@ -156,6 +158,30 @@ const ScopeNode = memo<Props>(function ScopeNode({
     }
   }, [data.parent, setPodParent, id]);
 
+  const onCopy = useCallback(
+    (clipboardData: any) => {
+      const pod = clonePod(id);
+      if (!pod) return;
+      clipboardData.setData("text/plain", pod.content);
+      clipboardData.setData(
+        "application/json",
+        JSON.stringify({
+          type: "pod",
+          data: pod,
+        })
+      );
+    },
+    [clonePod, id]
+  );
+
+  const onCut = useCallback(
+    (clipboardData: any) => {
+      onCopy(clipboardData);
+      setCutting(id);
+    },
+    [onCopy, setCutting, id]
+  );
+
   return (
     <Box
       ref={ref}
@@ -179,10 +205,22 @@ const ScopeNode = memo<Props>(function ScopeNode({
           background: "white",
           zIndex: 250,
           justifyContent: "center",
+          className: "nodrag",
+        }}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const pane = document.getElementsByClassName(
+            "react-flow__pane"
+          )[0] as HTMLElement;
+          if (pane) {
+            pane.tabIndex = 0;
+            pane.focus();
+          }
         }}
       >
         {role !== RoleType.GUEST && (
-          <Tooltip title="Delete" className="nodrag">
+          <Tooltip title="Delete">
             <IconButton
               size="small"
               onClick={(e: any) => {
@@ -194,6 +232,30 @@ const ScopeNode = memo<Props>(function ScopeNode({
               <DeleteIcon fontSize="inherit" />
             </IconButton>
           </Tooltip>
+        )}
+        <CopyToClipboard
+          text="dummy"
+          options={{ debug: true, format: "text/plain", onCopy } as any}
+        >
+          <Tooltip title="Copy">
+            <IconButton size="small">
+              <ContentCopyIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        </CopyToClipboard>
+        {role !== RoleType.GUEST && (
+          <CopyToClipboard
+            text="dummy"
+            options={
+              { debug: true, format: "text/plain", onCopy: onCut } as any
+            }
+          >
+            <Tooltip title="Cut">
+              <IconButton size="small">
+                <ContentCutIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          </CopyToClipboard>
         )}
       </Box>
       <Handle
@@ -557,7 +619,10 @@ const CodeNode = memo<Props>(function ({
     [onCopy, setCutting, id]
   );
 
-  if (!pod) return null;
+  if (!pod) {
+    // console.error("Pod not found", id);
+    return null;
+  }
 
   // onsize is banned for a guest, FIXME: ugly code
   const Wrap = (child) =>
@@ -696,18 +761,20 @@ const CodeNode = memo<Props>(function ({
               </IconButton>
             </Tooltip>
           </CopyToClipboard>
-          <CopyToClipboard
-            text="dummy"
-            options={
-              { debug: true, format: "text/plain", onCopy: onCut } as any
-            }
-          >
-            <Tooltip title="Cut">
-              <IconButton size="small">
-                <ContentCutIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          </CopyToClipboard>
+          {role !== RoleType.GUEST && (
+            <CopyToClipboard
+              text="dummy"
+              options={
+                { debug: true, format: "text/plain", onCopy: onCut } as any
+              }
+            >
+              <Tooltip title="Cut">
+                <IconButton size="small">
+                  <ContentCutIcon fontSize="inherit" />
+                </IconButton>
+              </Tooltip>
+            </CopyToClipboard>
+          )}
           {role !== RoleType.GUEST && (
             <Tooltip title="Delete">
               <IconButton
@@ -777,6 +844,7 @@ const level2color = {
 };
 
 function getAbsPos({ node, nodesMap }) {
+  if (!node) return [0, 0];
   let x = node.position.x;
   let y = node.position.y;
   if (node.parentNode) {
@@ -844,6 +912,7 @@ export function Canvas() {
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
   const cutting = useStore(store, (state) => state.cutting);
   const setCutting = useStore(store, (state) => state.setCutting);
+  const clonePod = useStore(store, (state) => state.clonePod);
 
   const getRealNodes = useCallback(
     (id: string, level: number) => {
@@ -1034,6 +1103,7 @@ export function Canvas() {
   const getScopeAt = useCallback(
     (x: number, y: number, ids: string[]) => {
       const scope = nodes.findLast((node) => {
+        if (node.data?.clientId || node.data.hidden) return false;
         let [x1, y1] = getAbsPos({ node, nodesMap });
         return (
           node.type === "scope" &&
@@ -1075,12 +1145,12 @@ export function Canvas() {
       const scope = getScopeAt(
         mousePos.x,
         mousePos.y,
-        nodes.map((n) => n.id)
+        nodes.map((n) => n?.id)
       );
 
       // FIXME: a better way to do this: check if the commonParent is the ancestor of the scope
       if (commonParent !== undefined && commonParent !== "ROOT") {
-        const currentParent = nodesMap.get(commonParent);
+        const currentParent = reactFlowInstance.getNode(commonParent);
         if (currentParent) {
           console.log("currentParent", currentParent);
           if (
@@ -1099,7 +1169,8 @@ export function Canvas() {
                 id: node.id,
                 x: node.position.x,
                 y: node.position.y,
-                dirty: true,
+                // don't remote update any temporary nodes
+                dirty: node.data?.clientId ? false : true,
               });
             });
             return;
@@ -1115,7 +1186,7 @@ export function Canvas() {
             id: node.id,
             x: node.position.x,
             y: node.position.y,
-            dirty: true,
+            dirty: node.data?.clientId ? false : true,
           });
         });
         return;
@@ -1156,7 +1227,7 @@ export function Canvas() {
           dirty: true,
         });
 
-        const currentNode = nodesMap.get(node.id);
+        const currentNode = reactFlowInstance.getNode(node.id);
         if (currentNode) {
           currentNode.parentNode = scope.id;
           currentNode.data!.parent = scope.id;
@@ -1197,7 +1268,11 @@ export function Canvas() {
     (nodes) => {
       // remove from pods
       for (const node of nodes) {
-        deletePod(apolloClient, { id: node.id, toDelete: [] });
+        // prevent remote deletion if the node is temporary
+        deletePod(node.data?.clientId ? null : apolloClient, {
+          id: node.id,
+          toDelete: [],
+        });
       }
     },
     [apolloClient, deletePod]
@@ -1222,40 +1297,14 @@ export function Canvas() {
     console.log(showContextMenu, points, client);
   };
 
-  const createTemprorayNode = useCallback(
-    (pod, position) => {
-      const style = {
-        width: pod.width,
-        height: undefined,
-        // create a temporary half-transparent pod
-        opacity: 0.5,
-      };
-
+  const pasteNode = useCallback(
+    (pod, position, parent = "ROOT", temporary = true) => {
       const id = nanoid();
-      const newNode = {
+      const newPod = {
         id,
-        type: "code",
-        position,
-        data: {
-          name: pod?.name || "",
-          label: id,
-          parent: "ROOT",
-          clientId,
-        },
-        // the temporary pod should always be in the most front, set the level to a large number
-        level: 114514,
-        extent: "parent",
-        parentNode: undefined,
-        dragHandle: ".custom-drag-handle",
-        style,
-      };
-
-      // create an informal (temporary) pod in local, without remote addPod
-      addPod(null, {
-        id,
-        parent: "ROOT",
-        type: "CODE",
-        lang: "python",
+        parent,
+        type: pod.type,
+        lang: pod.lang,
         x: position.x,
         y: position.y,
         width: pod.width,
@@ -1265,19 +1314,70 @@ export function Canvas() {
         stdout: pod.stdout,
         result: pod.result,
         name: pod.name,
-      });
+      };
 
-      nodesMap.set(id, newNode as any);
-      setPasting(id);
+      // create an informal (temporary) pod in local, without remote addPod
+      addPod(temporary ? null : apolloClient, { ...newPod });
 
+      pod.children.forEach((child) =>
+        pasteNode(child, { x: child.x, y: child.y }, id, temporary)
+      );
+      // setPodParent({ id: childPod, parent: id, dirty: !temporary }););
       // make the pane unreachable by keyboard (escape), or a black border shows up in the pane when pasting is canceled.
-      const pane = document.getElementsByClassName("react-flow__pane")[0];
-      if (pane && pane.hasAttribute("tabindex")) {
-        pane.removeAttribute("tabindex");
-      }
+      return id;
     },
-    [addPod, clientId, nodesMap, setPasting]
+    [addPod, clientId, nodesMap, setPasting, apolloClient, setPodParent]
   );
+
+  const generateNodes = useCallback(
+    (id, level = 114514, temporary = true) => {
+      const pod = getPod(id);
+      if (!pod) return;
+      const style = {
+        width: pod.width,
+        height: pod.height || undefined,
+        backgroundColor: level2color[temporary ? level - 114514 : level],
+        // create a temporary half-transparent pod
+        opacity: temporary ? 0.5 : 1,
+      };
+      const data = temporary
+        ? {
+            name: pod?.name || "",
+            label: id,
+            parent: pod.parent,
+            clientId,
+          }
+        : {
+            name: pod?.name || "",
+            label: id,
+          };
+      const newNode = {
+        id,
+        type: dbtype2nodetype(pod.type),
+        position: { x: pod.x, y: pod.y },
+        data,
+        // the temporary pod should always be in the most front, set the level to a large number
+        level,
+        extent: "parent",
+        parentNode: pod.parent == "ROOT" ? undefined : pod.parent,
+        dragHandle: ".custom-drag-handle",
+        style,
+      };
+      nodesMap.set(id, newNode as any);
+      pod.children.forEach((child) =>
+        generateNodes(child.id, level + 1, temporary)
+      );
+    },
+    [getPod, clientId, nodesMap]
+  );
+
+  const blurPane = useCallback(() => {
+    // make the pane unreachable by keyboard (escape), or a black border shows up in the pane when pasting is canceled.
+    const pane = document.getElementsByClassName("react-flow__pane")[0];
+    if (pane && pane.hasAttribute("tabindex")) {
+      pane.removeAttribute("tabindex");
+    }
+  }, []);
 
   const pasteCodePod = useCallback(
     (pod) => {
@@ -1291,9 +1391,12 @@ export function Canvas() {
       position.x = (position.x - pod.width! / 2) as number;
       position.y = (position.y - (pod.height ?? 0) / 2) as number;
 
-      createTemprorayNode(pod, position);
+      const id = pasteNode(pod, position, "ROOT", true);
+      generateNodes(id, 114514, true);
+      setPasting(id);
+      blurPane();
     },
-    [createTemprorayNode, reactFlowInstance]
+    [pasteNode, reactFlowInstance, setPasting]
   );
 
   useEffect(() => {
@@ -1313,8 +1416,9 @@ export function Canvas() {
 
       try {
         // the user clipboard data is unpreditable, may have application/json from other source that can't be parsed by us, use try-catch here.
-        const playload = event.clipboardData.getData("application/json");
-        const data = JSON.parse(playload);
+        const payload = event.clipboardData.getData("application/json");
+        const data = JSON.parse(payload);
+        console.log(data);
         if (data?.type !== "pod") {
           return;
         }
@@ -1335,15 +1439,11 @@ export function Canvas() {
 
   const cancelPaste = useCallback(() => {
     if (!pasting) return;
-    nodesMap.delete(pasting);
+    reactFlowInstance.deleteElements({ nodes: [{ id: pasting }] });
     setPasting(null);
     if (cutting) {
-      // recover the hideen original node
-      const node = nodesMap.get(cutting);
-      if (node?.data?.hidden) {
-        delete node.data.hidden;
-        nodesMap.set(cutting, node);
-      }
+      // recover the hidden original node
+      recoverNode(cutting);
       setCutting(null);
     }
   }, [cutting, nodesMap, pasting]);
@@ -1365,40 +1465,33 @@ export function Canvas() {
       nodesMap.set(pasting, node);
     };
     const mouseClick = (event) => {
-      const node = nodesMap.get(pasting);
-      if (!node) return;
-      const newNode = {
-        ...node,
-        level: 0,
-        style: {
-          width: node.style?.width,
-          height: node.style?.height,
-        },
-        data: {
-          name: node.data?.name,
-          label: node.data?.label,
-          parent: node.data?.parent,
-        },
-      };
-      const pod = getPod(pasting);
-      // delete the temporary node
-      nodesMap.delete(pasting);
-      // add the formal pod in place under root
-      addPod(apolloClient, {
-        ...pod,
-      } as any);
-      nodesMap.set(pasting, newNode);
-
-      // check if the formal node is located in a scope, if it is, change its parent
-      const currentNode = reactFlowInstance.getNode(pasting);
-      checkNodesEndLocation(event, [currentNode], "ROOT");
-      //clear the pasting state
-      setPasting(null);
-      // delete the original (hidden) node
+      const pod = clonePod(pasting);
       if (cutting) {
         reactFlowInstance.deleteElements({ nodes: [{ id: cutting }] });
         setCutting(null);
       }
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      const position = reactFlowInstance.project({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
+
+      if (!pod) return;
+      // delete the temporary node
+      reactFlowInstance.deleteElements({ nodes: [{ id: pasting }] });
+      const id = pasteNode(pod, position, "ROOT", false);
+      generateNodes(id, 0, false);
+      const currentNode = nodesMap.get(id) as any;
+      console.log(id, currentNode, reactFlowInstance.getNode(id));
+      if (currentNode) {
+        currentNode.positionAbsolute = currentNode.position;
+        // add the formal pod in place under root
+        // check if the formal node is located in a scope, if it is, change its parent
+        checkNodesEndLocation(event, [currentNode], "ROOT");
+        //clear the pasting state
+      }
+      setPasting(null);
+      // delete the original (hidden) node
     };
     const keyDown = (event) => {
       if (event.key !== "Escape") return;
@@ -1432,17 +1525,43 @@ export function Canvas() {
     cancelPaste,
   ]);
 
+  const hideNode = useCallback(
+    (id) => {
+      const node = reactFlowInstance.getNode(id);
+      console.log("hide", node);
+      if (!node) return;
+      node.data.hidden = clientId;
+      nodesMap.set(id, node);
+      getPod(id)?.children.forEach((child) => hideNode(child.id));
+    },
+    [reactFlowInstance, nodesMap, getPod, clientId]
+  );
+
+  const recoverNode = useCallback(
+    (id) => {
+      const node = reactFlowInstance.getNode(id);
+      if (node?.data?.hidden) {
+        delete node.data.hidden;
+        nodesMap.set(id, node);
+      }
+      getPod(id)?.children.forEach((child) => recoverNode(child.id));
+    },
+    [reactFlowInstance, nodesMap, getPod]
+  );
+
   useEffect(() => {
     if (cutting) {
       // when a pod is being cut, generate a new temporary node and hide the original node
-      const node = nodesMap.get(cutting);
+      const node = reactFlowInstance.getNode(cutting);
       if (!node) return;
       const position = node.positionAbsolute ?? node.position;
-      createTemprorayNode(getPod(cutting), position);
-      node.data.hidden = clientId;
-      nodesMap.set(cutting, node);
+      const id = pasteNode(clonePod(cutting), position, "ROOT", true);
+      generateNodes(id, 114514, true);
+      setPasting(id);
+      hideNode(cutting);
+      blurPane();
     }
-  }, [cutting]);
+  }, [cutting, pasteNode, setPasting, clonePod]);
 
   const onPaneClick = (event) => {
     // focus
