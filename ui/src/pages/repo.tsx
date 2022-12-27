@@ -163,7 +163,6 @@ function RepoImpl() {
   let { id } = useParams();
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const resetState = useStore(store, (state) => state.resetState);
   const setRepo = useStore(store, (state) => state.setRepo);
   const client = useApolloClient();
   const loadRepo = useStore(store, (state) => state.loadRepo);
@@ -221,7 +220,6 @@ function RepoImpl() {
   }, [parseAllPods, parserLoaded, repoLoaded, resolveAllPods, scopedVars]);
 
   useEffect(() => {
-    resetState();
     setRepo(id!);
     if (hasToken()) {
       if (!loading && me) {
@@ -233,17 +231,7 @@ function RepoImpl() {
       // not signed in, just load the repo
       loadRepo(client, id!);
     }
-  }, [
-    client,
-    id,
-    loadRepo,
-    resetState,
-    setRepo,
-    me,
-    loading,
-    setUser,
-    hasToken,
-  ]);
+  }, [client, id, loadRepo, setRepo, me, loading, setUser, hasToken]);
 
   // FIXME Removing queueL. This will cause Repo to be re-rendered a lot of
   // times, particularly the delete pod action would cause syncstatus and repo
@@ -278,13 +266,13 @@ function RepoImpl() {
 
 export default function Repo() {
   const store = useRef(createRepoStore()).current;
-  const disconnect = useStore(store, (state) => state.disconnect);
+  const disconnectYjs = useStore(store, (state) => state.disconnectYjs);
   // console.log("load store", useRef(createRepoStore()));
   useEffect(() => {
     // const provider = useStore(store, (state) => state.provider);
     // clean up the connected provider after exiting the page
-    return disconnect;
-  }, [store]);
+    return disconnectYjs;
+  }, [disconnectYjs, store]);
   return (
     <RepoContext.Provider value={store}>
       <RepoImpl />

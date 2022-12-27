@@ -1,6 +1,5 @@
 import { gql } from "@apollo/client";
 
-import { computeNamespace } from "./utils";
 import { Pod } from "./store";
 
 /**
@@ -95,16 +94,13 @@ export function normalize(pods) {
     ROOT: {
       id: "ROOT",
       name: "root",
+      parent: "ROOT0",
       children: [],
       // Adding this to avoid errors
       // XXX should I save these to db?
-      exports: {},
-      imports: {},
-      io: {},
       lang: "python",
       type: "DECK",
       content: "",
-      isSyncing: false,
       x: 0,
       y: 0,
       width: 0,
@@ -155,18 +151,6 @@ export function normalize(pods) {
     if (pod.error) {
       pod.error = JSON.parse(pod.error);
     }
-    if (pod.imports) {
-      pod.imports = JSON.parse(pod.imports);
-    }
-    if (pod.exports) {
-      pod.exports = JSON.parse(pod.exports);
-    }
-    if (pod.reexports) {
-      pod.reexports = JSON.parse(pod.reexports);
-    }
-    if (pod.midports) {
-      pod.midports = JSON.parse(pod.midports);
-    }
     // DEBUG the deck's content seems to be a long string of escaped \
     if (pod.type === "DECK" && pod.content) {
       console.log(
@@ -175,11 +159,6 @@ export function normalize(pods) {
       );
       pod.content = null;
     }
-  });
-  pods.forEach((pod) => {
-    pod.ns = computeNamespace(res, pod.id);
-    // set IO
-    pod.io = {};
   });
   return res;
 }
