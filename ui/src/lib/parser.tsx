@@ -770,30 +770,9 @@ function compileExpression(node: Parser.SyntaxNode, st) {
 
 function compileModuleItem(node, st) {
   switch (node.type) {
-    case "import_statement":
-    case "import_from_statement":
-    case "comment":
-      return new Set();
-    case "function_definition":
-    case "class_definition":
-    case "expression_statement":
-    case "return_statement":
-    case "if_statement":
-    case "for_statement":
-    case "while_statement":
-    case "try_statement":
-    case "raise_statement":
-    case "break_statement":
-      return compileStatement(node, st);
     case "expression":
       return compileExpression(node, st);
     default:
-      global_errors.push({
-        message: `unknown module node type: ${node.type} in ${mysubstr(
-          node.text
-        )}`,
-        node: pp(node),
-      });
-      return new Set();
+      return compileStatement(node, st);
   }
 }
