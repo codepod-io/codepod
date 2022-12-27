@@ -19,7 +19,7 @@ import { useStore } from "zustand";
 
 import { usePrompt } from "../lib/prompt";
 
-import { RepoContext, selectNumDirty, RoleType } from "../lib/store";
+import { RepoContext, RoleType } from "../lib/store";
 
 import useMe from "../lib/me";
 import { FormControlLabel, FormGroup, Stack, Switch } from "@mui/material";
@@ -228,7 +228,18 @@ function SidebarKernel() {
 function SyncStatus() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const dirtyIds = useStore(store, selectNumDirty());
+  // FIXME performance issue
+  const dirtyIds = useStore(store, (state) => {
+    let res: string[] = [];
+    if (state.repoLoaded) {
+      for (const id in state.pods) {
+        if (state.pods[id].dirty) {
+          res.push(id);
+        }
+      }
+    }
+    return res;
+  });
   const clearAllResults = useStore(store, (s) => s.clearAllResults);
   const remoteUpdateAllPods = useStore(store, (s) => s.remoteUpdateAllPods);
   const client = useApolloClient();

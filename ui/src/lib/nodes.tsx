@@ -114,14 +114,14 @@ export function useNodesStateSynced(nodeList) {
           if (!node || node.data?.clientId || getPod(key)) return;
           addPod(null, {
             id: node.id,
+            children: [],
             parent: "ROOT",
-            index: 0,
             type: node.type === "code" ? "CODE" : "DECK",
             lang: "python",
             x: node.position.x,
             y: node.position.y,
-            width: node.style?.width,
-            height: node.style?.height,
+            width: node.style?.width as number,
+            height: node.style?.height as number,
             name: node.data?.name,
             dirty: false,
           });
