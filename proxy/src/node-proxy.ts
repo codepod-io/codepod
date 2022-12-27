@@ -307,17 +307,7 @@ function startProxyServer() {
       return;
     }
     console.log("proxy ws req", req.url);
-    if (req.url.startsWith("//")) {
-      // FIXME why there're two leading slashes? "//user_xxx_repo_xxx"
-      // UPDATE: for docker runtime, there's double slashes
-      // console.log("active docker connection", req.url.substring(1));
-      activeTable[req.url.substring(1)] = new Date();
-    } else {
-      // For k8s runtime, there's only one slash
-      // console.log("active k8s connection", req.url);
-      activeTable[req.url] = new Date();
-    }
-    activeTable[req.url.substring(1)] = new Date();
+    activeTable[req.url] = new Date();
     let match = await getRouteTarget(req);
     if (!match) {
       return;
