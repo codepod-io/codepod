@@ -67,7 +67,7 @@ export const createRepoMetaSlice: StateCreator<
     if (get().repoNameSyncing) return;
     if (!get().repoNameDirty) return;
     let { repoId, repoName } = get();
-    if (!repoId || !repoName) return;
+    if (!repoId) return;
     // Prevent double syncing.
     set(
       produce((state: MyState) => {
