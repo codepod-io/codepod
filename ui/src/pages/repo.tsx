@@ -8,7 +8,9 @@ import ShareIcon from "@mui/icons-material/Share";
 import Button from "@mui/material/Button";
 import { gql, useApolloClient, useMutation } from "@apollo/client";
 
-import { useEffect, useState, useRef, useContext } from "react";
+import { useEffect, useState, useRef, useContext, memo } from "react";
+
+import * as React from "react";
 
 import { useStore } from "zustand";
 
@@ -19,12 +21,117 @@ import { Canvas } from "../components/Canvas";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import { useLocalStorage } from "../hooks/useLocalStorage";
-import { Stack, TextField } from "@mui/material";
+import { Stack, TextField, Tooltip } from "@mui/material";
 import { useAuth } from "../lib/auth";
 import { initParser } from "../lib/parser";
 
+import { usePrompt } from "../lib/prompt";
+
 const DrawerWidth = 240;
 const SIDEBAR_KEY = "sidebar";
+
+const HeaderItem = memo<any>(({ id }) => {
+  const store = useContext(RepoContext)!;
+  const repoName = useStore(store, (state) => state.repoName);
+  const repoNameDirty = useStore(store, (state) => state.repoNameDirty);
+  const setRepoName = useStore(store, (state) => state.setRepoName);
+  const apolloClient = useApolloClient();
+  const remoteUpdateRepoName = useStore(
+    store,
+    (state) => state.remoteUpdateRepoName
+  );
+  const role = useStore(store, (state) => state.role);
+
+  usePrompt(
+    "Repo name not saved. Do you want to leave this page?",
+    repoNameDirty
+  );
+
+  useEffect(() => {
+    let intervalId = setInterval(() => {
+      remoteUpdateRepoName(apolloClient);
+    }, 1000);
+    return () => {
+      clearInterval(intervalId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const [focus, setFocus] = useState(false);
+  const [enter, setEnter] = useState(false);
+
+  const textfield = (
+    <TextField
+      hiddenLabel
+      placeholder="Untitled"
+      value={repoName || ""}
+      size="small"
+      variant={focus ? undefined : "standard"}
+      onFocus={() => {
+        setFocus(true);
+      }}
+      onKeyDown={(e) => {
+        if (["Enter", "Escape"].includes(e.key)) {
+          e.preventDefault();
+          setFocus(false);
+        }
+      }}
+      onMouseEnter={() => {
+        setEnter(true);
+      }}
+      onMouseLeave={() => {
+        setEnter(false);
+      }}
+      autoFocus={focus ? true : false}
+      onBlur={() => {
+        setFocus(false);
+      }}
+      InputProps={{
+        ...(focus
+          ? {}
+          : {
+              disableUnderline: true,
+            }),
+      }}
+      sx={{
+        maxWidth: "100%",
+        border: "none",
+      }}
+      disabled={role !== RoleType.OWNER}
+      onChange={(e) => {
+        const name = e.target.value;
+        setRepoName(name);
+      }}
+    />
+  );
+
+  return (
+    <Stack
+      direction="row"
+      sx={{
+        alignItems: "center",
+      }}
+      spacing={1}
+    >
+      {!focus && enter ? (
+        <Tooltip
+          title="Edit"
+          sx={{
+            margin: 0,
+            padding: 0,
+          }}
+          // placement="right"
+          followCursor
+        >
+          {textfield}
+        </Tooltip>
+      ) : (
+        textfield
+      )}
+      {repoNameDirty && <Box>saving..</Box>}
+    </Stack>
+  );
+});
 
 function RepoWrapper({ children, id }) {
   // this component is used to provide a foldable layout
@@ -32,19 +139,8 @@ function RepoWrapper({ children, id }) {
 
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const repoName = useStore(store, (state) => state.repoName);
-  const setRepoName = useStore(store, (state) => state.setRepoName);
-  const setShareOpen = useStore(store, (state) => state.setShareOpen);
-  const role = useStore(store, (state) => state.role);
 
-  const [updateRepo, { error }] = useMutation(
-    gql`
-      mutation UpdateRepo($id: ID!, $name: String) {
-        updateRepo(id: $id, name: $name)
-      }
-    `,
-    { refetchQueries: ["GetRepos", "GetCollabRepos"] }
-  );
+  const setShareOpen = useStore(store, (state) => state.setShareOpen);
 
   return (
     <Box
@@ -74,31 +170,7 @@ function RepoWrapper({ children, id }) {
         <Header
           open={open}
           drawerWidth={DrawerWidth}
-          breadcrumbItem={
-            <Stack direction="row">
-              <TextField
-                hiddenLabel
-                placeholder="Untitled"
-                value={repoName || ""}
-                size="small"
-                sx={{
-                  maxWidth: "100%",
-                }}
-                disabled={role !== RoleType.OWNER}
-                onChange={(e) => {
-                  const name = e.target.value;
-                  setRepoName(name);
-                  updateRepo({
-                    variables: {
-                      id,
-                      name,
-                    },
-                  });
-                }}
-              />
-              {error && <Box>ERROR: {error.message}</Box>}
-            </Stack>
-          }
+          breadcrumbItem={<HeaderItem id={id} />}
           shareButton={
             <Button
               endIcon={<ShareIcon />}
