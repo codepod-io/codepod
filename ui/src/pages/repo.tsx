@@ -52,7 +52,6 @@ const HeaderItem = memo<any>(({ id }) => {
       remoteUpdateRepoName(apolloClient);
     }, 1000);
     return () => {
-      console.log("removing interval");
       clearInterval(intervalId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
