@@ -117,7 +117,7 @@ helm ls -n codepod-alpha
 To access prisma:
 
 ```bash
-    kubectl port-forward prisma-deployment-5c9ccfc6b8-962vq 5555:5555 -n codepod-alpha
+kubectl port-forward prisma-deployment-5c9ccfc6b8-962vq 5555:5555 -n codepod-alpha
 ```
 
 ## Config maps and secrets
