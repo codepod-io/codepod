@@ -532,18 +532,35 @@ const CodeNode = memo<Props>(function ({
     }
   }, [data.parent, setPodParent, id]);
 
+  const getPicture = async (pod) => {
+    const requesOptions = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: pod.content }),
+      mode: "no-cors" as RequestMode,
+      accept: "image/png",
+    };
+    const res = await fetch("http://localhost:3099/api/cook", requesOptions);
+    const pic = await res.blob();
+    // navigator.clipboard.write([new ClipboardItem({ "image/png": pic })]);
+  };
+
   const onCopy = useCallback(
-    (clipboardData: any) => {
+    async (clipboardData: any) => {
       const pod = getPod(id);
       if (!pod) return;
-      clipboardData.setData("text/plain", pod.content);
-      clipboardData.setData(
-        "application/json",
-        JSON.stringify({
-          type: "pod",
-          data: pod,
-        })
-      );
+
+      clipboardData.setData("text/plain", "");
+      // clipboardData.clearData();
+      // clipboardData.setData(
+      //   "application/json",
+      //   JSON.stringify({
+      //     type: "pod",
+      //     data: pod,
+      //   })
+      // );
+      getPicture(pod);
+      console.log("copied", clipboardData);
     },
     [getPod, id]
   );
