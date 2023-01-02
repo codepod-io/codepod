@@ -50,6 +50,8 @@ export type Annotation = {
 export function analyzeCodeViaQuery(code) {
   let annotations: Annotation[] = [];
   let ispublic = false;
+  // FIXME better error handling
+  if (!code) return { ispublic, annotations };
   if (code.trim().startsWith("@export")) {
     ispublic = true;
     code = code.replace("@export", " ".repeat("@export".length));
@@ -97,6 +99,8 @@ export function analyzeCodeViaQuery(code) {
 export function analyzeCode(code) {
   let annotations: Annotation[] = [];
   let ispublic = false;
+  // FIXME better error handling
+  if (!code) return { ispublic, annotations };
   if (code.trim().startsWith("@export")) {
     ispublic = true;
     code = code.replace("@export", " ".repeat("@export".length));
