@@ -14,7 +14,7 @@ import { ResizableBox } from "react-resizable";
 import { useApolloClient } from "@apollo/client";
 
 import { useStore } from "zustand";
-import { RepoContext, RoleType } from "../lib/store";
+import { RepoContext, RoleType } from "../../lib/store";
 
 import ReactFlow, {
   addEdge,
@@ -49,7 +49,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
 import RectangleIcon from "@mui/icons-material/Rectangle";
 import DisabledByDefaultIcon from "@mui/icons-material/DisabledByDefault";
-import { resetSelection } from "../lib/nodes";
+import { resetSelection } from "../../lib/nodes";
 
 import {
   BoldExtension,
@@ -91,7 +91,6 @@ import { AllStyledComponent } from "@remirror/styles/emotion";
 import { TableExtension } from "@remirror/extension-react-tables";
 import { GenIcon, IconBase } from "@remirror/react-components";
 
-import styles from "./canvas.style.js";
 import { htmlToProsemirrorNode } from "remirror";
 import { styled } from "@mui/material";
 
@@ -457,7 +456,6 @@ export const RichNode = memo<Props>(function ({
             }}
           ></InputBase>
         </Box>
-        {/* <Box sx={styles["pod-index"]}>[{index}]</Box> */}
         <Box
           sx={{
             display: "flex",
