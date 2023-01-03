@@ -1,26 +1,9 @@
 import { createStore, StateCreator, StoreApi } from "zustand";
-import { devtools } from "zustand/middleware";
 import produce from "immer";
-import { createContext } from "react";
 
-import {
-  normalize,
-  doRemoteLoadRepo,
-  doRemoteUpdatePod,
-  doRemoteAddPod,
-  doRemoteDeletePod,
-  doRemoteLoadVisibility,
-  doRemoteUpdateVisibility,
-  doRemoteAddCollaborator,
-  doRemoteDeleteCollaborator,
-} from "../fetch";
+import { doRemoteAddPod, doRemoteDeletePod } from "../fetch";
 
-import { Doc } from "yjs";
-import { WebsocketProvider } from "y-websocket";
-import { createRuntimeSlice, RuntimeSlice } from "./runtimeSlice";
 import { ApolloClient } from "@apollo/client";
-import { addAwarenessStyle } from "../styles";
-import { Annotation } from "../parser";
 
 import { Pod, MyState } from ".";
 
@@ -30,7 +13,25 @@ export interface PodSlice {
   getId2children: (string) => string[];
   setPodFocus: (id: string) => void;
   setPodBlur: (id: string) => void;
-  updatePod: ({ id, data }: { id: string; data: Partial<Pod> }) => void;
+  setPodGeo: (
+    id: string,
+    {
+      x,
+      y,
+      width,
+      height,
+      parent,
+    }: {
+      x?: number;
+      y?: number;
+
+      width?: number;
+
+      height?: number;
+      parent?: string;
+    },
+    dirty?: boolean
+  ) => void;
   setPodName: ({ id, name }: { id: string; name: string }) => void;
   setPodContent: ({ id, content }: { id: string; content: string }) => void;
   initPodContent: ({ id, content }: { id: string; content: string }) => void;
@@ -39,26 +40,6 @@ export interface PodSlice {
     client: ApolloClient<object> | null,
     { id, toDelete }: { id: string; toDelete: string[] }
   ) => Promise<void>;
-  setPodPosition: ({
-    id,
-    x,
-    y,
-    dirty,
-  }: {
-    id: string;
-    x: number;
-    y: number;
-    dirty: boolean;
-  }) => void;
-  setPodParent: ({
-    id,
-    parent,
-    dirty,
-  }: {
-    id: string;
-    parent: string;
-    dirty: boolean;
-  }) => void;
   setPodResult: ({
     id,
     content,
@@ -92,17 +73,6 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
       // @ts-ignore
       "setPodName"
     ),
-  setPodLang: ({ id, lang }) =>
-    set(
-      produce((state) => {
-        let pod = state.pods[id];
-        pod.lang = lang;
-        pod.dirty = true;
-      }),
-      false,
-      // @ts-ignore
-      "setPodLang"
-    ),
   setPodContent: ({ id, content }) =>
     set(
       produce((state) => {
@@ -130,27 +100,42 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
         state.pods[id].render = value;
       })
     ),
-  setPodPosition: ({ id, x, y, dirty = true }) =>
+  setPodGeo: (id, { x, y, width, height, parent }, dirty = true) =>
     set(
       produce((state) => {
         let pod = state.pods[id];
+        // 0. check if the update is necessary
+        if (
+          pod.x === x &&
+          pod.y === y &&
+          pod.width === width &&
+          pod.height === height &&
+          pod.parent === parent
+        ) {
+          return;
+        }
+        // 1. check if parent is updated. If so, update the children list.
+        if (parent && parent !== pod.parent) {
+          if (!state.pods[parent]) {
+            throw new Error(`parent pod ${parent} not found`);
+          }
+          const oldparent = state.pods[state.pods[id].parent];
+          pod.parent = parent;
+          state.pods[parent].children.push(state.pods[id]);
+          let idx = oldparent.children.findIndex(({ id: _id }) => _id === id);
+          oldparent.children.splice(idx, 1);
+        }
+        // 2. update x,y,width,height
         pod.x = x;
         pod.y = y;
+        pod.width = width;
+        pod.height = height;
+        // Update the dirty flag.
         pod.dirty ||= dirty;
       }),
       false,
       // @ts-ignore
-      "setPodPosition"
-    ),
-  updatePod: ({ id, data }) =>
-    set(
-      produce((state) => {
-        state.pods[id] = { ...state.pods[id], ...data };
-        state.pods[id].dirty = true;
-      }),
-      false,
-      // @ts-ignore
-      "updatePod"
+      "setPodGeo"
     ),
   setPodStdout: ({ id, stdout }) =>
     set(
@@ -258,23 +243,6 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
           state.pods[id].running = false;
         }
       })
-    ),
-  setPodParent: ({ id, parent, dirty = true }) =>
-    set(
-      produce((state) => {
-        // FIXME I need to modify many pods here.
-        if (state.pods[id]?.parent === parent) return;
-        const oldparent = state.pods[state.pods[id].parent];
-        state.pods[id].parent = parent;
-        // FXME I'm marking all the pods as dirty here.
-        state.pods[id].dirty ||= dirty;
-        state.pods[parent].children.push(state.pods[id]);
-        let idx = oldparent.children.findIndex(({ id: _id }) => _id === id);
-        oldparent.children.splice(idx, 1);
-      }),
-      false,
-      // @ts-ignore
-      "setPodParent"
     ),
   resizeScope: ({ id }) =>
     set(

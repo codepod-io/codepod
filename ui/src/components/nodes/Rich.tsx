@@ -273,26 +273,11 @@ export const RichNode = memo<Props>(function ({
   id,
   isConnectable,
   selected,
-  xPos,
-  yPos,
 }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   // const pod = useStore(store, (state) => state.pods[id]);
-  const wsRun = useStore(store, (state) => state.wsRun);
-  const clearResults = useStore(store, (s) => s.clearResults);
-  const ref = useRef(null);
-  const [target, setTarget] = React.useState<any>(null);
-  const [frame] = React.useState({
-    translate: [0, 0],
-  });
-  // right, bottom
-  const [layout, setLayout] = useState("bottom");
-  const isRightLayout = layout === "right";
   const setPodName = useStore(store, (state) => state.setPodName);
-  const setPodPosition = useStore(store, (state) => state.setPodPosition);
-  const setCurrentEditor = useStore(store, (state) => state.setCurrentEditor);
-  const setPodParent = useStore(store, (state) => state.setPodParent);
   const getPod = useStore(store, (state) => state.getPod);
   const pod = getPod(id);
   const role = useStore(store, (state) => state.role);
@@ -304,15 +289,6 @@ export const RichNode = memo<Props>(function ({
   );
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const showResult = useStore(
-    store,
-    (state) =>
-      state.pods[id]?.running ||
-      state.pods[id]?.result ||
-      state.pods[id]?.error ||
-      state.pods[id]?.stdout ||
-      state.pods[id]?.stderr
-  );
   const onResize = useCallback((e, data) => {
     const { size } = data;
     const node = nodesMap.get(id);
@@ -322,16 +298,6 @@ export const RichNode = memo<Props>(function ({
     }
   }, []);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
-  const apolloClient = useApolloClient();
-  const deletePod = useStore(store, (state) => state.deletePod);
-  const deleteNodeById = (id) => {
-    deletePod(apolloClient, { id: id, toDelete: [] });
-    nodesMap.delete(id);
-  };
-
-  useEffect(() => {
-    setTarget(ref.current);
-  }, []);
 
   useEffect(() => {
     if (!data.name) return;
@@ -340,26 +306,6 @@ export const RichNode = memo<Props>(function ({
       inputRef.current.value = data.name || "";
     }
   }, [data.name, setPodName, id]);
-
-  useEffect(() => {
-    // get relative position
-    const node = nodesMap.get(id);
-    if (node?.position) {
-      // update pods[id].position but don't trigger DB update (dirty: false)
-      setPodPosition({
-        id,
-        x: node.position.x,
-        y: node.position.y,
-        dirty: false,
-      });
-    }
-  }, [xPos, yPos, setPodPosition, id]);
-
-  useEffect(() => {
-    if (data.parent !== undefined) {
-      setPodParent({ id, parent: data.parent, dirty: false });
-    }
-  }, [data.parent, setPodParent, id]);
 
   if (!pod) return null;
 
@@ -371,7 +317,7 @@ export const RichNode = memo<Props>(function ({
       <ResizableBox
         onResizeStop={onResize}
         height={pod.height || 100}
-        width={width}
+        width={width || 0}
         axis={"x"}
         minConstraints={[200, 200]}
       >
@@ -476,7 +422,7 @@ export const RichNode = memo<Props>(function ({
               <IconButton
                 size="small"
                 onClick={() => {
-                  deleteNodeById(id);
+                  nodesMap.delete(id);
                 }}
               >
                 <DeleteIcon fontSize="inherit" />

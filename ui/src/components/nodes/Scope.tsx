@@ -51,18 +51,14 @@ export const ScopeNode = memo<Props>(function ScopeNode({
   id,
   isConnectable,
   selected,
-  xPos,
-  yPos,
 }) {
   // add resize to the node
   const ref = useRef(null);
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const flow = useReactFlow();
+  const reactFlowInstance = useReactFlow();
   const setPodName = useStore(store, (state) => state.setPodName);
-  const updatePod = useStore(store, (state) => state.updatePod);
-  const setPodPosition = useStore(store, (state) => state.setPodPosition);
-  const setPodParent = useStore(store, (state) => state.setPodParent);
+  const setPodGeo = useStore(store, (state) => state.setPodGeo);
   const [target, setTarget] = React.useState<any>();
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const [frame] = React.useState({
@@ -71,19 +67,6 @@ export const ScopeNode = memo<Props>(function ScopeNode({
   // const selected = useStore(store, (state) => state.pods[id]?.selected);
   const role = useStore(store, (state) => state.role);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const deleteNodeById = useCallback(
-    (id: string) => {
-      flow.deleteElements({
-        nodes: [
-          {
-            id,
-          },
-        ],
-      });
-    },
-    [flow]
-  );
 
   const onResize = useCallback(({ width, height, offx, offy }) => {
     const node = nodesMap.get(id);
@@ -106,26 +89,6 @@ export const ScopeNode = memo<Props>(function ScopeNode({
       inputRef.current.value = data.name;
     }
   }, [data.name, id, setPodName]);
-
-  useEffect(() => {
-    // get relative position
-    const node = nodesMap.get(id);
-    if (node?.position) {
-      // update pods[id].position but don't trigger DB update (dirty: false)
-      setPodPosition({
-        id,
-        x: node.position.x,
-        y: node.position.y,
-        dirty: false,
-      });
-    }
-  }, [xPos, yPos, setPodPosition, id]);
-
-  useEffect(() => {
-    if (data.parent && data.parent !== "ROOT") {
-      setPodParent({ id, parent: data.parent, dirty: false });
-    }
-  }, [data.parent, setPodParent, id]);
 
   return (
     <Box
@@ -157,9 +120,13 @@ export const ScopeNode = memo<Props>(function ScopeNode({
             <IconButton
               size="small"
               onClick={(e: any) => {
-                e.stopPropagation();
-                e.preventDefault();
-                deleteNodeById(id);
+                // This does not work, will throw "Parent node
+                // jqgdsz2ns6k57vich0bf not found" when deleting a scope.
+                //
+                // nodesMap.delete(id);
+                //
+                // But this works:
+                reactFlowInstance.deleteElements({ nodes: [{ id }] });
               }}
             >
               <DeleteIcon fontSize="inherit" />
@@ -268,12 +235,9 @@ export const ScopeNode = memo<Props>(function ScopeNode({
               offx: beforeTranslate[0],
               offy: beforeTranslate[1],
             });
-            updatePod({
-              id,
-              data: {
-                width: e.width,
-                height: e.height,
-              },
+            setPodGeo(id, {
+              width: e.width,
+              height: e.height,
             });
           }}
         />

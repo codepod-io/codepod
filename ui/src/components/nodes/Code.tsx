@@ -230,26 +230,16 @@ export const CodeNode = memo<Props>(function ({
   id,
   isConnectable,
   selected,
-  xPos,
-  yPos,
 }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   // const pod = useStore(store, (state) => state.pods[id]);
   const wsRun = useStore(store, (state) => state.wsRun);
   const clearResults = useStore(store, (s) => s.clearResults);
-  const ref = useRef(null);
-  const [target, setTarget] = React.useState<any>(null);
-  const [frame] = React.useState({
-    translate: [0, 0],
-  });
   // right, bottom
   const [layout, setLayout] = useState("bottom");
   const isRightLayout = layout === "right";
   const setPodName = useStore(store, (state) => state.setPodName);
-  const setPodPosition = useStore(store, (state) => state.setPodPosition);
-  const setCurrentEditor = useStore(store, (state) => state.setCurrentEditor);
-  const setPodParent = useStore(store, (state) => state.setPodParent);
   const getPod = useStore(store, (state) => state.getPod);
   const setCutting = useStore(store, (state) => state.setCutting);
   const pod = getPod(id);
@@ -283,11 +273,6 @@ export const CodeNode = memo<Props>(function ({
     },
     [id, nodesMap]
   );
-  const apolloClient = useApolloClient();
-
-  useEffect(() => {
-    setTarget(ref.current);
-  }, []);
 
   useEffect(() => {
     if (!data.name) return;
@@ -296,26 +281,6 @@ export const CodeNode = memo<Props>(function ({
       inputRef.current.value = data.name || "";
     }
   }, [data.name, setPodName, id]);
-
-  useEffect(() => {
-    // get relative position
-    const node = nodesMap.get(id);
-    if (node?.position) {
-      // update pods[id].position but don't trigger DB update (dirty: false)
-      setPodPosition({
-        id,
-        x: node.position.x,
-        y: node.position.y,
-        dirty: false,
-      });
-    }
-  }, [xPos, yPos, setPodPosition, id, nodesMap]);
-
-  useEffect(() => {
-    if (data.parent !== undefined) {
-      setPodParent({ id, parent: data.parent, dirty: false });
-    }
-  }, [data.parent, setPodParent, id]);
 
   const onCopy = useCallback(
     (clipboardData: any) => {
@@ -351,7 +316,7 @@ export const CodeNode = memo<Props>(function ({
       <ResizableBox
         onResizeStop={onResize}
         height={pod.height || 100}
-        width={width}
+        width={width || 0}
         axis={"x"}
         minConstraints={[200, 200]}
       >

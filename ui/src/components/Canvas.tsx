@@ -44,6 +44,7 @@ import { ShareProjDialog } from "./ShareProjDialog";
 import { RichNode } from "./nodes/Rich";
 import { CodeNode } from "./nodes/Code";
 import { ScopeNode } from "./nodes/Scope";
+import { YMap } from "yjs/dist/src/types/YMap";
 
 const nanoid = customAlphabet(lowercase + numbers, 20);
 
@@ -135,10 +136,10 @@ function store2nodes(id: string, level: number, { getId2children, getPod }) {
           pod.type !== "DECK"
             ? undefined
             : level2color[level] || level2color["default"],
-        width: pod.width || undefined,
-        // for code node, don't set height, let it be auto
-        height: pod.height || undefined,
       },
+      width: pod.width || undefined,
+      // for code node, don't set height, let it be auto
+      height: pod.height || undefined,
       dragHandle: ".custom-drag-handle",
     });
   }
@@ -211,10 +212,9 @@ function useCopyPaste(reactFlowWrapper) {
       if (!node) return;
       const newNode = {
         ...node,
-        style: {
-          width: node.style?.width,
-          height: node.style?.height,
-        },
+        width: node.width,
+        height: node.height,
+        style: { ...node.style, opacity: 1 },
         data: {
           level: 0,
           name: node.data?.name,
@@ -226,9 +226,7 @@ function useCopyPaste(reactFlowWrapper) {
       // delete the temporary node
       nodesMap.delete(pasting);
       // add the formal pod in place under root
-      addPod(apolloClient, {
-        ...pod,
-      } as any);
+      addPod(apolloClient, pod);
       nodesMap.set(pasting, newNode);
 
       // check if the formal node is located in a scope, if it is, change its parent
@@ -280,13 +278,6 @@ function useCopyPaste(reactFlowWrapper) {
 
   const createTemprorayNode = useCallback(
     (pod, position) => {
-      const style = {
-        width: pod.width,
-        height: undefined,
-        // create a temporary half-transparent pod
-        opacity: 0.5,
-      };
-
       const id = nanoid();
       const newNode = {
         id,
@@ -300,10 +291,14 @@ function useCopyPaste(reactFlowWrapper) {
           // the temporary pod should always be in the most front, set the level to a large number
           level: 114514,
         },
-        extent: "parent",
+        extent: "parent" as "parent",
         parentNode: undefined,
         dragHandle: ".custom-drag-handle",
-        style,
+        width: pod.width,
+        style: {
+          // create a temporary half-transparent pod
+          opacity: 0.5,
+        },
       };
 
       // create an informal (temporary) pod in local, without remote addPod
@@ -324,7 +319,7 @@ function useCopyPaste(reactFlowWrapper) {
         name: pod.name,
       });
 
-      nodesMap.set(id, newNode as any);
+      nodesMap.set(id, newNode);
       setPasting(id);
 
       // make the pane unreachable by keyboard (escape), or a black border shows
@@ -367,8 +362,8 @@ function useCopyPaste(reactFlowWrapper) {
     }
   }, [clientId, createTemprorayNode, cutting, getPod, nodesMap]);
 
-  useEffect(() => {
-    const handlePaste = (event) => {
+  const handlePaste = useCallback(
+    (event) => {
       // avoid duplicated pastes
       if (pasting || role === RoleType.GUEST) return;
 
@@ -393,14 +388,16 @@ function useCopyPaste(reactFlowWrapper) {
       } catch (e) {
         console.log("paste error", e);
       }
-    };
+    },
+    [pasteCodePod, pasting, role]
+  );
+
+  useEffect(() => {
     document.addEventListener("paste", handlePaste);
     return () => {
       document.removeEventListener("paste", handlePaste);
     };
-  }, [pasteCodePod, pasting, role]);
-
-  return { pasteCodePod };
+  }, [handlePaste]);
 }
 
 /**
@@ -410,12 +407,9 @@ function useCopyPaste(reactFlowWrapper) {
 const useNodeLocation = (reactFlowWrapper) => {
   const store = useContext(RepoContext)!;
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
-  // const [nodes, setNodes, onNodesChange] = useNodesStateSynced([]);
   const nodes = useReactFlow().getNodes();
-  const setPodPosition = useStore(store, (state) => state.setPodPosition);
   const reactFlowInstance = useReactFlow();
   const getPod = useStore(store, (state) => state.getPod);
-  const setPodParent = useStore(store, (state) => state.setPodParent);
 
   /**
    * Check bounding boxes of all scopes.
@@ -477,14 +471,6 @@ const useNodeLocation = (reactFlowWrapper) => {
             // the mouse is outside the current parent, the nodes can't be dragged out
             // console.log("Cannot drop outside parent scope");
             // but position should also be updated
-            nodes.forEach((node) => {
-              setPodPosition({
-                id: node.id,
-                x: node.position.x,
-                y: node.position.y,
-                dirty: true,
-              });
-            });
             return;
           }
         }
@@ -493,14 +479,6 @@ const useNodeLocation = (reactFlowWrapper) => {
       // no target scope, or the target scope is the same as the current parent
       if (!scope || scope.id === commonParent) {
         // only update position and exit, avoid updating parentNode
-        nodes.forEach((node) => {
-          setPodPosition({
-            id: node.id,
-            x: node.position.x,
-            y: node.position.y,
-            dirty: true,
-          });
-        });
         return;
       }
 
@@ -533,12 +511,6 @@ const useNodeLocation = (reactFlowWrapper) => {
         absY = Math.max(absY, 0);
         absY = Math.min(absY, scope.height! - node.height!);
 
-        setPodParent({
-          id: node.id,
-          parent: scope.id,
-          dirty: true,
-        });
-
         const currentNode = nodesMap.get(node.id);
         if (currentNode) {
           currentNode.parentNode = scope.id;
@@ -548,25 +520,9 @@ const useNodeLocation = (reactFlowWrapper) => {
         }
 
         updateLevel(node.id, scope.data.level + 1);
-
-        // update
-        setPodPosition({
-          id: node.id,
-          x: absX,
-          y: absY,
-          dirty: true,
-        });
       });
     },
-    [
-      reactFlowWrapper,
-      reactFlowInstance,
-      getScopeAt,
-      nodesMap,
-      setPodPosition,
-      getPod,
-      setPodParent,
-    ]
+    [reactFlowWrapper, reactFlowInstance, getScopeAt, nodesMap, getPod]
   );
   return { checkNodesEndLocation };
 };
@@ -580,23 +536,20 @@ const useNodeOperations = (reactFlowWrapper) => {
   const addNode = useCallback(
     (x: number, y: number, type: "code" | "scope" | "rich") => {
       const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-      let style;
+      let style = {};
+      let width;
+      let height;
 
       switch (type) {
         case "scope":
-          style = {
-            backgroundColor: level2color[0],
-            width: 600,
-            height: 600,
-          };
+          style = { backgroundColor: level2color[0] };
+          width = 600;
+          height = 600;
           break;
         case "code":
         case "rich":
-          style = {
-            width: 300,
-            // we must not set the height here, otherwise the auto layout will not work
-            height: undefined,
-          };
+          width = 300;
+          // we must not set the height here, otherwise the auto layout will not work
           break;
         default:
           throw new Error(`unknown type ${type}`);
@@ -611,14 +564,18 @@ const useNodeOperations = (reactFlowWrapper) => {
         id,
         type,
         position,
-        style,
+        width,
+        height,
+        // IMPORTANT: the width and height must be set here, otherwise the auto
+        // layout will not work.
+        style: { ...style, width, height },
         data: {
           label: id,
           name: "",
           parent: "ROOT",
           level: 0,
         },
-        extent: "parent",
+        extent: "parent" as "parent",
         //otherwise, throws a lot of warnings, see
         //https://reactflow.dev/docs/guides/troubleshooting/#only-child-nodes-can-use-a-parent-extent
         parentNode: undefined,
@@ -636,18 +593,77 @@ const useNodeOperations = (reactFlowWrapper) => {
         lang: "python",
         x: position.x,
         y: position.y,
-        width: style.width,
-        height: style.height,
+        width,
+        height,
         dirty: true,
       });
 
-      nodesMap.set(id, newNode as any);
+      nodesMap.set(id, newNode);
     },
 
     [addPod, apolloClient, nodesMap, reactFlowInstance, reactFlowWrapper]
   );
   return { addNode };
 };
+
+function verifyConsistency(nodes: Node[], nodesMap: YMap<Node>) {
+  let keys = new Set(nodesMap.keys());
+  let nodesMap2 = new Map<string, Node>();
+  nodes.forEach((node) => nodesMap2.set(node.id, node));
+  let keys2 = new Set(nodesMap2.keys());
+  if (keys.size !== keys2.size) {
+    console.error("keys are not the same", keys, keys2);
+    return false;
+  }
+  for (let i = 0; i < keys.size; i++) {
+    if (keys[i] !== keys2[i]) {
+      console.error("keys are not the same", keys, keys2);
+      return false;
+    }
+  }
+  // verify the values
+  keys.forEach((key) => {
+    let node1 = nodesMap.get(key);
+    let node2 = nodesMap2.get(key);
+    if (!node1) {
+      console.error("node1 is undefined");
+      return false;
+    }
+    if (!node2) {
+      console.error("node2 is undefined");
+      return false;
+    }
+    if (node1.id !== node2.id) {
+      console.error("node id are not the same", node1.id, node2.id);
+      return false;
+    }
+    if (node1.parentNode !== node2.parentNode) {
+      console.error(
+        "node parent are not the same",
+        node1.parentNode,
+        node2.parentNode
+      );
+      return false;
+    }
+    if (node1.position.x !== node2.position.x) {
+      console.error(
+        "node x are not the same",
+        node1.position.x,
+        node2.position.x
+      );
+      return false;
+    }
+    if (node1.position.y !== node2.position.y) {
+      console.error(
+        "node y are not the same",
+        node1.position.y,
+        node2.position.y
+      );
+      return false;
+    }
+  });
+  return true;
+}
 
 function useInitNodes({ triggerUpdate }) {
   const store = useContext(RepoContext)!;
@@ -659,11 +675,29 @@ function useInitNodes({ triggerUpdate }) {
   useEffect(() => {
     const init = () => {
       let nodes = store2nodes("ROOT", -1, { getId2children, getPod });
-      nodes.forEach((node) => {
-        if (!nodesMap.has(node.id)) {
-          nodesMap.set(node.id, node);
-        }
-      });
+      // Verify that the nodes are the same as the remote database
+      if (nodesMap.size !== nodes.length) {
+        console.info(
+          "The yjs server is empty but database is not. Initializing the yjs server."
+        );
+        nodes.forEach((node) => {
+          if (!nodesMap.has(node.id)) {
+            nodesMap.set(node.id, node);
+          }
+        });
+      }
+      let isConsistent = verifyConsistency(nodes, nodesMap);
+      if (!isConsistent) {
+        console.warn(
+          "The yjs server is not consistent with the database. Resetting the yjs server"
+        );
+        // throw new Error("Inconsistent state");
+        nodes.forEach((node) => {
+          if (!nodesMap.has(node.id)) {
+            nodesMap.set(node.id, node);
+          }
+        });
+      }
       // FIXME why do we need to setNodes here? The setNodes should only be
       // called by lib/nodes.tsx (i.e., the ReactFlow yjs binding)
       triggerUpdate();

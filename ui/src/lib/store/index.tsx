@@ -37,8 +37,8 @@ export type Pod = {
   ispublic?: boolean;
   x: number;
   y: number;
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
   ns?: string;
   running?: boolean;
   focus?: boolean;

@@ -3,10 +3,7 @@ import { applyNodeChanges, Node } from "reactflow";
 import { RepoContext, RoleType } from "./store";
 import { useStore } from "zustand";
 import { useApolloClient } from "@apollo/client";
-
-const isNodeAddChange = (change) => change.type === "add";
-const isNodeRemoveChange = (change) => change.type === "remove";
-const isNodeResetChange = (change) => change.type === "reset";
+import { Transaction, YEvent } from "yjs";
 
 const selectedPods = new Set();
 
@@ -27,7 +24,7 @@ export function useNodesStateSynced() {
   const addPod = useStore(store, (state) => state.addPod);
   const getPod = useStore(store, (state) => state.getPod);
   const deletePod = useStore(store, (state) => state.deletePod);
-  const updatePod = useStore(store, (state) => state.updatePod);
+  const setPodGeo = useStore(store, (state) => state.setPodGeo);
   const apolloClient = useApolloClient();
   const role = useStore(store, (state) => state.role);
   const ydoc = useStore(store, (state) => state.ydoc);
@@ -75,33 +72,15 @@ export function useNodesStateSynced() {
       }
 
       changes.forEach((change) => {
-        if (!isNodeAddChange(change)) {
-          if (isNodeRemoveChange(change)) {
+        if (change.type !== "add") {
+          if (change.type === "remove") {
             nodesMap.delete(change.id);
             return;
           }
           const node = nextNodes.find((n) => n.id === change.id);
-
           if (!node) return;
-
-          if (isNodeResetChange(change) || change.type === "select") {
+          if (change.type === "reset" || change.type === "select") {
             selectPod(node.id, change.selected);
-            return;
-          }
-
-          if (change.type === "dimensions" && node.type === "code") {
-            // There is a (seemingly unnecessary) dimension change at the very
-            // beginning of canvas page, which causes dirty status of all
-            // CodeNodes to be set. This is a workaround to prevent that.
-            if (getPod(node.id).width !== node.width) {
-              // only sync width
-              updatePod({
-                id: node.id,
-                data: {
-                  width: node.style?.width as number,
-                },
-              });
-            }
             return;
           }
 
@@ -111,7 +90,7 @@ export function useNodesStateSynced() {
         }
       });
     },
-    [getPod, nodesMap, role, selectPod, updatePod]
+    [nodesMap, role, selectPod]
   );
 
   const triggerUpdate = useCallback(() => {
@@ -127,31 +106,66 @@ export function useNodesStateSynced() {
   }, [clientId, nodesMap]);
 
   useEffect(() => {
-    const observer = (YMapEvent) => {
+    const observer = (YMapEvent: YEvent<any>, transaction: Transaction) => {
       YMapEvent.changes.keys.forEach((change, key) => {
-        if (change.action === "add") {
-          const node = nodesMap.get(key);
-          if (!node || node.data?.clientId || getPod(key)) return;
-          addPod(null, {
-            id: node.id,
-            children: [],
-            parent: "ROOT",
-            type: node.type === "code" ? "CODE" : "DECK",
-            lang: "python",
-            x: node.position.x,
-            y: node.position.y,
-            width: node.style?.width as number,
-            height: node.style?.height as number,
-            name: node.data?.name,
-            dirty: false,
-          });
-        } else if (change.action === "delete") {
-          const node = change.oldValue;
-          console.log("todelete", node);
-          deletePod(apolloClient, { id: node.id, toDelete: [] });
+        switch (change.action) {
+          case "add":
+            {
+              const node = nodesMap.get(key);
+              if (!node || node.data?.clientId || getPod(key)) return;
+              addPod(null, {
+                id: node.id,
+                children: [],
+                parent: "ROOT",
+                type: node.type === "code" ? "CODE" : "DECK",
+                lang: "python",
+                x: node.position.x,
+                y: node.position.y,
+                width: node.width!,
+                height: node.height!,
+                name: node.data?.name,
+                dirty: false,
+              });
+            }
+            break;
+          case "delete":
+            {
+              const node = change.oldValue;
+              if (transaction.local && !node.data?.clientId) {
+                // If the delete is made by the current user, and it is not a
+                // pasting node, delete it from the server.
+                deletePod(apolloClient, { id: node.id, toDelete: [] });
+              } else {
+                deletePod(null, { id: node.id, toDelete: [] });
+              }
+            }
+            break;
+          case "update":
+            {
+              const node = nodesMap.get(key);
+              if (!node) {
+                console.error("Node not found", key);
+                break;
+              }
+              // The node is a node pasting from this user or other users.
+              if (node.data?.clientId) break;
+              setPodGeo(
+                key,
+                {
+                  parent: node.parentNode ? node.parentNode : "ROOT",
+                  x: node.position.x,
+                  y: node.position.y,
+                  width: node.width!,
+                  height: node.height!,
+                },
+                transaction.local ? true : false
+              );
+            }
+            break;
+          default:
+            throw new Error("Unknown action", change.action);
         }
       });
-
       // TOFIX: a node may be shadowed behind its parent, due to the order to
       // render reactflow node, to fix this, comment out the following sorted
       // method, which brings in a large overhead.
@@ -181,7 +195,7 @@ export function useNodesStateSynced() {
       nodesMap.unobserve(observer);
       resetSelection();
     };
-  }, [addPod, apolloClient, clientId, deletePod, getPod, nodesMap]);
+  }, [addPod, apolloClient, clientId, deletePod, getPod, nodesMap, setPodGeo]);
 
   return {
     nodes: nodes.filter((n) => n),
