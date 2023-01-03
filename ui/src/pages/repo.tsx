@@ -48,6 +48,7 @@ const HeaderItem = memo<any>(({ id }) => {
   );
 
   useEffect(() => {
+    remoteUpdateRepoName(apolloClient);
     let intervalId = setInterval(() => {
       remoteUpdateRepoName(apolloClient);
     }, 1000);
@@ -261,7 +262,6 @@ function RepoImpl() {
   useEffect(() => {
     if (provider) {
       const awareness = provider.awareness;
-      console.log(awareness);
       awareness.on("update", (change) => {
         const states = awareness.getStates();
         const nodes = change.added.concat(change.updated);
@@ -345,10 +345,16 @@ export default function Repo() {
   useEffect(() => {
     setRepo(id!);
     connectYjs();
-    // const provider = useStore(store, (state) => state.provider);
-    // clean up the connected provider after exiting the page
-    return disconnectYjs;
-  }, [connectYjs, disconnectYjs, id, setRepo, store]);
+
+    let intervalId = setInterval(() => {
+      connectYjs();
+    }, 1000);
+    return () => {
+      clearInterval(intervalId);
+      // clean up the connected provider after exiting the page
+      disconnectYjs();
+    };
+  }, [connectYjs, disconnectYjs, id, setRepo]);
   return (
     <RepoContext.Provider value={store}>
       <RepoImpl />

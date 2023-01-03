@@ -68,6 +68,7 @@ export interface RepoStateSlice {
   remoteUpdateAllPods: (client) => void;
   showLineNumbers: boolean;
   flipShowLineNumbers: () => void;
+  yjsConnecting: boolean;
   connectYjs: () => void;
   disconnectYjs: () => void;
 }
@@ -198,34 +199,34 @@ export const createRepoStateSlice: StateCreator<
     return { success, error };
   },
   setCutting: (id: string | null) => set({ cutting: id }),
-  connectYjs: () =>
+  yjsConnecting: false,
+  connectYjs: () => {
+    if (get().yjsConnecting) return;
+    if (get().provider) return;
+    set({ yjsConnecting: true });
+    console.log("connecting yjs socket ..");
     set(
       produce((state) => {
-        console.log("connecting yjs socket ..");
         state.ydoc = new Doc();
-        // console.log("user reset state setrepo", repoId);
-        if (state.provider) {
-          console.log("emmm, provider exists", state.provider);
-        } else {
-          console.log("connecting yjs socket ..");
-          state.provider = new WebsocketProvider(
-            serverURL,
-            state.repoId,
-            state.ydoc
-          );
-          // max retry time: 10s
-          state.provider.connect();
-          state.provider.maxBackoffTime = 10000;
-        }
+        state.provider = new WebsocketProvider(
+          serverURL,
+          state.repoId,
+          state.ydoc
+        );
+        // max retry time: 10s
+        state.provider.connect();
+        state.provider.maxBackoffTime = 10000;
+
+        state.yjsConnecting = false;
       })
-    ),
+    );
+  },
   disconnectYjs: () =>
     set(
       // clean up the connected provider after exiting the page
       produce((state) => {
         console.log("disconnecting yjs socket ..");
         if (state.provider) {
-          console.log("destroying Yjs provider");
           state.provider.destroy();
           // just for debug usage, remove it later
           state.provider = null;

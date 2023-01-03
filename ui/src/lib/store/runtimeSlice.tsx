@@ -83,7 +83,6 @@ function rewriteCode(id: string, get: () => MyState) {
 
 async function spawnRuntime({ client, sessionId }) {
   // load from remote
-  console.log("spawnRuntime");
   let res = await client.mutate({
     mutation: gql`
       mutation spawnRuntime($sessionId: String!) {
@@ -100,7 +99,6 @@ async function spawnRuntime({ client, sessionId }) {
     // refetchQueries: ["listAllRuntimes"],
     refetchQueries: ["ListAllRuntimes", "GetRuntimeInfo"],
   });
-  console.log("spawnRuntime res", res);
   if (res.errors) {
     throw Error(
       `Error: ${
@@ -113,6 +111,7 @@ async function spawnRuntime({ client, sessionId }) {
 
 export interface RuntimeSlice {
   sessionId: string | null;
+  runtimeConnecting: boolean;
   runtimeConnected: boolean;
   kernels: Record<string, { status: string | null }>;
   // queueProcessing: boolean;
@@ -142,6 +141,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       status: null,
     },
   },
+  runtimeConnecting: false,
   runtimeConnected: false,
   socket: null,
   socketIntervalId: null,
@@ -276,23 +276,22 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
   },
 });
 
-function wsConnect(set, get) {
+function wsConnect(set, get: () => MyState) {
   return async (client, sessionId) => {
+    if (get().runtimeConnecting) return;
+    if (get().runtimeConnected) return;
+    console.log(`connecting to runtime ${sessionId} ..`);
+    set({ runtimeConnecting: true });
+
     // 0. ensure the runtime is created
-    // let sessionId = get().sessionId;
-    console.log("sessionId", sessionId);
     let runtimeCreated = await spawnRuntime({ client, sessionId });
     if (!runtimeCreated) {
       throw Error("ERROR: runtime not ready");
     }
     // 1. get the socket
-    console.log("WS_CONNECT");
     // FIXME socket should be disconnected when leaving the repo page.
     if (get().socket !== null) {
-      console.log("already connected, disconnecting first..");
-      get().wsDisconnect();
-      // Sleep 100ms for the socket to be disconnected.
-      await new Promise((r) => setTimeout(r, 100));
+      throw new Error("socket already connected");
     }
     // reset kernel status
     set({
@@ -302,7 +301,6 @@ function wsConnect(set, get) {
         },
       },
     });
-    console.log("connecting ..");
 
     // connect to the remote host
     // socket = new WebSocket(action.host);
@@ -315,7 +313,6 @@ function wsConnect(set, get) {
     } else {
       socket_url = `wss://${window.location.host}/runtime/${sessionId}`;
     }
-    console.log("socket_url", socket_url);
     let socket = new WebSocket(socket_url);
     set({ socket });
     // socket.emit("spawn", state.sessionId, lang);
@@ -341,6 +338,8 @@ function wsConnect(set, get) {
       set({ runtimeConnected: false });
       set({ socket: null });
     };
+
+    set({ runtimeConnecting: false });
   };
 }
 
@@ -350,7 +349,7 @@ function onMessage(set, get) {
     // msg.data for websocket
     // msg.body for rabbitmq
     let { type, payload } = JSON.parse(msg.data || msg.body || undefined);
-    console.log("got message", type, payload);
+    console.debug("got message", type, payload);
     switch (type) {
       case "output":
         console.log("output:", payload);
@@ -425,7 +424,7 @@ function onMessage(set, get) {
 
 const onOpen = (set, get) => {
   return () => {
-    console.log("connected");
+    console.log("runtime connected");
     set({ runtimeConnected: true });
     // call connect kernel
 
@@ -434,7 +433,7 @@ const onOpen = (set, get) => {
     }
     let id = setInterval(() => {
       if (get().socket) {
-        console.log("sending ping ..");
+        console.log("sending ping for runtime ..");
         get().socket.send(JSON.stringify({ type: "ping" }));
       }
       // websocket resets after 60s of idle by most firewalls
@@ -460,7 +459,6 @@ function wsRequestStatus(set, get) {
           state.kernels[lang].status = null;
         })
       );
-      console.log("Sending requestKernelStatus ..");
       get().socket?.send(
         JSON.stringify({
           type: "requestKernelStatus",

@@ -100,17 +100,13 @@ function SidebarRuntime() {
   const client = useApolloClient();
   const { loading, me } = useMe();
   let { id: repoId } = useParams();
-  useEffect(() => {
-    if (me) {
-      console.log("Connecting to runtime at the beginning ..");
-      wsConnect(client, `${me.id}_${repoId}`);
-    }
-  }, [client, me, repoId, wsConnect]);
   // periodically check if the runtime is still connected
   useEffect(() => {
+    if (me && !runtimeConnected) {
+      wsConnect(client, `${me.id}_${repoId}`);
+    }
     const interval = setInterval(() => {
       if (me && !runtimeConnected) {
-        console.log("Runtime disconnected, reconnecting ...");
         wsConnect(client, `${me.id}_${repoId}`);
       }
     }, 1000);
@@ -249,14 +245,12 @@ function SyncStatus() {
   );
 
   useEffect(() => {
-    console.log("Setting interval");
     let id = setInterval(() => {
       // websocket resets after 60s of idle by most firewalls
       console.log("periodically saving ..");
       remoteUpdateAllPods(client);
     }, 1000);
     return () => {
-      console.log("removing interval");
       clearInterval(id);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
