@@ -292,7 +292,6 @@ function RepoImpl() {
   }, [parseAllPods, parserLoaded, repoLoaded, resolveAllPods, scopedVars]);
 
   useEffect(() => {
-    setRepo(id!);
     if (hasToken()) {
       if (!loading && me) {
         setUser(me);
@@ -337,14 +336,19 @@ function RepoImpl() {
 }
 
 export default function Repo() {
+  let { id } = useParams();
   const store = useRef(createRepoStore()).current;
   const disconnectYjs = useStore(store, (state) => state.disconnectYjs);
+  const connectYjs = useStore(store, (state) => state.connectYjs);
+  const setRepo = useStore(store, (state) => state.setRepo);
   // console.log("load store", useRef(createRepoStore()));
   useEffect(() => {
+    setRepo(id!);
+    connectYjs();
     // const provider = useStore(store, (state) => state.provider);
     // clean up the connected provider after exiting the page
     return disconnectYjs;
-  }, [disconnectYjs, store]);
+  }, [connectYjs, disconnectYjs, id, setRepo, store]);
   return (
     <RepoContext.Provider value={store}>
       <RepoImpl />

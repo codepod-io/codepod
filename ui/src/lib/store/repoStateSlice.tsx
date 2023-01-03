@@ -23,6 +23,14 @@ import { addAwarenessStyle } from "../styles";
 import { Annotation } from "../parser";
 import { MyState, Pod, RoleType } from ".";
 
+let serverURL;
+if (window.location.protocol === "http:") {
+  serverURL = `ws://${window.location.host}/socket`;
+} else {
+  serverURL = `wss://${window.location.host}/socket`;
+}
+console.log("yjs server url: ", serverURL);
+
 export interface RepoStateSlice {
   pods: Record<string, Pod>;
   id2parent: Record<string, string>;
@@ -60,6 +68,7 @@ export interface RepoStateSlice {
   remoteUpdateAllPods: (client) => void;
   showLineNumbers: boolean;
   flipShowLineNumbers: () => void;
+  connectYjs: () => void;
   disconnectYjs: () => void;
 }
 
@@ -189,11 +198,34 @@ export const createRepoStateSlice: StateCreator<
     return { success, error };
   },
   setCutting: (id: string | null) => set({ cutting: id }),
+  connectYjs: () =>
+    set(
+      produce((state) => {
+        console.log("connecting yjs socket ..");
+        state.ydoc = new Doc();
+        // console.log("user reset state setrepo", repoId);
+        if (state.provider) {
+          console.log("emmm, provider exists", state.provider);
+        } else {
+          console.log("connecting yjs socket ..");
+          state.provider = new WebsocketProvider(
+            serverURL,
+            state.repoId,
+            state.ydoc
+          );
+          // max retry time: 10s
+          state.provider.connect();
+          state.provider.maxBackoffTime = 10000;
+        }
+      })
+    ),
   disconnectYjs: () =>
     set(
       // clean up the connected provider after exiting the page
       produce((state) => {
+        console.log("disconnecting yjs socket ..");
         if (state.provider) {
+          console.log("destroying Yjs provider");
           state.provider.destroy();
           // just for debug usage, remove it later
           state.provider = null;
