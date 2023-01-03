@@ -100,7 +100,7 @@ function SidebarRuntime() {
   const { loading, me } = useMe();
   let { id: repoId } = useParams();
   // get runtime information
-  const { data } = useQuery(gql`
+  const { data, error } = useQuery(gql`
     query GetRuntimeInfo {
       infoRuntime(sessionId: "${me.id}_${repoId}") {
         startedAt
@@ -110,13 +110,13 @@ function SidebarRuntime() {
   // update time every second
   let [uptime, setUptime] = useState("");
   useEffect(() => {
-    if (data?.infoRuntime.startedAt) {
+    if (data?.infoRuntime?.startedAt) {
       setUptime(getUpTime(data.infoRuntime.startedAt));
     }
   }, [data]);
   useEffect(() => {
     const interval = setInterval(() => {
-      if (data?.infoRuntime.startedAt) {
+      if (data?.infoRuntime?.startedAt) {
         setUptime(getUpTime(data.infoRuntime.startedAt));
       }
     }, 1000);
