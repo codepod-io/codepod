@@ -96,22 +96,9 @@ function SidebarRuntime() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
-  const wsConnect = useStore(store, (state) => state.wsConnect);
-  const client = useApolloClient();
+  const runtimeConnecting = useStore(store, (state) => state.runtimeConnecting);
   const { loading, me } = useMe();
   let { id: repoId } = useParams();
-  // periodically check if the runtime is still connected
-  useEffect(() => {
-    if (me && !runtimeConnected) {
-      wsConnect(client, `${me.id}_${repoId}`);
-    }
-    const interval = setInterval(() => {
-      if (me && !runtimeConnected) {
-        wsConnect(client, `${me.id}_${repoId}`);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [client, me, repoId, runtimeConnected, wsConnect]);
   // get runtime information
   const { data } = useQuery(gql`
     query GetRuntimeInfo {
@@ -140,7 +127,7 @@ function SidebarRuntime() {
   return (
     <Box>
       <Box>
-        {runtimeConnected ? (
+        {runtimeConnected && (
           <Stack>
             <Box>
               Runtime{" "}
@@ -151,19 +138,8 @@ function SidebarRuntime() {
             <Box>Uptime: {uptime}</Box>
             <SidebarKernel />
           </Stack>
-        ) : (
-          <Box>
-            connecting ..
-            {/* <Button
-              size="small"
-              onClick={() => {
-                wsConnect(client, `${me.id}_${repoId}`);
-              }}
-            >
-              Connect
-            </Button> */}
-          </Box>
         )}
+        {runtimeConnecting && <Box>connecting ..</Box>}
       </Box>
     </Box>
   );
