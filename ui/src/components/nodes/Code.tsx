@@ -63,18 +63,13 @@ interface Props {
 
 export const ResultBlock = memo<any>(function ResultBlock({ id }) {
   const store = useContext(RepoContext)!;
-  const height = useStore(store, (state) => state.pods[id].height);
   const result = useStore(store, (state) => state.pods[id].result);
   const error = useStore(store, (state) => state.pods[id].error);
   const stdout = useStore(store, (state) => state.pods[id].stdout);
   const running = useStore(store, (state) => state.pods[id].running);
   const [showOutput, setShowOutput] = useState(true);
   return (
-    <Box
-      sx={{
-        minHeight: height,
-      }}
-    >
+    <Box>
       {result && (
         <Box sx={{ display: "flex", flexDirection: "column" }}>
           {result.html ? (
