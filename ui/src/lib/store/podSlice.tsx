@@ -38,7 +38,7 @@ export interface PodSlice {
   addPod: (client: ApolloClient<object> | null, pod: Pod) => void;
   deletePod: (
     client: ApolloClient<object> | null,
-    { id, toDelete }: { id: string; toDelete: string[] }
+    { id }: { id: string }
   ) => Promise<void>;
   setPodResult: ({
     id,
@@ -310,9 +310,10 @@ function addPod(set, get: () => MyState) {
 function deletePod(set, get) {
   return async (
     client: ApolloClient<object> | null,
-    { id, toDelete }: { id: string; toDelete: string[] }
+    { id }: { id: string }
   ) => {
     const pods = get().pods;
+    const toDelete: string[] = [];
 
     // get all ids to delete. Gathering them here is easier than on the server
 

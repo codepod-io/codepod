@@ -139,9 +139,9 @@ export function useNodesStateSynced() {
               if (transaction.local && !node.data?.clientId) {
                 // If the delete is made by the current user, and it is not a
                 // pasting node, delete it from the server.
-                deletePod(apolloClient, { id: node.id, toDelete: [] });
+                deletePod(apolloClient, { id: node.id });
               } else {
-                deletePod(null, { id: node.id, toDelete: [] });
+                deletePod(null, { id: node.id });
               }
             }
             break;
