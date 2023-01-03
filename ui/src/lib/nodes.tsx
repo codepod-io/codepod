@@ -102,6 +102,11 @@ export function useNodesStateSynced() {
             node.data.clientId === clientId
         )
         .sort((a: Node, b: Node) => a.data.level - b.data.level)
+        .map((node) => ({
+          ...node,
+          selected: selectedPods.has(node.id),
+          hidden: node.data?.hidden === clientId,
+        }))
     );
   }, [clientId, nodesMap]);
 
@@ -170,22 +175,7 @@ export function useNodesStateSynced() {
       // render reactflow node, to fix this, comment out the following sorted
       // method, which brings in a large overhead.
 
-      setNodes(
-        Array.from(nodesMap.values())
-          .filter(
-            (node) =>
-              !node.data.hasOwnProperty("clientId") ||
-              node.data.clientId === clientId
-          )
-          .sort((a: Node, b: Node) => a.data.level - b.data.level)
-          .map((node) => ({
-            ...node,
-            selected: selectedPods.has(node.id),
-            hidden: node.data?.hidden === clientId,
-          }))
-      );
-
-      // setNodes(Array.from(nodesMap.values()));
+      triggerUpdate();
     };
 
     // setNodes(Array.from(nodesMap.values()));
@@ -195,7 +185,16 @@ export function useNodesStateSynced() {
       nodesMap.unobserve(observer);
       resetSelection();
     };
-  }, [addPod, apolloClient, clientId, deletePod, getPod, nodesMap, setPodGeo]);
+  }, [
+    addPod,
+    apolloClient,
+    clientId,
+    deletePod,
+    getPod,
+    nodesMap,
+    setPodGeo,
+    triggerUpdate,
+  ]);
 
   return {
     nodes: nodes.filter((n) => n),

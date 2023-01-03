@@ -698,8 +698,8 @@ function useInitNodes({ triggerUpdate }) {
           }
         });
       }
-      // FIXME why do we need to setNodes here? The setNodes should only be
-      // called by lib/nodes.tsx (i.e., the ReactFlow yjs binding)
+      // NOTE we have to trigger an update here, otherwise the nodes are not
+      // rendered.
       triggerUpdate();
       setLoading(false);
     };
