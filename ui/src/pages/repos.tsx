@@ -28,41 +28,8 @@ import useMe from "../lib/me";
 import { getUpTime } from "../lib/utils";
 import { Button } from "@mui/material";
 
-enum RepoTypes {
-  repo = "myRepos",
-  collab = "myCollabRepos",
-}
-enum RepoHintTemplate {
-  myRepos = "Please create a new repo",
-  myCollabRepos = "No shared repo yet. Invite your friend! ",
-}
-enum RepoTitleHint {
-  myRepos = "Your repos",
-  myCollabRepos = "Shared repos",
-}
-const FETCH_REPOS = gql`
-  query GetRepos {
-    myRepos {
-      name
-      id
-      public
-    }
-  }
-`;
-
-const FETCH_COLLAB_REPOS = gql`
-  query GetCollabRepos {
-    myCollabRepos {
-      name
-      id
-      public
-    }
-  }
-`;
-
 function RepoLine({ repo, deletable, sharable, runtimeInfo }) {
   const { me } = useMe();
-  const [open, setOpen] = useState(false);
   const [deleteRepo] = useMutation(
     gql`
       mutation deleteRepo($id: ID) {
@@ -182,7 +149,7 @@ function RepoLine({ repo, deletable, sharable, runtimeInfo }) {
   );
 }
 
-function RepoHintText({ type = RepoTypes.repo }) {
+function RepoHintText({ children }) {
   return (
     <Box
       sx={{
@@ -196,7 +163,7 @@ function RepoHintText({ type = RepoTypes.repo }) {
         alignContent: "center",
       }}
     >
-      {RepoHintTemplate[type]}
+      {children}
     </Box>
   );
 }
@@ -232,10 +199,11 @@ function CreateRepoForm(props) {
   );
 }
 
-function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
-  const { loading, error, data } = useQuery(url);
+function RepoList({ repos }) {
   const { me } = useMe();
-  const { loading: rt_loading, data: rt_data } = useQuery(gql`
+  // FIXME once ttl is reached, the runtime is killed, but this query is not
+  // updated.
+  const { loading, data } = useQuery(gql`
     query ListAllRuntimes {
       listAllRuntimes {
         sessionId
@@ -243,24 +211,57 @@ function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
       }
     }
   `);
-  // peiredically update so that the last active time is updated
-  //
-  // FIXME once ttl is reached, the runtime is killed, but this rt_query is not
-  // updated.
-  const [counter, setCounter] = useState(0);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCounter(counter + 1);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [counter]);
-  if (loading || rt_loading) {
+  return (
+    <TableContainer component={Paper}>
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell align="left">Name</TableCell>
+            <TableCell align="left">Visibility</TableCell>
+            <TableCell align="left">Status (TTL: 12h)</TableCell>
+            <TableCell align="left">Operations</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {repos.map((repo) => (
+            <RepoLine
+              repo={repo}
+              deletable={true}
+              sharable={true}
+              runtimeInfo={
+                loading
+                  ? null
+                  : data.listAllRuntimes.find(
+                      ({ sessionId }) => sessionId === `${me.id}_${repo.id}`
+                    )
+              }
+              key={repo.id}
+            />
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
+  );
+}
+
+function MyRepos() {
+  const { loading, error, data } = useQuery(gql`
+    query GetRepos {
+      myRepos {
+        name
+        id
+        public
+      }
+    }
+  `);
+
+  if (loading) {
     return <CircularProgress />;
   }
   if (error) {
     return null;
   }
-  const repos = data[type].slice().reverse();
+  const repos = data.myRepos.slice().reverse();
   return (
     <Box>
       <Box
@@ -277,39 +278,68 @@ function Repos({ url = FETCH_REPOS, type = RepoTypes.repo }) {
             fontSize: "25px",
           }}
         >
-          {RepoTitleHint[type]} ({repos.length})
+          My projects ({repos.length})
         </Box>
-        {type === RepoTypes.repo && <CreateRepoForm />}
+        <CreateRepoForm />
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell align="left">Name</TableCell>
-              <TableCell align="left">Visibility</TableCell>
-              <TableCell align="left">Status (TTL: 12h)</TableCell>
-              <TableCell align="left">Operations</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {repos.map((repo) => (
-              <RepoLine
-                repo={repo}
-                deletable={type === RepoTypes.repo}
-                sharable={type === RepoTypes.repo}
-                runtimeInfo={rt_data.listAllRuntimes.find(
-                  ({ sessionId }) => sessionId === `${me.id}_${repo.id}`
-                )}
-                key={repo.id}
-              />
-            ))}
-          </TableBody>
-        </Table>
-        {repos.length === 0 ? ( // If no repos
-          <RepoHintText type={type} />
-        ) : null}
-      </TableContainer>
+      {repos.length === 0 && (
+        <RepoHintText>
+          You don't have any projects yet. Click "Create New Project" to get
+          started.
+        </RepoHintText>
+      )}
+      <RepoList repos={repos} />
+    </Box>
+  );
+}
+
+function SharedWithMe() {
+  const { loading, error, data } = useQuery(gql`
+    query GetCollabRepos {
+      myCollabRepos {
+        name
+        id
+        public
+      }
+    }
+  `);
+  if (loading) {
+    return <CircularProgress />;
+  }
+  if (error) {
+    return null;
+  }
+  const repos = data.myCollabRepos.slice().reverse();
+  return (
+    <Box>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingTop: "20px",
+        }}
+      >
+        <Box
+          sx={{
+            color: "#839DB5",
+            fontSize: "25px",
+          }}
+        >
+          My projects ({repos.length})
+        </Box>
+        <CreateRepoForm />
+      </Box>
+
+      {repos.length > 0 ? (
+        <RepoList repos={repos} />
+      ) : (
+        <RepoHintText>
+          No projects are shared with you. You can share your projects with
+          others by clicking "Share" in the project page.
+        </RepoHintText>
+      )}
     </Box>
   );
 }
@@ -331,7 +361,7 @@ function NoLogginErrorAlert() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [seconds]);
+  }, [nevigate, seconds]);
 
   return (
     <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
@@ -347,6 +377,14 @@ function NoLogginErrorAlert() {
 }
 export default function Page() {
   const { me } = useMe();
+  // peiredically re-render so that the "last active time" is updated
+  const [counter, setCounter] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCounter(counter + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [counter]);
   if (!me) {
     return <NoLogginErrorAlert />;
   }
@@ -366,8 +404,8 @@ export default function Page() {
         👋 Welcome, {me?.firstname}! Please open or create a repository to get
         started.
       </Box>
-      <Repos />
-      <Repos url={FETCH_COLLAB_REPOS} type={RepoTypes.collab} />
+      <MyRepos />
+      <SharedWithMe />
     </Box>
   );
 }
