@@ -96,28 +96,11 @@ function SidebarRuntime() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
-  const wsConnect = useStore(store, (state) => state.wsConnect);
-  const client = useApolloClient();
+  const runtimeConnecting = useStore(store, (state) => state.runtimeConnecting);
   const { loading, me } = useMe();
   let { id: repoId } = useParams();
-  useEffect(() => {
-    if (me) {
-      console.log("Connecting to runtime at the beginning ..");
-      wsConnect(client, `${me.id}_${repoId}`);
-    }
-  }, [client, me, repoId, wsConnect]);
-  // periodically check if the runtime is still connected
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (me && !runtimeConnected) {
-        console.log("Runtime disconnected, reconnecting ...");
-        wsConnect(client, `${me.id}_${repoId}`);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [client, me, repoId, runtimeConnected, wsConnect]);
   // get runtime information
-  const { data } = useQuery(gql`
+  const { data, error } = useQuery(gql`
     query GetRuntimeInfo {
       infoRuntime(sessionId: "${me.id}_${repoId}") {
         startedAt
@@ -127,13 +110,13 @@ function SidebarRuntime() {
   // update time every second
   let [uptime, setUptime] = useState("");
   useEffect(() => {
-    if (data?.infoRuntime.startedAt) {
+    if (data?.infoRuntime?.startedAt) {
       setUptime(getUpTime(data.infoRuntime.startedAt));
     }
   }, [data]);
   useEffect(() => {
     const interval = setInterval(() => {
-      if (data?.infoRuntime.startedAt) {
+      if (data?.infoRuntime?.startedAt) {
         setUptime(getUpTime(data.infoRuntime.startedAt));
       }
     }, 1000);
@@ -144,7 +127,7 @@ function SidebarRuntime() {
   return (
     <Box>
       <Box>
-        {runtimeConnected ? (
+        {runtimeConnected && (
           <Stack>
             <Box>
               Runtime{" "}
@@ -155,19 +138,8 @@ function SidebarRuntime() {
             <Box>Uptime: {uptime}</Box>
             <SidebarKernel />
           </Stack>
-        ) : (
-          <Box>
-            connecting ..
-            {/* <Button
-              size="small"
-              onClick={() => {
-                wsConnect(client, `${me.id}_${repoId}`);
-              }}
-            >
-              Connect
-            </Button> */}
-          </Box>
         )}
+        {runtimeConnecting && <Box>connecting ..</Box>}
       </Box>
     </Box>
   );
@@ -249,14 +221,12 @@ function SyncStatus() {
   );
 
   useEffect(() => {
-    console.log("Setting interval");
     let id = setInterval(() => {
       // websocket resets after 60s of idle by most firewalls
       console.log("periodically saving ..");
       remoteUpdateAllPods(client);
     }, 1000);
     return () => {
-      console.log("removing interval");
       clearInterval(id);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

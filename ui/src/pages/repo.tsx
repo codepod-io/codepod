@@ -27,9 +27,6 @@ import { initParser } from "../lib/parser";
 
 import { usePrompt } from "../lib/prompt";
 
-const DrawerWidth = 240;
-const SIDEBAR_KEY = "sidebar";
-
 const HeaderItem = memo<any>(({ id }) => {
   const store = useContext(RepoContext)!;
   const repoName = useStore(store, (state) => state.repoName);
@@ -48,6 +45,7 @@ const HeaderItem = memo<any>(({ id }) => {
   );
 
   useEffect(() => {
+    remoteUpdateRepoName(apolloClient);
     let intervalId = setInterval(() => {
       remoteUpdateRepoName(apolloClient);
     }, 1000);
@@ -135,12 +133,14 @@ const HeaderItem = memo<any>(({ id }) => {
 
 function RepoWrapper({ children, id }) {
   // this component is used to provide a foldable layout
-  const [open, setOpen] = useLocalStorage(SIDEBAR_KEY, true);
+  const [open, setOpen] = useLocalStorage("sidebar", true);
 
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
 
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
+
+  const DrawerWidth = 240;
 
   return (
     <Box
@@ -231,10 +231,33 @@ function NotFoundAlert({ error }) {
   );
 }
 
+function useRuntime() {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
+  const wsConnect = useStore(store, (state) => state.wsConnect);
+  const client = useApolloClient();
+  const { loading, me } = useMe();
+  let { id: repoId } = useParams();
+  // periodically check if the runtime is still connected
+  useEffect(() => {
+    if (me && !runtimeConnected) {
+      wsConnect(client, `${me.id}_${repoId}`);
+    }
+    const interval = setInterval(() => {
+      if (me && !runtimeConnected) {
+        wsConnect(client, `${me.id}_${repoId}`);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [client, me, repoId, runtimeConnected, wsConnect]);
+}
+
 function RepoImpl() {
   let { id } = useParams();
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  useRuntime();
   const setRepo = useStore(store, (state) => state.setRepo);
   const client = useApolloClient();
   const loadRepo = useStore(store, (state) => state.loadRepo);
@@ -261,7 +284,6 @@ function RepoImpl() {
   useEffect(() => {
     if (provider) {
       const awareness = provider.awareness;
-      console.log(awareness);
       awareness.on("update", (change) => {
         const states = awareness.getStates();
         const nodes = change.added.concat(change.updated);
@@ -345,10 +367,16 @@ export default function Repo() {
   useEffect(() => {
     setRepo(id!);
     connectYjs();
-    // const provider = useStore(store, (state) => state.provider);
-    // clean up the connected provider after exiting the page
-    return disconnectYjs;
-  }, [connectYjs, disconnectYjs, id, setRepo, store]);
+
+    let intervalId = setInterval(() => {
+      connectYjs();
+    }, 1000);
+    return () => {
+      clearInterval(intervalId);
+      // clean up the connected provider after exiting the page
+      disconnectYjs();
+    };
+  }, [connectYjs, disconnectYjs, id, setRepo]);
   return (
     <RepoContext.Provider value={store}>
       <RepoImpl />
