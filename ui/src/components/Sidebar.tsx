@@ -13,6 +13,7 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import Grid from "@mui/material/Grid";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import Typography from "@mui/material/Typography";
 import { useSnackbar, VariantType } from "notistack";
 
 import { gql, useQuery, useMutation, useApolloClient } from "@apollo/client";
@@ -46,7 +47,6 @@ function SidebarSettings() {
   );
   return (
     <Box>
-      Settings
       <Box>
         <FormGroup>
           <FormControlLabel
@@ -435,6 +435,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <SidebarRuntime />
                 </Grid>
                 <Grid item xs={12}>
+                  <Divider />
+                  <Typography variant="h6">Site Settings</Typography>
                   <SidebarSettings />
                 </Grid>
                 <ToastError />
