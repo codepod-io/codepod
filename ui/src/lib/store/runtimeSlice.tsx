@@ -1,5 +1,5 @@
 import produce from "immer";
-import { gql } from "@apollo/client";
+import { ApolloClient, gql } from "@apollo/client";
 import { createStore, StateCreator, StoreApi } from "zustand";
 
 // FIXME cyclic import
@@ -81,7 +81,7 @@ function rewriteCode(id: string, get: () => MyState) {
   return newcode;
 }
 
-async function spawnRuntime({ client, sessionId }) {
+async function spawnRuntime(client, sessionId: string) {
   // load from remote
   let res = await client.mutate({
     mutation: gql`
@@ -109,6 +109,28 @@ async function spawnRuntime({ client, sessionId }) {
   return res.data.spawnRuntime;
 }
 
+async function killRuntime(client, sessionId) {
+  let res = await client.mutate({
+    mutation: gql`
+      mutation killRuntime($sessionId: String!) {
+        killRuntime(sessionId: $sessionId)
+      }
+    `,
+    variables: {
+      sessionId,
+    },
+    refetchQueries: ["ListAllRuntimes", "GetRuntimeInfo"],
+  });
+  if (res.errors) {
+    throw Error(
+      `Error: ${
+        res.errors[0].message
+      }\n ${res.errors[0].extensions.exception.stacktrace.join("\n")}`
+    );
+  }
+  return res.data.killRuntime;
+}
+
 export interface RuntimeSlice {
   sessionId: string | null;
   runtimeConnecting: boolean;
@@ -119,6 +141,7 @@ export interface RuntimeSlice {
   socketIntervalId: number | null;
   wsConnect: (client, sessionId) => void;
   wsDisconnect: () => void;
+  restartRuntime: (client: ApolloClient<any>, sessionId: string) => void;
   wsRequestStatus: ({ lang }) => void;
   parsePod: (id: string) => void;
   parseAllPods: () => void;
@@ -148,6 +171,12 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
   wsConnect: wsConnect(set, get),
   wsDisconnect: () => {
     get().socket?.close();
+  },
+  restartRuntime: async (client, sessionId) => {
+    console.log("killing runtime ..");
+    await killRuntime(client, sessionId);
+    console.log("runtime killed, spawning new one ..");
+    get().wsConnect(client, sessionId);
   },
   wsRequestStatus: wsRequestStatus(set, get),
   /**
@@ -284,7 +313,7 @@ function wsConnect(set, get: () => MyState) {
     set({ runtimeConnecting: true });
 
     // 0. ensure the runtime is created
-    let runtimeCreated = await spawnRuntime({ client, sessionId });
+    let runtimeCreated = await spawnRuntime(client, sessionId);
     if (!runtimeCreated) {
       throw Error("ERROR: runtime not ready");
     }
@@ -313,8 +342,9 @@ function wsConnect(set, get: () => MyState) {
     } else {
       socket_url = `wss://${window.location.host}/runtime/${sessionId}`;
     }
+    console.log("connecting to websocket ..");
     let socket = new WebSocket(socket_url);
-    set({ socket });
+
     // socket.emit("spawn", state.sessionId, lang);
 
     // If the mqAddress is not supplied, use the websocket
@@ -324,7 +354,20 @@ function wsConnect(set, get: () => MyState) {
     //
     // UPDATE it works, this will be called even after connection
 
-    socket.onopen = onOpen(set, get);
+    socket.onopen = () => {
+      console.log("runtime connected");
+      set({ runtimeConnected: true });
+      set({ runtimeConnecting: false });
+      set({ socket });
+      // call connect kernel
+
+      // request kernel status after connection
+      Object.keys(get().kernels).forEach((k) => {
+        get().wsRequestStatus({
+          lang: k,
+        });
+      });
+    };
     // so I'm setting this
     // Well, I should probably not dispatch action inside another action
     // (even though it is in a middleware)
@@ -336,10 +379,9 @@ function wsConnect(set, get: () => MyState) {
     socket.onclose = () => {
       console.log("Disconnected ..");
       set({ runtimeConnected: false });
+      set({ runtimeConnecting: false });
       set({ socket: null });
     };
-
-    set({ runtimeConnecting: false });
   };
 }
 
@@ -421,34 +463,6 @@ function onMessage(set, get) {
     }
   };
 }
-
-const onOpen = (set, get) => {
-  return () => {
-    console.log("runtime connected");
-    set({ runtimeConnected: true });
-    // call connect kernel
-
-    if (get().socketIntervalId) {
-      clearInterval(get().socketIntervalId);
-    }
-    let id = setInterval(() => {
-      if (get().socket) {
-        console.log("sending ping for runtime ..");
-        get().socket.send(JSON.stringify({ type: "ping" }));
-      }
-      // websocket resets after 60s of idle by most firewalls
-    }, 30000);
-    set({ socketIntervalId: id });
-
-    // request kernel status after connection
-    Object.keys(get().kernels).forEach((k) => {
-      get().wsRequestStatus({
-        lang: k,
-        sessionId: get().sessionId,
-      });
-    });
-  };
-};
 
 function wsRequestStatus(set, get) {
   return ({ lang }) => {
