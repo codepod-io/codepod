@@ -69,7 +69,12 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
   const running = useStore(store, (state) => state.pods[id].running);
   const [showOutput, setShowOutput] = useState(true);
   return (
-    <Box>
+    <Box
+      sx={{
+        userSelect: "text",
+        cursor: "auto",
+      }}
+    >
       {result && (
         <Box sx={{ display: "flex", flexDirection: "column" }}>
           {result.html ? (
@@ -496,6 +501,10 @@ export const CodeNode = memo<Props>(function ({
         {showResult && (
           <Box
             className="nowheel"
+            // This also prevents the wheel event from bubbling up to the parent.
+            // onWheelCapture={(e) => {
+            //   e.stopPropagation();
+            // }}
             sx={{
               border: "solid 1px #d6dee6",
               borderRadius: "4px",
