@@ -48,36 +48,40 @@ function SidebarSettings() {
   return (
     <Box>
       <Box>
-        <FormGroup>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={scopedVars}
-                size="small"
-                color="warning"
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  setScopedVars(event.target.checked);
-                }}
-              />
-            }
-            label="Scoped Variables"
-          />
-        </FormGroup>
-        <FormGroup>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={showAnnotations}
-                size="small"
-                color="warning"
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  setShowAnnotations(event.target.checked);
-                }}
-              />
-            }
-            label="Enable Annotations"
-          />
-        </FormGroup>
+        <Tooltip title={"Enable Scoped Variables"} disableInteractive>
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={scopedVars}
+                  size="small"
+                  color="warning"
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setScopedVars(event.target.checked);
+                  }}
+                />
+              }
+              label="Scoped Variables"
+            />
+          </FormGroup>
+        </Tooltip>
+        <Tooltip title={"Show Annotations in Editor"} disableInteractive>
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showAnnotations}
+                  size="small"
+                  color="warning"
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setShowAnnotations(event.target.checked);
+                  }}
+                />
+              }
+              label="Enable Annotations"
+            />
+          </FormGroup>
+        </Tooltip>
         {showAnnotations && (
           <Stack spacing={0.5}>
             <Box className="myDecoration-function">Function Definition</Box>
