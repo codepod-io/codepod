@@ -15,6 +15,7 @@ export type Pod = {
   type: string;
   content?: string;
   dirty?: boolean;
+  isSyncing?: boolean;
   children: { id: string; type: string }[];
   parent: string;
   result?: { html?: string; text?: string; count: number; image?: string };
