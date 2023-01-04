@@ -45,9 +45,31 @@ function SidebarSettings() {
     store,
     (state) => state.setShowAnnotations
   );
+  const devMode = useStore(store, (state) => state.devMode);
+  const setDevMode = useStore(store, (state) => state.setDevMode);
   return (
     <Box>
       <Box>
+        <Tooltip
+          title={"Enable DevMode, e.g., show pod IDs"}
+          disableInteractive
+        >
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={devMode}
+                  size="small"
+                  color="warning"
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setDevMode(event.target.checked);
+                  }}
+                />
+              }
+              label="Dev Mode"
+            />
+          </FormGroup>
+        </Tooltip>
         <Tooltip title={"Enable Scoped Variables"} disableInteractive>
           <FormGroup>
             <FormControlLabel
