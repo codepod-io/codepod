@@ -808,8 +808,6 @@ function CanvasImpl() {
           multiSelectionKeyCode={isMac ? "Meta" : "Control"}
           // TODO restore previous viewport
           defaultViewport={{ zoom: 1, x: 0, y: 0 }}
-          // prevent the nodes selected by space or enter
-          nodesFocusable={false}
         >
           <Box>
             <MiniMap
