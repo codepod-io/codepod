@@ -60,7 +60,7 @@ function SidebarSettings() {
                 }}
               />
             }
-            label="Scoped Vars"
+            label="Scoped Variables"
           />
         </FormGroup>
         <FormGroup>
@@ -75,16 +75,16 @@ function SidebarSettings() {
                 }}
               />
             }
-            label="Show Anotations"
+            label="Enable Annotations"
           />
         </FormGroup>
         {showAnnotations && (
           <Stack spacing={0.5}>
-            <Box className="myDecoration-function">Function Def</Box>
-            <Box className="myDecoration-vardef">Variable Def</Box>
-            <Box className="myDecoration-varuse">Function/Var Use</Box>
+            <Box className="myDecoration-function">Function Definition</Box>
+            <Box className="myDecoration-vardef">Variable Definition</Box>
+            <Box className="myDecoration-varuse">Function/Variable Use</Box>
             <Box className="myDecoration-varuse my-underline">
-              Undefined Vars
+              Undefined Variable
             </Box>
           </Stack>
         )}
