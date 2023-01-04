@@ -14,7 +14,7 @@ import * as React from "react";
 
 import { useStore } from "zustand";
 
-import { createRepoStore, RepoContext, RoleType } from "../lib/store";
+import { createRepoStore, RepoContext } from "../lib/store";
 
 import useMe from "../lib/me";
 import { Canvas } from "../components/Canvas";
@@ -37,7 +37,7 @@ const HeaderItem = memo<any>(({ id }) => {
     store,
     (state) => state.remoteUpdateRepoName
   );
-  const role = useStore(store, (state) => state.role);
+  const isOwner = useStore(store, (state) => state.role === "OWNER");
 
   usePrompt(
     "Repo name not saved. Do you want to leave this page?",
@@ -95,7 +95,7 @@ const HeaderItem = memo<any>(({ id }) => {
         maxWidth: "100%",
         border: "none",
       }}
-      disabled={role !== RoleType.OWNER}
+      disabled={!isOwner}
       onChange={(e) => {
         const name = e.target.value;
         setRepoName(name);

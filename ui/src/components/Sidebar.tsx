@@ -21,7 +21,7 @@ import { useStore } from "zustand";
 
 import { usePrompt } from "../lib/prompt";
 
-import { RepoContext, RoleType } from "../lib/store";
+import { RepoContext } from "../lib/store";
 
 import useMe from "../lib/me";
 import { FormControlLabel, FormGroup, Stack, Switch } from "@mui/material";
@@ -371,7 +371,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // FIXME: improve the implementation logic
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const role = useStore(store, (state) => state.role);
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
   return (
     <>
       <Box
@@ -424,7 +424,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }}
         >
           <Grid container spacing={2}>
-            {role === RoleType.GUEST ? (
+            {isGuest ? (
               <>
                 <Grid item xs={12}>
                   <Box> Read-only Mode: You are a guest. </Box>

@@ -34,7 +34,7 @@ import Moveable from "react-moveable";
 
 import { useStore } from "zustand";
 
-import { RepoContext, RoleType } from "../../lib/store";
+import { RepoContext } from "../../lib/store";
 
 interface Props {
   data: any;
@@ -65,7 +65,7 @@ export const ScopeNode = memo<Props>(function ScopeNode({
     translate: [0, 0],
   });
   // const selected = useStore(store, (state) => state.pods[id]?.selected);
-  const role = useStore(store, (state) => state.role);
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const onResize = useCallback(({ width, height, offx, offy }) => {
@@ -115,7 +115,7 @@ export const ScopeNode = memo<Props>(function ScopeNode({
           justifyContent: "center",
         }}
       >
-        {role !== RoleType.GUEST && (
+        {!isGuest && (
           <Tooltip title="Delete" className="nodrag">
             <IconButton
               size="small"
@@ -176,7 +176,7 @@ export const ScopeNode = memo<Props>(function ScopeNode({
                   // setPodName({ id, name });
                 }}
                 inputRef={inputRef}
-                disabled={role === RoleType.GUEST}
+                disabled={isGuest}
                 inputProps={{
                   style: {
                     padding: "0px",
@@ -208,7 +208,7 @@ export const ScopeNode = memo<Props>(function ScopeNode({
         id="right"
         isConnectable={isConnectable}
       />
-      {selected && role !== RoleType.GUEST && (
+      {selected && !isGuest && (
         <Moveable
           target={target}
           resizable={true}

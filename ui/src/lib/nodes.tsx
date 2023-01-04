@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useContext } from "react";
 import { applyNodeChanges, Node } from "reactflow";
-import { RepoContext, RoleType } from "./store";
+import { RepoContext } from "./store";
+import { nodetype2dbtype } from "./utils";
 import { useStore } from "zustand";
 import { useApolloClient } from "@apollo/client";
 import { Transaction, YEvent } from "yjs";
@@ -26,7 +27,7 @@ export function useNodesStateSynced() {
   const deletePod = useStore(store, (state) => state.deletePod);
   const setPodGeo = useStore(store, (state) => state.setPodGeo);
   const apolloClient = useApolloClient();
-  const role = useStore(store, (state) => state.role);
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
   const ydoc = useStore(store, (state) => state.ydoc);
   const nodesMap = ydoc.getMap<Node>("pods");
   const clientId = useStore(
@@ -37,61 +38,6 @@ export function useNodesStateSynced() {
   const [nodes, setNodes] = useState<Node[]>([]);
   // const setNodeId = useStore((state) => state.setSelectNode);
   // const selected = useStore((state) => state.selectNode);
-
-  const selectPod = useCallback(
-    (id, selected) => {
-      if (selected) {
-        const p = getPod(id)?.parent;
-
-        // if you select a node that has a different parent, clear all previous selections
-        if (parent !== undefined && parent !== p) {
-          selectedPods.clear();
-          setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
-        }
-        parent = p;
-        selectedPods.add(id);
-      } else {
-        if (!selectedPods.delete(id)) return;
-        if (selectedPods.size === 0) parent = undefined;
-      }
-      setNodes((nds) => nds.map((n) => (n.id === id ? { ...n, selected } : n)));
-    },
-    [getPod]
-  );
-
-  const onNodesChange = useCallback(
-    (changes) => {
-      const nodes = Array.from(nodesMap.values());
-
-      const nextNodes = applyNodeChanges(changes, nodes);
-
-      // prevent updates from guest users
-      if (role === RoleType.GUEST) {
-        setNodes(nextNodes);
-        return;
-      }
-
-      changes.forEach((change) => {
-        if (change.type !== "add") {
-          if (change.type === "remove") {
-            nodesMap.delete(change.id);
-            return;
-          }
-          const node = nextNodes.find((n) => n.id === change.id);
-          if (!node) return;
-          if (change.type === "reset" || change.type === "select") {
-            selectPod(node.id, change.selected);
-            return;
-          }
-
-          if (node) {
-            nodesMap.set(change.id, node);
-          }
-        }
-      });
-    },
-    [nodesMap, role, selectPod]
-  );
 
   const triggerUpdate = useCallback(() => {
     setNodes(
@@ -110,6 +56,57 @@ export function useNodesStateSynced() {
     );
   }, [clientId, nodesMap]);
 
+  const selectPod = useCallback(
+    (id, selected) => {
+      if (selected) {
+        const p = getPod(id)?.parent;
+        // if you select a node that has a different parent, clear all previous selections
+        if (parent !== undefined && parent !== p) {
+          selectedPods.clear();
+        }
+        parent = p;
+        selectedPods.add(id);
+      } else {
+        if (!selectedPods.delete(id)) return;
+        if (selectedPods.size === 0) parent = undefined;
+      }
+      triggerUpdate();
+    },
+    [getPod, triggerUpdate]
+  );
+
+  const onNodesChange = useCallback(
+    (changes) => {
+      const nodes = Array.from(nodesMap.values());
+
+      const nextNodes = applyNodeChanges(changes, nodes);
+
+      changes.forEach((change) => {
+        if (change.type === "reset" || change.type === "select") {
+          selectPod(change.id, change.selected);
+          return;
+        }
+
+        // Guest user can only select nodes, can't edit nodes.
+        if (isGuest) return;
+
+        if (change.type !== "add") {
+          if (change.type === "remove") {
+            nodesMap.delete(change.id);
+            return;
+          }
+          const node = nextNodes.find((n) => n.id === change.id);
+          if (!node) return;
+
+          if (node) {
+            nodesMap.set(change.id, node);
+          }
+        }
+      });
+    },
+    [nodesMap, isGuest, selectPod]
+  );
+
   useEffect(() => {
     const observer = (YMapEvent: YEvent<any>, transaction: Transaction) => {
       YMapEvent.changes.keys.forEach((change, key) => {
@@ -122,13 +119,13 @@ export function useNodesStateSynced() {
                 id: node.id,
                 children: [],
                 parent: "ROOT",
-                type: node.type === "code" ? "CODE" : "DECK",
+                type: nodetype2dbtype(node.type || ""),
                 lang: "python",
                 x: node.position.x,
                 y: node.position.y,
                 width: node.width!,
                 height: node.height!,
-                name: node.data?.name,
+                name: node.data?.name || "",
                 dirty: false,
               });
             }

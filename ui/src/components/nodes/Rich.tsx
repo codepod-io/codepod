@@ -14,7 +14,7 @@ import { ResizableBox } from "react-resizable";
 import { useApolloClient } from "@apollo/client";
 
 import { useStore } from "zustand";
-import { RepoContext, RoleType } from "../../lib/store";
+import { RepoContext } from "../../lib/store";
 
 import ReactFlow, {
   addEdge,
@@ -158,6 +158,7 @@ const MyEditor = ({
   const getPod = useStore(store, (state) => state.getPod);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const pod = getPod(id);
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
   const { manager, state, setState } = useRemirror({
     extensions: () => [
       new PlaceholderExtension({ placeholder }),
@@ -194,6 +195,7 @@ const MyEditor = ({
     <Box
       className="remirror-theme"
       onFocus={() => {
+        // FIXME: it's a dummy update in nodesMap to trigger the local update to clear all selection
         if (resetSelection()) nodesMap.set(id, nodesMap.get(id) as Node);
       }}
       sx={{
@@ -208,6 +210,7 @@ const MyEditor = ({
               manager={manager}
               // initialContent={state}
               state={state}
+              editable={!isGuest}
               // FIXME: onFocus is not working
               // onFocus={() => {
               //   console.log("onFocus");
@@ -280,7 +283,7 @@ export const RichNode = memo<Props>(function ({
   const setPodName = useStore(store, (state) => state.setPodName);
   const getPod = useStore(store, (state) => state.getPod);
   const pod = getPod(id);
-  const role = useStore(store, (state) => state.role);
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
   const width = useStore(store, (state) => state.pods[id]?.width);
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const index = useStore(
@@ -311,7 +314,7 @@ export const RichNode = memo<Props>(function ({
 
   // onsize is banned for a guest, FIXME: ugly code
   const Wrap = (child) =>
-    role === RoleType.GUEST ? (
+    isGuest ? (
       <>{child}</>
     ) : (
       <ResizableBox
@@ -385,7 +388,7 @@ export const RichNode = memo<Props>(function ({
             inputRef={inputRef}
             className="nodrag"
             defaultValue={data.name || ""}
-            disabled={role === RoleType.GUEST}
+            disabled={isGuest}
             onBlur={(e) => {
               const name = e.target.value;
               if (name === data.name) return;
@@ -417,7 +420,7 @@ export const RichNode = memo<Props>(function ({
           }}
           className="nodrag"
         >
-          {role !== RoleType.GUEST && (
+          {!isGuest && (
             <Tooltip title="Delete">
               <IconButton
                 size="small"

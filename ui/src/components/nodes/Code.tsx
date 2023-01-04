@@ -46,7 +46,7 @@ import Ansi from "ansi-to-react";
 
 import { useStore } from "zustand";
 
-import { RepoContext, RoleType } from "../../lib/store";
+import { RepoContext } from "../../lib/store";
 
 import { MyMonaco } from "../MyMonaco";
 import { useApolloClient } from "@apollo/client";
@@ -238,7 +238,7 @@ export const CodeNode = memo<Props>(function ({
   const getPod = useStore(store, (state) => state.getPod);
   const setCutting = useStore(store, (state) => state.setCutting);
   const pod = getPod(id);
-  const role = useStore(store, (state) => state.role);
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
   const width = useStore(store, (state) => state.pods[id]?.width);
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const index = useStore(
@@ -305,7 +305,7 @@ export const CodeNode = memo<Props>(function ({
 
   // onsize is banned for a guest, FIXME: ugly code
   const Wrap = (child) =>
-    role === RoleType.GUEST ? (
+    isGuest ? (
       <>{child}</>
     ) : (
       <ResizableBox
@@ -375,7 +375,7 @@ export const CodeNode = memo<Props>(function ({
             inputRef={inputRef}
             className="nodrag"
             defaultValue={data.name || ""}
-            disabled={role === RoleType.GUEST}
+            disabled={isGuest}
             onBlur={(e) => {
               const name = e.target.value;
               if (name === data.name) return;
@@ -426,7 +426,7 @@ export const CodeNode = memo<Props>(function ({
             }
           }}
         >
-          {role !== RoleType.GUEST && (
+          {!isGuest && (
             <Tooltip title="Run (shift-enter)">
               <IconButton
                 size="small"
@@ -449,19 +449,21 @@ export const CodeNode = memo<Props>(function ({
               </IconButton>
             </Tooltip>
           </CopyToClipboard>
-          <CopyToClipboard
-            text="dummy"
-            options={
-              { debug: true, format: "text/plain", onCopy: onCut } as any
-            }
-          >
-            <Tooltip title="Cut">
-              <IconButton size="small">
-                <ContentCutIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          </CopyToClipboard>
-          {role !== RoleType.GUEST && (
+          {!isGuest && (
+            <CopyToClipboard
+              text="dummy"
+              options={
+                { debug: true, format: "text/plain", onCopy: onCut } as any
+              }
+            >
+              <Tooltip title="Cut">
+                <IconButton size="small">
+                  <ContentCutIcon fontSize="inherit" />
+                </IconButton>
+              </Tooltip>
+            </CopyToClipboard>
+          )}
+          {!isGuest && (
             <Tooltip title="Delete">
               <IconButton
                 size="small"
