@@ -6,6 +6,8 @@ export interface SettingSlice {
   setScopedVars: (b: boolean) => void;
   showAnnotations?: boolean;
   setShowAnnotations: (b: boolean) => void;
+  devMode?: boolean;
+  setDevMode: (b: boolean) => void;
 }
 
 export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
@@ -29,5 +31,14 @@ export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
     set({ showAnnotations: b });
     // also write to local storage
     localStorage.setItem("showAnnotations", JSON.stringify(b));
+  },
+  devMode: localStorage.getItem("devMode")
+    ? JSON.parse(localStorage.getItem("devMode")!)
+    : false,
+  setDevMode: (b: boolean) => {
+    // set it
+    set({ devMode: b });
+    // also write to local storage
+    localStorage.setItem("devMode", JSON.stringify(b));
   },
 });

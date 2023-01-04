@@ -233,6 +233,7 @@ export const CodeNode = memo<Props>(function ({
 }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const devMode = useStore(store, (state) => state.devMode);
   // const pod = useStore(store, (state) => state.pods[id]);
   const wsRun = useStore(store, (state) => state.wsRun);
   const clearResults = useStore(store, (s) => s.clearResults);
@@ -369,6 +370,20 @@ export const CodeNode = memo<Props>(function ({
       />
       {/* The header of code pods. */}
       <Box className="custom-drag-handle">
+        {devMode && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: "-48px",
+              width: "50%",
+              userSelect: "text",
+              cursor: "auto",
+            }}
+            className="nodrag"
+          >
+            <pre>{id}</pre>
+          </Box>
+        )}
         <Box
           sx={{
             position: "absolute",
