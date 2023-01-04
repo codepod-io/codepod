@@ -112,14 +112,19 @@ export const createRepoStateSlice: StateCreator<
       if (!pod) return;
       pod.children?.map(({ id }) => helper(id));
       if (id !== "ROOT") {
-        if (pod.dirty) {
+        if (pod.dirty && !pod.isSyncing) {
+          set(
+            produce((state) => {
+              // FIXME when doRemoteUpdatePod fails, this will be stuck.
+              state.pods[id].isSyncing = true;
+              // pod may be updated during remote syncing
+              state.pods[id].dirty = false;
+            })
+          );
           await doRemoteUpdatePod(client, { pod });
           set(
             produce((state) => {
-              let pod = state.pods[id];
-              pod.isSyncing = false;
-              // FIXME this might cause later updates to be lost. TODO add pod hash comparison.
-              pod.dirty = false;
+              state.pods[id].isSyncing = false;
             })
           );
         }
