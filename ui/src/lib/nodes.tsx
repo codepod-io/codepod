@@ -28,6 +28,7 @@ export function useNodesStateSynced() {
   const setPodGeo = useStore(store, (state) => state.setPodGeo);
   const apolloClient = useApolloClient();
   const role = useStore(store, (state) => state.role);
+  const isGuest = useStore(store, (state) => state.isGuest());
   const ydoc = useStore(store, (state) => state.ydoc);
   const nodesMap = ydoc.getMap<Node>("pods");
   const clientId = useStore(
@@ -38,61 +39,6 @@ export function useNodesStateSynced() {
   const [nodes, setNodes] = useState<Node[]>([]);
   // const setNodeId = useStore((state) => state.setSelectNode);
   // const selected = useStore((state) => state.selectNode);
-
-  const selectPod = useCallback(
-    (id, selected) => {
-      if (selected) {
-        const p = getPod(id)?.parent;
-
-        // if you select a node that has a different parent, clear all previous selections
-        if (parent !== undefined && parent !== p) {
-          selectedPods.clear();
-          setNodes((nds) => nds.map((n) => ({ ...n, selected: false })));
-        }
-        parent = p;
-        selectedPods.add(id);
-      } else {
-        if (!selectedPods.delete(id)) return;
-        if (selectedPods.size === 0) parent = undefined;
-      }
-      setNodes((nds) => nds.map((n) => (n.id === id ? { ...n, selected } : n)));
-    },
-    [getPod]
-  );
-
-  const onNodesChange = useCallback(
-    (changes) => {
-      const nodes = Array.from(nodesMap.values());
-
-      const nextNodes = applyNodeChanges(changes, nodes);
-
-      // prevent updates from guest users
-      if (role === RoleType.GUEST) {
-        setNodes(nextNodes);
-        return;
-      }
-
-      changes.forEach((change) => {
-        if (change.type !== "add") {
-          if (change.type === "remove") {
-            nodesMap.delete(change.id);
-            return;
-          }
-          const node = nextNodes.find((n) => n.id === change.id);
-          if (!node) return;
-          if (change.type === "reset" || change.type === "select") {
-            selectPod(node.id, change.selected);
-            return;
-          }
-
-          if (node) {
-            nodesMap.set(change.id, node);
-          }
-        }
-      });
-    },
-    [nodesMap, role, selectPod]
-  );
 
   const triggerUpdate = useCallback(() => {
     setNodes(
@@ -110,6 +56,57 @@ export function useNodesStateSynced() {
         }))
     );
   }, [clientId, nodesMap]);
+
+  const selectPod = useCallback(
+    (id, selected) => {
+      if (selected) {
+        const p = getPod(id)?.parent;
+        // if you select a node that has a different parent, clear all previous selections
+        if (parent !== undefined && parent !== p) {
+          selectedPods.clear();
+        }
+        parent = p;
+        selectedPods.add(id);
+      } else {
+        if (!selectedPods.delete(id)) return;
+        if (selectedPods.size === 0) parent = undefined;
+      }
+      triggerUpdate();
+    },
+    [getPod, triggerUpdate]
+  );
+
+  const onNodesChange = useCallback(
+    (changes) => {
+      const nodes = Array.from(nodesMap.values());
+
+      const nextNodes = applyNodeChanges(changes, nodes);
+
+      changes.forEach((change) => {
+        if (change.type === "reset" || change.type === "select") {
+          selectPod(change.id, change.selected);
+          return;
+        }
+
+        // Guest user can only select nodes, can't edit nodes.
+        if (isGuest) return;
+
+        if (change.type !== "add") {
+          if (change.type === "remove") {
+            nodesMap.delete(change.id);
+            return;
+          }
+          const node = nextNodes.find((n) => n.id === change.id);
+          if (!node) return;
+
+          if (node) {
+            nodesMap.set(change.id, node);
+          }
+        }
+      });
+    },
+    [nodesMap, role, selectPod]
+  );
 
   useEffect(() => {
     const observer = (YMapEvent: YEvent<any>, transaction: Transaction) => {
