@@ -138,22 +138,22 @@ export async function getVisibility(_, { repoId }, { userId }) {
   const repo = await prisma.repo.findFirst({
     where: {
       id: repoId,
-      owner:  { id: userId || "undefined" } 
+      owner: { id: userId || "undefined" },
     },
     include: {
       collaborators: true,
     },
   });
   if (!repo) throw Error("Repo not found");
-  return {collaborators: repo.collaborators, isPublic: repo.public};
+  return { collaborators: repo.collaborators, isPublic: repo.public };
 }
 
 export async function updateVisibility(_, { repoId, isPublic }, { userId }) {
-  if (!userId) throw Error("Unauthenticated"); 
+  if (!userId) throw Error("Unauthenticated");
   const repo = await prisma.repo.findFirst({
     where: {
       id: repoId,
-      owner:  { id: userId || "undefined" }
+      owner: { id: userId || "undefined" },
     },
   });
   if (!repo) throw Error("Repo not found");
@@ -258,8 +258,12 @@ export async function addCollaborator(_, { repoId, email }, { userId }) {
   return true;
 }
 
-export async function deleteCollaborator(_, { repoId, collaboratorId }, { userId }) {
-  if(!userId) throw new Error("Not authenticated.")
+export async function deleteCollaborator(
+  _,
+  { repoId, collaboratorId },
+  { userId }
+) {
+  if (!userId) throw new Error("Not authenticated.");
   // 1. find the repo
   const repo = await prisma.repo.findFirst({
     where: {
@@ -275,8 +279,8 @@ export async function deleteCollaborator(_, { repoId, collaboratorId }, { userId
     },
     data: {
       collaborators: { disconnect: { id: collaboratorId } },
-    }
-  })
+    },
+  });
   return true;
 }
 
