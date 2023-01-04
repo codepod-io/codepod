@@ -195,7 +195,7 @@ const MyEditor = ({
     <Box
       className="remirror-theme"
       onFocus={() => {
-        // FIXEME: it's a dummy update in nodesMap to trigger the local update to clear all selection
+        // FIXME: it's a dummy update in nodesMap to trigger the local update to clear all selection
         if (resetSelection()) nodesMap.set(id, nodesMap.get(id) as Node);
       }}
       sx={{
