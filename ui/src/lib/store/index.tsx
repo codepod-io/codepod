@@ -9,12 +9,6 @@ import { SettingSlice, createSettingSlice } from "./settingSlice";
 import { RepoStateSlice, createRepoStateSlice } from "./repoStateSlice";
 import { RuntimeSlice, createRuntimeSlice } from "./runtimeSlice";
 
-export enum RoleType {
-  OWNER,
-  COLLABORATOR,
-  GUEST,
-}
-
 export type Pod = {
   id: string;
   name?: string;

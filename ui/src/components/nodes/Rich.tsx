@@ -158,7 +158,7 @@ const MyEditor = ({
   const getPod = useStore(store, (state) => state.getPod);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const pod = getPod(id);
-  const isGuest = useStore(store, (state) => state.isGuest());
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
   const { manager, state, setState } = useRemirror({
     extensions: () => [
       new PlaceholderExtension({ placeholder }),
@@ -283,7 +283,7 @@ export const RichNode = memo<Props>(function ({
   const setPodName = useStore(store, (state) => state.setPodName);
   const getPod = useStore(store, (state) => state.getPod);
   const pod = getPod(id);
-  const isGuest = useStore(store, (state) => state.isGuest());
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
   const width = useStore(store, (state) => state.pods[id]?.width);
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const index = useStore(

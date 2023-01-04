@@ -238,7 +238,7 @@ export const CodeNode = memo<Props>(function ({
   const getPod = useStore(store, (state) => state.getPod);
   const setCutting = useStore(store, (state) => state.setCutting);
   const pod = getPod(id);
-  const isGuest = useStore(store, (state) => state.isGuest());
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
   const width = useStore(store, (state) => state.pods[id]?.width);
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const index = useStore(

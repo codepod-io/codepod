@@ -21,7 +21,7 @@ import { createRuntimeSlice, RuntimeSlice } from "./runtimeSlice";
 import { ApolloClient } from "@apollo/client";
 import { addAwarenessStyle } from "../styles";
 import { Annotation } from "../parser";
-import { MyState, Pod, RoleType } from ".";
+import { MyState, Pod } from ".";
 
 let serverURL;
 if (window.location.protocol === "http:") {
@@ -53,7 +53,7 @@ export interface RepoStateSlice {
   setShareOpen: (open: boolean) => void;
   setCutting: (id: string | null) => void;
   loadError: any;
-  role: RoleType;
+  role: "OWNER" | "COLLABORATOR" | "GUEST";
   isPublic: boolean;
   updateVisibility: (
     client: ApolloClient<object>,
@@ -71,8 +71,6 @@ export interface RepoStateSlice {
   yjsConnecting: boolean;
   connectYjs: () => void;
   disconnectYjs: () => void;
-  isOwner: () => boolean;
-  isGuest: () => boolean;
 }
 
 export const createRepoStateSlice: StateCreator<
@@ -96,7 +94,7 @@ export const createRepoStateSlice: StateCreator<
   clients: new Map(),
 
   loadError: null,
-  role: RoleType.GUEST,
+  role: "GUEST",
   collaborators: [],
   isPublic: false,
   shareOpen: false,
@@ -236,8 +234,6 @@ export const createRepoStateSlice: StateCreator<
         state.ydoc.destroy();
       })
     ),
-  isGuest: () => get().role === RoleType.GUEST,
-  isOwner: () => get().role === RoleType.OWNER,
 });
 
 function loadRepo(set, get) {
@@ -259,17 +255,17 @@ function loadRepo(set, get) {
         state.collaborators = collaborators;
         // set the user role in this repo
         if (userId === state.user.id) {
-          state.role = RoleType.OWNER;
+          state.role = "OWNER";
         } else if (
           state.user &&
           collaborators.findIndex(({ id }) => state.user.id === id) >= 0
         ) {
-          state.role = RoleType.COLLABORATOR;
+          state.role = "COLLABORATOR";
         } else {
-          state.role = RoleType.GUEST;
+          state.role = "GUEST";
         }
         // only set the local awareness when the user is an owner or a collaborator
-        if (state.provider && state.role !== RoleType.GUEST) {
+        if (state.provider && state.role !== "GUEST") {
           console.log("set awareness", state.user.firstname);
           const awareness = state.provider.awareness;
           awareness.setLocalStateField("user", {

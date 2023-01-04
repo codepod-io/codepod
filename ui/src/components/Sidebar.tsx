@@ -347,7 +347,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // FIXME: improve the implementation logic
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const isGuest = useStore(store, (state) => state.isGuest());
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
   return (
     <>
       <Box

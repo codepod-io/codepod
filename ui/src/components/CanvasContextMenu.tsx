@@ -40,7 +40,7 @@ export function CanvasContextMenu(props) {
     store,
     (state) => state.flipShowLineNumbers
   );
-  const isGuest = useStore(store, (state) => state.isGuest());
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
   return (
     <Box sx={paneMenuStyle(props.x, props.y)}>
       <MenuList className="paneContextMenu">

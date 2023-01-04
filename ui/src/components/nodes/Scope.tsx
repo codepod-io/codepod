@@ -65,7 +65,7 @@ export const ScopeNode = memo<Props>(function ScopeNode({
     translate: [0, 0],
   });
   // const selected = useStore(store, (state) => state.pods[id]?.selected);
-  const isGuest = useStore(store, (state) => state.isGuest());
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
   const inputRef = useRef<HTMLInputElement>(null);
 
   const onResize = useCallback(({ width, height, offx, offy }) => {

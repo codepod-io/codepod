@@ -199,7 +199,7 @@ export function ShareProjDialog({
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
   const updateVisibility = useStore(store, (state) => state.updateVisibility);
   const addCollaborator = useStore(store, (state) => state.addCollaborator);
-  const isOwner = useStore(store, (state) => state.isOwner());
+  const isOwner = useStore(store, (state) => state.role === "OWNER");
   const title = useStore(store, (state) => state.repoName || "Untitled");
   const url = `${window.location.protocol}//${window.location.host}/repo/${id}`;
   const inputRef = React.useRef<HTMLInputElement>(null);

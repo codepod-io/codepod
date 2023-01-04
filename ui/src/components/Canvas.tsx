@@ -130,7 +130,7 @@ function useCopyPaste(reactFlowWrapper) {
 
   const getPod = useStore(store, (state) => state.getPod);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
-  const isGuest = useStore(store, (state) => state.isGuest());
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
 
   const reactFlowInstance = useReactFlow();
 
@@ -701,7 +701,7 @@ function CanvasImpl() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const repoId = useStore(store, (state) => state.repoId);
-  const isGuest = useStore(store, (state) => state.isGuest());
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
 
   const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
   const shareOpen = useStore(store, (state) => state.shareOpen);

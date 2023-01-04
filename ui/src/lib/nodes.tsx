@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, useContext } from "react";
 import { applyNodeChanges, Node } from "reactflow";
-import { RepoContext, RoleType } from "./store";
+import { RepoContext } from "./store";
 import { nodetype2dbtype } from "./utils";
 import { useStore } from "zustand";
 import { useApolloClient } from "@apollo/client";
@@ -27,8 +27,7 @@ export function useNodesStateSynced() {
   const deletePod = useStore(store, (state) => state.deletePod);
   const setPodGeo = useStore(store, (state) => state.setPodGeo);
   const apolloClient = useApolloClient();
-  const role = useStore(store, (state) => state.role);
-  const isGuest = useStore(store, (state) => state.isGuest());
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
   const ydoc = useStore(store, (state) => state.ydoc);
   const nodesMap = ydoc.getMap<Node>("pods");
   const clientId = useStore(
@@ -105,7 +104,7 @@ export function useNodesStateSynced() {
         }
       });
     },
-    [nodesMap, role, selectPod]
+    [nodesMap, isGuest, selectPod]
   );
 
   useEffect(() => {

@@ -37,7 +37,7 @@ const HeaderItem = memo<any>(({ id }) => {
     store,
     (state) => state.remoteUpdateRepoName
   );
-  const isOwner = useStore(store, (state) => state.isOwner());
+  const isOwner = useStore(store, (state) => state.role === "OWNER");
 
   usePrompt(
     "Repo name not saved. Do you want to leave this page?",
