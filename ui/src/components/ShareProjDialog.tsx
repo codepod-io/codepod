@@ -25,7 +25,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import React, { useContext, useReducer } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { useStore } from "zustand";
-import { RepoContext, RoleType } from "../lib/store";
+import { RepoContext } from "../lib/store";
 import { useApolloClient } from "@apollo/client";
 
 const initialState = { showInfo: false, status: "info", message: "wait..." };
@@ -199,7 +199,7 @@ export function ShareProjDialog({
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
   const updateVisibility = useStore(store, (state) => state.updateVisibility);
   const addCollaborator = useStore(store, (state) => state.addCollaborator);
-  const isOwner = useStore(store, (state) => state.role === RoleType.OWNER);
+  const isOwner = useStore(store, (state) => state.isOwner());
   const title = useStore(store, (state) => state.repoName || "Untitled");
   const url = `${window.location.protocol}//${window.location.host}/repo/${id}`;
   const inputRef = React.useRef<HTMLInputElement>(null);

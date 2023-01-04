@@ -1,5 +1,5 @@
 import { useStore } from "zustand";
-import { RepoContext, RoleType } from "../lib/store";
+import { RepoContext } from "../lib/store";
 import Box from "@mui/material/Box";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
@@ -40,11 +40,11 @@ export function CanvasContextMenu(props) {
     store,
     (state) => state.flipShowLineNumbers
   );
-  const role = useStore(store, (state) => state.role);
+  const isGuest = useStore(store, (state) => state.isGuest());
   return (
     <Box sx={paneMenuStyle(props.x, props.y)}>
       <MenuList className="paneContextMenu">
-        {role !== RoleType.GUEST && (
+        {!isGuest && (
           <MenuItem onClick={props.addCode} sx={ItemStyle}>
             <ListItemIcon>
               <CodeIcon />
@@ -52,7 +52,7 @@ export function CanvasContextMenu(props) {
             <ListItemText>New Code</ListItemText>
           </MenuItem>
         )}
-        {role !== RoleType.GUEST && (
+        {!isGuest && (
           <MenuItem onClick={props.addRich} sx={ItemStyle}>
             <ListItemIcon>
               <NoteIcon />
@@ -60,7 +60,7 @@ export function CanvasContextMenu(props) {
             <ListItemText>New Note</ListItemText>
           </MenuItem>
         )}
-        {role !== RoleType.GUEST && (
+        {!isGuest && (
           <MenuItem onClick={props.addScope} sx={ItemStyle}>
             <ListItemIcon>
               <PostAddIcon />

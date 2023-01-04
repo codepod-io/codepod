@@ -3,7 +3,7 @@ import { useState, useContext, memo, useCallback, useEffect } from "react";
 import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
 import { monaco } from "react-monaco-editor";
 import { useStore } from "zustand";
-import { RepoContext, RoleType } from "../lib/store";
+import { RepoContext } from "../lib/store";
 import { MonacoBinding } from "y-monaco";
 import { resetSelection } from "../lib/nodes";
 import { useReactFlow } from "reactflow";
@@ -385,7 +385,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   console.debug("[perf] rendering MyMonaco", id);
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const readOnly = useStore(store, (state) => state.role === RoleType.GUEST);
+  const readOnly = useStore(store, (state) => state.isGuest());
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
   const getPod = useStore(store, (state) => state.getPod);
   const setCurrentEditor = useStore(store, (state) => state.setCurrentEditor);

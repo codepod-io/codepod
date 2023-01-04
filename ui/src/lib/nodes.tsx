@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState, useContext } from "react";
 import { applyNodeChanges, Node } from "reactflow";
 import { RepoContext, RoleType } from "./store";
+import { nodetype2dbtype } from "./utils";
 import { useStore } from "zustand";
 import { useApolloClient } from "@apollo/client";
 import { Transaction, YEvent } from "yjs";
@@ -122,13 +123,13 @@ export function useNodesStateSynced() {
                 id: node.id,
                 children: [],
                 parent: "ROOT",
-                type: node.type === "code" ? "CODE" : "DECK",
+                type: nodetype2dbtype(node.type || ""),
                 lang: "python",
                 x: node.position.x,
                 y: node.position.y,
                 width: node.width!,
                 height: node.height!,
-                name: node.data?.name,
+                name: node.data?.name || "",
                 dirty: false,
               });
             }

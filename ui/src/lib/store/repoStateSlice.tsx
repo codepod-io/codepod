@@ -71,6 +71,8 @@ export interface RepoStateSlice {
   yjsConnecting: boolean;
   connectYjs: () => void;
   disconnectYjs: () => void;
+  isOwner: () => boolean;
+  isGuest: () => boolean;
 }
 
 export const createRepoStateSlice: StateCreator<
@@ -234,6 +236,8 @@ export const createRepoStateSlice: StateCreator<
         state.ydoc.destroy();
       })
     ),
+  isGuest: () => get().role === RoleType.GUEST,
+  isOwner: () => get().role === RoleType.OWNER,
 });
 
 function loadRepo(set, get) {

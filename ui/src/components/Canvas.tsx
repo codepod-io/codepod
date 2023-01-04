@@ -31,7 +31,8 @@ import { lowercase, numbers } from "nanoid-dictionary";
 
 import { useStore } from "zustand";
 
-import { RepoContext, RoleType } from "../lib/store";
+import { RepoContext } from "../lib/store";
+import { dbtype2nodetype, nodetype2dbtype } from "../lib/utils";
 import {
   useNodesStateSynced,
   resetSelection,
@@ -72,39 +73,6 @@ function getAbsPos({ node, nodesMap }) {
     return [x + dx, y + dy];
   } else {
     return [x, y];
-  }
-}
-
-/**
- * For historical reason, the state.pod.type and DB schema pod.type are "CODE",
- * "DECK", "WYSIWYG", while the node types in react-flow are "code", "scope",
- * "rich". These two functions document this and handle the conversion.
- * @param dbtype
- * @returns
- */
-function dbtype2nodetype(dbtype: string) {
-  switch (dbtype) {
-    case "CODE":
-      return "code";
-    case "DECK":
-      return "scope";
-    case "WYSIWYG":
-      return "rich";
-    default:
-      throw new Error(`unknown dbtype ${dbtype}`);
-  }
-}
-
-function nodetype2dbtype(nodetype: string) {
-  switch (nodetype) {
-    case "code":
-      return "CODE";
-    case "scope":
-      return "DECK";
-    case "rich":
-      return "WYSIWYG";
-    default:
-      throw new Error(`unknown nodetype ${nodetype}`);
   }
 }
 
@@ -162,7 +130,7 @@ function useCopyPaste(reactFlowWrapper) {
 
   const getPod = useStore(store, (state) => state.getPod);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
-  const role = useStore(store, (state) => state.role);
+  const isGuest = useStore(store, (state) => state.isGuest());
 
   const reactFlowInstance = useReactFlow();
 
@@ -214,7 +182,8 @@ function useCopyPaste(reactFlowWrapper) {
         ...node,
         width: node.width,
         height: node.height,
-        style: { ...node.style, opacity: 1 },
+        // width must be set here otherwise a guest will see its width keeps increasing
+        style: { ...node.style, opacity: 1, width: node.width! },
         data: {
           level: 0,
           name: node.data?.name,
@@ -222,7 +191,9 @@ function useCopyPaste(reactFlowWrapper) {
           parent: node.data?.parent,
         },
       };
-      const pod = getPod(pasting);
+
+      // update the new-added node's position since position in store.pod doesn't update during pasting
+      const pod = { ...getPod(pasting), ...node.position };
       // delete the temporary node
       nodesMap.delete(pasting);
       // add the formal pod in place under root
@@ -365,7 +336,7 @@ function useCopyPaste(reactFlowWrapper) {
   const handlePaste = useCallback(
     (event) => {
       // avoid duplicated pastes
-      if (pasting || role === RoleType.GUEST) return;
+      if (pasting || isGuest) return;
 
       // only paste when the pane is focused
       if (
@@ -389,7 +360,7 @@ function useCopyPaste(reactFlowWrapper) {
         console.log("paste error", e);
       }
     },
-    [pasteCodePod, pasting, role]
+    [pasteCodePod, pasting, isGuest, resetSelection]
   );
 
   useEffect(() => {
@@ -730,7 +701,7 @@ function CanvasImpl() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const repoId = useStore(store, (state) => state.repoId);
-  const role = useStore(store, (state) => state.role);
+  const isGuest = useStore(store, (state) => state.isGuest());
 
   const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
   const shareOpen = useStore(store, (state) => state.shareOpen);
@@ -796,7 +767,7 @@ function CanvasImpl() {
     return () => {
       document.removeEventListener("click", handleClick);
     };
-  }, [setShowContextMenu, role]);
+  }, [setShowContextMenu]);
 
   const onPaneClick = (event) => {
     // focus
@@ -831,12 +802,14 @@ function CanvasImpl() {
           zoomOnScroll={false}
           panOnScroll={true}
           connectionMode={ConnectionMode.Loose}
-          nodesDraggable={role !== RoleType.GUEST}
+          nodesDraggable={!isGuest}
           // disable node delete on backspace when the user is a guest.
-          deleteKeyCode={role === RoleType.GUEST ? null : "Backspace"}
+          deleteKeyCode={isGuest ? null : "Backspace"}
           multiSelectionKeyCode={isMac ? "Meta" : "Control"}
           // TODO restore previous viewport
           defaultViewport={{ zoom: 1, x: 0, y: 0 }}
+          // prevent the nodes selected by space or enter
+          nodesFocusable={false}
         >
           <Box>
             <MiniMap
@@ -854,7 +827,7 @@ function CanvasImpl() {
               }}
               nodeBorderRadius={2}
             />
-            <Controls showInteractive={role !== RoleType.GUEST} />
+            <Controls showInteractive={!isGuest} />
 
             <Background />
           </Box>
