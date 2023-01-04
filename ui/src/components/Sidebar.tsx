@@ -13,6 +13,7 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import Grid from "@mui/material/Grid";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import Typography from "@mui/material/Typography";
 import { useSnackbar, VariantType } from "notistack";
 
 import { gql, useQuery, useMutation, useApolloClient } from "@apollo/client";
@@ -46,45 +47,48 @@ function SidebarSettings() {
   );
   return (
     <Box>
-      Settings
       <Box>
-        <FormGroup>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={scopedVars}
-                size="small"
-                color="warning"
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  setScopedVars(event.target.checked);
-                }}
-              />
-            }
-            label="Scoped Vars"
-          />
-        </FormGroup>
-        <FormGroup>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={showAnnotations}
-                size="small"
-                color="warning"
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  setShowAnnotations(event.target.checked);
-                }}
-              />
-            }
-            label="Show Anotations"
-          />
-        </FormGroup>
+        <Tooltip title={"Enable Scoped Variables"} disableInteractive>
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={scopedVars}
+                  size="small"
+                  color="warning"
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setScopedVars(event.target.checked);
+                  }}
+                />
+              }
+              label="Scoped Variables"
+            />
+          </FormGroup>
+        </Tooltip>
+        <Tooltip title={"Show Annotations in Editor"} disableInteractive>
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showAnnotations}
+                  size="small"
+                  color="warning"
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setShowAnnotations(event.target.checked);
+                  }}
+                />
+              }
+              label="Enable Annotations"
+            />
+          </FormGroup>
+        </Tooltip>
         {showAnnotations && (
           <Stack spacing={0.5}>
-            <Box className="myDecoration-function">Function Def</Box>
-            <Box className="myDecoration-vardef">Variable Def</Box>
-            <Box className="myDecoration-varuse">Function/Var Use</Box>
+            <Box className="myDecoration-function">Function Definition</Box>
+            <Box className="myDecoration-vardef">Variable Definition</Box>
+            <Box className="myDecoration-varuse">Function/Variable Use</Box>
             <Box className="myDecoration-varuse my-underline">
-              Undefined Vars
+              Undefined Variable
             </Box>
           </Stack>
         )}
@@ -435,6 +439,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   <SidebarRuntime />
                 </Grid>
                 <Grid item xs={12}>
+                  <Divider />
+                  <Typography variant="h6">Site Settings</Typography>
                   <SidebarSettings />
                 </Grid>
                 <ToastError />

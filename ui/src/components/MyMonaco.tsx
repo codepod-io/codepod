@@ -399,6 +399,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const { setNodes } = useReactFlow();
   const annotations = useStore(store, (state) => state.pods[id].annotations);
   const showAnnotations = useStore(store, (state) => state.showAnnotations);
+  const scopedVars = useStore(store, (state) => state.scopedVars);
 
   const value = getPod(id).content || "";
   let lang = getPod(id).lang || "javascript";
@@ -415,10 +416,13 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   }, [clearResults, store, wsRun]);
 
   useEffect(() => {
-    if (editor && showAnnotations) {
+    if (!editor) return;
+    if (showAnnotations) {
       highlightAnnotations(editor, annotations || []);
+    } else {
+      highlightAnnotations(editor, []);
     }
-  }, [annotations, editor, showAnnotations]);
+  }, [annotations, editor, showAnnotations, scopedVars]);
 
   if (lang === "racket") {
     lang = "scheme";
