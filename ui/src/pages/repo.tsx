@@ -237,6 +237,7 @@ function useRuntime() {
   const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
   const wsConnect = useStore(store, (state) => state.wsConnect);
   const client = useApolloClient();
+  const socket = useStore(store, (state) => state.socket);
   const { loading, me } = useMe();
   let { id: repoId } = useParams();
   // periodically check if the runtime is still connected
@@ -251,6 +252,17 @@ function useRuntime() {
     }, 1000);
     return () => clearInterval(interval);
   }, [client, me, repoId, runtimeConnected, wsConnect]);
+  // Periodically send ping to the server to keep the connection alive.
+  // websocket resets after 60s of idle by most firewalls
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (socket) {
+        console.log("sending ping to keep runtime alive ..");
+        socket.send(JSON.stringify({ type: "ping" }));
+      }
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [socket]);
 }
 
 function RepoImpl() {

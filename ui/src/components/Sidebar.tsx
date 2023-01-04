@@ -12,6 +12,7 @@ import Drawer from "@mui/material/Drawer";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import Grid from "@mui/material/Grid";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import { useSnackbar, VariantType } from "notistack";
 
 import { gql, useQuery, useMutation, useApolloClient } from "@apollo/client";
@@ -98,6 +99,8 @@ function SidebarRuntime() {
   const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
   const runtimeConnecting = useStore(store, (state) => state.runtimeConnecting);
   const { loading, me } = useMe();
+  const client = useApolloClient();
+  const restartRuntime = useStore(store, (state) => state.restartRuntime);
   let { id: repoId } = useParams();
   // get runtime information
   const { data, error } = useQuery(gql`
@@ -134,12 +137,29 @@ function SidebarRuntime() {
               <Box component="span" color="green">
                 connected
               </Box>
+              <Tooltip title="restart">
+                <IconButton
+                  size="small"
+                  onClick={() => {
+                    restartRuntime(client, `${me.id}_${repoId}`);
+                  }}
+                >
+                  <RestartAltIcon fontSize="inherit" />
+                </IconButton>
+              </Tooltip>
             </Box>
             <Box>Uptime: {uptime}</Box>
+
             <SidebarKernel />
           </Stack>
         )}
-        {runtimeConnecting && <Box>connecting ..</Box>}
+        {runtimeConnecting && <Box>Runtime connecting ..</Box>}
+        {!runtimeConnected && !runtimeConnecting && (
+          // NOTE: on restart runtime, the first several ws connection will
+          // fail. Since we re-connect every second, here are showing the same
+          // message to user.
+          <Box>Runtime connecting ..</Box>
+        )}
       </Box>
     </Box>
   );
@@ -177,7 +197,7 @@ function SidebarKernel() {
                   wsRequestStatus({ lang });
                 }}
               >
-                <RefreshIcon />
+                <RefreshIcon fontSize="inherit" />
               </IconButton>
             </Tooltip>
             <Tooltip title="interrupt">
@@ -187,7 +207,7 @@ function SidebarKernel() {
                   wsInterruptKernel({ lang });
                 }}
               >
-                <StopIcon />
+                <StopIcon fontSize="inherit" />
               </IconButton>
             </Tooltip>
           </Box>
