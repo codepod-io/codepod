@@ -84,7 +84,6 @@ import {
   BaselineButtonGroup,
   CommandButton,
   CommandButtonProps,
-  useEditorEvent,
 } from "@remirror/react";
 import { WysiwygEditor } from "@remirror/react-editors/wysiwyg";
 import { FloatingToolbar } from "@remirror/react";
@@ -107,10 +106,6 @@ export const SetHighlightButton: React.FC<
   SetHighlightButtonProps | { color: string }
 > = ({ color = null, ...props }) => {
   const { setTextHighlight, removeTextHighlight } = useCommands();
-
-  useEditorEvent("focus", (event) => {
-    console.log("click", event);
-  });
 
   const handleSelect = useCallback(() => {
     if (color === null) {
