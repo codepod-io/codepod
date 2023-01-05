@@ -616,7 +616,7 @@ function verifyConsistency(nodes: Node[], nodesMap: YMap<Node>) {
       );
       return false;
     }
-    if (node1.position.x !== node2.position.x) {
+    if (Math.abs(node1.position.x - node2.position.x) > Number.EPSILON) {
       console.error(
         "node x are not the same",
         node1.position.x,
@@ -624,7 +624,7 @@ function verifyConsistency(nodes: Node[], nodesMap: YMap<Node>) {
       );
       return false;
     }
-    if (node1.position.y !== node2.position.y) {
+    if (Math.abs(node1.position.y - node2.position.y) > Number.EPSILON) {
       console.error(
         "node y are not the same",
         node1.position.y,
