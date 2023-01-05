@@ -84,6 +84,7 @@ import {
   BaselineButtonGroup,
   CommandButton,
   CommandButtonProps,
+  useEditorEvent,
 } from "@remirror/react";
 import { WysiwygEditor } from "@remirror/react-editors/wysiwyg";
 import { FloatingToolbar } from "@remirror/react";
@@ -93,6 +94,8 @@ import { GenIcon, IconBase } from "@remirror/react-components";
 
 import { htmlToProsemirrorNode } from "remirror";
 import { styled } from "@mui/material";
+
+const selectionKeys = ["Enter", "Space", "Escape", "Tab"];
 
 export interface SetHighlightButtonProps
   extends Omit<
@@ -104,6 +107,10 @@ export const SetHighlightButton: React.FC<
   SetHighlightButtonProps | { color: string }
 > = ({ color = null, ...props }) => {
   const { setTextHighlight, removeTextHighlight } = useCommands();
+
+  useEditorEvent("focus", (event) => {
+    console.log("click", event);
+  });
 
   const handleSelect = useCallback(() => {
     if (color === null) {
@@ -159,6 +166,10 @@ const MyEditor = ({
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const pod = getPod(id);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const setPodFocus = useStore(store, (state) => state.setPodFocus);
+  const setPodBlur = useStore(store, (state) => state.setPodBlur);
+  const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
+  const ref = useRef<HTMLDivElement>(null);
   const { manager, state, setState } = useRemirror({
     extensions: () => [
       new PlaceholderExtension({ placeholder }),
@@ -191,16 +202,33 @@ const MyEditor = ({
     stringHandler: htmlToProsemirrorNode,
   });
 
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if (selectionKeys.indexOf(event.code) !== -1) {
+        // avoid to re-select this node
+        event.stopPropagation();
+      }
+    };
+    if (!isPodFocused || !ref.current) return;
+    ref.current?.addEventListener("keydown", handler);
+    return () => {
+      if (ref.current) ref.current.removeEventListener("keydown", handler);
+    };
+  }, [ref.current, isPodFocused]);
+
   return (
     <Box
       className="remirror-theme"
       onFocus={() => {
         // FIXME: it's a dummy update in nodesMap to trigger the local update to clear all selection
         if (resetSelection()) nodesMap.set(id, nodesMap.get(id) as Node);
+        setPodFocus(id);
       }}
-      sx={{
-        cursor: "text",
+      onBlur={() => {
+        setPodBlur(id);
       }}
+      sx={{ userSelect: "text", cursor: "auto" }}
+      ref={ref}
       overflow="auto"
     >
       <AllStyledComponent>
@@ -212,9 +240,6 @@ const MyEditor = ({
               state={state}
               editable={!isGuest}
               // FIXME: onFocus is not working
-              // onFocus={() => {
-              //   console.log("onFocus");
-              // }}
               onChange={(parameter) => {
                 let nextState = parameter.state;
                 setState(nextState);
@@ -227,27 +252,32 @@ const MyEditor = ({
               {/* <WysiwygToolbar /> */}
               <EditorComponent />
               <TableComponents />
-              <FloatingToolbar>
-                <CommandButtonGroup>
-                  {/* <HeadingLevelButtonGroup /> */}
-                  {/* <VerticalDivider /> */}
-                  <FormattingButtonGroup />
-                  {/* <ListButtonGroup /> */}
-                  <SetHighlightButton color="lightpink" />
-                  <SetHighlightButton color="yellow" />
-                  <SetHighlightButton color="lightgreen" />
-                  <SetHighlightButton color="lightcyan" />
-                  <SetHighlightButton />
-                </CommandButtonGroup>
-                {/* <DecreaseIndentButton /> */}
-                {/* <IncreaseIndentButton /> */}
-                {/* <TextAlignmentButtonGroup /> */}
-                {/* <IndentationButtonGroup /> */}
-                {/* <BaselineButtonGroup /> */}
-              </FloatingToolbar>
-              <FloatingToolbar positioner="emptyBlockStart">
-                <HeadingLevelButtonGroup />
-              </FloatingToolbar>
+
+              {!isGuest && (
+                <FloatingToolbar>
+                  <CommandButtonGroup>
+                    {/* <HeadingLevelButtonGroup /> */}
+                    {/* <VerticalDivider /> */}
+                    <FormattingButtonGroup />
+                    {/* <ListButtonGroup /> */}
+                    <SetHighlightButton color="lightpink" />
+                    <SetHighlightButton color="yellow" />
+                    <SetHighlightButton color="lightgreen" />
+                    <SetHighlightButton color="lightcyan" />
+                    <SetHighlightButton />
+                  </CommandButtonGroup>
+                  {/* <DecreaseIndentButton /> */}
+                  {/* <IncreaseIndentButton /> */}
+                  {/* <TextAlignmentButtonGroup /> */}
+                  {/* <IndentationButtonGroup /> */}
+                  {/* <BaselineButtonGroup /> */}
+                </FloatingToolbar>
+              )}
+              {!isGuest && (
+                <FloatingToolbar positioner="emptyBlockStart">
+                  <HeadingLevelButtonGroup />
+                </FloatingToolbar>
+              )}
               {/* <Menu /> */}
             </Remirror>
           </MyStyledWrapper>
