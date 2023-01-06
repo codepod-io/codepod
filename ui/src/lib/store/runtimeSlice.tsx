@@ -348,7 +348,7 @@ function wsConnect(set, get: () => MyState) {
     console.log("connecting to websocket ..");
     let socket = new WebSocket(socket_url);
     // Set timeout.
-    console.log(`Setting ${_ws_timeout} timeout.`);
+    console.log(`Setting ${_ws_timeout} ms timeout.`);
     setTimeout(() => {
       if (get().runtimeConnecting) {
         console.log(`Websocket timed out, but still connecting. Reset socket.`);
