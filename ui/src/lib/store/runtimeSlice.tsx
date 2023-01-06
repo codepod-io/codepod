@@ -305,6 +305,9 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
   },
 });
 
+let _ws_timeout = 1000;
+let _max_ws_timeout = 10000;
+
 function wsConnect(set, get: () => MyState) {
   return async (client, sessionId) => {
     if (get().runtimeConnecting) return;
@@ -344,6 +347,16 @@ function wsConnect(set, get: () => MyState) {
     }
     console.log("connecting to websocket ..");
     let socket = new WebSocket(socket_url);
+    // Set timeout.
+    console.log(`Setting ${_ws_timeout} timeout.`);
+    setTimeout(() => {
+      if (get().runtimeConnecting) {
+        console.log(`Websocket timed out, but still connecting. Reset socket.`);
+        socket.close();
+        set({ runtimeConnecting: false });
+        _ws_timeout = Math.min(_ws_timeout * 2, _max_ws_timeout);
+      }
+    }, _ws_timeout);
 
     // socket.emit("spawn", state.sessionId, lang);
 
@@ -356,6 +369,8 @@ function wsConnect(set, get: () => MyState) {
 
     socket.onopen = () => {
       console.log("runtime connected");
+      // reset timeout
+      _ws_timeout = 1000;
       set({ runtimeConnected: true });
       set({ runtimeConnecting: false });
       set({ socket });
