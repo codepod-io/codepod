@@ -213,8 +213,7 @@ export async function spawnRuntime(_, { sessionId }) {
   let url = `/${sessionId}`;
   console.log("spawning kernel");
   let zmq_host = `cpkernel_${sessionId}`;
-  let need_wait = false;
-  let created = await loadOrCreateContainer(
+  await loadOrCreateContainer(
     process.env.ZMQ_KERNEL_IMAGE,
     zmq_host,
     // "cpkernel1_hello_world-foo",
@@ -222,15 +221,13 @@ export async function spawnRuntime(_, { sessionId }) {
   );
   console.log("spawning ws");
   let ws_host = `cpruntime_${sessionId}`;
-  need_wait ||= created;
-  created = await loadOrCreateContainer(
+  await loadOrCreateContainer(
     process.env.WS_RUNTIME_IMAGE,
     ws_host,
     // "cpruntime1_hello_world-foo",
     "codepod",
     [`ZMQ_HOST=${zmq_host}`]
   );
-  need_wait ||= created;
   console.log("adding route", url, ws_host);
   // add to routing table
   await apollo_client.mutate({
@@ -255,11 +252,6 @@ export async function spawnRuntime(_, { sessionId }) {
       },
     ],
   });
-
-  if (need_wait) {
-    console.log("Waiting for 2 seconds for the container to startup.");
-    await delay(1000);
-  }
   console.log("returning");
   // console.log("res", res);
   return true;
