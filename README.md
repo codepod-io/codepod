@@ -3,8 +3,9 @@
 Codepod provides the interactive coding experience popularized by Jupyter, but
 with scalability and production-readiness. Users can still incrementally build
 up code by trying out a small code snippet each time. But they would not be
-overwhelmed by the great number of code snippets as the projects grow. Try
-it online at [https://codepod.io](https://codepod.io) !
+overwhelmed by the great number of code snippets as the projects grow. 
+
+<div align="center"><h2>Try it online at <a href="https://app.codepod.io">https://app.codepod.io!</a></a></div>
 
 ![screenshot](./screenshot-canvas.png)
 
