@@ -14,9 +14,6 @@ jobs:
         include:
           - context: ./ui
             image: lihebi/codepod-ui
-          - context: ./ui
-            file: ./ui/Dockerfile.dev
-            image: lihebi/codepod-ui-dev
           - context: ./api
             image: lihebi/codepod-api
           - context: ./proxy
@@ -25,6 +22,8 @@ jobs:
             image: lihebi/codepod-kernel-python
           - context: ./runtime
             image: lihebi/codepod-runtime
+          - context: ./
+            image: lihebi/codepod-dev
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -63,7 +62,6 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           context: ${{ matrix.context }}
-          file: ${{ matrix.file }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
