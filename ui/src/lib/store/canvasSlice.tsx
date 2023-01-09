@@ -133,8 +133,11 @@ function getScopeAt(
   return scope;
 }
 
-function getNodePositionInsideScope(node: Node, scope: Node, nodesMap) {
-  console.log("dropped into scope:", scope);
+function getNodePositionInsideScope(
+  node: Node,
+  scope: Node,
+  nodesMap
+): XYPosition {
   // compute the actual position
   let [x, y] = getAbsPos(node, nodesMap);
   let [dx, dy] = getAbsPos(scope, nodesMap);
@@ -406,7 +409,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       get().nodes,
       nodesMap
     );
-    if (scope) {
+    if (scope && scope.id !== pastingNode.parentNode) {
       get().moveIntoScope(pastingNode.id, scope.id);
     }
   },
@@ -500,7 +503,9 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       nodesMap
     );
     if (scope) {
-      get().moveIntoScope(cuttingId, scope.id);
+      if (scope.id !== cuttingNode.parentNode) {
+        get().moveIntoScope(cuttingId, scope.id);
+      }
     } else {
       // move out of scope
       get().moveIntoRoot(cuttingId);
@@ -614,6 +619,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     let nodesMap = get().ydoc.getMap<Node>("pods");
     const nodes = get().nodes;
 
+    // I think this place update the node's width/height
     const nextNodes = applyNodeChanges(changes, nodes);
 
     changes.forEach((change) => {
@@ -641,6 +647,11 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
               width: node.width!,
               height: node.height!,
             };
+            // console.log(
+            //   `node ${change.id} dimension changed, geoData ${JSON.stringify(
+            //     geoData
+            //   )}`
+            // );
             // If Yjs doesn't have the node, it means that it's a cutting/pasting
             // node. We won't add it to Yjs here.
             if (
@@ -651,6 +662,17 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
                   "Node is cutting/pasting node but exists in Yjs"
                 );
               }
+              // still, we need to set the node, otherwise the height is not set.
+              // update local
+              set(
+                produce((state: MyState) => {
+                  if (state.cuttingNode?.id === change.id) {
+                    state.cuttingNode = node;
+                  } else {
+                    state.pastingNode = node;
+                  }
+                })
+              );
               // update local
               get().setPodGeo(node.id, geoData, false);
             } else {

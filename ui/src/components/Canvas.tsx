@@ -490,7 +490,7 @@ function CanvasImpl() {
               return;
             }
             let scope = getScopeAtPos(mousePos, node.id);
-            if (scope) {
+            if (scope && scope.id !== node.parentNode) {
               moveIntoScope(node.id, scope.id);
             }
           }}
