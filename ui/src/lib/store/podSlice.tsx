@@ -1,7 +1,7 @@
 import { createStore, StateCreator, StoreApi } from "zustand";
 import produce from "immer";
 
-import { doRemoteAddPod, doRemoteDeletePod } from "../fetch";
+import { doRemoteDeletePod } from "../fetch";
 
 import { ApolloClient } from "@apollo/client";
 
@@ -35,7 +35,7 @@ export interface PodSlice {
   setPodName: ({ id, name }: { id: string; name: string }) => void;
   setPodContent: ({ id, content }: { id: string; content: string }) => void;
   initPodContent: ({ id, content }: { id: string; content: string }) => void;
-  addPod: (client: ApolloClient<object> | null, pod: Pod) => void;
+  addPod: (pod: Pod) => void;
   deletePod: (
     client: ApolloClient<object> | null,
     { id }: { id: string }
@@ -104,13 +104,15 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
     set(
       produce((state) => {
         let pod = state.pods[id];
-        // 0. check if the update is necessary
+
+        // 0. check if the update is necessary. This is used to prevent dirty
+        //    status from being reset at the beginning of canvas loading.
         if (
-          pod.x === x &&
-          pod.y === y &&
-          pod.width === width &&
-          pod.height === height &&
-          pod.parent === parent
+          (!x || pod.x === x) &&
+          (!y || pod.y === y) &&
+          (!width || pod.width === width) &&
+          (!height || pod.height === height) &&
+          (!parent || pod.parent === parent)
         ) {
           return;
         }
@@ -126,10 +128,10 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
           oldparent.children.splice(idx, 1);
         }
         // 2. update x,y,width,height
-        pod.x = x;
-        pod.y = y;
-        pod.width = width;
-        pod.height = height;
+        pod.x = x ?? pod.x;
+        pod.y = y ?? pod.y;
+        pod.width = width ?? pod.width;
+        pod.height = height ?? pod.height;
         // Update the dirty flag.
         pod.dirty ||= dirty;
       }),
@@ -244,25 +246,6 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
         }
       })
     ),
-  resizeScope: ({ id }) =>
-    set(
-      produce((state) => {
-        // Use the children pod size to compute the new size of the scope.
-        // I would simply add the children size together, and add a margin.
-        let width = 0;
-        let height = 0;
-        state.pods[id].children?.forEach((child) => {
-          width += state.pods[child.id].width;
-          height += state.pods[child.id].height;
-        });
-        state.pods[id].width = Math.max(state.pods[id].width, width + 20);
-        state.pods[id].height = Math.max(state.pods[id].height, height + 20);
-        state.pods[id].dirty = true;
-      }),
-      false,
-      // @ts-ignore
-      "resizeScope"
-    ),
   setPodFocus: (id: string) =>
     set(
       produce((state) => {
@@ -281,8 +264,12 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
     ),
 });
 
+/**
+ * This action won't set the dirty field. The "pod.dirty" field must be set
+ * manually to indicate a DB syncing is necessary.
+ */
 function addPod(set, get: () => MyState) {
-  return async (client, pod) => {
+  return async (pod) => {
     set(
       produce((state: MyState) => {
         // 1. do local update
@@ -296,14 +283,6 @@ function addPod(set, get: () => MyState) {
         }
       })
     );
-    // 2. do remote update
-    if (client) {
-      await doRemoteAddPod(client, {
-        repoId: get().repoId,
-        parent: pod.parent,
-        pod,
-      });
-    }
   };
 }
 

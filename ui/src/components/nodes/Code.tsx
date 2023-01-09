@@ -20,6 +20,7 @@ import ReactFlow, {
   ConnectionMode,
   MarkerType,
   Node,
+  NodeProps,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -51,15 +52,10 @@ import { RepoContext } from "../../lib/store";
 import { MyMonaco } from "../MyMonaco";
 import { useApolloClient } from "@apollo/client";
 
-interface Props {
-  data: any;
-  id: string;
-  isConnectable: boolean;
-  selected: boolean;
-  // note that xPos and yPos are the absolute position of the node
-  xPos: number;
-  yPos: number;
-}
+import { NodeResizeControl, NodeResizer } from "@reactflow/node-resizer";
+
+import "@reactflow/node-resizer/dist/style.css";
+import { ResizeIcon } from "./utils";
 
 export const ResultBlock = memo<any>(function ResultBlock({ id }) {
   const store = useContext(RepoContext)!;
@@ -225,14 +221,18 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
   );
 });
 
-export const CodeNode = memo<Props>(function ({
+export const CodeNode = memo<NodeProps>(function ({
   data,
   id,
   isConnectable,
   selected,
+  // note that xPos and yPos are the absolute position of the node
+  xPos,
+  yPos,
 }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const reactFlowInstance = useReactFlow();
   const devMode = useStore(store, (state) => state.devMode);
   // const pod = useStore(store, (state) => state.pods[id]);
   const wsRun = useStore(store, (state) => state.wsRun);
@@ -299,15 +299,23 @@ export const CodeNode = memo<Props>(function ({
     [getPod, id]
   );
 
+  const cutBegin = useStore(store, (state) => state.cutBegin);
+
   const onCut = useCallback(
     (clipboardData: any) => {
       onCopy(clipboardData);
-      setCutting(id);
+      cutBegin(id);
     },
-    [onCopy, setCutting, id]
+    [onCopy, cutBegin, id]
   );
 
-  if (!pod) return null;
+  // if (!pod) throw new Error(`Pod not found: ${id}`);
+
+  if (!pod) {
+    // FIXME this will be fired when removing a node. Why?
+    console.log("[WARN] CodePod rendering pod not found", id);
+    return null;
+  }
 
   // onsize is banned for a guest, FIXME: ugly code
   const Wrap = (child) =>
@@ -317,7 +325,7 @@ export const CodeNode = memo<Props>(function ({
       <ResizableBox
         onResizeStop={onResize}
         height={pod.height || 100}
-        width={width || 0}
+        width={pod.width || 0}
         axis={"x"}
         minConstraints={[200, 200]}
       >
@@ -344,6 +352,17 @@ export const CodeNode = memo<Props>(function ({
           : "#5e92f3",
       }}
     >
+      {/* FIXME this does not support x-axis only resizing. */}
+      {/* <NodeResizeControl
+        style={{
+          background: "transparent",
+          border: "none",
+        }}
+        minWidth={100}
+        minHeight={50}
+      >
+        <ResizeIcon />
+      </NodeResizeControl> */}
       <Handle
         type="source"
         position={Position.Top}
@@ -375,13 +394,13 @@ export const CodeNode = memo<Props>(function ({
             sx={{
               position: "absolute",
               top: "-48px",
-              width: "50%",
               userSelect: "text",
               cursor: "auto",
             }}
             className="nodrag"
           >
-            <pre>{id}</pre>
+            {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w: {pod.width}, h:{" "}
+            {pod.height})
           </Box>
         )}
         <Box
@@ -488,7 +507,7 @@ export const CodeNode = memo<Props>(function ({
               <IconButton
                 size="small"
                 onClick={() => {
-                  nodesMap.delete(id);
+                  reactFlowInstance.deleteElements({ nodes: [{ id }] });
                 }}
               >
                 <DeleteIcon fontSize="inherit" />

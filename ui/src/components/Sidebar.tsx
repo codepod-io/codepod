@@ -258,6 +258,7 @@ function SyncStatus() {
     }
     return res;
   });
+  const devMode = useStore(store, (state) => state.devMode);
   const clearAllResults = useStore(store, (s) => s.clearAllResults);
   const remoteUpdateAllPods = useStore(store, (s) => s.remoteUpdateAllPods);
   const client = useApolloClient();
@@ -268,8 +269,6 @@ function SyncStatus() {
 
   useEffect(() => {
     let id = setInterval(() => {
-      // websocket resets after 60s of idle by most firewalls
-      console.log("periodically saving ..");
       remoteUpdateAllPods(client);
     }, 1000);
     return () => {
@@ -292,7 +291,7 @@ function SyncStatus() {
         {dirtyIds.length > 0 ? (
           <Box component="span" color="blue" mx={1}>
             saving {dirtyIds.length} to cloud
-            {/* <pre>{JSON.stringify(dirtyIds)}</pre> */}
+            {devMode && <pre>{JSON.stringify(dirtyIds)}</pre>}
           </Box>
         ) : (
           <Box component="span" color="grey" mx={1}>

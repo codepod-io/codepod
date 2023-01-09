@@ -7,8 +7,6 @@ import {
   normalize,
   doRemoteLoadRepo,
   doRemoteUpdatePod,
-  doRemoteAddPod,
-  doRemoteDeletePod,
   doRemoteLoadVisibility,
   doRemoteUpdateVisibility,
   doRemoteAddCollaborator,
@@ -65,6 +63,7 @@ export interface RepoStateSlice {
   setUser: (user: any) => void;
   addClient: (clientId: any, name, color) => void;
   deleteClient: (clientId: any) => void;
+  // TODO: this belongs to podSlice
   remoteUpdateAllPods: (client) => void;
   showLineNumbers: boolean;
   flipShowLineNumbers: () => void;
@@ -121,7 +120,7 @@ export const createRepoStateSlice: StateCreator<
               state.pods[id].dirty = false;
             })
           );
-          await doRemoteUpdatePod(client, { pod });
+          await doRemoteUpdatePod(client, { pod, repoId: get().repoId });
           set(
             produce((state) => {
               state.pods[id].isSyncing = false;

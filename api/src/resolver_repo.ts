@@ -284,83 +284,69 @@ export async function deleteCollaborator(
   return true;
 }
 
-export async function addPod(_, { repoId, parent, index, input }, { userId }) {
-  // make sure the repo is writable by this user
+export async function updatePod(_, { id, repoId, input }, { userId }) {
   if (!userId) throw new Error("Not authenticated.");
   await ensureRepoEditAccess({ repoId, userId });
-
-  // update all other records
-  await prisma.pod.updateMany({
+  // if repoId has id, just update
+  let pod_found = await prisma.pod.findFirst({
     where: {
+      id,
       repo: {
         id: repoId,
       },
-      index: {
-        gte: index,
-      },
-      parent:
-        parent === "ROOT"
-          ? null
-          : {
-              id: parent,
-            },
-    },
-    data: {
-      index: {
-        increment: 1,
-      },
     },
   });
-
-  let { id: podId } = input;
-  const pod = await prisma.pod.create({
-    data: {
-      id: podId,
-      ...input,
-      // In case of [], create will throw an error. Thus I have to pass undefined.
-      children: input.children.length > 0 ? input.children : undefined,
-      index,
-      repo: {
-        connect: {
-          id: repoId,
+  if (pod_found) {
+    // if repoId doesn't have id, create it IF input.parent exists
+    const pod = await prisma.pod.update({
+      where: {
+        id,
+      },
+      data: {
+        ...input,
+        parent:
+          input.parent && input.parent !== "ROOT"
+            ? {
+                connect: {
+                  id: input.parent,
+                },
+              }
+            : undefined,
+        children: {
+          connect: input.children?.map((id) => ({ id })),
         },
       },
-      parent:
-        parent === "ROOT"
-          ? undefined
-          : {
-              connect: {
-                id: parent,
-              },
-            },
-    },
-  });
-
-  return true;
-}
-
-export async function updatePod(_, { id, input }, { userId }) {
-  if (!userId) throw new Error("Not authenticated.");
-  await ensurePodEditAccess({ id, userId });
-  const pod = await prisma.pod.update({
-    where: {
-      id,
-    },
-    data: {
-      ...input,
-      parent:
-        input.parent && input.parent !== "ROOT"
-          ? {
-              connect: {
-                id: input.parent,
-              },
-            }
-          : undefined,
-      children: {
-        connect: input.children?.map((id) => ({ id })),
+    });
+  } else {
+    // if repoId doesn't have id, create it IF input.parent exists, otherwise throw error.
+    await prisma.pod.create({
+      data: {
+        id,
+        ...input,
+        // Dummy index because it is a required field for historical reasons.
+        index: 0,
+        parent:
+          input.parent && input.parent !== "ROOT"
+            ? {
+                connect: {
+                  id: input.parent,
+                },
+              }
+            : undefined,
+        // In case of [], create will throw an error. Thus I have to pass undefined.
+        // children: input.children.length > 0 ? input.children : undefined,
+        children: {
+          connect: input.children?.map((id) => ({ id })),
+        },
+        repo: {
+          connect: {
+            id: repoId,
+          },
+        },
       },
-    },
-  });
+    });
+  }
+
   return true;
 }
 

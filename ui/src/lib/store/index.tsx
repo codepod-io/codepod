@@ -8,6 +8,11 @@ import { RepoMetaSlice, createRepoMetaSlice } from "./repoMetaSlice";
 import { SettingSlice, createSettingSlice } from "./settingSlice";
 import { RepoStateSlice, createRepoStateSlice } from "./repoStateSlice";
 import { RuntimeSlice, createRuntimeSlice } from "./runtimeSlice";
+import { CanvasSlice, createCanvasSlice } from "./canvasSlice";
+
+import { enableMapSet } from "immer";
+
+enableMapSet();
 
 export type Pod = {
   id: string;
@@ -43,7 +48,8 @@ export type MyState = PodSlice &
   RepoMetaSlice &
   RepoStateSlice &
   RuntimeSlice &
-  SettingSlice;
+  SettingSlice &
+  CanvasSlice;
 
 export const RepoContext = createContext<StoreApi<MyState> | null>(null);
 
@@ -55,5 +61,6 @@ export const createRepoStore = () =>
       ...createRepoStateSlice(...a),
       ...createSettingSlice(...a),
       ...createRuntimeSlice(...a),
+      ...createCanvasSlice(...a),
     }))
   );

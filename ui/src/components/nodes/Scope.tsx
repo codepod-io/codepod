@@ -20,6 +20,7 @@ import ReactFlow, {
   ConnectionMode,
   MarkerType,
   Node,
+  NodeProps,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -36,21 +37,18 @@ import { useStore } from "zustand";
 
 import { RepoContext } from "../../lib/store";
 
-interface Props {
-  data: any;
-  id: string;
-  isConnectable: boolean;
-  selected: boolean;
-  // note that xPos and yPos are the absolute position of the node
-  xPos: number;
-  yPos: number;
-}
+import { NodeResizer, NodeResizeControl } from "@reactflow/node-resizer";
+import "@reactflow/node-resizer/dist/style.css";
+import { ResizableBox } from "react-resizable";
+import { ResizeIcon } from "./utils";
 
-export const ScopeNode = memo<Props>(function ScopeNode({
+export const ScopeNode = memo<NodeProps>(function ScopeNode({
   data,
   id,
   isConnectable,
   selected,
+  xPos,
+  yPos,
 }) {
   // add resize to the node
   const ref = useRef(null);
@@ -58,29 +56,12 @@ export const ScopeNode = memo<Props>(function ScopeNode({
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const reactFlowInstance = useReactFlow();
   const setPodName = useStore(store, (state) => state.setPodName);
-  const setPodGeo = useStore(store, (state) => state.setPodGeo);
-  const [target, setTarget] = React.useState<any>();
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
-  const [frame] = React.useState({
-    translate: [0, 0],
-  });
   // const selected = useStore(store, (state) => state.pods[id]?.selected);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const onResize = useCallback(({ width, height, offx, offy }) => {
-    const node = nodesMap.get(id);
-    if (node) {
-      node.style = { ...node.style, width, height };
-      node.position.x += offx;
-      node.position.y += offy;
-      nodesMap.set(id, node);
-    }
-  }, []);
-
-  useEffect(() => {
-    setTarget(ref.current);
-  }, []);
+  const devMode = useStore(store, (state) => state.devMode);
 
   useEffect(() => {
     if (!data.name) return;
@@ -101,6 +82,17 @@ export const ScopeNode = memo<Props>(function ScopeNode({
       }}
       className="custom-drag-handle"
     >
+      {/* <NodeResizer color="#ff0071" minWidth={100} minHeight={30} /> */}
+      <NodeResizeControl
+        style={{
+          background: "transparent",
+          border: "none",
+        }}
+        minWidth={100}
+        minHeight={50}
+      >
+        <ResizeIcon />
+      </NodeResizeControl>
       <Box
         sx={{
           display: "flex",
@@ -142,10 +134,22 @@ export const ScopeNode = memo<Props>(function ScopeNode({
       />
       {/* The header of scope nodes. */}
       <Box
-        className="custom-drag-handle"
         // bgcolor={"rgb(225,225,225)"}
         sx={{ display: "flex" }}
       >
+        {devMode && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: "-48px",
+              userSelect: "text",
+              cursor: "auto",
+            }}
+            className="nodrag"
+          >
+            {id} at ({xPos}, {yPos}), level: {data.level}
+          </Box>
+        )}
         <Grid container spacing={2} sx={{ alignItems: "center" }}>
           <Grid item xs={4}>
             {/* <IconButton size="small">
@@ -208,40 +212,6 @@ export const ScopeNode = memo<Props>(function ScopeNode({
         id="right"
         isConnectable={isConnectable}
       />
-      {selected && !isGuest && (
-        <Moveable
-          target={target}
-          resizable={true}
-          keepRatio={false}
-          throttleResize={1}
-          renderDirections={["e", "s", "se"]}
-          edge={false}
-          zoom={1}
-          origin={false}
-          padding={{ left: 0, top: 0, right: 0, bottom: 0 }}
-          onResizeStart={(e) => {
-            e.setOrigin(["%", "%"]);
-            e.dragStart && e.dragStart.set(frame.translate);
-          }}
-          onResize={(e) => {
-            const beforeTranslate = e.drag.beforeTranslate;
-            frame.translate = beforeTranslate;
-            e.target.style.width = `${e.width}px`;
-            e.target.style.height = `${e.height}px`;
-            e.target.style.transform = `translate(${beforeTranslate[0]}px, ${beforeTranslate[1]}px)`;
-            onResize({
-              width: e.width,
-              height: e.height,
-              offx: beforeTranslate[0],
-              offy: beforeTranslate[1],
-            });
-            setPodGeo(id, {
-              width: e.width,
-              height: e.height,
-            });
-          }}
-        />
-      )}
     </Box>
   );
 });
