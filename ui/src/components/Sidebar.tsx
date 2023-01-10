@@ -51,7 +51,7 @@ function SidebarSettings() {
     <Box>
       <Box>
         <Tooltip
-          title={"Enable DevMode, e.g., show pod IDs"}
+          title={"Enable Debug Mode, e.g., show pod IDs"}
           disableInteractive
         >
           <FormGroup>
@@ -66,7 +66,7 @@ function SidebarSettings() {
                   }}
                 />
               }
-              label="Dev Mode"
+              label="Debug Mode"
             />
           </FormGroup>
         </Tooltip>
