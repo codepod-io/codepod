@@ -49,7 +49,6 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
 import RectangleIcon from "@mui/icons-material/Rectangle";
 import DisabledByDefaultIcon from "@mui/icons-material/DisabledByDefault";
-import { resetSelection } from "../../lib/nodes";
 
 import {
   BoldExtension,
@@ -163,6 +162,7 @@ const MyEditor = ({
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const setPodFocus = useStore(store, (state) => state.setPodFocus);
   const setPodBlur = useStore(store, (state) => state.setPodBlur);
+  const resetSelection = useStore(store, (state) => state.resetSelection);
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const ref = useRef<HTMLDivElement>(null);
   const { manager, state, setState } = useRemirror({

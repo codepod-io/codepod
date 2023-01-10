@@ -1,4 +1,5 @@
-import sha256 from "crypto-js/sha256";
+import { customAlphabet } from "nanoid";
+import { lowercase, numbers } from "nanoid-dictionary";
 
 // FIXME performance for reading this from localstorage
 export const getAuthHeaders = () => {
@@ -67,3 +68,5 @@ export function nodetype2dbtype(nodetype: string) {
       throw new Error(`unknown nodetype ${nodetype}`);
   }
 }
+
+export const myNanoId = customAlphabet(lowercase + numbers, 20);

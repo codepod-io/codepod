@@ -5,7 +5,6 @@ import { monaco } from "react-monaco-editor";
 import { useStore } from "zustand";
 import { RepoContext } from "../lib/store";
 import { MonacoBinding } from "y-monaco";
-import { resetSelection } from "../lib/nodes";
 import { useReactFlow } from "reactflow";
 import { Annotation } from "../lib/parser";
 
@@ -396,7 +395,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const setPodFocus = useStore(store, (state) => state.setPodFocus);
   const setPodBlur = useStore(store, (state) => state.setPodBlur);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
-  const { setNodes } = useReactFlow();
   const annotations = useStore(store, (state) => state.pods[id].annotations);
   const showAnnotations = useStore(store, (state) => state.showAnnotations);
   const scopedVars = useStore(store, (state) => state.scopedVars);
@@ -431,6 +429,8 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const provider = useStore(store, (state) => state.provider);
   const ydoc = useStore(store, (state) => state.ydoc);
   const awareness = provider?.awareness;
+
+  const resetSelection = useStore(store, (state) => state.resetSelection);
 
   function onEditorDidMount(
     editor: monaco.editor.IStandaloneCodeEditor,

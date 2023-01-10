@@ -7,7 +7,6 @@ import {
   users,
 } from "./resolver_user";
 import {
-  addPod,
   createRepo,
   deletePod,
   deleteRepo,
@@ -73,7 +72,6 @@ export const resolvers = {
     updateRepo,
     deleteRepo,
     clearUser: () => {},
-    addPod,
     updatePod,
     deletePod,
     addCollaborator,

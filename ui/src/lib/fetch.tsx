@@ -206,32 +206,6 @@ function serializePodInput(pod) {
   }))(pod);
 }
 
-export async function doRemoteAddPod(client, { repoId, parent, pod }) {
-  const mutation = gql`
-    mutation addPod(
-      $repoId: String
-      $parent: String
-      $index: Int
-      $input: PodInput
-    ) {
-      addPod(repoId: $repoId, parent: $parent, index: $index, input: $input)
-    }
-  `;
-  // FIXME refetch
-  await client.mutate({
-    mutation,
-    variables: {
-      repoId,
-      parent,
-      index: 0,
-      input: serializePodInput(pod),
-    },
-    // FIXME the query is not refetched.
-    refetchQueries: ["Repo"],
-  });
-  return true;
-}
-
 export async function doRemoteDeletePod(client, { id, toDelete }) {
   const mutation = gql`
     mutation deletePod($id: String, $toDelete: [String]) {
@@ -248,15 +222,16 @@ export async function doRemoteDeletePod(client, { id, toDelete }) {
   return true;
 }
 
-export async function doRemoteUpdatePod(client, { pod }) {
+export async function doRemoteUpdatePod(client, { repoId, pod }) {
   await client.mutate({
     mutation: gql`
-      mutation updatePod($id: String, $input: PodInput) {
-        updatePod(id: $id, input: $input)
+      mutation updatePod($id: String, $repoId: String, $input: PodInput) {
+        updatePod(id: $id, repoId: $repoId, input: $input)
       }
     `,
     variables: {
       id: pod.id,
+      repoId,
       input: serializePodInput(pod),
     },
   });
