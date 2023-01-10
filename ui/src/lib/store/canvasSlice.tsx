@@ -485,6 +485,18 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       produce((state) => {
         // Remove the cuttingNode from the store.
         delete state.pods[cuttingNode!.id];
+        // We need to remove parent's children field as well.
+        //
+        // TODO refactor this: the children field updates are in different
+        // spaces (deletePod, setPodGeo, here), hard to maintain. The children
+        // seems to be used only in runtime gather symbol table.
+        let parent = state.pods[cuttingNode!.parentNode ?? "ROOT"];
+        if (parent) {
+          const index = parent.children
+            .map(({ id }) => id)
+            .indexOf(cuttingNode!.id);
+          parent.children.splice(index, 1);
+        }
         // Sync the original node to the DB.
         let orig = state.pods[cuttingId!];
         orig.x = position.x;
