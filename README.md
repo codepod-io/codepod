@@ -9,13 +9,6 @@ overwhelmed by the great number of code snippets as the projects grow.
 
 ![screenshot](./screenshot-canvas.png)
 
-# We are on Beta testing
-
-And we are actively polishing everything. You might want to take a look at the
-[known
-issues](<https://github.com/codepod-io/codepod/wiki/Known-Issues-(and-we-are-fixing-them!)>)
-along your adventure with Codepod.
-
 # Contributing
 
 CodePod is open source under MIT license. Feel free to contribute! We can make
@@ -24,6 +17,22 @@ submitting a pull request. Do use [Prettier](https://prettier.io/) (e.g., [its
 VSCode
 plugin](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode))
 to format your code before checking in.
+
+# Citation
+
+https://arxiv.org/abs/2301.02410
+
+```
+@misc{https://doi.org/10.48550/arxiv.2301.02410,
+  doi = {10.48550/ARXIV.2301.02410},
+  url = {https://arxiv.org/abs/2301.02410},
+  author = {Li, Hebi and Bao, Forrest Sheng and Xiao, Qi and Tian, Jin},
+  title = {Codepod: A Namespace-Aware, Hierarchical Jupyter for Interactive Development at Scale},
+  publisher = {arXiv},
+  year = {2023},
+  copyright = {Creative Commons Attribution 4.0 International}
+}
+```
 
 # Developing CodePod using docker-compose
 
