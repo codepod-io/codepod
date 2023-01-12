@@ -163,6 +163,7 @@ const MyEditor = ({
   const setPodFocus = useStore(store, (state) => state.setPodFocus);
   const setPodBlur = useStore(store, (state) => state.setPodBlur);
   const resetSelection = useStore(store, (state) => state.resetSelection);
+  const updateView = useStore(store, (state) => state.updateView);
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const ref = useRef<HTMLDivElement>(null);
   const { manager, state, setState } = useRemirror({
@@ -201,7 +202,7 @@ const MyEditor = ({
     const handler = (event: KeyboardEvent) => {
       if (selectionKeys.indexOf(event.code) !== -1) {
         // avoid to re-select this node
-        event.stopPropagation();
+        // event.stopPropagation();
       }
     };
     if (!isPodFocused || !ref.current) return;
@@ -215,9 +216,8 @@ const MyEditor = ({
     <Box
       className="remirror-theme"
       onFocus={() => {
-        // FIXME: it's a dummy update in nodesMap to trigger the local update to clear all selection
-        if (resetSelection()) nodesMap.set(id, nodesMap.get(id) as Node);
         setPodFocus(id);
+        if (resetSelection()) updateView();
       }}
       onBlur={() => {
         setPodBlur(id);
