@@ -93,8 +93,6 @@ import { GenIcon, IconBase } from "@remirror/react-components";
 import { htmlToProsemirrorNode } from "remirror";
 import { styled } from "@mui/material";
 
-const selectionKeys = ["Enter", "Space", "Escape", "Tab"];
-
 export interface SetHighlightButtonProps
   extends Omit<
     CommandButtonProps,
@@ -198,20 +196,6 @@ const MyEditor = ({
     stringHandler: htmlToProsemirrorNode,
   });
 
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      if (selectionKeys.indexOf(event.code) !== -1) {
-        // avoid to re-select this node
-        // event.stopPropagation();
-      }
-    };
-    if (!isPodFocused || !ref.current) return;
-    ref.current?.addEventListener("keydown", handler);
-    return () => {
-      if (ref.current) ref.current.removeEventListener("keydown", handler);
-    };
-  }, [ref.current, isPodFocused]);
-
   return (
     <Box
       className="remirror-theme"
@@ -301,6 +285,8 @@ export const RichNode = memo<Props>(function ({
   id,
   isConnectable,
   selected,
+  xPos,
+  yPos,
 }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -311,10 +297,7 @@ export const RichNode = memo<Props>(function ({
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const width = useStore(store, (state) => state.pods[id]?.width);
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
-  const index = useStore(
-    store,
-    (state) => state.pods[id]?.result?.count || " "
-  );
+  const devMode = useStore(store, (state) => state.devMode);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const onResize = useCallback((e, data) => {
@@ -396,6 +379,21 @@ export const RichNode = memo<Props>(function ({
         isConnectable={isConnectable}
       />
       <Box className="custom-drag-handle">
+        {devMode && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: "-48px",
+              bottom: "0px",
+              userSelect: "text",
+              cursor: "auto",
+            }}
+            className="nodrag"
+          >
+            {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w: {pod.width}, h:{" "}
+            {pod.height})
+          </Box>
+        )}
         <Box
           sx={{
             height: "1em",
