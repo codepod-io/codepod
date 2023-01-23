@@ -398,6 +398,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const annotations = useStore(store, (state) => state.pods[id].annotations);
   const showAnnotations = useStore(store, (state) => state.showAnnotations);
   const scopedVars = useStore(store, (state) => state.scopedVars);
+  const updateView = useStore(store, (state) => state.updateView);
 
   const value = getPod(id).content || "";
   let lang = getPod(id).lang || "javascript";
@@ -461,9 +462,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     });
     editor.onDidFocusEditorText(() => {
       setPodFocus(id);
-
-      // FIXME: this is ugly, but useReactFlow.setNodes doesn't work to reset the selection
-      if (resetSelection()) nodesMap.set(id, nodesMap.get(id) as Node);
+      if (resetSelection()) updateView();
       setCurrentEditor(id);
     });
     editor.onDidContentSizeChange(updateHeight);

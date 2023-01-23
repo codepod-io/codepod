@@ -121,7 +121,9 @@ function verifyConsistency(nodes: Node[], nodesMap: YMap<Node>) {
       );
       return false;
     }
-    if (Math.abs(node1.position.x - node2.position.x) > Number.EPSILON) {
+
+    // FIXME: Number.EPSILON is still too huge to compare two floats
+    if (Math.abs(node1.position.x - node2.position.x) > 0.01) {
       console.error(
         "node x are not the same",
         node1.position.x,
@@ -129,7 +131,7 @@ function verifyConsistency(nodes: Node[], nodesMap: YMap<Node>) {
       );
       return false;
     }
-    if (Math.abs(node1.position.y - node2.position.y) > Number.EPSILON) {
+    if (Math.abs(node1.position.y - node2.position.y) > 0.01) {
       console.error(
         "node y are not the same",
         node1.position.y,
