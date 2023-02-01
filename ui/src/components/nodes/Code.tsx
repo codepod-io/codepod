@@ -241,17 +241,18 @@ export const CodeNode = memo<NodeProps>(function ({
   const [layout, setLayout] = useState("bottom");
   const isRightLayout = layout === "right";
   const setPodName = useStore(store, (state) => state.setPodName);
+  const setPodGeo = useStore(store, (state) => state.setPodGeo);
   const getPod = useStore(store, (state) => state.getPod);
-  const setCutting = useStore(store, (state) => state.setCutting);
   const pod = getPod(id);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
-  const width = useStore(store, (state) => state.pods[id]?.width);
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const index = useStore(
     store,
     (state) => state.pods[id]?.result?.count || " "
   );
   const inputRef = useRef<HTMLInputElement>(null);
+  const updateView = useStore(store, (state) => state.updateView);
+  const isCutting = useStore(store, (state) => state.cuttingId === id);
 
   const showResult = useStore(
     store,
@@ -270,9 +271,21 @@ export const CodeNode = memo<NodeProps>(function ({
       if (node) {
         node.style = { ...node.style, width: size.width };
         nodesMap.set(id, node);
+        setPodGeo(
+          id,
+          {
+            parent: node.parentNode ? node.parentNode : "ROOT",
+            x: node.position.x,
+            y: node.position.y,
+            width: size.width!,
+            height: node.height!,
+          },
+          true
+        );
+        updateView();
       }
     },
-    [id, nodesMap]
+    [id, nodesMap, setPodGeo, updateView]
   );
 
   useEffect(() => {
@@ -337,13 +350,16 @@ export const CodeNode = memo<NodeProps>(function ({
     <Box
       id={"reactflow_node_code_" + id}
       sx={{
-        border: "solid 1px #d6dee6",
+        border: "1px #d6dee6",
         borderWidth: pod.ispublic ? "4px" : "2px",
         borderRadius: "4px",
+        borderStyle: isCutting ? "dashed" : "solid",
         width: "100%",
         height: "100%",
         backgroundColor: "rgb(244, 246, 248)",
-        borderColor: pod.ispublic
+        borderColor: isCutting
+          ? "red"
+          : pod.ispublic
           ? "green"
           : selected
           ? "#003c8f"

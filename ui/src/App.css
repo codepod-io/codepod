@@ -87,9 +87,3 @@
 .react-flow__node-scope.selected {
   border-width: 2px;
 }
-
-.react-flow__node.cutting {
-  /* box-shadow: 0px 0px 8px 0px rgba(100, 100, 100, 0.5); */
-  /* a dashed red border */
-  border: 2px dashed red;
-}

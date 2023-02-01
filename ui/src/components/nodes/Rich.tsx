@@ -293,22 +293,39 @@ export const RichNode = memo<Props>(function ({
   // const pod = useStore(store, (state) => state.pods[id]);
   const setPodName = useStore(store, (state) => state.setPodName);
   const getPod = useStore(store, (state) => state.getPod);
+  const setPodGeo = useStore(store, (state) => state.setPodGeo);
   const pod = getPod(id);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const width = useStore(store, (state) => state.pods[id]?.width);
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const devMode = useStore(store, (state) => state.devMode);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const onResize = useCallback((e, data) => {
-    const { size } = data;
-    const node = nodesMap.get(id);
-    if (node) {
-      node.style = { ...node.style, width: size.width };
-      nodesMap.set(id, node);
-    }
-  }, []);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+  const updateView = useStore(store, (state) => state.updateView);
+
+  const onResize = useCallback(
+    (e, data) => {
+      const { size } = data;
+      const node = nodesMap.get(id);
+      if (node) {
+        node.style = { ...node.style, width: size.width };
+        nodesMap.set(id, node);
+        setPodGeo(
+          id,
+          {
+            parent: node.parentNode ? node.parentNode : "ROOT",
+            x: node.position.x,
+            y: node.position.y,
+            width: size.width!,
+            height: node.height!,
+          },
+          true
+        );
+        updateView();
+      }
+    },
+    [id, nodesMap, setPodGeo, updateView]
+  );
 
   useEffect(() => {
     if (!data.name) return;

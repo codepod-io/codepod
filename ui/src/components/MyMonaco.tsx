@@ -395,13 +395,13 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const setPodFocus = useStore(store, (state) => state.setPodFocus);
   const setPodBlur = useStore(store, (state) => state.setPodBlur);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
-  const annotations = useStore(store, (state) => state.pods[id].annotations);
+  const annotations = useStore(store, (state) => state.pods[id]?.annotations);
   const showAnnotations = useStore(store, (state) => state.showAnnotations);
   const scopedVars = useStore(store, (state) => state.scopedVars);
   const updateView = useStore(store, (state) => state.updateView);
 
-  const value = getPod(id).content || "";
-  let lang = getPod(id).lang || "javascript";
+  const value = getPod(id)?.content || "";
+  let lang = getPod(id)?.lang || "javascript";
   const onChange = (value) => setPodContent({ id, content: value });
   let [editor, setEditor] =
     useState<monaco.editor.IStandaloneCodeEditor | null>(null);

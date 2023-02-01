@@ -442,7 +442,6 @@ function CanvasImpl() {
     setShowContextMenu(true);
     setPoints({ x: event.pageX, y: event.pageY });
     setClient({ x: event.clientX, y: event.clientY });
-    console.log(showContextMenu, points, client);
   };
 
   useEffect(() => {

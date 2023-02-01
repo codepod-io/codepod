@@ -312,7 +312,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         // className: get().dragHighlight === node.id ? "active" : "",
         className: match(node.id)
           .with(get().dragHighlight, () => "active")
-          .with(get().cuttingId, () => "cutting")
           .otherwise(() => undefined),
       }));
     // 2. those from cuttingNode, pastingNode, which are temporary nodes
