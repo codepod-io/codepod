@@ -273,6 +273,7 @@ function usePaste(reactFlowWrapper) {
         // from other source that can't be parsed by us, use try-catch here.
         const playload = event.clipboardData.getData("application/json");
         const data = JSON.parse(playload);
+        console.log("paste", data);
         if (data?.type !== "pod") {
           return;
         }

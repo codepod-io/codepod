@@ -10,7 +10,7 @@ import { Transaction, YEvent } from "yjs";
 
 import { match, P } from "ts-pattern";
 
-import { myNanoId, nodetype2dbtype } from "../utils";
+import { myNanoId, nodetype2dbtype, dbtype2nodetype } from "../utils";
 
 import {
   Connection,
@@ -28,6 +28,7 @@ import {
   MarkerType,
   NodeDragHandler,
 } from "reactflow";
+import { node } from "prop-types";
 
 // TODO add node's data typing.
 type NodeData = {
@@ -49,28 +50,43 @@ const level2color = {
  * The temporary reactflow nodes for paste/cut.
  * @param pod
  * @param position
+ * @param parent
+ * @param level
  * @returns
  */
-function createTemporaryNode(pod, position) {
+function createTemporaryNode(pod, position, parent = "ROOT", level = 0): any {
   const id = myNanoId();
+  let style = {
+    // create a temporary half-transparent pod
+    opacity: 0.5,
+    width: pod.width,
+  };
+
+  if (pod.type === "DECK") {
+    style["height"] = pod.height!;
+  }
+
   const newNode = {
     id,
-    type: "code",
+    type: dbtype2nodetype(pod.type),
     position,
     data: {
       label: id,
-      parent: "ROOT",
-      level: 0,
+      parent,
+      level,
     },
     dragHandle: ".custom-drag-handle",
     width: pod.width,
-    style: {
-      // create a temporary half-transparent pod
-      opacity: 0.5,
-      width: pod.width,
-    },
+    height: pod.height!,
+    style,
   };
-  return newNode;
+
+  console.log(newNode);
+  const nodes = [[newNode, pod]];
+  pod.children.forEach((child) => {
+    nodes.concat(createTemporaryNode(child, child.position, id, level + 1));
+  });
+  return nodes;
 }
 
 /**
@@ -215,6 +231,7 @@ export interface CanvasSlice {
   addNode: (type: "code" | "scope" | "rich", position: XYPosition) => void;
 
   pastingNode?: Node;
+  pastingNodes?: Node[];
   isPasting: boolean;
   pasteBegin: (position: XYPosition, pod: Pod) => void;
   pasteEnd: () => void;
@@ -319,14 +336,14 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     set({ nodes });
   },
 
-  addNode: (type, mousePos) => {
+  addNode: (type, position, parent = "ROOT") => {
     let nodesMap = get().ydoc.getMap<Node>("pods");
-    let node = createNewNode(type, mousePos);
+    let node = createNewNode(type, position);
     nodesMap.set(node.id, node);
     get().addPod({
       id: node.id,
       children: [],
-      parent: "ROOT",
+      parent: parent,
       type: nodetype2dbtype(node.type || ""),
       lang: "python",
       x: node.position.x,
@@ -345,25 +362,29 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   pasteBegin: (position, pod) => {
     // 1. create a temporary node to move with cursor
     // 2. set pastingId to the random node's ID, so that we can move it around.
-    let pastingNode = createTemporaryNode(pod, position);
+    const nodes = createTemporaryNode(pod, position);
     // TODO need to add this to zustand store.pods, otherwise the CodeNode won't be rendered.
     // FIXME don't forget to remove this node from store.pods when is cancelled
-    get().addPod({
-      id: pastingNode.id,
-      children: [],
-      parent: "ROOT",
-      lang: "python",
-      type: nodetype2dbtype(pastingNode.type),
-      x: position.x,
-      y: position.y,
-      error: pod.error,
-      stdout: pod.stdout,
-      result: pod.result,
-      name: pod.name,
-      content: pod.content,
-      dirty: false,
-    });
-    set({ pastingNode, isPasting: true });
+    nodes.forEach(([node, p]) =>
+      get().addPod({
+        id: node.id,
+        children: [],
+        parent: "ROOT",
+        lang: p.lang,
+        type: p.type,
+        x: node.position.x,
+        y: node.position.y,
+        error: p.error,
+        stdout: p.stdout,
+        result: p.result,
+        name: p.name,
+        content: p.content,
+        dirty: false,
+      })
+    );
+    set({ pastingNode: nodes[0][0], isPasting: true });
+    set({ pastingNodes: nodes.map(([node, pod]) => node) });
+
     // make the pane unreachable by keyboard (escape), or a black border shows
     // up in the pane when pasting is canceled.
     const pane = document.getElementsByClassName("react-flow__pane")[0];

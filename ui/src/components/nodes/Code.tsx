@@ -243,6 +243,7 @@ export const CodeNode = memo<NodeProps>(function ({
   const setPodName = useStore(store, (state) => state.setPodName);
   const setPodGeo = useStore(store, (state) => state.setPodGeo);
   const getPod = useStore(store, (state) => state.getPod);
+  const clonePod = useStore(store, (state) => state.clonePod);
   const pod = getPod(id);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
@@ -298,7 +299,7 @@ export const CodeNode = memo<NodeProps>(function ({
 
   const onCopy = useCallback(
     (clipboardData: any) => {
-      const pod = getPod(id);
+      const pod = clonePod(id);
       if (!pod) return;
       clipboardData.setData("text/plain", pod.content);
       clipboardData.setData(
@@ -309,7 +310,7 @@ export const CodeNode = memo<NodeProps>(function ({
         })
       );
     },
-    [getPod, id]
+    [clonePod, id]
   );
 
   const cutBegin = useStore(store, (state) => state.cutBegin);

@@ -31,6 +31,7 @@ import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import Grid from "@mui/material/Grid";
 import DeleteIcon from "@mui/icons-material/Delete";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import Moveable from "react-moveable";
 
 import { useStore } from "zustand";
@@ -41,6 +42,7 @@ import { NodeResizer, NodeResizeControl } from "@reactflow/node-resizer";
 import "@reactflow/node-resizer/dist/style.css";
 import { ResizableBox } from "react-resizable";
 import { ResizeIcon } from "./utils";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 
 export const ScopeNode = memo<NodeProps>(function ScopeNode({
   data,
@@ -60,6 +62,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   // const selected = useStore(store, (state) => state.pods[id]?.selected);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const inputRef = useRef<HTMLInputElement>(null);
+  const clonePod = useStore(store, (state) => state.clonePod);
 
   const devMode = useStore(store, (state) => state.devMode);
 
@@ -70,6 +73,22 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
       inputRef.current.value = data.name;
     }
   }, [data.name, id, setPodName]);
+
+  const onCopy = useCallback(
+    (clipboardData: any) => {
+      const pod = clonePod(id);
+      if (!pod) return;
+      clipboardData.setData("text/plain", pod.content);
+      clipboardData.setData(
+        "application/json",
+        JSON.stringify({
+          type: "pod",
+          data: pod,
+        })
+      );
+    },
+    [clonePod, id]
+  );
 
   return (
     <Box
@@ -107,6 +126,16 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
           justifyContent: "center",
         }}
       >
+        <CopyToClipboard
+          text="dummy"
+          options={{ debug: true, format: "text/plain", onCopy } as any}
+        >
+          <Tooltip title="Copy">
+            <IconButton size="small">
+              <ContentCopyIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        </CopyToClipboard>
         {!isGuest && (
           <Tooltip title="Delete" className="nodrag">
             <IconButton
