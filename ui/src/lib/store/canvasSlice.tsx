@@ -64,6 +64,7 @@ function createTemporaryNode(pod, position, parent = "ROOT", level = 0): any {
 
   if (pod.type === "DECK") {
     style["height"] = pod.height!;
+    style["backgroundColor"] = level2color[level] || level2color["default"];
   }
 
   const newNode = {
@@ -81,11 +82,21 @@ function createTemporaryNode(pod, position, parent = "ROOT", level = 0): any {
     style,
   };
 
+  if (parent !== "ROOT") {
+    newNode["parentNode"] = parent;
+  }
+
+  const newPod = { ...pod, parent, id, position, children: [] };
+  console.log(pod.children, "children");
+
   console.log(newNode);
-  const nodes = [[newNode, pod]];
+  const nodes = [[newNode, newPod]];
   pod.children.forEach((child) => {
-    nodes.concat(createTemporaryNode(child, child.position, id, level + 1));
+    nodes.push(
+      ...createTemporaryNode(child, { x: child.x, y: child.y }, id, level + 1)
+    );
   });
+  console.log(nodes, "nodes");
   return nodes;
 }
 
@@ -232,6 +243,8 @@ export interface CanvasSlice {
 
   pastingNode?: Node;
   pastingNodes?: Node[];
+  headPastingNodes?: Set<string>;
+  mousePos?: XYPosition | undefined;
   isPasting: boolean;
   pasteBegin: (position: XYPosition, pod: Pod) => void;
   pasteEnd: () => void;
@@ -250,6 +263,7 @@ export interface CanvasSlice {
   getScopeAtPos: ({ x, y }: XYPosition, exclude: string) => Node | undefined;
   moveIntoScope: (nodeId: string, scopeId: string) => void;
   moveIntoRoot: (nodeId: string) => void;
+  tempUpdateView: ({ x, y }: XYPosition) => void;
 
   onNodesChange: (client: ApolloClient<any>) => OnNodesChange;
   onEdgesChange: OnEdgesChange;
@@ -332,7 +346,15 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           .otherwise(() => undefined),
       }));
     // 2. those from cuttingNode, pastingNode, which are temporary nodes
-    nodes = nodes.concat(get().cuttingNode || [], get().pastingNode || []);
+    nodes = nodes.concat(get().cuttingNode || [], get().pastingNodes || []);
+
+    const cursor = get().mousePos!;
+    const movingNodes = get().headPastingNodes;
+    if (cursor) {
+      nodes = nodes.map((node) =>
+        movingNodes?.has(node.id) ? { ...node, position: cursor } : node
+      );
+    }
     set({ nodes });
   },
 
@@ -363,27 +385,19 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     // 1. create a temporary node to move with cursor
     // 2. set pastingId to the random node's ID, so that we can move it around.
     const nodes = createTemporaryNode(pod, position);
+    console.log("pasting", nodes);
     // TODO need to add this to zustand store.pods, otherwise the CodeNode won't be rendered.
     // FIXME don't forget to remove this node from store.pods when is cancelled
     nodes.forEach(([node, p]) =>
       get().addPod({
-        id: node.id,
-        children: [],
-        parent: "ROOT",
-        lang: p.lang,
-        type: p.type,
-        x: node.position.x,
-        y: node.position.y,
-        error: p.error,
-        stdout: p.stdout,
-        result: p.result,
-        name: p.name,
-        content: p.content,
+        ...p,
         dirty: false,
       })
     );
+    set({ headPastingNodes: new Set([nodes[0][0].id]) });
     set({ pastingNode: nodes[0][0], isPasting: true });
     set({ pastingNodes: nodes.map(([node, pod]) => node) });
+    get().updateView();
 
     // make the pane unreachable by keyboard (escape), or a black border shows
     // up in the pane when pasting is canceled.
@@ -392,11 +406,15 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       pane.removeAttribute("tabindex");
     }
   },
-  onPasteMove: (mousePos) => {
-    let pastingNode = get().pastingNode;
-    if (!pastingNode) return;
-    set({ pastingNode: { ...pastingNode, position: mousePos } });
-    get().updateView();
+  onPasteMove: (mousePos: XYPosition) => {
+    // if (!get().isPasting) return;
+    // let pastingNodes = Array.from(get().pastingNodes || []);
+    // if (!pastingNodes) return;
+    // pastingNodes[0] = { ...pastingNodes[0], position: mousePos };
+    // set({ pastingNodes });
+    // set({ mousePos });
+    // console.log("onPasteMove", mousePos);
+    get().tempUpdateView(mousePos);
   },
   pasteEnd: () => {
     // on drop, make this node into nodesMap. The nodesMap.observer will updateView.
@@ -644,6 +662,16 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     get().adjustLevel();
     // update view
     get().updateView();
+  },
+
+  tempUpdateView: (position) => {
+    const movingNodes = get().headPastingNodes;
+    set({
+      mousePos: position,
+      nodes: get().nodes.map((node) =>
+        movingNodes?.has(node.id) ? { ...node, position } : node
+      ),
+    });
   },
 
   // I should modify nodesMap here
