@@ -212,6 +212,7 @@ function usePaste(reactFlowWrapper) {
   const cancelPaste = useStore(store, (state) => state.cancelPaste);
   const isPasting = useStore(store, (state) => state.isPasting);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const apolloClient = useApolloClient();
 
   const resetSelection = useStore(store, (state) => state.resetSelection);
 
@@ -228,7 +229,12 @@ function usePaste(reactFlowWrapper) {
       onPasteMove(position);
     };
     const mouseClick = (event) => {
-      pasteEnd();
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      const position = reactFlowInstance.project({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
+      pasteEnd(apolloClient, position);
     };
     const keyDown = (event) => {
       if (event.key !== "Escape") return;

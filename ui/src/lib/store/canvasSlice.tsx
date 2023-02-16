@@ -247,7 +247,7 @@ export interface CanvasSlice {
   mousePos?: XYPosition | undefined;
   isPasting: boolean;
   pasteBegin: (position: XYPosition, pod: Pod) => void;
-  pasteEnd: () => void;
+  pasteEnd: (client: ApolloClient<any>, position: XYPosition) => void;
   cancelPaste: () => void;
   onPasteMove: (mousePos: XYPosition) => void;
 
@@ -416,17 +416,20 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     // console.log("onPasteMove", mousePos);
     get().tempUpdateView(mousePos);
   },
-  pasteEnd: () => {
+  pasteEnd: (client, position) => {
     // on drop, make this node into nodesMap. The nodesMap.observer will updateView.
     let pastingNode = get().pastingNode;
-    if (!pastingNode) return;
+    let leadingNodes = get().headPastingNodes;
+    let pastingNodes = get().pastingNodes || [];
+    if (!pastingNode || !leadingNodes) return;
     let nodesMap = get().ydoc.getMap<Node>("pods");
-    let position = pastingNode.position;
 
-    nodesMap.set(pastingNode.id, {
-      ...pastingNode,
-      style: { ...pastingNode.style, opacity: 1 },
-    });
+    // nodesMap.set(pastingNode.id, {
+    //   ...pastingNode,
+    //   position,
+    //   style: { ...pastingNode.style, opacity: 1 },
+    // });
+
     // update zustand and db
     set(
       produce((state) => {
@@ -435,9 +438,26 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         pod.y = position.y;
         pod.dirty = true;
         state.pastingNode = undefined;
+        state.headPastingNodes = new Set();
+        state.pastingNodes = [];
+        state.mousePos = undefined;
         state.isPasting = false;
       })
     );
+
+    pastingNodes.forEach((node) => {
+      nodesMap.set(node.id, {
+        ...(leadingNodes?.has(node.id) ? { ...node, position } : node),
+        style: { ...node.style, opacity: 1 },
+      });
+    });
+
+    get().addPods(
+      client,
+      get().repoId || "",
+      pastingNodes.map((node) => node.id!)
+    );
+
     // update view
     get().updateView();
     let scope = getScopeAt(
@@ -737,7 +757,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
               get().setPodGeo(node.id, geoData, false);
             } else {
               if (!nodesMap.has(change.id)) {
-                throw new Error("Node not found in yjs.");
+                throw new Error("Node not found in yjs." + change.id);
               }
               nodesMap.set(change.id, node);
               // update local
@@ -759,7 +779,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           };
 
           if (!nodesMap.has(change.id)) {
-            throw new Error("Node not found in yjs.");
+            throw new Error("Node not found in yjs." + change.id);
           }
           nodesMap.set(change.id, node);
           // update local

@@ -318,25 +318,52 @@ export async function updatePod(_, { id, repoId, input }, { userId }) {
       },
     });
   } else {
+    console.log(input);
     // if repoId doesn't have id, create it IF input.parent exists, otherwise throw error.
+    // await prisma.pod.create({
+    //   data: {
+    //     id,
+    //     ...input,
+    //     // Dummy index because it is a required field for historical reasons.
+    //     index: 0,
+    //     parent:
+    //       input.parent && input.parent !== "ROOT"
+    //         ? {
+    //             connect: {
+    //               id: input.parent,
+    //             },
+    //           }
+    //         : undefined,
+    //     // In case of [], create will throw an error. Thus I have to pass undefined.
+    //     // children: input.children.length > 0 ? input.children : undefined,
+    //     children: {
+    //       connect: input.children?.map((id) => ({ id })),
+    //     },
+    //     repo: {
+    //       connect: {
+    //         id: repoId,
+    //       },
+    //     },
+    //   },
+    // });
+  }
+
+  return true;
+}
+
+export async function addPods(_, { repoId, pods }, { userId }) {
+  if (!userId) throw new Error("Not authenticated.");
+  await ensureRepoEditAccess({ repoId, userId });
+  console.log("addPod", pods);
+  pods.forEach(async (pod) => {
     await prisma.pod.create({
       data: {
-        id,
-        ...input,
-        // Dummy index because it is a required field for historical reasons.
+        ...pod,
+        id: pod.id,
         index: 0,
-        parent:
-          input.parent && input.parent !== "ROOT"
-            ? {
-                connect: {
-                  id: input.parent,
-                },
-              }
-            : undefined,
-        // In case of [], create will throw an error. Thus I have to pass undefined.
-        // children: input.children.length > 0 ? input.children : undefined,
+        parent: undefined,
         children: {
-          connect: input.children?.map((id) => ({ id })),
+          connect: [],
         },
         repo: {
           connect: {
@@ -345,7 +372,7 @@ export async function updatePod(_, { id, repoId, input }, { userId }) {
         },
       },
     });
-  }
+  });
 
   return true;
 }

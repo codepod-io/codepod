@@ -238,6 +238,22 @@ export async function doRemoteUpdatePod(client, { repoId, pod }) {
   return true;
 }
 
+export async function doRemoteAddPods(client, { repoId, pods }) {
+  console.log("doRemoteAddPods", repoId, pods.map(serializePodInput));
+  await client.mutate({
+    mutation: gql`
+      mutation createAddPods($repoId: String, $input: [PodInput]) {
+        addPods(repoId: $repoId, pods: $input)
+      }
+    `,
+    variables: {
+      repoId,
+      input: pods.map(serializePodInput),
+    },
+  });
+  return true;
+}
+
 export async function doRemoteLoadVisibility(client, { repoId }) {
   const query = gql`
     query ExampleQuery($repoId: String) {

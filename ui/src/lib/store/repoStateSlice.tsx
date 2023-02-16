@@ -11,6 +11,7 @@ import {
   doRemoteUpdateVisibility,
   doRemoteAddCollaborator,
   doRemoteDeleteCollaborator,
+  doRemoteAddPods,
 } from "../fetch";
 
 import { Doc } from "yjs";
@@ -65,6 +66,7 @@ export interface RepoStateSlice {
   deleteClient: (clientId: any) => void;
   // TODO: this belongs to podSlice
   remoteUpdateAllPods: (client) => void;
+  addPods: (client, repoId: string, pods: string[]) => void;
   showLineNumbers: boolean;
   flipShowLineNumbers: () => void;
   yjsConnecting: boolean;
@@ -130,6 +132,10 @@ export const createRepoStateSlice: StateCreator<
       }
     }
     await helper("ROOT");
+  },
+  addPods: async (client, repoId: string, pods: string[]) => {
+    const newPods = pods.map((id) => get().pods[id]);
+    await doRemoteAddPods(client, { repoId, pods: newPods });
   },
   addClient: (clientID, name, color) =>
     set((state) => {
