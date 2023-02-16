@@ -302,6 +302,7 @@ export const RichNode = memo<Props>(function ({
   const inputRef = useRef<HTMLInputElement>(null);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const updateView = useStore(store, (state) => state.updateView);
+  const reactFlowInstance = useReactFlow();
 
   const onResize = useCallback(
     (e, data) => {
@@ -465,7 +466,7 @@ export const RichNode = memo<Props>(function ({
               <IconButton
                 size="small"
                 onClick={() => {
-                  nodesMap.delete(id);
+                  reactFlowInstance.deleteElements({ nodes: [{ id }] });
                 }}
               >
                 <DeleteIcon fontSize="inherit" />

@@ -319,6 +319,7 @@ export async function updatePod(_, { id, repoId, input }, { userId }) {
     });
   } else {
     console.log(input);
+    return false;
     // if repoId doesn't have id, create it IF input.parent exists, otherwise throw error.
     // await prisma.pod.create({
     //   data: {

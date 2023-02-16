@@ -79,6 +79,7 @@ function createTemporaryNode(pod, position, parent = "ROOT", level = 0): any {
     dragHandle: ".custom-drag-handle",
     width: pod.width,
     height: pod.height!,
+    draggable: false,
     style,
   };
 
@@ -365,7 +366,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     get().addPod({
       id: node.id,
       children: [],
-      parent: parent,
+      parent,
       type: nodetype2dbtype(node.type || ""),
       lang: "python",
       x: node.position.x,
@@ -374,6 +375,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       height: node.height!,
       // For my local update, set dirty to true to push to DB.
       dirty: true,
+      pending: true,
     });
     get().updateView();
   },
@@ -431,12 +433,9 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     // });
 
     // update zustand and db
+
     set(
       produce((state) => {
-        let pod = state.pods[pastingNode!.id];
-        pod.x = position.x;
-        pod.y = position.y;
-        pod.dirty = true;
         state.pastingNode = undefined;
         state.headPastingNodes = new Set();
         state.pastingNodes = [];
@@ -446,30 +445,38 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     );
 
     pastingNodes.forEach((node) => {
+      set(
+        produce((state) => {
+          let pod = state.pods[node!.id];
+          if (leadingNodes?.has(node.id)) {
+            pod.x = position.x;
+            pod.y = position.y;
+          }
+          pod.dirty = true;
+          pod.pending = true;
+        })
+      );
+
       nodesMap.set(node.id, {
         ...(leadingNodes?.has(node.id) ? { ...node, position } : node),
         style: { ...node.style, opacity: 1 },
+        draggable: true,
       });
     });
-
-    get().addPods(
-      client,
-      get().repoId || "",
-      pastingNodes.map((node) => node.id!)
-    );
-
     // update view
     get().updateView();
-    let scope = getScopeAt(
-      position.x,
-      position.y,
-      [pastingNode.id],
-      get().nodes,
-      nodesMap
-    );
-    if (scope && scope.id !== pastingNode.parentNode) {
-      get().moveIntoScope(pastingNode.id, scope.id);
-    }
+    leadingNodes.forEach((id) => {
+      let scope = getScopeAt(
+        position.x,
+        position.y,
+        [id],
+        get().nodes,
+        nodesMap
+      );
+      if (scope && scope.id !== id) {
+        get().moveIntoScope(id, scope.id);
+      }
+    });
   },
   cancelPaste: () => {
     let pastingNode = get().pastingNode;
@@ -703,7 +710,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     const nextNodes = applyNodeChanges(changes, nodes);
 
     changes.forEach((change) => {
-      // console.log("onNodesChange", change.type);
+      console.log("onNodesChange", change);
       switch (change.type) {
         case "reset":
           break;
@@ -735,7 +742,9 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
             // If Yjs doesn't have the node, it means that it's a cutting/pasting
             // node. We won't add it to Yjs here.
             if (
-              [get().cuttingNode?.id, get().pastingNode?.id].includes(change.id)
+              [get().cuttingNode?.id]
+                .concat(get().pastingNodes?.map((node) => node.id))
+                .includes(change.id)
             ) {
               if (nodesMap.has(change.id)) {
                 throw new Error(
@@ -757,7 +766,13 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
               get().setPodGeo(node.id, geoData, false);
             } else {
               if (!nodesMap.has(change.id)) {
-                throw new Error("Node not found in yjs." + change.id);
+                console.log("change", change);
+                console.log(
+                  [get().cuttingNode?.id].concat(
+                    get().pastingNodes?.map((node) => node.id)
+                  )
+                );
+                throw new Error("Node not found in yjs.");
               }
               nodesMap.set(change.id, node);
               // update local
@@ -779,7 +794,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           };
 
           if (!nodesMap.has(change.id)) {
-            throw new Error("Node not found in yjs." + change.id);
+            throw new Error("Node not found in yjs.");
           }
           nodesMap.set(change.id, node);
           // update local

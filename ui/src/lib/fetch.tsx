@@ -223,7 +223,7 @@ export async function doRemoteDeletePod(client, { id, toDelete }) {
 }
 
 export async function doRemoteUpdatePod(client, { repoId, pod }) {
-  await client.mutate({
+  const result = await client.mutate({
     mutation: gql`
       mutation updatePod($id: String, $repoId: String, $input: PodInput) {
         updatePod(id: $id, repoId: $repoId, input: $input)
@@ -235,12 +235,12 @@ export async function doRemoteUpdatePod(client, { repoId, pod }) {
       input: serializePodInput(pod),
     },
   });
-  return true;
+  return result.data.updatePod;
 }
 
 export async function doRemoteAddPods(client, { repoId, pods }) {
   console.log("doRemoteAddPods", repoId, pods.map(serializePodInput));
-  await client.mutate({
+  const result = await client.mutate({
     mutation: gql`
       mutation createAddPods($repoId: String, $input: [PodInput]) {
         addPods(repoId: $repoId, pods: $input)
@@ -251,7 +251,8 @@ export async function doRemoteAddPods(client, { repoId, pods }) {
       input: pods.map(serializePodInput),
     },
   });
-  return true;
+  console.log("doRemoteAddPods result", result);
+  return result.data.addPods;
 }
 
 export async function doRemoteLoadVisibility(client, { repoId }) {
