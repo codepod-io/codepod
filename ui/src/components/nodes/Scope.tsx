@@ -31,6 +31,7 @@ import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import Grid from "@mui/material/Grid";
 import DeleteIcon from "@mui/icons-material/Delete";
+import ContentCutIcon from "@mui/icons-material/ContentCut";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import Moveable from "react-moveable";
 
@@ -65,6 +66,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   const clonePod = useStore(store, (state) => state.clonePod);
 
   const devMode = useStore(store, (state) => state.devMode);
+  const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
 
   useEffect(() => {
     if (!data.name) return;
@@ -90,13 +92,23 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
     [clonePod, id]
   );
 
+  const cutBegin = useStore(store, (state) => state.cutBegin);
+
+  const onCut = useCallback(
+    (clipboardData: any) => {
+      onCopy(clipboardData);
+      cutBegin(id);
+    },
+    [onCopy, cutBegin, id]
+  );
+
   return (
     <Box
       ref={ref}
       sx={{
         width: "100%",
         height: "100%",
-        border: "solid 1px #d6dee6",
+        border: isCutting ? "dashed 2px red" : "solid 1px #d6dee6",
         borderRadius: "4px",
       }}
       className="custom-drag-handle"
@@ -136,6 +148,20 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
             </IconButton>
           </Tooltip>
         </CopyToClipboard>
+        {!isGuest && (
+          <CopyToClipboard
+            text="dummy"
+            options={
+              { debug: true, format: "text/plain", onCopy: onCut } as any
+            }
+          >
+            <Tooltip title="Cut">
+              <IconButton size="small">
+                <ContentCutIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          </CopyToClipboard>
+        )}
         {!isGuest && (
           <Tooltip title="Delete" className="nodrag">
             <IconButton

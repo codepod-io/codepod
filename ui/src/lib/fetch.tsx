@@ -239,7 +239,6 @@ export async function doRemoteUpdatePod(client, { repoId, pod }) {
 }
 
 export async function doRemoteAddPods(client, { repoId, pods }) {
-  console.log("doRemoteAddPods", repoId, pods.map(serializePodInput));
   const result = await client.mutate({
     mutation: gql`
       mutation createAddPods($repoId: String, $input: [PodInput]) {
@@ -251,7 +250,6 @@ export async function doRemoteAddPods(client, { repoId, pods }) {
       input: pods.map(serializePodInput),
     },
   });
-  console.log("doRemoteAddPods result", result);
   return result.data.addPods;
 }
 

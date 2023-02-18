@@ -253,7 +253,7 @@ export const CodeNode = memo<NodeProps>(function ({
   );
   const inputRef = useRef<HTMLInputElement>(null);
   const updateView = useStore(store, (state) => state.updateView);
-  const isCutting = useStore(store, (state) => state.cuttingId === id);
+  const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
 
   const showResult = useStore(
     store,

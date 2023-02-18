@@ -211,9 +211,8 @@ function usePaste(reactFlowWrapper) {
   const pasteEnd = useStore(store, (state) => state.pasteEnd);
   const cancelPaste = useStore(store, (state) => state.cancelPaste);
   const isPasting = useStore(store, (state) => state.isPasting);
+  const isCutting = useStore(store, (state) => state.isCutting);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
-  const apolloClient = useApolloClient();
-
   const resetSelection = useStore(store, (state) => state.resetSelection);
 
   useEffect(() => {
@@ -234,12 +233,12 @@ function usePaste(reactFlowWrapper) {
         x: event.clientX - reactFlowBounds.left,
         y: event.clientY - reactFlowBounds.top,
       });
-      pasteEnd(apolloClient, position);
+      pasteEnd(position, false);
     };
     const keyDown = (event) => {
       if (event.key !== "Escape") return;
       // delete the temporary node
-      cancelPaste();
+      cancelPaste(false);
       //clear the pasting state
       event.preventDefault();
     };
@@ -265,7 +264,7 @@ function usePaste(reactFlowWrapper) {
   const handlePaste = useCallback(
     (event) => {
       // avoid duplicated pastes
-      if (isPasting || isGuest) return;
+      if (isPasting || isCutting || isGuest) return;
 
       // only paste when the pane is focused
       if (
@@ -279,7 +278,6 @@ function usePaste(reactFlowWrapper) {
         // from other source that can't be parsed by us, use try-catch here.
         const playload = event.clipboardData.getData("application/json");
         const data = JSON.parse(playload);
-        console.log("paste", data);
         if (data?.type !== "pod") {
           return;
         }
@@ -295,7 +293,7 @@ function usePaste(reactFlowWrapper) {
         ];
 
         const position = reactFlowInstance.project({ x: posX, y: posY });
-        pasteBegin(position, data.data);
+        pasteBegin(position, data.data, false);
       } catch (e) {
         console.log("paste error", e);
       }
@@ -328,6 +326,9 @@ function useCut(reactFlowWrapper) {
   const onCutMove = useStore(store, (state) => state.onCutMove);
   const cancelCut = useStore(store, (state) => state.cancelCut);
   const isCutting = useStore(store, (state) => state.isCutting);
+  const isPasting = useStore(store, (state) => state.isPasting);
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const apolloClient = useApolloClient();
 
   useEffect(() => {
     if (!reactFlowWrapper.current) return;
@@ -342,7 +343,12 @@ function useCut(reactFlowWrapper) {
       onCutMove(position);
     };
     const mouseClick = (event) => {
-      cutEnd();
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      const position = reactFlowInstance.project({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
+      cutEnd(position, reactFlowInstance);
     };
     const keyDown = (event) => {
       if (event.key !== "Escape") return;
@@ -365,6 +371,8 @@ function useCut(reactFlowWrapper) {
     cancelCut,
     cutEnd,
     isCutting,
+    isPasting,
+    apolloClient,
     onCutMove,
     reactFlowInstance,
     reactFlowWrapper,
