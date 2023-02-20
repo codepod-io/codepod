@@ -265,6 +265,7 @@ export const CodeNode = memo<NodeProps>(function ({
       state.pods[id]?.stderr
   );
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+  const setPaneFocus = useStore(store, (state) => state.setPaneFocus);
   const onResize = useCallback(
     (e, data) => {
       const { size } = data;
@@ -309,6 +310,7 @@ export const CodeNode = memo<NodeProps>(function ({
           data: pod,
         })
       );
+      setPaneFocus();
     },
     [clonePod, id]
   );
@@ -472,15 +474,6 @@ export const CodeNode = memo<NodeProps>(function ({
             justifyContent: "center",
           }}
           className="nodrag"
-          onClick={(e) => {
-            const pane = document.getElementsByClassName(
-              "react-flow__pane"
-            )[0] as HTMLElement;
-            if (pane) {
-              pane.tabIndex = 0;
-              pane.focus();
-            }
-          }}
         >
           {!isGuest && (
             <Tooltip title="Run (shift-enter)">
@@ -500,8 +493,8 @@ export const CodeNode = memo<NodeProps>(function ({
             options={{ debug: true, format: "text/plain", onCopy } as any}
           >
             <Tooltip title="Copy">
-              <IconButton size="small">
-                <ContentCopyIcon fontSize="inherit" />
+              <IconButton size="small" className="copy-button">
+                <ContentCopyIcon fontSize="inherit" className="copy-button" />
               </IconButton>
             </Tooltip>
           </CopyToClipboard>

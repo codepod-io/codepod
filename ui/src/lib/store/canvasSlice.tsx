@@ -49,7 +49,7 @@ const level2color = {
 };
 
 /**
- * The temporary reactflow nodes for paste/cut.
+ * Creare the temporary nodes as well as the temporary pods based on the given pod.
  * @param pod
  * @param position
  * @param parent
@@ -81,6 +81,7 @@ function createTemporaryNode(pod, position, parent = "ROOT", level = 0): any {
     dragHandle: ".custom-drag-handle",
     width: pod.width,
     height: pod.height!,
+    // Note: when the temporary node is finally sticked to the canvas, the click event will trigger drag event/position change of this node once and cause a bug because the node is not ready in the store and DB. just make it undraggable during moving to avoid this bug.
     draggable: false,
     style,
   };
@@ -238,6 +239,10 @@ export interface CanvasSlice {
 
   updateView: () => void;
 
+  isPaneFocused: boolean;
+  setPaneFocus: () => void;
+  setPaneBlur: () => void;
+
   addNode: (type: "code" | "scope" | "rich", position: XYPosition) => void;
 
   pastingNodes?: Node[];
@@ -285,6 +290,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   headPastingNodes: new Set(),
   // current mouse position, used to update the pasting nodes on the top level when moving the mouse
   mousePos: undefined,
+
+  isPaneFocused: false,
 
   selectedPods: new Set(),
   selectionParent: undefined,
@@ -351,13 +358,14 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           .with(get().dragHighlight, () => "active")
           .otherwise(() => undefined),
       }));
-    // 2. those from cuttingNode, pastingNode, which are temporary nodes
+    // 2. show the temporary nodes
     nodes = nodes.concat(get().pastingNodes || []);
 
     const cursor = get().mousePos!;
     const movingNodes = get().headPastingNodes;
     if (cursor) {
       nodes = nodes.map((node) =>
+        // update the position of top-level pasting nodes by the mouse position
         movingNodes?.has(node.id) ? { ...node, position: cursor } : node
       );
     }
@@ -389,11 +397,9 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   isCutting: false,
 
   pasteBegin: (position, pod, cutting = false) => {
-    // 1. create a temporary node to move with cursor
-    // 2. set pastingId to the random node's ID, so that we can move it around.
+    // 1. create temporary nodes and pods
     const nodes = createTemporaryNode(pod, position);
-    // TODO need to add this to zustand store.pods, otherwise the CodeNode won't be rendered.
-    // FIXME don't forget to remove this node from store.pods when is cancelled
+    // 2. add the temporary pods to store.pods
     nodes.forEach(([node, p]) =>
       get().addPod({
         ...p,
@@ -401,20 +407,20 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       })
     );
     set({
+      // Only headPastingNodes moves with the mouse, because the other temporary nodes are children of the headPastingNodes.
+      // For now, we can have only one headPastingNode on the top level.
+      // TODO: support multiple headPastingNodes on the top level when implementing multi-select copy-paste
       headPastingNodes: new Set([nodes[0][0].id]),
+      // Distinguish the state of cutting or pasting
       isPasting: !cutting,
       isCutting: cutting,
+      // But we need to keep all the temporary nodes in the pastingNodes list to render them.
       pastingNodes: nodes.map(([node, pod]) => node),
     });
-    // make the pane unreachable by keyboard (escape), or a black border shows
-    // up in the pane when pasting is canceled.
-    const pane = document.getElementsByClassName("react-flow__pane")[0];
-    if (pane && pane.hasAttribute("tabindex")) {
-      pane.removeAttribute("tabindex");
-    }
     get().updateView();
   },
   onPasteMove: (mousePos: XYPosition) => {
+    // When the mouse moves, only the top-level nodes move with the mouse. We don't have to update all the view.
     get().tempUpdateView(mousePos);
   },
   pasteEnd: (position, cutting = false) => {
@@ -424,6 +430,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     if (!pastingNodes || !leadingNodes) return;
     let nodesMap = get().ydoc.getMap<Node>("pods");
 
+    // clear the temporary nodes and the pasting/cutting state
     set(
       produce((state) => {
         state.pastingNode = undefined;
@@ -444,10 +451,12 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
             pod.y = position.y;
           }
           pod.dirty = true;
+          // this flag triggers the addPods call when updating all dirty pods
           pod.pending = true;
         })
       );
 
+      // insert all nodes to the yjs map
       nodesMap.set(node.id, {
         ...(leadingNodes?.has(node.id) ? { ...node, position } : node),
         style: { ...node.style, opacity: 1 },
@@ -456,6 +465,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     });
     // update view
     get().updateView();
+
+    // check if the final position located in another scope
     leadingNodes.forEach((id) => {
       let scope = getScopeAt(
         position.x,
@@ -471,7 +482,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   },
   cancelPaste: (cutting = false) => {
     const pastingNodes = get().pastingNodes || [];
-    // if (!pastingNode) return;
     set(
       produce((state) => {
         // Remove pastingNode from store.
@@ -497,13 +507,15 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   cutBegin: (id) => {
     const pod = get().clonePod(id);
     if (!pod) return;
+
+    // Store only the top-level cut nodes, for now, it contains only one element. But we will support multi-select cut-paste in the future.
     set({ cuttingIds: new Set([id]) });
     get().pasteBegin({ x: pod.x, y: pod.y }, pod, true);
   },
   onCutMove: (mousePos) => {
     get().onPasteMove(mousePos);
   },
-  // 3. on drop, set the original node to the new position
+  // 3. on drop, delete the original node and create a new node
   cutEnd: (position, reactFlowInstance) => {
     const cuttingIds = get().cuttingIds;
 
@@ -747,4 +759,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       ),
     });
   },
+
+  setPaneFocus: () => set({ isPaneFocused: true }),
+  setPaneBlur: () => set({ isPaneFocused: false }),
 });

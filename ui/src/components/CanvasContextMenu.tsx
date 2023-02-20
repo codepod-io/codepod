@@ -46,7 +46,7 @@ export function CanvasContextMenu(props) {
       <MenuList className="paneContextMenu">
         {!isGuest && (
           <MenuItem onClick={props.addCode} sx={ItemStyle}>
-            <ListItemIcon>
+            <ListItemIcon sx={{ color: "inherit" }}>
               <CodeIcon />
             </ListItemIcon>
             <ListItemText>New Code</ListItemText>
@@ -54,7 +54,7 @@ export function CanvasContextMenu(props) {
         )}
         {!isGuest && (
           <MenuItem onClick={props.addRich} sx={ItemStyle}>
-            <ListItemIcon>
+            <ListItemIcon sx={{ color: "inherit" }}>
               <NoteIcon />
             </ListItemIcon>
             <ListItemText>New Note</ListItemText>
@@ -62,14 +62,14 @@ export function CanvasContextMenu(props) {
         )}
         {!isGuest && (
           <MenuItem onClick={props.addScope} sx={ItemStyle}>
-            <ListItemIcon>
+            <ListItemIcon sx={{ color: "inherit" }}>
               <PostAddIcon />
             </ListItemIcon>
             <ListItemText>New Scope</ListItemText>
           </MenuItem>
         )}
         <MenuItem onClick={flipShowLineNumbers} sx={ItemStyle}>
-          <ListItemIcon>
+          <ListItemIcon sx={{ color: "inherit" }}>
             <FormatListNumberedIcon />
           </ListItemIcon>
           <ListItemText>

@@ -67,6 +67,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
 
   const devMode = useStore(store, (state) => state.devMode);
   const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
+  const setPaneFocus = useStore(store, (state) => state.setPaneFocus);
 
   useEffect(() => {
     if (!data.name) return;
@@ -80,7 +81,8 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
     (clipboardData: any) => {
       const pod = clonePod(id);
       if (!pod) return;
-      clipboardData.setData("text/plain", pod.content);
+      // set the plain text content of a scope as empty
+      clipboardData.setData("text/plain", "");
       clipboardData.setData(
         "application/json",
         JSON.stringify({
@@ -143,11 +145,12 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
           options={{ debug: true, format: "text/plain", onCopy } as any}
         >
           <Tooltip title="Copy">
-            <IconButton size="small">
-              <ContentCopyIcon fontSize="inherit" />
+            <IconButton size="small" className="copy-button">
+              <ContentCopyIcon fontSize="inherit" className="copy-button" />
             </IconButton>
           </Tooltip>
         </CopyToClipboard>
+
         {!isGuest && (
           <CopyToClipboard
             text="dummy"

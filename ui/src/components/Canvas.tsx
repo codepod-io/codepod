@@ -213,6 +213,7 @@ function usePaste(reactFlowWrapper) {
   const isPasting = useStore(store, (state) => state.isPasting);
   const isCutting = useStore(store, (state) => state.isCutting);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const isPaneFocused = useStore(store, (state) => state.isPaneFocused);
   const resetSelection = useStore(store, (state) => state.resetSelection);
 
   useEffect(() => {
@@ -264,20 +265,14 @@ function usePaste(reactFlowWrapper) {
   const handlePaste = useCallback(
     (event) => {
       // avoid duplicated pastes
-      if (isPasting || isCutting || isGuest) return;
-
-      // only paste when the pane is focused
-      if (
-        event.target?.className !== "react-flow__pane" &&
-        document.activeElement?.className !== "react-flow__pane"
-      )
-        return;
+      // check if the pane is focused
+      if (isPasting || isCutting || isGuest || !isPaneFocused) return;
 
       try {
         // the user clipboard data is unpreditable, may have application/json
         // from other source that can't be parsed by us, use try-catch here.
-        const playload = event.clipboardData.getData("application/json");
-        const data = JSON.parse(playload);
+        const payload = event.clipboardData.getData("application/json");
+        const data = JSON.parse(payload);
         if (data?.type !== "pod") {
           return;
         }
@@ -305,6 +300,7 @@ function usePaste(reactFlowWrapper) {
       reactFlowInstance,
       reactFlowWrapper,
       resetSelection,
+      isPaneFocused,
     ]
   );
 
@@ -446,13 +442,14 @@ function CanvasImpl() {
   const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
   const shareOpen = useStore(store, (state) => state.shareOpen);
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
+  const setPaneFocus = useStore(store, (state) => state.setPaneFocus);
+  const setPaneBlur = useStore(store, (state) => state.setPaneBlur);
 
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [points, setPoints] = useState({ x: 0, y: 0 });
   const [client, setClient] = useState({ x: 0, y: 0 });
 
   const onPaneContextMenu = (event) => {
-    console.log("onPaneContextMenu", event);
     event.preventDefault();
     setShowContextMenu(true);
     setPoints({ x: event.pageX, y: event.pageY });
@@ -460,19 +457,26 @@ function CanvasImpl() {
   };
 
   useEffect(() => {
-    const handleClick = (e) => {
+    const handleClick = (event) => {
       setShowContextMenu(false);
+      const target = event.target;
+      // set the pane focused only when the clicked target is pane or the copy buttons on a pod
+      // then we can paste right after click on the copy buttons
+      if (
+        target.className === "react-flow__pane" ||
+        target.classList?.contains("copy-button") ||
+        target.parentElement?.classList?.contains("copy-button")
+      ) {
+        setPaneFocus();
+      } else {
+        setPaneBlur();
+      }
     };
     document.addEventListener("click", handleClick);
     return () => {
       document.removeEventListener("click", handleClick);
     };
-  }, [setShowContextMenu]);
-
-  const onPaneClick = (event) => {
-    // focus
-    event.target.tabIndex = 0;
-  };
+  }, [setShowContextMenu, setPaneFocus, setPaneBlur]);
 
   const getScopeAtPos = useStore(store, (state) => state.getScopeAtPos);
 
@@ -519,8 +523,6 @@ function CanvasImpl() {
               removeDragHighlight();
             }
           }}
-          onPaneClick={onPaneClick}
-          // onPaneMouseMove={onPaneMouseMove}
           attributionPosition="top-right"
           maxZoom={10}
           minZoom={0.1}
