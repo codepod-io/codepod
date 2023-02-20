@@ -78,6 +78,7 @@ function createTemporaryNode(pod, position, parent = "ROOT", level = 0): any {
       parent,
       level,
     },
+    extent: level > 0 ? "parent" : undefined,
     dragHandle: ".custom-drag-handle",
     width: pod.width,
     height: pod.height!,
