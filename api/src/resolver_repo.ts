@@ -8,7 +8,7 @@ const { PrismaClient } = Prisma;
 
 const prisma = new PrismaClient();
 
-async function ensureRepoEditAccess({ repoId, userId }) {
+export async function ensureRepoEditAccess({ repoId, userId }) {
   let repo = await prisma.repo.findFirst({
     where: {
       id: repoId,

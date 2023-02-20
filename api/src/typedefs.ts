@@ -101,6 +101,9 @@ export const typeDefs = gql`
     listAllRuntimes: [RuntimeInfo]
     myCollabRepos: [Repo]
     infoRuntime(sessionId: String!): RuntimeInfo
+    getGitHubAccessToken: String
+    linkedGitHubRepo(repoId: String!): String
+    getMyGitHubRepos: [String]
   }
 
   type Mutation {
@@ -126,5 +129,10 @@ export const typeDefs = gql`
     updateVisibility(repoId: String, isPublic: Boolean): Boolean
     addCollaborator(repoId: String, email: String): Boolean
     deleteCollaborator(repoId: String, collaboratorId: String): Boolean
+    githubExport(repoId: String): Boolean
+    setGitHubAccessToken(token: String): Boolean
+    deleteGitHubAccessToken: Boolean
+    linkGitHubRepo(repoId: String!, ghRepoName: String!): Boolean
+    unlinkGitHubRepo(repoId: String): Boolean
   }
 `;

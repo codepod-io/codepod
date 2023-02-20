@@ -175,5 +175,6 @@ function useProvideAuth() {
     signUp,
     isSignedIn,
     hasToken,
+    authToken,
   };
 }
