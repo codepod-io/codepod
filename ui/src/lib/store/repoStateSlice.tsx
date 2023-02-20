@@ -108,22 +108,29 @@ export const createRepoStateSlice: StateCreator<
 
   loadRepo: loadRepo(set, get),
   remoteUpdateAllPods: async (client) => {
-    let pendingPods = Object.values(get().pods).filter(
+    // The pods that haven't been inserted to the database yet
+    const pendingPods = Object.values(get().pods).filter(
       (pod) => pod.dirty && pod.pending
     );
 
+    // First insert all pending pods and ignore their relationship for now
     if (pendingPods.length > 0) {
-      await get().addPods(client, get().repoId || "", pendingPods);
+      try {
+        await get().addPods(client, get().repoId || "", pendingPods);
 
-      pendingPods.forEach((pod) => {
-        set(
-          produce((state) => {
-            state.pods[pod.id].pending = false;
-          })
-        );
-      });
+        pendingPods.forEach((pod) => {
+          set(
+            produce((state) => {
+              state.pods[pod.id].pending = false;
+            })
+          );
+        });
+      } catch (e) {
+        console.log("add pods error", e);
+      }
     }
 
+    // update all dirty pods
     async function helper(id) {
       let pod = get().pods[id];
       if (!pod) return;
@@ -137,7 +144,7 @@ export const createRepoStateSlice: StateCreator<
             })
           );
           try {
-            await doRemoteUpdatePod(client, {
+            const res = await doRemoteUpdatePod(client, {
               pod,
               repoId: get().repoId,
             });
@@ -145,7 +152,8 @@ export const createRepoStateSlice: StateCreator<
               produce((state) => {
                 state.pods[id].isSyncing = false;
                 // pod may be updated during remote syncing
-                state.pods[id].dirty = false;
+                // clear dirty flag only when remote update is successful
+                if (res) state.pods[id].dirty = false;
               })
             );
           } catch (e) {

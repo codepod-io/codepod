@@ -358,7 +358,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           .with(get().dragHighlight, () => "active")
           .otherwise(() => undefined),
       }));
-    // 2. show the temporary nodes
+    // 2. show the temporary nodes, make the temporary nodes on the front-most
     nodes = nodes.concat(get().pastingNodes || []);
 
     const cursor = get().mousePos!;
@@ -610,7 +610,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         level: scope.data.level + 1,
       },
     };
-
     // update peer
     nodesMap.set(node.id, newNode);
     // update zustand & db
