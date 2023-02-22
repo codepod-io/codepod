@@ -34,18 +34,19 @@ model Profile {
 }
 
 model User {
-    id             String   @id
-    email          String   @unique
+    id                String   @id
+    email             String   @unique
     // username is an optional value, because it might create barrier when user signup.
-    username       String?  @unique
-    firstname      String
-    lastname       String
+    username          String?  @unique
+    firstname         String
+    lastname          String
     // A user might not have a password, if they login via OAuth.
-    hashedPassword String?
-    posts          Post[]
-    profile        Profile?
-    Repo           Repo[]   @relation("OWNER")
-    sharedRepos    Repo[]   @relation("COLLABORATOR")
+    hashedPassword    String?
+    posts             Post[]
+    profile           Profile?
+    Repo              Repo[]   @relation("OWNER")
+    sharedRepos       Repo[]   @relation("COLLABORATOR")
+    githubAccessToken String?
 }
 
 model Repo {
@@ -58,6 +59,7 @@ model Repo {
     podsId        String[]
     public        Boolean  @default(false)
     collaborators User[]   @relation("COLLABORATOR")
+    githubRepo    String?
 }
 
 enum PodType {

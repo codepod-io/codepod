@@ -1,5 +1,5 @@
 import { useEffect, useContext, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
@@ -13,6 +13,10 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import Grid from "@mui/material/Grid";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import GitHubIcon from "@mui/icons-material/GitHub";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
+
 import Typography from "@mui/material/Typography";
 import { useSnackbar, VariantType } from "notistack";
 
@@ -24,7 +28,15 @@ import { usePrompt } from "../lib/prompt";
 import { RepoContext } from "../lib/store";
 
 import useMe from "../lib/me";
-import { FormControlLabel, FormGroup, Stack, Switch } from "@mui/material";
+import {
+  Autocomplete,
+  FormControlLabel,
+  FormGroup,
+  Link,
+  Stack,
+  Switch,
+  TextField,
+} from "@mui/material";
 import { getUpTime } from "../lib/utils";
 
 function Flex(props) {
@@ -303,6 +315,173 @@ function SyncStatus() {
   );
 }
 
+function ConnectToGitHubRepo() {
+  // const { repos, loading } = useGitHubRepos();
+  const [name, setName] = useState("");
+  let { id: repoId } = useParams();
+  const [linkGitHubRepo] = useMutation(
+    gql`
+      mutation LinkGitHubRepo($repoId: String!, $ghRepoName: String!) {
+        linkGitHubRepo(repoId: $repoId, ghRepoName: $ghRepoName)
+      }
+    `,
+    { refetchQueries: ["LinkedGitHubRepo"] }
+  );
+  return (
+    <Box>
+      <Box>
+        Connect to GitHub Repo{" "}
+        <Tooltip
+          title={
+            <Box>
+              Note that to prevent accidental overwrite, the linked github repo
+              must be either:
+              <li>Not exist, or</li>
+              <li>Exists but empty, or</li>
+              <li>It's .codepod/repoId matches current repo ID.</li>
+            </Box>
+          }
+          placement="top"
+          sx={{ marginBottom: 1, marginLeft: -1 }}
+        >
+          <HelpOutlineOutlinedIcon fontSize="small" />
+        </Tooltip>
+      </Box>
+      {/* a input box, which upon typing, show the filtered list. If not found, show create button */}
+      <TextField
+        id="standard-basic"
+        label="GitHub Repo (user/repo)"
+        variant="standard"
+        onChange={(e) => {
+          setName(e.target.value);
+        }}
+      />
+      <Button
+        onClick={() => {
+          // 1. create
+          // 2. link
+          linkGitHubRepo({ variables: { repoId, ghRepoName: name } });
+        }}
+      >
+        Link
+      </Button>
+    </Box>
+  );
+}
+
+function GitHubRepoLinkStatus() {
+  let { id: repoId } = useParams();
+  const { data } = useQuery(
+    gql`
+      query LinkedGitHubRepo($repoId: String!) {
+        linkedGitHubRepo(repoId: $repoId)
+      }
+    `,
+    { variables: { repoId } }
+  );
+  const [unlinkGitHubRepo] = useMutation(
+    gql`
+      mutation UnlinkGitHubRepo($repoId: String!) {
+        unlinkGitHubRepo(repoId: $repoId)
+      }
+    `,
+    { refetchQueries: ["LinkedGitHubRepo"] }
+  );
+  let [
+    githubExport,
+    { loading: githubExportLoadng, error: githubExportError },
+  ] = useMutation(
+    gql`
+      mutation GithubExport($repoId: String) {
+        githubExport(repoId: $repoId)
+      }
+    `
+  );
+
+  // if the github repo is not connected, show the connect button
+  if (data?.linkedGitHubRepo) {
+    return (
+      <Stack>
+        <Box sx={{ display: "flex", flexWrap: "wrap" }}>
+          <GitHubIcon />
+          <Link
+            // component="span"
+            href={`https://github.com/${data.linkedGitHubRepo}`}
+            target="_blank"
+            color="primary"
+            sx={{
+              ml: 1,
+              display: "inline-flex",
+            }}
+          >
+            {data.linkedGitHubRepo}
+            <OpenInNewIcon fontSize="small" sx={{ ml: "1px" }} />
+          </Link>
+          <Button
+            variant="outlined"
+            color="error"
+            size="small"
+            onClick={() => {
+              unlinkGitHubRepo({ variables: { repoId } });
+            }}
+          >
+            Unlink
+          </Button>
+        </Box>
+        <Button
+          variant="outlined"
+          color="primary"
+          onClick={() => {
+            githubExport({ variables: { repoId } });
+          }}
+          disabled={githubExportLoadng}
+        >
+          {githubExportLoadng ? "Exporting" : "Export"} to GitHub
+        </Button>
+        {githubExportError && (
+          <Box color="red">{githubExportError.message}</Box>
+        )}
+      </Stack>
+    );
+  } else {
+    return <ConnectToGitHubRepo />;
+  }
+}
+
+function GitExport() {
+  const location = useLocation();
+  let from = ((location.state as any)?.from?.pathname as string) || "/";
+  let { id: repoId } = useParams();
+
+  const { data } = useQuery(gql`
+    query GetGitHubAccessToken {
+      getGitHubAccessToken
+    }
+  `);
+  if (!repoId) return <Box>no repoId</Box>;
+  console.log("from:", from);
+  return (
+    <Box>
+      {/* a stack of buttons */}
+      <Stack direction="column" spacing={2}>
+        <Box>{/* Link to <GitHubIcon /> */}</Box>
+        {data?.getGitHubAccessToken ? (
+          <Box>
+            {/* <Box color="green">Account Linked</Box> */}
+            <GitHubRepoLinkStatus />
+          </Box>
+        ) : (
+          <Box>
+            <Link href="/api/github/oauth/login" target="_blank">
+              GitHub Login
+            </Link>
+          </Box>
+        )}
+      </Stack>
+    </Box>
+  );
+}
+
 function ActiveSessions() {
   const { loading, data, refetch } = useQuery(gql`
     query GetActiveSessions {
@@ -455,6 +634,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <>
                 <Grid item xs={12}>
                   <SyncStatus />
+                </Grid>
+                <Grid item xs={12}>
+                  <GitExport />
                 </Grid>
                 <Grid item xs={12}>
                   <SidebarRuntime />

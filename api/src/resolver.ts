@@ -40,6 +40,16 @@ import {
   loopKillInactiveRoutes as loopKillInactiveRoutes_k8s,
   initRoutes as initRoutes_k8s,
 } from "./spawner-k8s";
+import {
+  deleteGitHubAccessToken,
+  getGitHubAccessToken,
+  getMyGitHubRepos,
+  githubExport,
+  linkedGitHubRepo,
+  linkGitHubRepo,
+  setGitHubAccessToken,
+  unlinkGitHubRepo,
+} from "./resolver_git";
 
 export const resolvers = {
   Query: {
@@ -63,6 +73,10 @@ export const resolvers = {
       : {
           infoRuntime: infoRuntime_docker,
         }),
+    // TODO this query is redundant, could just use /get/user
+    getGitHubAccessToken,
+    linkedGitHubRepo,
+    getMyGitHubRepos,
   },
   Mutation: {
     signup,
@@ -88,6 +102,11 @@ export const resolvers = {
           spawnRuntime: spawnRuntime_docker,
           killRuntime: killRuntime_docker,
         }),
+    githubExport,
+    setGitHubAccessToken,
+    deleteGitHubAccessToken,
+    linkGitHubRepo,
+    unlinkGitHubRepo,
   },
 };
 
