@@ -31,6 +31,8 @@ import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import Grid from "@mui/material/Grid";
 import DeleteIcon from "@mui/icons-material/Delete";
+import ContentCutIcon from "@mui/icons-material/ContentCut";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import Moveable from "react-moveable";
 
 import { useStore } from "zustand";
@@ -41,6 +43,7 @@ import { NodeResizer, NodeResizeControl } from "@reactflow/node-resizer";
 import "@reactflow/node-resizer/dist/style.css";
 import { ResizableBox } from "react-resizable";
 import { ResizeIcon } from "./utils";
+import { CopyToClipboard } from "react-copy-to-clipboard";
 
 export const ScopeNode = memo<NodeProps>(function ScopeNode({
   data,
@@ -60,8 +63,11 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   // const selected = useStore(store, (state) => state.pods[id]?.selected);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const inputRef = useRef<HTMLInputElement>(null);
+  const clonePod = useStore(store, (state) => state.clonePod);
 
   const devMode = useStore(store, (state) => state.devMode);
+  const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
+  const setPaneFocus = useStore(store, (state) => state.setPaneFocus);
 
   useEffect(() => {
     if (!data.name) return;
@@ -71,13 +77,40 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
     }
   }, [data.name, id, setPodName]);
 
+  const onCopy = useCallback(
+    (clipboardData: any) => {
+      const pod = clonePod(id);
+      if (!pod) return;
+      // set the plain text content of a scope as empty
+      clipboardData.setData("text/plain", "");
+      clipboardData.setData(
+        "application/json",
+        JSON.stringify({
+          type: "pod",
+          data: pod,
+        })
+      );
+    },
+    [clonePod, id]
+  );
+
+  const cutBegin = useStore(store, (state) => state.cutBegin);
+
+  const onCut = useCallback(
+    (clipboardData: any) => {
+      onCopy(clipboardData);
+      cutBegin(id);
+    },
+    [onCopy, cutBegin, id]
+  );
+
   return (
     <Box
       ref={ref}
       sx={{
         width: "100%",
         height: "100%",
-        border: "solid 1px #d6dee6",
+        border: isCutting ? "dashed 2px red" : "solid 1px #d6dee6",
         borderRadius: "4px",
       }}
       className="custom-drag-handle"
@@ -107,6 +140,31 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
           justifyContent: "center",
         }}
       >
+        <CopyToClipboard
+          text="dummy"
+          options={{ debug: true, format: "text/plain", onCopy } as any}
+        >
+          <Tooltip title="Copy">
+            <IconButton size="small" className="copy-button">
+              <ContentCopyIcon fontSize="inherit" className="copy-button" />
+            </IconButton>
+          </Tooltip>
+        </CopyToClipboard>
+
+        {!isGuest && (
+          <CopyToClipboard
+            text="dummy"
+            options={
+              { debug: true, format: "text/plain", onCopy: onCut } as any
+            }
+          >
+            <Tooltip title="Cut">
+              <IconButton size="small">
+                <ContentCutIcon fontSize="inherit" />
+              </IconButton>
+            </Tooltip>
+          </CopyToClipboard>
+        )}
         {!isGuest && (
           <Tooltip title="Delete" className="nodrag">
             <IconButton

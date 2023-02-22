@@ -66,6 +66,7 @@ function store2nodes(id: string, { getId2children, getPod }) {
       // position: { x: 100, y: 100 },
       position: { x: pod.x, y: pod.y },
       parentNode: pod.parent !== "ROOT" ? pod.parent : undefined,
+      extent: pod.parent !== "ROOT" ? "parent" : undefined,
       style: {
         width: pod.width || undefined,
         height: pod.height || undefined,
@@ -211,8 +212,9 @@ function usePaste(reactFlowWrapper) {
   const pasteEnd = useStore(store, (state) => state.pasteEnd);
   const cancelPaste = useStore(store, (state) => state.cancelPaste);
   const isPasting = useStore(store, (state) => state.isPasting);
+  const isCutting = useStore(store, (state) => state.isCutting);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
-
+  const isPaneFocused = useStore(store, (state) => state.isPaneFocused);
   const resetSelection = useStore(store, (state) => state.resetSelection);
 
   useEffect(() => {
@@ -228,12 +230,17 @@ function usePaste(reactFlowWrapper) {
       onPasteMove(position);
     };
     const mouseClick = (event) => {
-      pasteEnd();
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      const position = reactFlowInstance.project({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
+      pasteEnd(position, false);
     };
     const keyDown = (event) => {
       if (event.key !== "Escape") return;
       // delete the temporary node
-      cancelPaste();
+      cancelPaste(false);
       //clear the pasting state
       event.preventDefault();
     };
@@ -259,20 +266,14 @@ function usePaste(reactFlowWrapper) {
   const handlePaste = useCallback(
     (event) => {
       // avoid duplicated pastes
-      if (isPasting || isGuest) return;
-
-      // only paste when the pane is focused
-      if (
-        event.target?.className !== "react-flow__pane" &&
-        document.activeElement?.className !== "react-flow__pane"
-      )
-        return;
+      // check if the pane is focused
+      if (isPasting || isCutting || isGuest || !isPaneFocused) return;
 
       try {
         // the user clipboard data is unpreditable, may have application/json
         // from other source that can't be parsed by us, use try-catch here.
-        const playload = event.clipboardData.getData("application/json");
-        const data = JSON.parse(playload);
+        const payload = event.clipboardData.getData("application/json");
+        const data = JSON.parse(payload);
         if (data?.type !== "pod") {
           return;
         }
@@ -288,7 +289,7 @@ function usePaste(reactFlowWrapper) {
         ];
 
         const position = reactFlowInstance.project({ x: posX, y: posY });
-        pasteBegin(position, data.data);
+        pasteBegin(position, data.data, false);
       } catch (e) {
         console.log("paste error", e);
       }
@@ -300,6 +301,7 @@ function usePaste(reactFlowWrapper) {
       reactFlowInstance,
       reactFlowWrapper,
       resetSelection,
+      isPaneFocused,
     ]
   );
 
@@ -321,6 +323,9 @@ function useCut(reactFlowWrapper) {
   const onCutMove = useStore(store, (state) => state.onCutMove);
   const cancelCut = useStore(store, (state) => state.cancelCut);
   const isCutting = useStore(store, (state) => state.isCutting);
+  const isPasting = useStore(store, (state) => state.isPasting);
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const apolloClient = useApolloClient();
 
   useEffect(() => {
     if (!reactFlowWrapper.current) return;
@@ -335,7 +340,12 @@ function useCut(reactFlowWrapper) {
       onCutMove(position);
     };
     const mouseClick = (event) => {
-      cutEnd();
+      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
+      const position = reactFlowInstance.project({
+        x: event.clientX - reactFlowBounds.left,
+        y: event.clientY - reactFlowBounds.top,
+      });
+      cutEnd(position, reactFlowInstance);
     };
     const keyDown = (event) => {
       if (event.key !== "Escape") return;
@@ -358,6 +368,8 @@ function useCut(reactFlowWrapper) {
     cancelCut,
     cutEnd,
     isCutting,
+    isPasting,
+    apolloClient,
     onCutMove,
     reactFlowInstance,
     reactFlowWrapper,
@@ -431,13 +443,14 @@ function CanvasImpl() {
   const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
   const shareOpen = useStore(store, (state) => state.shareOpen);
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
+  const setPaneFocus = useStore(store, (state) => state.setPaneFocus);
+  const setPaneBlur = useStore(store, (state) => state.setPaneBlur);
 
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [points, setPoints] = useState({ x: 0, y: 0 });
   const [client, setClient] = useState({ x: 0, y: 0 });
 
   const onPaneContextMenu = (event) => {
-    console.log("onPaneContextMenu", event);
     event.preventDefault();
     setShowContextMenu(true);
     setPoints({ x: event.pageX, y: event.pageY });
@@ -445,19 +458,26 @@ function CanvasImpl() {
   };
 
   useEffect(() => {
-    const handleClick = (e) => {
+    const handleClick = (event) => {
       setShowContextMenu(false);
+      const target = event.target;
+      // set the pane focused only when the clicked target is pane or the copy buttons on a pod
+      // then we can paste right after click on the copy buttons
+      if (
+        target.className === "react-flow__pane" ||
+        target.classList?.contains("copy-button") ||
+        target.parentElement?.classList?.contains("copy-button")
+      ) {
+        setPaneFocus();
+      } else {
+        setPaneBlur();
+      }
     };
     document.addEventListener("click", handleClick);
     return () => {
       document.removeEventListener("click", handleClick);
     };
-  }, [setShowContextMenu]);
-
-  const onPaneClick = (event) => {
-    // focus
-    event.target.tabIndex = 0;
-  };
+  }, [setShowContextMenu, setPaneFocus, setPaneBlur]);
 
   const getScopeAtPos = useStore(store, (state) => state.getScopeAtPos);
 
@@ -504,8 +524,6 @@ function CanvasImpl() {
               removeDragHighlight();
             }
           }}
-          onPaneClick={onPaneClick}
-          // onPaneMouseMove={onPaneMouseMove}
           attributionPosition="top-right"
           maxZoom={10}
           minZoom={0.1}

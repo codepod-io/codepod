@@ -10,7 +10,7 @@ import { Pod, MyState } from ".";
 export interface PodSlice {
   getPod: (id: string) => Pod;
   getPods: () => Record<string, Pod>;
-  getId2children: (string) => string[];
+  getId2children: (id: string) => string[];
   setPodFocus: (id: string) => void;
   setPodBlur: (id: string) => void;
   setPodGeo: (
@@ -49,6 +49,7 @@ export interface PodSlice {
     content: { data: { html: string; text: string; image: string } };
     count: number;
   }) => void;
+  clonePod: (id: string) => any;
 }
 
 export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
@@ -262,6 +263,13 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
         }
       })
     ),
+  clonePod: (id: string) => {
+    const pod = get().pods[id];
+    return {
+      ...pod,
+      children: pod.children.map((child) => get().clonePod(child.id)),
+    };
+  },
 });
 
 /**

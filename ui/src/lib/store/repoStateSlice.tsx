@@ -11,6 +11,7 @@ import {
   doRemoteUpdateVisibility,
   doRemoteAddCollaborator,
   doRemoteDeleteCollaborator,
+  doRemoteAddPods,
 } from "../fetch";
 
 import { Doc } from "yjs";
@@ -65,6 +66,7 @@ export interface RepoStateSlice {
   deleteClient: (clientId: any) => void;
   // TODO: this belongs to podSlice
   remoteUpdateAllPods: (client) => void;
+  addPods: (client, repoId: string, pods: Pod[]) => void;
   showLineNumbers: boolean;
   flipShowLineNumbers: () => void;
   yjsConnecting: boolean;
@@ -106,6 +108,29 @@ export const createRepoStateSlice: StateCreator<
 
   loadRepo: loadRepo(set, get),
   remoteUpdateAllPods: async (client) => {
+    // The pods that haven't been inserted to the database yet
+    const pendingPods = Object.values(get().pods).filter(
+      (pod) => pod.dirty && pod.pending
+    );
+
+    // First insert all pending pods and ignore their relationship for now
+    if (pendingPods.length > 0) {
+      try {
+        await get().addPods(client, get().repoId || "", pendingPods);
+
+        pendingPods.forEach((pod) => {
+          set(
+            produce((state) => {
+              state.pods[pod.id].pending = false;
+            })
+          );
+        });
+      } catch (e) {
+        console.log("add pods error", e);
+      }
+    }
+
+    // update all dirty pods
     async function helper(id) {
       let pod = get().pods[id];
       if (!pod) return;
@@ -116,20 +141,37 @@ export const createRepoStateSlice: StateCreator<
             produce((state) => {
               // FIXME when doRemoteUpdatePod fails, this will be stuck.
               state.pods[id].isSyncing = true;
-              // pod may be updated during remote syncing
-              state.pods[id].dirty = false;
             })
           );
-          await doRemoteUpdatePod(client, { pod, repoId: get().repoId });
-          set(
-            produce((state) => {
-              state.pods[id].isSyncing = false;
-            })
-          );
+          try {
+            const res = await doRemoteUpdatePod(client, {
+              pod,
+              repoId: get().repoId,
+            });
+            set(
+              produce((state) => {
+                state.pods[id].isSyncing = false;
+                // pod may be updated during remote syncing
+                // clear dirty flag only when remote update is successful
+                if (res) state.pods[id].dirty = false;
+              })
+            );
+          } catch (e) {
+            set(
+              produce((state) => {
+                state.pods[id].isSyncing = false;
+              })
+            );
+            console.log("remote update pod error", e, pod);
+          }
         }
       }
     }
     await helper("ROOT");
+  },
+  addPods: async (client, repoId: string, pods: Pod[]) => {
+    // const newPods = pods.map((id) => get().pods[id]);
+    await doRemoteAddPods(client, { repoId, pods });
   },
   addClient: (clientID, name, color) =>
     set((state) => {

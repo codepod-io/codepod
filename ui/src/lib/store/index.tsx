@@ -42,6 +42,7 @@ export type Pod = {
   ns?: string;
   running?: boolean;
   focus?: boolean;
+  pending?: boolean;
 };
 
 export type MyState = PodSlice &

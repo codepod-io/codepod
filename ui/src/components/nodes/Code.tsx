@@ -243,6 +243,7 @@ export const CodeNode = memo<NodeProps>(function ({
   const setPodName = useStore(store, (state) => state.setPodName);
   const setPodGeo = useStore(store, (state) => state.setPodGeo);
   const getPod = useStore(store, (state) => state.getPod);
+  const clonePod = useStore(store, (state) => state.clonePod);
   const pod = getPod(id);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
@@ -252,7 +253,7 @@ export const CodeNode = memo<NodeProps>(function ({
   );
   const inputRef = useRef<HTMLInputElement>(null);
   const updateView = useStore(store, (state) => state.updateView);
-  const isCutting = useStore(store, (state) => state.cuttingId === id);
+  const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
 
   const showResult = useStore(
     store,
@@ -264,6 +265,7 @@ export const CodeNode = memo<NodeProps>(function ({
       state.pods[id]?.stderr
   );
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+  const setPaneFocus = useStore(store, (state) => state.setPaneFocus);
   const onResize = useCallback(
     (e, data) => {
       const { size } = data;
@@ -298,7 +300,7 @@ export const CodeNode = memo<NodeProps>(function ({
 
   const onCopy = useCallback(
     (clipboardData: any) => {
-      const pod = getPod(id);
+      const pod = clonePod(id);
       if (!pod) return;
       clipboardData.setData("text/plain", pod.content);
       clipboardData.setData(
@@ -308,8 +310,9 @@ export const CodeNode = memo<NodeProps>(function ({
           data: pod,
         })
       );
+      setPaneFocus();
     },
-    [getPod, id]
+    [clonePod, id]
   );
 
   const cutBegin = useStore(store, (state) => state.cutBegin);
@@ -471,15 +474,6 @@ export const CodeNode = memo<NodeProps>(function ({
             justifyContent: "center",
           }}
           className="nodrag"
-          onClick={(e) => {
-            const pane = document.getElementsByClassName(
-              "react-flow__pane"
-            )[0] as HTMLElement;
-            if (pane) {
-              pane.tabIndex = 0;
-              pane.focus();
-            }
-          }}
         >
           {!isGuest && (
             <Tooltip title="Run (shift-enter)">
@@ -499,8 +493,8 @@ export const CodeNode = memo<NodeProps>(function ({
             options={{ debug: true, format: "text/plain", onCopy } as any}
           >
             <Tooltip title="Copy">
-              <IconButton size="small">
-                <ContentCopyIcon fontSize="inherit" />
+              <IconButton size="small" className="copy-button">
+                <ContentCopyIcon fontSize="inherit" className="copy-button" />
               </IconButton>
             </Tooltip>
           </CopyToClipboard>

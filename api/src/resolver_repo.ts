@@ -296,56 +296,42 @@ export async function updatePod(_, { id, repoId, input }, { userId }) {
       },
     },
   });
-  if (pod_found) {
-    // if repoId doesn't have id, create it IF input.parent exists
-    const pod = await prisma.pod.update({
-      where: {
-        id,
+  // or, return false and leave it dirty
+  if (!pod_found) return false;
+  const pod = await prisma.pod.update({
+    where: {
+      id,
+    },
+    data: {
+      ...input,
+      parent:
+        input.parent && input.parent !== "ROOT"
+          ? {
+              connect: {
+                id: input.parent,
+              },
+            }
+          : undefined,
+      children: {
+        connect: input.children?.map((id) => ({ id })),
       },
-      data: {
-        ...input,
-        parent:
-          input.parent && input.parent !== "ROOT"
-            ? {
-                connect: {
-                  id: input.parent,
-                },
-              }
-            : undefined,
-        children: {
-          connect: input.children?.map((id) => ({ id })),
-        },
-      },
-    });
-  } else {
-    // if repoId doesn't have id, create it IF input.parent exists, otherwise throw error.
-    await prisma.pod.create({
-      data: {
-        id,
-        ...input,
-        // Dummy index because it is a required field for historical reasons.
-        index: 0,
-        parent:
-          input.parent && input.parent !== "ROOT"
-            ? {
-                connect: {
-                  id: input.parent,
-                },
-              }
-            : undefined,
-        // In case of [], create will throw an error. Thus I have to pass undefined.
-        // children: input.children.length > 0 ? input.children : undefined,
-        children: {
-          connect: input.children?.map((id) => ({ id })),
-        },
-        repo: {
-          connect: {
-            id: repoId,
-          },
-        },
-      },
-    });
-  }
+    },
+  });
+  return true;
+}
+
+export async function addPods(_, { repoId, pods }, { userId }) {
+  if (!userId) throw new Error("Not authenticated.");
+  await ensureRepoEditAccess({ repoId, userId });
+  // notice: we keep the field "children", "parent", "repo" empty when first insertion the repo. Because if we insist on filling them, we must specify children, parent and repo by prisma.create.pod. Regardless of what order we insert them, we can't make sure both children and parent exist in the DB, the insertion must fail.
+  // Here, we first insert all pods and ignore their any relationship, then the relationship will be updated by updateAllPods because we don't clean the dirty tag of them next.
+  await prisma.pod.createMany({
+    data: pods.map((pod) => {
+      const res = { ...pod, id: pod.id, index: 0, parent: undefined, repoId };
+      if (res.children) delete res.children;
+      return res;
+    }),
+  });
 
   return true;
 }

@@ -117,6 +117,7 @@ export const typeDefs = gql`
     updateRepo(id: ID, name: String): Boolean
     deleteRepo(id: ID): Boolean
     deletePod(id: String, toDelete: [String]): Boolean
+    addPods(repoId: String, pods: [PodInput]): Boolean
     updatePod(id: String, repoId: String, input: PodInput): Boolean
     clearUser: Boolean
     clearRepo: Boolean

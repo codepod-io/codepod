@@ -10,7 +10,7 @@ import { Transaction, YEvent } from "yjs";
 
 import { match, P } from "ts-pattern";
 
-import { myNanoId, nodetype2dbtype } from "../utils";
+import { myNanoId, nodetype2dbtype, dbtype2nodetype } from "../utils";
 
 import {
   Connection,
@@ -27,7 +27,10 @@ import {
   XYPosition,
   MarkerType,
   NodeDragHandler,
+  ReactFlowInstance,
 } from "reactflow";
+import { node } from "prop-types";
+import { fixTables } from "@remirror/pm/dist-types/tables";
 
 // TODO add node's data typing.
 type NodeData = {
@@ -46,31 +49,56 @@ const level2color = {
 };
 
 /**
- * The temporary reactflow nodes for paste/cut.
+ * Creare the temporary nodes as well as the temporary pods based on the given pod.
  * @param pod
  * @param position
+ * @param parent
+ * @param level
  * @returns
  */
-function createTemporaryNode(pod, position) {
+function createTemporaryNode(pod, position, parent = "ROOT", level = 0): any {
   const id = myNanoId();
+  let style = {
+    // create a temporary half-transparent pod
+    opacity: 0.5,
+    width: pod.width,
+  };
+
+  if (pod.type === "DECK") {
+    style["height"] = pod.height!;
+    style["backgroundColor"] = level2color[level] || level2color["default"];
+  }
+
   const newNode = {
     id,
-    type: "code",
+    type: dbtype2nodetype(pod.type),
     position,
     data: {
       label: id,
-      parent: "ROOT",
-      level: 0,
+      parent,
+      level,
     },
+    extent: level > 0 ? "parent" : undefined,
     dragHandle: ".custom-drag-handle",
     width: pod.width,
-    style: {
-      // create a temporary half-transparent pod
-      opacity: 0.5,
-      width: pod.width,
-    },
+    height: pod.height!,
+    // Note: when the temporary node is finally sticked to the canvas, the click event will trigger drag event/position change of this node once and cause a bug because the node is not ready in the store and DB. just make it undraggable during moving to avoid this bug.
+    draggable: false,
+    style,
   };
-  return newNode;
+
+  if (parent !== "ROOT") {
+    newNode["parentNode"] = parent;
+  }
+
+  const newPod = { ...pod, parent, id, position, children: [] };
+  const nodes = [[newNode, newPod]];
+  pod.children.forEach((child) => {
+    nodes.push(
+      ...createTemporaryNode(child, { x: child.x, y: child.y }, id, level + 1)
+    );
+  });
+  return nodes;
 }
 
 /**
@@ -212,20 +240,25 @@ export interface CanvasSlice {
 
   updateView: () => void;
 
+  isPaneFocused: boolean;
+  setPaneFocus: () => void;
+  setPaneBlur: () => void;
+
   addNode: (type: "code" | "scope" | "rich", position: XYPosition) => void;
 
-  pastingNode?: Node;
+  pastingNodes?: Node[];
+  headPastingNodes?: Set<string>;
+  mousePos?: XYPosition | undefined;
   isPasting: boolean;
-  pasteBegin: (position: XYPosition, pod: Pod) => void;
-  pasteEnd: () => void;
-  cancelPaste: () => void;
+  pasteBegin: (position: XYPosition, pod: Pod, cutting: boolean) => void;
+  pasteEnd: (position: XYPosition, cutting: boolean) => void;
+  cancelPaste: (cutting: boolean) => void;
   onPasteMove: (mousePos: XYPosition) => void;
 
-  cuttingId?: string;
   isCutting: boolean;
-  cuttingNode?: Node;
+  cuttingIds: Set<string>;
   cutBegin: (id: string) => void;
-  cutEnd: () => void;
+  cutEnd: (position: XYPosition, reactFlowInstance: ReactFlowInstance) => void;
   onCutMove: (mousePos: XYPosition) => void;
   cancelCut: () => void;
 
@@ -233,6 +266,7 @@ export interface CanvasSlice {
   getScopeAtPos: ({ x, y }: XYPosition, exclude: string) => Node | undefined;
   moveIntoScope: (nodeId: string, scopeId: string) => void;
   moveIntoRoot: (nodeId: string) => void;
+  tempUpdateView: ({ x, y }: XYPosition) => void;
 
   onNodesChange: (client: ApolloClient<any>) => OnNodesChange;
   onEdgesChange: OnEdgesChange;
@@ -248,6 +282,17 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
 
   setDragHighlight: (dragHighlight) => set({ dragHighlight }),
   removeDragHighlight: () => set({ dragHighlight: undefined }),
+
+  // the nodes being cutting (on the top level)
+  cuttingIds: new Set(),
+  // all temporary nodes created during cutting/pasting
+  pastingNodes: [],
+  // the nodes being pasting (on the top level)
+  headPastingNodes: new Set(),
+  // current mouse position, used to update the pasting nodes on the top level when moving the mouse
+  mousePos: undefined,
+
+  isPaneFocused: false,
 
   selectedPods: new Set(),
   selectionParent: undefined,
@@ -314,19 +359,28 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           .with(get().dragHighlight, () => "active")
           .otherwise(() => undefined),
       }));
-    // 2. those from cuttingNode, pastingNode, which are temporary nodes
-    nodes = nodes.concat(get().cuttingNode || [], get().pastingNode || []);
+    // 2. show the temporary nodes, make the temporary nodes on the front-most
+    nodes = nodes.concat(get().pastingNodes || []);
+
+    const cursor = get().mousePos!;
+    const movingNodes = get().headPastingNodes;
+    if (cursor) {
+      nodes = nodes.map((node) =>
+        // update the position of top-level pasting nodes by the mouse position
+        movingNodes?.has(node.id) ? { ...node, position: cursor } : node
+      );
+    }
     set({ nodes });
   },
 
-  addNode: (type, mousePos) => {
+  addNode: (type, position, parent = "ROOT") => {
     let nodesMap = get().ydoc.getMap<Node>("pods");
-    let node = createNewNode(type, mousePos);
+    let node = createNewNode(type, position);
     nodesMap.set(node.id, node);
     get().addPod({
       id: node.id,
       children: [],
-      parent: "ROOT",
+      parent,
       type: nodetype2dbtype(node.type || ""),
       lang: "python",
       x: node.position.x,
@@ -335,6 +389,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       height: node.height!,
       // For my local update, set dirty to true to push to DB.
       dirty: true,
+      pending: true,
     });
     get().updateView();
   },
@@ -342,86 +397,105 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   isPasting: false,
   isCutting: false,
 
-  pasteBegin: (position, pod) => {
-    // 1. create a temporary node to move with cursor
-    // 2. set pastingId to the random node's ID, so that we can move it around.
-    let pastingNode = createTemporaryNode(pod, position);
-    // TODO need to add this to zustand store.pods, otherwise the CodeNode won't be rendered.
-    // FIXME don't forget to remove this node from store.pods when is cancelled
-    get().addPod({
-      id: pastingNode.id,
-      children: [],
-      parent: "ROOT",
-      lang: "python",
-      type: nodetype2dbtype(pastingNode.type),
-      x: position.x,
-      y: position.y,
-      error: pod.error,
-      stdout: pod.stdout,
-      result: pod.result,
-      name: pod.name,
-      content: pod.content,
-      dirty: false,
-    });
-    set({ pastingNode, isPasting: true });
-    // make the pane unreachable by keyboard (escape), or a black border shows
-    // up in the pane when pasting is canceled.
-    const pane = document.getElementsByClassName("react-flow__pane")[0];
-    if (pane && pane.hasAttribute("tabindex")) {
-      pane.removeAttribute("tabindex");
-    }
-  },
-  onPasteMove: (mousePos) => {
-    let pastingNode = get().pastingNode;
-    if (!pastingNode) return;
-    set({ pastingNode: { ...pastingNode, position: mousePos } });
-    get().updateView();
-  },
-  pasteEnd: () => {
-    // on drop, make this node into nodesMap. The nodesMap.observer will updateView.
-    let pastingNode = get().pastingNode;
-    if (!pastingNode) return;
-    let nodesMap = get().ydoc.getMap<Node>("pods");
-    let position = pastingNode.position;
-
-    nodesMap.set(pastingNode.id, {
-      ...pastingNode,
-      style: { ...pastingNode.style, opacity: 1 },
-    });
-    // update zustand and db
-    set(
-      produce((state) => {
-        let pod = state.pods[pastingNode!.id];
-        pod.x = position.x;
-        pod.y = position.y;
-        pod.dirty = true;
-        state.pastingNode = undefined;
-        state.isPasting = false;
+  pasteBegin: (position, pod, cutting = false) => {
+    // 1. create temporary nodes and pods
+    const nodes = createTemporaryNode(pod, position);
+    // 2. add the temporary pods to store.pods
+    nodes.forEach(([node, p]) =>
+      get().addPod({
+        ...p,
+        dirty: false,
       })
     );
+    set({
+      // Only headPastingNodes moves with the mouse, because the other temporary nodes are children of the headPastingNodes.
+      // For now, we can have only one headPastingNode on the top level.
+      // TODO: support multiple headPastingNodes on the top level when implementing multi-select copy-paste
+      headPastingNodes: new Set([nodes[0][0].id]),
+      // Distinguish the state of cutting or pasting
+      isPasting: !cutting,
+      isCutting: cutting,
+      // But we need to keep all the temporary nodes in the pastingNodes list to render them.
+      pastingNodes: nodes.map(([node, pod]) => node),
+    });
+    get().updateView();
+  },
+  onPasteMove: (mousePos: XYPosition) => {
+    // When the mouse moves, only the top-level nodes move with the mouse. We don't have to update all the view.
+    get().tempUpdateView(mousePos);
+  },
+  pasteEnd: (position, cutting = false) => {
+    // on drop, make this node into nodesMap. The nodesMap.observer will updateView.
+    const leadingNodes = get().headPastingNodes;
+    const pastingNodes = get().pastingNodes;
+    if (!pastingNodes || !leadingNodes) return;
+    let nodesMap = get().ydoc.getMap<Node>("pods");
+
+    // clear the temporary nodes and the pasting/cutting state
+    set(
+      produce((state) => {
+        state.pastingNode = undefined;
+        state.headPastingNodes = new Set();
+        state.pastingNodes = [];
+        state.mousePos = undefined;
+        if (cutting) state.isCutting = false;
+        else state.isPasting = false;
+      })
+    );
+
+    pastingNodes.forEach((node) => {
+      set(
+        produce((state) => {
+          let pod = state.pods[node!.id];
+          if (leadingNodes?.has(node.id)) {
+            pod.x = position.x;
+            pod.y = position.y;
+          }
+          pod.dirty = true;
+          // this flag triggers the addPods call when updating all dirty pods
+          pod.pending = true;
+        })
+      );
+
+      // insert all nodes to the yjs map
+      nodesMap.set(node.id, {
+        ...(leadingNodes?.has(node.id) ? { ...node, position } : node),
+        style: { ...node.style, opacity: 1 },
+        draggable: true,
+      });
+    });
     // update view
     get().updateView();
-    let scope = getScopeAt(
-      position.x,
-      position.y,
-      [pastingNode.id],
-      get().nodes,
-      nodesMap
-    );
-    if (scope && scope.id !== pastingNode.parentNode) {
-      get().moveIntoScope(pastingNode.id, scope.id);
-    }
+
+    // check if the final position located in another scope
+    leadingNodes.forEach((id) => {
+      let scope = getScopeAt(
+        position.x,
+        position.y,
+        [id],
+        get().nodes,
+        nodesMap
+      );
+      if (scope && scope.id !== id) {
+        get().moveIntoScope(id, scope.id);
+      }
+    });
   },
-  cancelPaste: () => {
-    let pastingNode = get().pastingNode;
-    if (!pastingNode) return;
+  cancelPaste: (cutting = false) => {
+    const pastingNodes = get().pastingNodes || [];
     set(
       produce((state) => {
         // Remove pastingNode from store.
-        delete state.pods[pastingNode!.id];
+        state.pastingNodes = [];
+        state.headPastingNodes = new Set();
+        pastingNodes.forEach((node) => {
+          delete state.pods[node!.id];
+        });
         // Clear pasting data and update view.
         state.pastingNode = undefined;
-        state.isPasting = false;
+        state.mousePos = undefined;
+        if (cutting) state.isCutting = false;
+        else state.isPasting = false;
       })
     );
     get().updateView();
@@ -432,116 +506,38 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   // 1. hide the original node
   // 2. create a dummy node that move with cursor
   cutBegin: (id) => {
-    let pod = get().pods[id];
-    let cuttingNode = createTemporaryNode(pod, { x: pod.x, y: pod.y });
-    get().addPod({
-      id: cuttingNode.id,
-      children: [],
-      parent: "ROOT",
-      lang: "python",
-      type: nodetype2dbtype(cuttingNode.type),
-      x: pod.x,
-      y: pod.y,
-      error: pod.error,
-      stdout: pod.stdout,
-      result: pod.result,
-      name: pod.name,
-      content: pod.content,
-      dirty: false,
-    });
-    set({ cuttingId: id, cuttingNode, isCutting: true });
-    get().updateView();
-    // FIXME not working for cancelCut
-    // make the pane unreachable by keyboard (escape), or a black border shows
-    // up in the pane when pasting is canceled.
-    const pane = document.getElementsByClassName("react-flow__pane")[0];
-    if (pane && pane.hasAttribute("tabindex")) {
-      pane.removeAttribute("tabindex");
-    }
+    const pod = get().clonePod(id);
+    if (!pod) return;
+
+    // Store only the top-level cut nodes, for now, it contains only one element. But we will support multi-select cut-paste in the future.
+    set({ cuttingIds: new Set([id]) });
+    get().pasteBegin({ x: pod.x, y: pod.y }, pod, true);
   },
   onCutMove: (mousePos) => {
-    let cuttingNode = get().cuttingNode;
-    if (!cuttingNode) return;
-    set({ cuttingNode: { ...cuttingNode, position: mousePos } });
-    get().updateView();
+    get().onPasteMove(mousePos);
   },
-  // 3. on drop, set the original node to the new position
-  cutEnd: () => {
-    let cuttingNode = get().cuttingNode;
-    let cuttingId = get().cuttingId;
-    if (!cuttingNode || !cuttingId) return;
-    // Set the original node to the new position.
-    // Update peers.
-    let nodesMap = get().ydoc.getMap<Node>("pods");
-    let node = nodesMap.get(cuttingId)!;
-    let position = cuttingNode.position;
-    nodesMap.set(cuttingId, {
-      ...node,
-      position,
-      style: { ...node.style, opacity: 1 },
+  // 3. on drop, delete the original node and create a new node
+  cutEnd: (position, reactFlowInstance) => {
+    const cuttingIds = get().cuttingIds;
+
+    if (!cuttingIds) return;
+
+    reactFlowInstance.deleteElements({
+      nodes: Array.from(cuttingIds).map((id) => ({ id })),
     });
-    set(
-      produce((state) => {
-        // Remove the cuttingNode from the store.
-        delete state.pods[cuttingNode!.id];
-        // We need to remove parent's children field as well.
-        //
-        // TODO refactor this: the children field updates are in different
-        // spaces (deletePod, setPodGeo, here), hard to maintain. The children
-        // seems to be used only in runtime gather symbol table.
-        let parent = state.pods[cuttingNode!.parentNode ?? "ROOT"];
-        if (parent) {
-          const index = parent.children
-            .map(({ id }) => id)
-            .indexOf(cuttingNode!.id);
-          parent.children.splice(index, 1);
-        }
-        // Sync the original node to the DB.
-        let orig = state.pods[cuttingId!];
-        orig.x = position.x;
-        orig.y = position.y;
-        orig.dirty = true;
-      })
-    );
-    // Clear cutting data and update view.
-    set({ cuttingId: undefined, cuttingNode: undefined, isCutting: false });
-    get().updateView();
-    let scope = getScopeAt(
-      position.x,
-      position.y,
-      [cuttingId],
-      get().nodes,
-      nodesMap
-    );
-    if (scope) {
-      if (scope.id !== cuttingNode.parentNode) {
-        get().moveIntoScope(cuttingId, scope.id);
-      }
-    } else {
-      // move out of scope
-      get().moveIntoRoot(cuttingId);
-    }
+
+    set({ cuttingIds: new Set() });
+
+    get().pasteEnd(position, true);
   },
   cancelCut: () => {
-    // Clear cutting data and update view.
-    let cuttingNode = get().cuttingNode;
-    if (!cuttingNode) return;
-    set(
-      produce((state) => {
-        // Remove the cuttingNode from the store.
-        delete state.pods[cuttingNode!.id];
-        // Clear cutting data.
-        state.cuttingNode = undefined;
-        state.cuttingId = undefined;
-        state.isCutting = false;
-      })
-    );
-    get().updateView();
+    set({ cuttingIds: new Set() });
+    get().cancelPaste(true);
   },
 
   // NOTE: this does not mutate.
   getScopeAtPos: ({ x, y }, exclude) => {
-    let nodesMap = get().ydoc.getMap<Node>("pods");
+    const nodesMap = get().ydoc.getMap<Node>("pods");
     return getScopeAt(x, y, [exclude], get().nodes, nodesMap);
   },
 
@@ -615,7 +611,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         level: scope.data.level + 1,
       },
     };
-
     // update peer
     nodesMap.set(node.id, newNode);
     // update zustand & db
@@ -623,6 +618,16 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     get().adjustLevel();
     // update view
     get().updateView();
+  },
+
+  tempUpdateView: (position) => {
+    const movingNodes = get().headPastingNodes;
+    set({
+      mousePos: position,
+      nodes: get().nodes.map((node) =>
+        movingNodes?.has(node.id) ? { ...node, position } : node
+      ),
+    });
   },
 
   // I should modify nodesMap here
@@ -634,7 +639,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     const nextNodes = applyNodeChanges(changes, nodes);
 
     changes.forEach((change) => {
-      // console.log("onNodesChange", change.type);
       switch (change.type) {
         case "reset":
           break;
@@ -666,7 +670,9 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
             // If Yjs doesn't have the node, it means that it's a cutting/pasting
             // node. We won't add it to Yjs here.
             if (
-              [get().cuttingNode?.id, get().pastingNode?.id].includes(change.id)
+              get()
+                .pastingNodes?.map((n) => n.id)
+                .includes(change.id)
             ) {
               if (nodesMap.has(change.id)) {
                 throw new Error(
@@ -677,11 +683,9 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
               // update local
               set(
                 produce((state: MyState) => {
-                  if (state.cuttingNode?.id === change.id) {
-                    state.cuttingNode = node;
-                  } else {
-                    state.pastingNode = node;
-                  }
+                  state.pastingNodes = state.pastingNodes?.map((n) =>
+                    n.id === change.id ? node : n
+                  );
                 })
               );
               // update local
@@ -755,4 +759,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       ),
     });
   },
+
+  setPaneFocus: () => set({ isPaneFocused: true }),
+  setPaneBlur: () => set({ isPaneFocused: false }),
 });
