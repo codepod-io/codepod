@@ -1,4 +1,21 @@
 import { ApolloClient, InMemoryCache, gql } from "@apollo/client/core";
+
+// chooes between docker and k8s spawners
+import {
+  spawnRuntime as spawnRuntime_docker,
+  killRuntime as killRuntime_docker,
+  infoRuntime as infoRuntime_docker,
+  loopKillInactiveRoutes as loopKillInactiveRoutes_docker,
+  initRoutes as initRoutes_docker,
+} from "./spawner-docker";
+import {
+  spawnRuntime as spawnRuntime_k8s,
+  killRuntime as killRuntime_k8s,
+  infoRuntime as infoRuntime_k8s,
+  loopKillInactiveRoutes as loopKillInactiveRoutes_k8s,
+  initRoutes as initRoutes_k8s,
+} from "./spawner-k8s";
+
 import Prisma from "@prisma/client";
 
 const { PrismaClient } = Prisma;
@@ -10,7 +27,7 @@ const apollo_client = new ApolloClient({
   uri: process.env.PROXY_API_URL,
 });
 
-export async function listAllRuntimes(_, {}, { userId }) {
+async function listAllRuntimes(_, {}, { userId }) {
   // 1. get all containers, and filter by container name. This is the safest way to get all the running instances.
   //    If this is too expensive, I should maintain a DB, and periodically check for  zombie containers.
   // 2. get all routes. I need to clean this up as well. UPDATE: the route gets deleted in the end, so I can use this as truth.
@@ -50,3 +67,35 @@ export async function listAllRuntimes(_, {}, { userId }) {
     .filter((x) => x);
   return res;
 }
+
+export default {
+  Query: {
+    listAllRuntimes,
+
+    ...(process.env.RUNTIME_SPAWNER === "k8s"
+      ? {
+          infoRuntime: infoRuntime_k8s,
+        }
+      : {
+          infoRuntime: infoRuntime_docker,
+        }),
+  },
+  Mutation: {
+    ...(process.env.RUNTIME_SPAWNER === "k8s"
+      ? {
+          spawnRuntime: spawnRuntime_k8s,
+          killRuntime: killRuntime_k8s,
+        }
+      : {
+          spawnRuntime: spawnRuntime_docker,
+          killRuntime: killRuntime_docker,
+        }),
+  },
+};
+
+export const initRoutes =
+  process.env.RUNTIME_SPAWNER !== "k8s" ? initRoutes_docker : initRoutes_k8s;
+export const loopKillInactiveRoutes =
+  process.env.RUNTIME_SPAWNER !== "k8s"
+    ? loopKillInactiveRoutes_docker
+    : loopKillInactiveRoutes_k8s;

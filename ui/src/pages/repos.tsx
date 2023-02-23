@@ -32,7 +32,7 @@ function RepoLine({ repo, deletable, sharable, runtimeInfo }) {
   const { me } = useMe();
   const [deleteRepo] = useMutation(
     gql`
-      mutation deleteRepo($id: ID) {
+      mutation deleteRepo($id: ID!) {
         deleteRepo(id: $id)
       }
     `,

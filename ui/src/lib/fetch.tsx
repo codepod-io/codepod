@@ -208,7 +208,7 @@ function serializePodInput(pod) {
 
 export async function doRemoteDeletePod(client, { id, toDelete }) {
   const mutation = gql`
-    mutation deletePod($id: String, $toDelete: [String]) {
+    mutation deletePod($id: String!, $toDelete: [String]) {
       deletePod(id: $id, toDelete: $toDelete)
     }
   `;
@@ -225,7 +225,7 @@ export async function doRemoteDeletePod(client, { id, toDelete }) {
 export async function doRemoteUpdatePod(client, { repoId, pod }) {
   const result = await client.mutate({
     mutation: gql`
-      mutation updatePod($id: String, $repoId: String, $input: PodInput) {
+      mutation updatePod($id: String!, $repoId: String!, $input: PodInput) {
         updatePod(id: $id, repoId: $repoId, input: $input)
       }
     `,
@@ -241,7 +241,7 @@ export async function doRemoteUpdatePod(client, { repoId, pod }) {
 export async function doRemoteAddPods(client, { repoId, pods }) {
   const result = await client.mutate({
     mutation: gql`
-      mutation createAddPods($repoId: String, $input: [PodInput]) {
+      mutation createAddPods($repoId: String!, $input: [PodInput]) {
         addPods(repoId: $repoId, pods: $input)
       }
     `,
@@ -255,7 +255,7 @@ export async function doRemoteAddPods(client, { repoId, pods }) {
 
 export async function doRemoteLoadVisibility(client, { repoId }) {
   const query = gql`
-    query ExampleQuery($repoId: String) {
+    query ExampleQuery($repoId: String!) {
       getVisibility(repoId: $repoId) {
         collaborators {
           id
@@ -283,7 +283,7 @@ export async function doRemoteLoadVisibility(client, { repoId }) {
 
 export async function doRemoteUpdateVisibility(client, { repoId, isPublic }) {
   const mutation = gql`
-    mutation updateVisibility($repoId: String, $isPublic: Boolean) {
+    mutation updateVisibility($repoId: String!, $isPublic: Boolean!) {
       updateVisibility(repoId: $repoId, isPublic: $isPublic)
     }
   `;
@@ -299,7 +299,7 @@ export async function doRemoteUpdateVisibility(client, { repoId, isPublic }) {
 
 export async function doRemoteAddCollaborator(client, { repoId, email }) {
   const mutation = gql`
-    mutation addCollaborator($repoId: String, $email: String) {
+    mutation addCollaborator($repoId: String!, $email: String!) {
       addCollaborator(repoId: $repoId, email: $email)
     }
   `;
@@ -322,7 +322,7 @@ export async function doRemoteDeleteCollaborator(
   { repoId, collaboratorId }
 ) {
   const mutation = gql`
-    mutation deleteCollaborator($repoId: String, $collaboratorId: String) {
+    mutation deleteCollaborator($repoId: String!, $collaboratorId: String!) {
       deleteCollaborator(repoId: $repoId, collaboratorId: $collaboratorId)
     }
   `;
