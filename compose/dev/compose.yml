@@ -36,6 +36,10 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       KERNEL_NETWORK: "codepod"
+      EXPORT_AWS_S3_REGION: ${EXPORT_AWS_S3_REGION}
+      EXPORT_AWS_S3_BUCKET: ${EXPORT_AWS_S3_BUCKET}
+      EXPORT_AWS_S3_ACCESS_KEY_ID: ${EXPORT_AWS_S3_ACCESS_KEY_ID}
+      EXPORT_AWS_S3_SECRET_ACCESS_KEY: ${EXPORT_AWS_S3_SECRET_ACCESS_KEY}
       PROXY_API_URL: "http://proxy:4011/graphql"
       ZMQ_KERNEL_IMAGE: "lihebi/codepod-kernel-python:latest"
       WS_RUNTIME_IMAGE: "lihebi/codepod-runtime:latest"
