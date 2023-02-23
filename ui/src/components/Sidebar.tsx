@@ -382,6 +382,79 @@ type SidebarProps = {
   onClose: () => void;
 };
 
+function download(url) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function ExportFile() {
+  // an export component
+  let { id: repoId } = useParams();
+  // the useMutation for exportJSON
+  const [exportJSON, { data, loading, error }] = useMutation(
+    gql`
+      mutation ExportFile($repoId: String!) {
+        exportFile(repoId: $repoId)
+      }
+    `
+  );
+  useEffect(() => {
+    if (data?.exportFile) {
+      download(data.exportFile);
+    }
+  }, [data]);
+  return (
+    <>
+      <Button
+        onClick={() => {
+          // call export graphQL api to get the AWS S3 url
+          exportJSON({ variables: { repoId } });
+        }}
+        disabled={loading}
+      >
+        Python File
+      </Button>
+      {error && <Box>Error: {error?.message}</Box>}
+    </>
+  );
+}
+
+function ExportJSON() {
+  // an export component
+  let { id: repoId } = useParams();
+  // the useMutation for exportJSON
+  const [exportJSON, { data, loading, error }] = useMutation(
+    gql`
+      mutation ExportJSON($repoId: String!) {
+        exportJSON(repoId: $repoId)
+      }
+    `
+  );
+  useEffect(() => {
+    if (data?.exportJSON) {
+      download(data.exportJSON);
+    }
+  }, [data]);
+  return (
+    <>
+      <Button
+        onClick={() => {
+          // call export graphQL api to get the AWS S3 url
+          exportJSON({ variables: { repoId } });
+        }}
+        disabled={loading}
+      >
+        Raw JSON
+      </Button>
+      {error && <Box>Error: {error.message}</Box>}
+    </>
+  );
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
   width,
   open,
@@ -444,30 +517,24 @@ export const Sidebar: React.FC<SidebarProps> = ({
             padding: "8px 16px",
           }}
         >
-          <Grid container spacing={2}>
-            {isGuest ? (
-              <>
-                <Grid item xs={12}>
-                  <Box> Read-only Mode: You are a guest. </Box>
-                </Grid>
-              </>
-            ) : (
-              <>
-                <Grid item xs={12}>
-                  <SyncStatus />
-                </Grid>
-                <Grid item xs={12}>
-                  <SidebarRuntime />
-                </Grid>
-                <Grid item xs={12}>
-                  <Divider />
-                  <Typography variant="h6">Site Settings</Typography>
-                  <SidebarSettings />
-                </Grid>
-                <ToastError />
-              </>
+          <Stack>
+            {!isGuest && (
+              <Box>
+                <SyncStatus />
+                <Divider />
+                <Typography variant="h6">Runtime Info</Typography>
+                <SidebarRuntime />
+              </Box>
             )}
-          </Grid>
+            <Divider />
+            <Typography variant="h6">Export to ..</Typography>
+            <ExportFile />
+            <ExportJSON />
+            <Divider />
+            <Typography variant="h6">Site Settings</Typography>
+            <SidebarSettings />
+            <ToastError />
+          </Stack>
         </Box>
       </Drawer>
     </>

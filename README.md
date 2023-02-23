@@ -3,7 +3,7 @@
 Codepod provides the interactive coding experience popularized by Jupyter, but
 with scalability and production-readiness. Users can still incrementally build
 up code by trying out a small code snippet each time. But they would not be
-overwhelmed by the great number of code snippets as the projects grow. 
+overwhelmed by the great number of code snippets as the projects grow.
 
 <div align="center"><h2>Try it online at <a href="https://app.codepod.io">https://app.codepod.io!</a></a></div>
 
@@ -42,18 +42,31 @@ node.js process inside the container do the compiling and hot-reloading.
 
 To install docker-compose, follow the official [Docker documentation](https://docs.docker.com/compose/install/linux/).
 
+## .env file
+
 First, create a `dev/.env` file with the following content (leave as is or change the value to
-whatever you want). Leave the `GOOGLE_CLIENT_ID` empty if you do not need the OAuth provided by Google.
+whatever you want).
 
 ```properties
 POSTGRES_USER=myusername
 POSTGRES_PASSWORD=mypassword
 POSTGRES_DB=mydbname
 JWT_SECRET=mysupersecretjwttoken
+
 GOOGLE_CLIENT_ID=<google oauth client id>
+
+EXPORT_AWS_S3_REGION=us-west-1
+EXPORT_AWS_S3_BUCKET=<YOUR_BUCKET_NAME>
+EXPORT_AWS_S3_ACCESS_KEY_ID=<YOUR_ACCESS_KEY>
+EXPORT_AWS_S3_SECRET_ACCESS_KEY=<YOUR_SECRET_ACCESS_KEY>
 ```
 
-Start the stack:
+Optional:
+
+- Leave the `GOOGLE_CLIENT_ID` empty if you do not need the OAuth provided by Google.
+- `EXPORT_AWS_S3_XXX` are used for file export. You could leave it empty if you don't use it.
+
+## Start the stack
 
 ```bash
 cd dev

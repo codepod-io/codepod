@@ -127,5 +127,8 @@ export const typeDefs = gql`
     updateVisibility(repoId: String!, isPublic: Boolean!): Boolean
     addCollaborator(repoId: String!, email: String!): Boolean
     deleteCollaborator(repoId: String!, collaboratorId: String!): Boolean
+
+    exportJSON(repoId: String!): String!
+    exportFile(repoId: String!): String!
   }
 `;

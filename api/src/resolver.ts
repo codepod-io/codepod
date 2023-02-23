@@ -1,6 +1,7 @@
 import UserResolver from "./resolver_user";
 import RepoResolver from "./resolver_repo";
 import RuntimeResolver from "./resolver_runtime";
+import ExportResolver from "./resolver_export";
 
 export const resolvers = {
   Query: {
@@ -10,10 +11,12 @@ export const resolvers = {
     ...UserResolver.Query,
     ...RepoResolver.Query,
     ...RuntimeResolver.Query,
+    ...ExportResolver.Query,
   },
   Mutation: {
     ...UserResolver.Mutation,
     ...RepoResolver.Mutation,
     ...RuntimeResolver.Mutation,
+    ...ExportResolver.Mutation,
   },
 };
