@@ -1,100 +1,19 @@
-import {
-  login,
-  loginWithGoogle,
-  me,
-  signup,
-  updateUser,
-  users,
-} from "./resolver_user";
-import {
-  createRepo,
-  deletePod,
-  deleteRepo,
-  deleteCollaborator,
-  myRepos,
-  myCollabRepos,
-  getVisibility,
-  updateVisibility,
-  addCollaborator,
-  addPods,
-  pod,
-  repo,
-  repos,
-  updatePod,
-  updateRepo,
-} from "./resolver_repo";
-import { listAllRuntimes } from "./resolver_runtime";
-
-// chooes between docker and k8s spawners
-import {
-  spawnRuntime as spawnRuntime_docker,
-  killRuntime as killRuntime_docker,
-  infoRuntime as infoRuntime_docker,
-  loopKillInactiveRoutes as loopKillInactiveRoutes_docker,
-  initRoutes as initRoutes_docker,
-} from "./spawner-docker";
-import {
-  spawnRuntime as spawnRuntime_k8s,
-  killRuntime as killRuntime_k8s,
-  infoRuntime as infoRuntime_k8s,
-  loopKillInactiveRoutes as loopKillInactiveRoutes_k8s,
-  initRoutes as initRoutes_k8s,
-} from "./spawner-k8s";
+import UserResolver from "./resolver_user";
+import RepoResolver from "./resolver_repo";
+import RuntimeResolver from "./resolver_runtime";
 
 export const resolvers = {
   Query: {
     hello: () => {
       return "Hello world!";
     },
-    users,
-    me,
-    repos,
-    myRepos,
-    repo,
-    pod,
-    listAllRuntimes,
-    getVisibility,
-    myCollabRepos,
-
-    ...(process.env.RUNTIME_SPAWNER === "k8s"
-      ? {
-          infoRuntime: infoRuntime_k8s,
-        }
-      : {
-          infoRuntime: infoRuntime_docker,
-        }),
+    ...UserResolver.Query,
+    ...RepoResolver.Query,
+    ...RuntimeResolver.Query,
   },
   Mutation: {
-    signup,
-    updateUser,
-    login,
-    loginWithGoogle,
-    createRepo,
-    updateRepo,
-    deleteRepo,
-    clearUser: () => {},
-    updatePod,
-    addPods,
-    deletePod,
-    addCollaborator,
-    updateVisibility,
-    deleteCollaborator,
-    ...(process.env.RUNTIME_SPAWNER === "k8s"
-      ? {
-          spawnRuntime: spawnRuntime_k8s,
-          killRuntime: killRuntime_k8s,
-        }
-      : {
-          spawnRuntime: spawnRuntime_docker,
-          killRuntime: killRuntime_docker,
-        }),
+    ...UserResolver.Mutation,
+    ...RepoResolver.Mutation,
+    ...RuntimeResolver.Mutation,
   },
 };
-
-if (process.env.RUNTIME_SPAWNER !== "k8s") {
-  initRoutes_docker();
-  loopKillInactiveRoutes_docker();
-} else {
-  initRoutes_k8s();
-  loopKillInactiveRoutes_k8s();
-}

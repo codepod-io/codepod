@@ -13,6 +13,7 @@ import {
 
 import { typeDefs } from "./typedefs";
 import { resolvers } from "./resolver";
+import { initRoutes, loopKillInactiveRoutes } from "./resolver_runtime";
 
 interface TokenInterface {
   id: string;
@@ -46,6 +47,9 @@ async function startServer() {
 
   await apollo.start();
   apollo.applyMiddleware({ app: expapp });
+
+  await initRoutes();
+  loopKillInactiveRoutes();
 
   const port = process.env.PORT || 4000;
   http_server.listen({ port }, () => {

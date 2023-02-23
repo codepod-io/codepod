@@ -54,7 +54,7 @@ export const createRepoMetaSlice: StateCreator<
     // Do the actual syncing.
     await client.mutate({
       mutation: gql`
-        mutation UpdateRepo($id: ID!, $name: String) {
+        mutation UpdateRepo($id: ID!, $name: String!) {
           updateRepo(id: $id, name: $name)
         }
       `,

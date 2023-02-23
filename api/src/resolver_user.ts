@@ -13,13 +13,7 @@ const { PrismaClient } = Prisma;
 
 const prisma = new PrismaClient();
 
-export async function users(_, __, { userId }) {
-  if (!userId) throw Error("Unauthenticated");
-  const allUsers = await prisma.user.findMany();
-  return allUsers;
-}
-
-export async function me(_, __, { userId }) {
+async function me(_, __, { userId }) {
   if (!userId) throw Error("Unauthenticated");
   const user = await prisma.user.findFirst({
     where: {
@@ -30,7 +24,7 @@ export async function me(_, __, { userId }) {
   return user;
 }
 
-export async function signup(_, { email, password, firstname, lastname }) {
+async function signup(_, { email, password, firstname, lastname }) {
   const salt = await bcrypt.genSalt(10);
   const hashed = await bcrypt.hash(password, salt);
   const user = await prisma.user.create({
@@ -49,11 +43,7 @@ export async function signup(_, { email, password, firstname, lastname }) {
   };
 }
 
-export async function updateUser(
-  _,
-  { email, firstname, lastname },
-  { userId }
-) {
+async function updateUser(_, { email, firstname, lastname }, { userId }) {
   if (!userId) throw Error("Unauthenticated");
   let user = await prisma.user.findFirst({
     where: {
@@ -78,7 +68,7 @@ export async function updateUser(
   return true;
 }
 
-export async function login(_, { email, password }) {
+async function login(_, { email, password }) {
   // FIXME findUnique seems broken https://github.com/prisma/prisma/issues/5071
   const user = await prisma.user.findFirst({
     where: {
@@ -103,7 +93,7 @@ export async function login(_, { email, password }) {
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-export async function loginWithGoogle(_, { idToken }) {
+async function loginWithGoogle(_, { idToken }) {
   const ticket = await client.verifyIdToken({
     idToken: idToken,
     audience: process.env.GOOGLE_CLIENT_ID, // Specify the CLIENT_ID of the app that accesses the backend
@@ -139,3 +129,15 @@ export async function loginWithGoogle(_, { idToken }) {
     }),
   };
 }
+
+export default {
+  Query: {
+    me,
+  },
+  Mutation: {
+    login,
+    loginWithGoogle,
+    signup,
+    updateUser,
+  },
+};
