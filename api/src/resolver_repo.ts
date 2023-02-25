@@ -52,6 +52,9 @@ async function myRepos(_, __, { userId }) {
         id: userId,
       },
     },
+    orderBy: {
+      updatedAt: "desc",
+    },
   });
   return repos;
 }

@@ -58,6 +58,9 @@ model Repo {
     podsId        String[]
     public        Boolean  @default(false)
     collaborators User[]   @relation("COLLABORATOR")
+    createdAt     DateTime @default(now())
+    // Edit pod content likely won't update this updatedAt field.
+    updatedAt     DateTime @default(now()) @updatedAt
 }
 
 enum PodType {
