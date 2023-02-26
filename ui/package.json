@@ -10,7 +10,7 @@
     "@emotion/styled": "^11.10.5",
     "@mui/icons-material": "^5.10.9",
     "@mui/material": "^5.10.10",
-    "@reactflow/node-resizer": "^1.2.0",
+    "@reactflow/node-resizer": "^2.0.1",
     "@remirror/extension-react-tables": "^2.2.9",
     "@remirror/extension-sub": "^2.0.9",
     "@remirror/extension-text-highlight": "^2.0.10",

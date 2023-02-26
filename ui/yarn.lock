@@ -2079,22 +2079,7 @@
     "@reactflow/core" "11.5.5"
     classcat "^5.0.3"
 
-"@reactflow/core@11.4.0":
-  version "11.4.0"
-  resolved "https://registry.yarnpkg.com/@reactflow/core/-/core-11.4.0.tgz#9af0c812eb9968b75cf55427c6be4a9205d0db48"
-  integrity sha512-AfFp685kmxWs2Iiq35TatG9Q8u5W+eftXECQ0ea55Oi37nrMe5jfWhjnGnnl3bSFcHqAe6avqNiFDwqugU6kzQ==
-  dependencies:
-    "@types/d3" "^7.4.0"
-    "@types/d3-drag" "^3.0.1"
-    "@types/d3-selection" "^3.0.3"
-    "@types/d3-zoom" "^3.0.1"
-    classcat "^5.0.3"
-    d3-drag "^3.0.0"
-    d3-selection "^3.0.0"
-    d3-zoom "^3.0.0"
-    zustand "^4.1.1"
-
-"@reactflow/core@11.5.5":
+"@reactflow/core@11.5.5", "@reactflow/core@^11.3.3":
   version "11.5.5"
   resolved "https://registry.yarnpkg.com/@reactflow/core/-/core-11.5.5.tgz#bced11d76fc200b4dc301f2f2b882c4f4ec3dad3"
   integrity sha512-/FPnpvO9I4E6/mmfZInbsVusR214gzIZ2e2xgl9XJdBo90cWaqHgo0c5F2YPXX19R3mItzxveN+WlENFEOvdPg==
@@ -2122,16 +2107,16 @@
     d3-zoom "^3.0.0"
     zustand "^4.3.1"
 
-"@reactflow/node-resizer@^1.2.0":
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/@reactflow/node-resizer/-/node-resizer-1.2.0.tgz#8096d6b5ae00c106c745405ff385c5d35852ed4d"
-  integrity sha512-keDWyX9gQB7ak7gPXb7yPeTDCfMtvgZWiP3MP9HIAKiDmpXKEtyi5P6X67Rcdx8saPQIJ4vU9k1q4snljz4UnQ==
+"@reactflow/node-resizer@^2.0.1":
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/@reactflow/node-resizer/-/node-resizer-2.0.1.tgz#45d4fe18b3fa2d92029e2c1bd32283763c3737b8"
+  integrity sha512-07PNFkv4lH07SEthuz5l87YtFIms+8SFkYVsMhe6Cfdej1tPuIa4f6Xmy0ILOLjBU0B2TRrbw0+T+cJ62zcofQ==
   dependencies:
-    "@reactflow/core" "11.4.0"
+    "@reactflow/core" "^11.3.3"
     classcat "^5.0.4"
     d3-drag "^3.0.0"
     d3-selection "^3.0.0"
-    zustand "^4.1.1"
+    zustand "^4.3.1"
 
 "@reactflow/node-toolbar@1.1.8":
   version "1.1.8"
@@ -12718,13 +12703,6 @@ zen-observable@0.8.15:
   version "0.8.15"
   resolved "https://registry.yarnpkg.com/zen-observable/-/zen-observable-0.8.15.tgz#96415c512d8e3ffd920afd3889604e30b9eaac15"
   integrity sha512-PQ2PC7R9rslx84ndNBZB/Dkv8V8fZEpk83RLgXtYd0fwUgEjseMn1Dgajh2x6S8QbZAFa9p2qVCEuYZNgve0dQ==
-
-zustand@^4.1.1:
-  version "4.1.4"
-  resolved "https://registry.yarnpkg.com/zustand/-/zustand-4.1.4.tgz#b0286da4cc9edd35e91c96414fa54bfa4652a54d"
-  integrity sha512-k2jVOlWo8p4R83mQ+/uyB8ILPO2PCJOf+QVjcL+1PbMCk1w5OoPYpAIxy9zd93FSfmJqoH6lGdwzzjwqJIRU5A==
-  dependencies:
-    use-sync-external-store "1.2.0"
 
 zustand@^4.1.3:
   version "4.1.3"
