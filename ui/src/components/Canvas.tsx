@@ -42,8 +42,13 @@ import { RichNode } from "./nodes/Rich";
 import { CodeNode } from "./nodes/Code";
 import { ScopeNode } from "./nodes/Scope";
 import { YMap } from "yjs/dist/src/types/YMap";
+import FloatingEdge from "./nodes/FloatingEdge";
+import CustomConnectionLine from "./nodes/CustomConnectionLine";
 
 const nodeTypes = { scope: ScopeNode, code: CodeNode, rich: RichNode };
+const edgeTypes = {
+  floating: FloatingEdge,
+};
 
 /**
  * This hook will load nodes from zustand store into Yjs nodesMap using setNodes.
@@ -529,6 +534,23 @@ function CanvasImpl() {
           minZoom={0.1}
           onPaneContextMenu={onPaneContextMenu}
           nodeTypes={nodeTypes}
+          // custom edge for easy connect
+          edgeTypes={edgeTypes}
+          defaultEdgeOptions={{
+            style: { strokeWidth: 3, stroke: "black" },
+            type: "floating",
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              color: "black",
+            },
+          }}
+          connectionLineComponent={CustomConnectionLine}
+          connectionLineStyle={{
+            strokeWidth: 3,
+            stroke: "black",
+          }}
+          // end custom edge
+
           zoomOnScroll={false}
           panOnScroll={true}
           connectionMode={ConnectionMode.Loose}

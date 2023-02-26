@@ -221,15 +221,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
   );
 });
 
-export const CodeNode = memo<NodeProps>(function ({
-  data,
-  id,
-  isConnectable,
-  selected,
-  // note that xPos and yPos are the absolute position of the node
-  xPos,
-  yPos,
-}) {
+function FloatingToolbar({ id }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const reactFlowInstance = useReactFlow();
@@ -239,64 +231,10 @@ export const CodeNode = memo<NodeProps>(function ({
   const clearResults = useStore(store, (s) => s.clearResults);
   // right, bottom
   const [layout, setLayout] = useState("bottom");
-  const isRightLayout = layout === "right";
-  const setPodName = useStore(store, (state) => state.setPodName);
-  const setPodGeo = useStore(store, (state) => state.setPodGeo);
   const getPod = useStore(store, (state) => state.getPod);
-  const clonePod = useStore(store, (state) => state.clonePod);
-  const pod = getPod(id);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
-  const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
-  const index = useStore(
-    store,
-    (state) => state.pods[id]?.result?.count || " "
-  );
-  const inputRef = useRef<HTMLInputElement>(null);
-  const updateView = useStore(store, (state) => state.updateView);
-  const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
-
-  const showResult = useStore(
-    store,
-    (state) =>
-      state.pods[id]?.running ||
-      state.pods[id]?.result ||
-      state.pods[id]?.error ||
-      state.pods[id]?.stdout ||
-      state.pods[id]?.stderr
-  );
-  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+  const clonePod = useStore(store, (state) => state.clonePod);
   const setPaneFocus = useStore(store, (state) => state.setPaneFocus);
-  const onResize = useCallback(
-    (e, data) => {
-      const { size } = data;
-      const node = nodesMap.get(id);
-      if (node) {
-        node.style = { ...node.style, width: size.width };
-        nodesMap.set(id, node);
-        setPodGeo(
-          id,
-          {
-            parent: node.parentNode ? node.parentNode : "ROOT",
-            x: node.position.x,
-            y: node.position.y,
-            width: size.width!,
-            height: node.height!,
-          },
-          true
-        );
-        updateView();
-      }
-    },
-    [id, nodesMap, setPodGeo, updateView]
-  );
-
-  useEffect(() => {
-    if (!data.name) return;
-    setPodName({ id, name: data.name });
-    if (inputRef?.current) {
-      inputRef.current.value = data.name || "";
-    }
-  }, [data.name, setPodName, id]);
 
   const onCopy = useCallback(
     (clipboardData: any) => {
@@ -324,6 +262,147 @@ export const CodeNode = memo<NodeProps>(function ({
     },
     [onCopy, cutBegin, id]
   );
+
+  return (
+    <Box>
+      {!isGuest && (
+        <Tooltip title="Run (shift-enter)">
+          <IconButton
+            size="small"
+            onClick={() => {
+              clearResults(id);
+              wsRun(id);
+            }}
+          >
+            <PlayCircleOutlineIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      )}
+      <CopyToClipboard
+        text="dummy"
+        options={{ debug: true, format: "text/plain", onCopy } as any}
+      >
+        <Tooltip title="Copy">
+          <IconButton size="small" className="copy-button">
+            <ContentCopyIcon fontSize="inherit" className="copy-button" />
+          </IconButton>
+        </Tooltip>
+      </CopyToClipboard>
+      {!isGuest && (
+        <CopyToClipboard
+          text="dummy"
+          options={{ debug: true, format: "text/plain", onCopy: onCut } as any}
+        >
+          <Tooltip title="Cut">
+            <IconButton size="small">
+              <ContentCutIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        </CopyToClipboard>
+      )}
+      {!isGuest && (
+        <Tooltip title="Delete">
+          <IconButton
+            size="small"
+            onClick={() => {
+              reactFlowInstance.deleteElements({ nodes: [{ id }] });
+            }}
+          >
+            <DeleteIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      )}
+      <Tooltip title="Change layout">
+        <IconButton
+          size="small"
+          onClick={() => {
+            setLayout(layout === "bottom" ? "right" : "bottom");
+          }}
+        >
+          <ViewComfyIcon fontSize="inherit" />
+        </IconButton>
+      </Tooltip>
+    </Box>
+  );
+}
+
+export const CodeNode = memo<NodeProps>(function ({
+  data,
+  id,
+  isConnectable,
+  selected,
+  // note that xPos and yPos are the absolute position of the node
+  xPos,
+  yPos,
+}) {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const reactFlowInstance = useReactFlow();
+  const devMode = useStore(store, (state) => state.devMode);
+  // const pod = useStore(store, (state) => state.pods[id]);
+  const wsRun = useStore(store, (state) => state.wsRun);
+  const clearResults = useStore(store, (s) => s.clearResults);
+  // right, bottom
+  const [layout, setLayout] = useState("bottom");
+  const isRightLayout = layout === "right";
+  const setPodName = useStore(store, (state) => state.setPodName);
+  const setPodGeo = useStore(store, (state) => state.setPodGeo);
+  const getPod = useStore(store, (state) => state.getPod);
+
+  const pod = getPod(id);
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
+  const index = useStore(
+    store,
+    (state) => state.pods[id]?.result?.count || " "
+  );
+  const inputRef = useRef<HTMLInputElement>(null);
+  const updateView = useStore(store, (state) => state.updateView);
+  const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
+
+  const showResult = useStore(
+    store,
+    (state) =>
+      state.pods[id]?.running ||
+      state.pods[id]?.result ||
+      state.pods[id]?.error ||
+      state.pods[id]?.stdout ||
+      state.pods[id]?.stderr
+  );
+  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+
+  const onResize = useCallback(
+    (e, data) => {
+      const { size } = data;
+      const node = nodesMap.get(id);
+      if (node) {
+        node.style = { ...node.style, width: size.width };
+        nodesMap.set(id, node);
+        setPodGeo(
+          id,
+          {
+            parent: node.parentNode ? node.parentNode : "ROOT",
+            x: node.position.x,
+            y: node.position.y,
+            width: size.width!,
+            height: node.height!,
+          },
+          true
+        );
+        updateView();
+      }
+    },
+    [id, nodesMap, setPodGeo, updateView]
+  );
+
+  const [showToolbar, setShowToolbar] = useState(false);
+  useEffect(() => {
+    if (!data.name) return;
+    setPodName({ id, name: data.name });
+    if (inputRef?.current) {
+      inputRef.current.value = data.name || "";
+    }
+  }, [data.name, setPodName, id]);
 
   // if (!pod) throw new Error(`Pod not found: ${id}`);
 
@@ -369,6 +448,12 @@ export const CodeNode = memo<NodeProps>(function ({
           : !isPodFocused
           ? "#d6dee6"
           : "#5e92f3",
+      }}
+      onMouseEnter={() => {
+        setShowToolbar(true);
+      }}
+      onMouseLeave={() => {
+        setShowToolbar(false);
       }}
     >
       {/* FIXME this does not support x-axis only resizing. */}
@@ -462,7 +547,8 @@ export const CodeNode = memo<NodeProps>(function ({
         </Box>
         <Box
           sx={{
-            display: "flex",
+            // display: "flex",
+            display: showToolbar ? "flex" : "none",
             marginLeft: "10px",
             borderRadius: "4px",
             position: "absolute",
@@ -475,65 +561,7 @@ export const CodeNode = memo<NodeProps>(function ({
           }}
           className="nodrag"
         >
-          {!isGuest && (
-            <Tooltip title="Run (shift-enter)">
-              <IconButton
-                size="small"
-                onClick={() => {
-                  clearResults(id);
-                  wsRun(id);
-                }}
-              >
-                <PlayCircleOutlineIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          )}
-          <CopyToClipboard
-            text="dummy"
-            options={{ debug: true, format: "text/plain", onCopy } as any}
-          >
-            <Tooltip title="Copy">
-              <IconButton size="small" className="copy-button">
-                <ContentCopyIcon fontSize="inherit" className="copy-button" />
-              </IconButton>
-            </Tooltip>
-          </CopyToClipboard>
-          {!isGuest && (
-            <CopyToClipboard
-              text="dummy"
-              options={
-                { debug: true, format: "text/plain", onCopy: onCut } as any
-              }
-            >
-              <Tooltip title="Cut">
-                <IconButton size="small">
-                  <ContentCutIcon fontSize="inherit" />
-                </IconButton>
-              </Tooltip>
-            </CopyToClipboard>
-          )}
-          {!isGuest && (
-            <Tooltip title="Delete">
-              <IconButton
-                size="small"
-                onClick={() => {
-                  reactFlowInstance.deleteElements({ nodes: [{ id }] });
-                }}
-              >
-                <DeleteIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          )}
-          <Tooltip title="Change layout">
-            <IconButton
-              size="small"
-              onClick={() => {
-                setLayout(layout === "bottom" ? "right" : "bottom");
-              }}
-            >
-              <ViewComfyIcon fontSize="inherit" />
-            </IconButton>
-          </Tooltip>
+          <FloatingToolbar id={id} />
         </Box>
       </Box>
       <Box
