@@ -34,19 +34,22 @@ model Profile {
 }
 
 model User {
-    id             String         @id
-    email          String         @unique
+    id             String  @id
+    email          String  @unique
     // username is an optional value, because it might create barrier when user signup.
-    username       String?        @unique
+    username       String? @unique
     firstname      String
     lastname       String
     // A user might not have a password, if they login via OAuth.
     hashedPassword String?
-    posts          Post[]
-    profile        Profile?
-    Repo           Repo[]         @relation("OWNER")
-    sharedRepos    Repo[]         @relation("COLLABORATOR")
-    UserRepoData   UserRepoData[]
+
+    createdAt    DateTime       @default(now())
+    updatedAt    DateTime       @default(now()) @updatedAt
+    posts        Post[]
+    profile      Profile?
+    Repo         Repo[]         @relation("OWNER")
+    sharedRepos  Repo[]         @relation("COLLABORATOR")
+    UserRepoData UserRepoData[]
 }
 
 model UserRepoData {
