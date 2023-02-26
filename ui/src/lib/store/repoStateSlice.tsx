@@ -285,7 +285,7 @@ export const createRepoStateSlice: StateCreator<
 function loadRepo(set, get) {
   return async (client, id) => {
     const { pods, name, error, userId, collaborators, isPublic } =
-      await doRemoteLoadRepo({ id, client });
+      await doRemoteLoadRepo(client, id);
     set(
       produce((state: MyState) => {
         // TODO the children ordered by index

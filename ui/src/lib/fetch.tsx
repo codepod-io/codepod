@@ -1,4 +1,4 @@
-import { gql } from "@apollo/client";
+import { ApolloClient, gql } from "@apollo/client";
 
 import { Pod } from "./store";
 
@@ -8,7 +8,7 @@ import { Pod } from "./store";
  * @param client apollo client
  * @returns a list of pods
  */
-export async function doRemoteLoadRepo({ id, client }) {
+export async function doRemoteLoadRepo(client: ApolloClient<any>, id: string) {
   // load from remote
   let query = gql`
     query Repo($id: String!) {
@@ -66,6 +66,8 @@ export async function doRemoteLoadRepo({ id, client }) {
       // CAUTION I must set this because refetechQueries does not work.
       fetchPolicy: "no-cache",
     });
+    // refetch queries
+    await client.refetchQueries({ include: ["GetRepos", "GetCollabRepos"] });
     // We need to do a deep copy here, because apollo client returned immutable objects.
     let pods = res.data.repo.pods.map((pod) => ({ ...pod }));
     return {

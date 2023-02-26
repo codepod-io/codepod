@@ -52,8 +52,37 @@ async function myRepos(_, __, { userId }) {
         id: userId,
       },
     },
+    include: {
+      UserRepoData: {
+        where: {
+          userId: userId,
+        },
+      },
+    },
   });
-  return repos;
+  // Sort by last access time.
+  repos.sort((a, b) => {
+    if (a.UserRepoData.length > 0) {
+      if (b.UserRepoData.length > 0) {
+        return (
+          b.UserRepoData[0].accessedAt.valueOf() -
+          a.UserRepoData[0].accessedAt.valueOf()
+        );
+      }
+      return -1;
+    }
+    return a.updatedAt.valueOf() - b.updatedAt.valueOf();
+  });
+  // Re-use updatedAt field (this is actually the lastviewed field).
+  return repos.map((repo) => {
+    return {
+      ...repo,
+      updatedAt:
+        repo.UserRepoData.length > 0
+          ? repo.UserRepoData[0].accessedAt
+          : repo.updatedAt,
+    };
+  });
 }
 
 async function myCollabRepos(_, __, { userId }) {
@@ -66,6 +95,38 @@ async function myCollabRepos(_, __, { userId }) {
     },
   });
   return repos;
+}
+
+async function updateUserRepoData({ userId, repoId }) {
+  // FIXME I should probably rename this from query to mutation?
+  //
+  // update AccessTime field
+  const repoData = await prisma.userRepoData.findFirst({
+    where: {
+      userId,
+      repoId,
+    },
+  });
+  if (!repoData) {
+    await prisma.userRepoData.create({
+      data: {
+        id: await nanoid(),
+        user: { connect: { id: userId } },
+        repo: { connect: { id: repoId } },
+      },
+    });
+  } else {
+    await prisma.userRepoData.update({
+      where: {
+        id: repoData.id,
+      },
+      data: {
+        dummyCount: { increment: 1 },
+        // TODO I could also update accessedAt directly
+        // accessedAt: new Date(),
+      },
+    });
+  }
 }
 
 async function repo(_, { id }, { userId }) {
@@ -93,6 +154,7 @@ async function repo(_, { id }, { userId }) {
     },
   });
   if (!repo) throw Error("Repo not found");
+  await updateUserRepoData({ userId, repoId: id });
   return repo;
 }
 

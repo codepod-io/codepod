@@ -26,6 +26,8 @@ export const typeDefs = gql`
     userId: ID!
     collaborators: [User]
     public: Boolean
+    createdAt: String
+    updatedAt: String
   }
 
   type Pod {

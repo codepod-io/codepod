@@ -28,6 +28,29 @@ import useMe from "../lib/me";
 import { getUpTime } from "../lib/utils";
 import { Button } from "@mui/material";
 
+function timeDifference(current, previous) {
+  const msPerMinute = 60 * 1000;
+  const msPerHour = msPerMinute * 60;
+  const msPerDay = msPerHour * 24;
+  const msPerMonth = msPerDay * 30;
+  const msPerYear = msPerDay * 365;
+  const elapsed = current - previous;
+
+  if (elapsed < msPerMinute) {
+    return Math.round(elapsed / 1000) + " seconds ago";
+  } else if (elapsed < msPerHour) {
+    return Math.round(elapsed / msPerMinute) + " minutes ago";
+  } else if (elapsed < msPerDay) {
+    return Math.round(elapsed / msPerHour) + " hours ago";
+  } else if (elapsed < msPerMonth) {
+    return Math.round(elapsed / msPerDay) + " days ago";
+  } else if (elapsed < msPerYear) {
+    return Math.round(elapsed / msPerMonth) + " months ago";
+  } else {
+    return Math.round(elapsed / msPerYear) + " years ago";
+  }
+}
+
 function RepoLine({ repo, deletable, sharable, runtimeInfo }) {
   const { me } = useMe();
   const [deleteRepo] = useMutation(
@@ -87,6 +110,9 @@ function RepoLine({ repo, deletable, sharable, runtimeInfo }) {
             ? "last active: " + getUpTime(runtimeInfo.lastActive)
             : "running"
           : "-"}
+      </TableCell>
+      <TableCell align="left">
+        {timeDifference(new Date(), new Date(parseInt(repo.updatedAt)))}
       </TableCell>
       <TableCell align="left">
         {deletable && (
@@ -219,6 +245,7 @@ function RepoList({ repos }) {
             <TableCell align="left">Name</TableCell>
             <TableCell align="left">Visibility</TableCell>
             <TableCell align="left">Status (TTL: 12h)</TableCell>
+            <TableCell align="left">Last Viewed</TableCell>
             <TableCell align="left">Operations</TableCell>
           </TableRow>
         </TableHead>
@@ -251,6 +278,8 @@ function MyRepos() {
         name
         id
         public
+        updatedAt
+        createdAt
       }
     }
   `);
@@ -261,7 +290,7 @@ function MyRepos() {
   if (error) {
     return null;
   }
-  const repos = data.myRepos.slice().reverse();
+  const repos = data.myRepos.slice();
   return (
     <Box>
       <Box
@@ -301,6 +330,8 @@ function SharedWithMe() {
         name
         id
         public
+        updatedAt
+        createdAt
       }
     }
   `);
@@ -310,7 +341,7 @@ function SharedWithMe() {
   if (error) {
     return null;
   }
-  const repos = data.myCollabRepos.slice().reverse();
+  const repos = data.myCollabRepos.slice();
   return (
     <Box>
       <Box
