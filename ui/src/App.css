@@ -87,3 +87,7 @@
 .react-flow__node-scope.selected {
   border-width: 2px;
 }
+
+.react-flow__handle {
+  z-index: 100;
+}
