@@ -34,33 +34,45 @@ model Profile {
 }
 
 model User {
-    id             String   @id
-    email          String   @unique
+    id             String         @id
+    email          String         @unique
     // username is an optional value, because it might create barrier when user signup.
-    username       String?  @unique
+    username       String?        @unique
     firstname      String
     lastname       String
     // A user might not have a password, if they login via OAuth.
     hashedPassword String?
     posts          Post[]
     profile        Profile?
-    Repo           Repo[]   @relation("OWNER")
-    sharedRepos    Repo[]   @relation("COLLABORATOR")
+    Repo           Repo[]         @relation("OWNER")
+    sharedRepos    Repo[]         @relation("COLLABORATOR")
+    UserRepoData   UserRepoData[]
+}
+
+model UserRepoData {
+    id         String   @id
+    user       User     @relation(fields: [userId], references: [id])
+    userId     String
+    repo       Repo     @relation(fields: [repoId], references: [id])
+    repoId     String
+    accessedAt DateTime @default(now()) @updatedAt
+    dummyCount Int      @default(0)
 }
 
 model Repo {
-    id            String   @id
+    id            String         @id
     name          String?
     // fullname String  @unique
-    owner         User     @relation("OWNER", fields: [userId], references: [id])
+    owner         User           @relation("OWNER", fields: [userId], references: [id])
     userId        String
-    pods          Pod[]    @relation("BELONG")
+    pods          Pod[]          @relation("BELONG")
     podsId        String[]
-    public        Boolean  @default(false)
-    collaborators User[]   @relation("COLLABORATOR")
-    createdAt     DateTime @default(now())
+    public        Boolean        @default(false)
+    collaborators User[]         @relation("COLLABORATOR")
+    createdAt     DateTime       @default(now())
     // Edit pod content likely won't update this updatedAt field.
-    updatedAt     DateTime @default(now()) @updatedAt
+    updatedAt     DateTime       @default(now()) @updatedAt
+    UserRepoData  UserRepoData[]
 }
 
 enum PodType {

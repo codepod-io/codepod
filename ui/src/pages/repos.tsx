@@ -245,7 +245,7 @@ function RepoList({ repos }) {
             <TableCell align="left">Name</TableCell>
             <TableCell align="left">Visibility</TableCell>
             <TableCell align="left">Status (TTL: 12h)</TableCell>
-            <TableCell align="left">Last Update</TableCell>
+            <TableCell align="left">Last Viewed</TableCell>
             <TableCell align="left">Operations</TableCell>
           </TableRow>
         </TableHead>
