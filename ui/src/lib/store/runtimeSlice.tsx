@@ -12,6 +12,7 @@ import { analyzeCode, analyzeCodeViaQuery } from "../parser";
 function collectSymbolTables({ id, get }: { id: string; get: () => MyState }) {
   let pods = get().pods;
   let pod = pods[id];
+  // Collect from parent scope.
   if (!pod.parent) return {};
   let allSymbolTables = pods[pod.parent].children.map(({ id, type }) => {
     // FIXME make this consistent, CODE, POD, DECK, SCOPE; use enums
@@ -25,6 +26,21 @@ function collectSymbolTables({ id, get }: { id: string; get: () => MyState }) {
       return Object.assign({}, ...tables);
     }
   });
+  // Collect from scopes by Arrows.
+  const edges = get().edges;
+  edges.forEach(({ source, target }) => {
+    if (target === pod.parent) {
+      if (pods[source].type === "CODE") {
+        allSymbolTables.push(pods[target].symbolTable);
+      } else {
+        let tables = (pods[source].children || [])
+          .filter(({ id }) => pods[id].ispublic)
+          .map(({ id }) => pods[id].symbolTable);
+        allSymbolTables.push(Object.assign({}, ...tables));
+      }
+    }
+  });
+  // Combine the tables and return.
   let res = Object.assign({}, pods[id].symbolTable, ...allSymbolTables);
   return res;
 }
