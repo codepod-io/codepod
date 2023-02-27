@@ -34,7 +34,7 @@ import { useStore } from "zustand";
 
 import { RepoContext } from "../lib/store";
 import { dbtype2nodetype, nodetype2dbtype } from "../lib/utils";
-import { useYjsObserver } from "../lib/nodes";
+import { useEdgesYjsObserver, useYjsObserver } from "../lib/nodes";
 
 import { useApolloClient } from "@apollo/client";
 import { CanvasContextMenu } from "./CanvasContextMenu";
@@ -150,6 +150,49 @@ function verifyConsistency(nodes: Node[], nodesMap: YMap<Node>) {
   return true;
 }
 
+function verifyEdgeConsistency(edges: Edge[], edgesMap: YMap<Edge>) {
+  let keys = new Set(edgesMap.keys());
+  let edgesMap2 = new Map<string, Edge>();
+  edges.forEach((edge) => edgesMap2.set(edge.id, edge));
+  let keys2 = new Set(edgesMap2.keys());
+  if (keys.size !== keys2.size) {
+    console.error("key sizes are not the same", keys, keys2);
+    return false;
+  }
+  for (let i = 0; i < keys.size; i++) {
+    if (keys[i] !== keys2[i]) {
+      console.error("keys are not the same", keys, keys2);
+      return false;
+    }
+  }
+  // verify the values
+  for (let key of Array.from(keys)) {
+    let edge1 = edgesMap.get(key);
+    let edge2 = edgesMap2.get(key);
+    if (!edge1) {
+      console.error("edge1 is undefined");
+      return false;
+    }
+    if (!edge2) {
+      console.error("edge2 is undefined");
+      return false;
+    }
+    if (edge1.id !== edge2.id) {
+      console.error("edge id are not the same", edge1.id, edge2.id, "key", key);
+      return false;
+    }
+    if (edge1.source !== edge2.source) {
+      console.error("edge source are not the same", edge1.source, edge2.source);
+      return false;
+    }
+    if (edge1.target !== edge2.target) {
+      console.error("edge target are not the same", edge1.target, edge2.target);
+      return false;
+    }
+  }
+  return true;
+}
+
 function useInitNodes() {
   const store = useContext(RepoContext)!;
   const getPod = useStore(store, (state) => state.getPod);
@@ -177,15 +220,7 @@ function useInitNodes() {
         let nodesMap2 = new Map<string, Node>();
         nodes.forEach((node) => nodesMap2.set(node.id, node));
         // Not only should we set nodes, but also delete.
-        nodesMap.forEach((node, key) => {
-          if (!nodesMap2.has(key)) {
-            console.error(`Yjs has key ${key} that is not in database.`);
-            // FIXME CAUTION This will delete the node in the database! Be
-            // careful! For now, just log errors and do not delete.
-            //
-            nodesMap.delete(key);
-          }
-        });
+        nodesMap.clear();
         // add the nodes, so that the nodesMap is consistent with the database.
         nodes.forEach((node) => {
           nodesMap.set(node.id, node);
@@ -198,20 +233,31 @@ function useInitNodes() {
       adjustLevel();
       updateView();
       // handling the arrows
-      // FIXME TODO verify consistency instead of clear.
-      edgesMap.clear();
-      arrows.forEach(({ target, source }) => {
-        const edge: Edge = {
-          id: `${source}_${target}`,
+      isConsistent = verifyEdgeConsistency(
+        arrows.map(({ source, target }) => ({
           source,
-          sourceHandle: "top",
           target,
-          targetHandle: "top",
-        };
-        edgesMap.set(edge.id, edge);
-        // This isn't working. I need to set {edges} manually (from edgesMap)
-        // reactFlowInstance.addEdges(edge);
-      });
+          id: `${source}_${target}`,
+        })),
+        edgesMap
+      );
+      if (!isConsistent) {
+        console.warn("The yjs server is not consistent with the database.");
+        // delete the old keys
+        edgesMap.clear();
+        arrows.forEach(({ target, source }) => {
+          const edge: Edge = {
+            id: `${source}_${target}`,
+            source,
+            sourceHandle: "top",
+            target,
+            targetHandle: "top",
+          };
+          edgesMap.set(edge.id, edge);
+          // This isn't working. I need to set {edges} manually (from edgesMap)
+          // reactFlowInstance.addEdges(edge);
+        });
+      }
       updateEdgeView();
       setLoading(false);
     };
@@ -412,6 +458,7 @@ function CanvasImplWrap() {
   const reactFlowWrapper = useRef<any>(null);
 
   useYjsObserver();
+  useEdgesYjsObserver();
   usePaste(reactFlowWrapper);
   useCut(reactFlowWrapper);
 

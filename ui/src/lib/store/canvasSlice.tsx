@@ -755,7 +755,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     });
     // FIXME this will create edge with IDs. But I probably would love to control the IDs to save in DB.
     changes.forEach((change) => {
-      // console.log("=== change", change.type, change);
+      // console.log("=== onEdgeChange", change.type, change);
       // TODO update nodesMap to sync with remote peers
       switch (change.type) {
         case "add":

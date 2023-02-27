@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState, useContext } from "react";
-import { applyNodeChanges, Node } from "reactflow";
+import { applyNodeChanges, Edge, Node } from "reactflow";
 import { RepoContext } from "./store";
 import { nodetype2dbtype } from "./utils";
 import { useStore } from "zustand";
@@ -77,4 +77,30 @@ export function useYjsObserver() {
       resetSelection();
     };
   }, [addPod, deletePod, nodesMap, resetSelection, setPodGeo, updateView]);
+}
+
+export function useEdgesYjsObserver() {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const addPod = useStore(store, (state) => state.addPod);
+  const deletePod = useStore(store, (state) => state.deletePod);
+  const setPodGeo = useStore(store, (state) => state.setPodGeo);
+  const ydoc = useStore(store, (state) => state.ydoc);
+  const edgesMap = ydoc.getMap<Edge>("edges");
+  const updateEdgeView = useStore(store, (state) => state.updateEdgeView);
+  const resetSelection = useStore(store, (state) => state.resetSelection);
+
+  useEffect(() => {
+    const observer = (YMapEvent: YEvent<any>, transaction: Transaction) => {
+      if (transaction.local) return;
+      // console.log("== Edge observer", transaction);
+      updateEdgeView();
+    };
+
+    edgesMap.observe(observer);
+
+    return () => {
+      edgesMap.unobserve(observer);
+    };
+  }, [addPod, deletePod, edgesMap, resetSelection, setPodGeo, updateEdgeView]);
 }
