@@ -23,6 +23,10 @@ export async function doRemoteLoadRepo(client: ApolloClient<any>, id: string) {
           lastname
         }
         public
+        edges {
+          source
+          target
+        }
         pods {
           id
           type
@@ -70,8 +74,10 @@ export async function doRemoteLoadRepo(client: ApolloClient<any>, id: string) {
     await client.refetchQueries({ include: ["GetRepos", "GetCollabRepos"] });
     // We need to do a deep copy here, because apollo client returned immutable objects.
     let pods = res.data.repo.pods.map((pod) => ({ ...pod }));
+    let edges = res.data.repo.edges;
     return {
       pods,
+      edges,
       name: res.data.repo.name,
       error: null,
       userId: res.data.repo.userId,
@@ -82,6 +88,7 @@ export async function doRemoteLoadRepo(client: ApolloClient<any>, id: string) {
     console.log(e);
     return {
       pods: [],
+      edges: [],
       name: "",
       error: e,
       userId: null,

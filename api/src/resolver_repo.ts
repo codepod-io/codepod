@@ -151,11 +151,69 @@ async function repo(_, { id }, { userId }) {
           index: "asc",
         },
       },
+      edges: true,
     },
   });
   if (!repo) throw Error("Repo not found");
   await updateUserRepoData({ userId, repoId: id });
-  return repo;
+  return {
+    ...repo,
+    edges: repo.edges.map((edge) => ({
+      source: edge.sourceId,
+      target: edge.targetId,
+    })),
+  };
+}
+
+async function addEdge(_, { source, target }, { userId }) {
+  if (!userId) throw new Error("Not authenticated.");
+  const sourcePod = await prisma.pod.findFirst({ where: { id: source } });
+  const targetPod = await prisma.pod.findFirst({ where: { id: target } });
+  if (!sourcePod || !targetPod) throw new Error("Pods not found.");
+  if (sourcePod.repoId !== targetPod.repoId)
+    throw new Error("Pods are not in the same repo.");
+  await ensureRepoEditAccess({ repoId: sourcePod.repoId, userId });
+  await prisma.edge.create({
+    data: {
+      source: {
+        connect: {
+          id: source,
+        },
+      },
+      target: {
+        connect: {
+          id: target,
+        },
+      },
+      repo: {
+        connect: {
+          id: sourcePod.repoId,
+        },
+      },
+    },
+  });
+  return true;
+}
+
+async function deleteEdge(_, { source, target }, { userId }) {
+  if (!userId) throw new Error("Not authenticated.");
+  const sourcePod = await prisma.pod.findFirst({ where: { id: source } });
+  const targetPod = await prisma.pod.findFirst({ where: { id: target } });
+  if (!sourcePod || !targetPod) throw new Error("Pods not found.");
+  if (sourcePod.repoId !== targetPod.repoId)
+    throw new Error("Pods are not in the same repo.");
+  await ensureRepoEditAccess({ repoId: sourcePod.repoId, userId });
+  await prisma.edge.deleteMany({
+    where: {
+      source: {
+        id: source,
+      },
+      target: {
+        id: target,
+      },
+    },
+  });
+  return true;
 }
 
 async function createRepo(_, { id, name, isPublic }, { userId }) {
@@ -435,6 +493,8 @@ export default {
     deleteRepo,
     updatePod,
     deletePod,
+    addEdge,
+    deleteEdge,
     addCollaborator,
     updateVisibility,
     deleteCollaborator,

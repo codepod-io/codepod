@@ -32,6 +32,8 @@ console.log("yjs server url: ", serverURL);
 
 export interface RepoStateSlice {
   pods: Record<string, Pod>;
+  // From source pod id to target pod id.
+  arrows: { source: string; target: string }[];
   id2parent: Record<string, string>;
   id2children: Record<string, string[]>;
   setSessionId: (sessionId: string) => void;
@@ -81,6 +83,7 @@ export const createRepoStateSlice: StateCreator<
   RepoStateSlice
 > = (set, get) => ({
   pods: {},
+  arrows: [],
   id2parent: {},
   id2children: {},
   error: null,
@@ -284,7 +287,7 @@ export const createRepoStateSlice: StateCreator<
 
 function loadRepo(set, get) {
   return async (client, id) => {
-    const { pods, name, error, userId, collaborators, isPublic } =
+    const { pods, edges, name, error, userId, collaborators, isPublic } =
       await doRemoteLoadRepo(client, id);
     set(
       produce((state: MyState) => {
@@ -296,6 +299,7 @@ function loadRepo(set, get) {
           return;
         }
         state.pods = normalize(pods);
+        state.arrows = edges;
         state.repoName = name;
         state.isPublic = isPublic;
         state.collaborators = collaborators;

@@ -21,6 +21,7 @@ import ReactFlow, {
   MarkerType,
   Node,
   ReactFlowProvider,
+  Edge,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -153,10 +154,13 @@ function useInitNodes() {
   const store = useContext(RepoContext)!;
   const getPod = useStore(store, (state) => state.getPod);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+  const edgesMap = useStore(store, (state) => state.ydoc.getMap<Edge>("edges"));
+  const arrows = useStore(store, (state) => state.arrows);
   const getId2children = useStore(store, (state) => state.getId2children);
   const provider = useStore(store, (state) => state.provider);
   const [loading, setLoading] = useState(true);
   const updateView = useStore(store, (state) => state.updateView);
+  const updateEdgeView = useStore(store, (state) => state.updateEdgeView);
   const adjustLevel = useStore(store, (state) => state.adjustLevel);
   useEffect(() => {
     const init = () => {
@@ -190,8 +194,25 @@ function useInitNodes() {
       // NOTE we have to trigger an update here, otherwise the nodes are not
       // rendered.
       // triggerUpdate();
+      // adjust level and update view
       adjustLevel();
       updateView();
+      // handling the arrows
+      // FIXME TODO verify consistency instead of clear.
+      edgesMap.clear();
+      arrows.forEach(({ target, source }) => {
+        const edge: Edge = {
+          id: `${source}_${target}`,
+          source,
+          sourceHandle: "top",
+          target,
+          targetHandle: "top",
+        };
+        edgesMap.set(edge.id, edge);
+        // This isn't working. I need to set {edges} manually (from edgesMap)
+        // reactFlowInstance.addEdges(edge);
+      });
+      updateEdgeView();
       setLoading(false);
     };
 
@@ -419,8 +440,10 @@ function CanvasImpl() {
   const onNodesChange = useStore(store, (state) =>
     state.onNodesChange(apolloClient)
   );
-  const onEdgesChange = useStore(store, (state) => state.onEdgesChange);
-  const onConnect = useStore(store, (state) => state.onConnect);
+  const onEdgesChange = useStore(store, (state) =>
+    state.onEdgesChange(apolloClient)
+  );
+  const onConnect = useStore(store, (state) => state.onConnect(apolloClient));
   const moveIntoScope = useStore(store, (state) => state.moveIntoScope);
   const setDragHighlight = useStore(store, (state) => state.setDragHighlight);
   const removeDragHighlight = useStore(

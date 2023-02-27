@@ -1,3 +1,8 @@
+/**
+ * See this PR for how the Canvas data is maintained:
+ * https://github.com/codepod-io/codepod/pull/205
+ */
+
 import { createStore, StateCreator, StoreApi } from "zustand";
 import { MyState, Pod } from ".";
 
@@ -5,7 +10,7 @@ import { produce } from "immer";
 
 import { useCallback, useEffect, useState, useContext } from "react";
 import { useStore } from "zustand";
-import { ApolloClient, useApolloClient } from "@apollo/client";
+import { ApolloClient, useApolloClient, gql } from "@apollo/client";
 import { Transaction, YEvent } from "yjs";
 
 import { match, P } from "ts-pattern";
@@ -239,6 +244,7 @@ export interface CanvasSlice {
   resetSelection: () => boolean;
 
   updateView: () => void;
+  updateEdgeView: () => void;
 
   isPaneFocused: boolean;
   setPaneFocus: () => void;
@@ -269,8 +275,8 @@ export interface CanvasSlice {
   tempUpdateView: ({ x, y }: XYPosition) => void;
 
   onNodesChange: (client: ApolloClient<any>) => OnNodesChange;
-  onEdgesChange: OnEdgesChange;
-  onConnect: OnConnect;
+  onEdgesChange: (client: ApolloClient<any>) => OnEdgesChange;
+  onConnect: (client: ApolloClient<any>) => OnConnect;
 }
 
 export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
@@ -371,6 +377,10 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       );
     }
     set({ nodes });
+  },
+  updateEdgeView: () => {
+    const edgesMap = get().ydoc.getMap<Edge>("edges");
+    set({ edges: Array.from(edgesMap.values()).filter((e) => e) });
   },
 
   addNode: (type, position, parent = "ROOT") => {
@@ -736,30 +746,89 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     });
     get().updateView();
   },
-  onEdgesChange: (changes: EdgeChange[]) => {
+  onEdgesChange: (client) => (changes: EdgeChange[]) => {
+    // TODO sync with remote peer
+    const edgesMap = get().ydoc.getMap<Edge>("edges");
+    // apply the changes. Especially for the "select" change.
     set({
       edges: applyEdgeChanges(changes, get().edges),
     });
-  },
-  onConnect: (connection: Connection) => {
-    set({
-      edges: addEdge(
-        {
-          ...connection,
-          markerEnd: {
-            type: MarkerType.ArrowClosed,
-            color: "black",
-          },
-          style: {
-            stroke: "black",
-            strokeWidth: 3,
-          },
-        },
-        get().edges
-      ),
+    // FIXME this will create edge with IDs. But I probably would love to control the IDs to save in DB.
+    changes.forEach((change) => {
+      // console.log("=== change", change.type, change);
+      // TODO update nodesMap to sync with remote peers
+      switch (change.type) {
+        case "add":
+          break;
+        case "remove":
+          const edge = edgesMap.get(change.id);
+          if (!edge) throw new Error("Edge not found");
+          remoteDeleteEdge({
+            source: edge.source,
+            target: edge.target,
+            client,
+          });
+          edgesMap.delete(change.id);
+          break;
+        case "reset":
+          break;
+        case "select":
+          break;
+        default:
+          throw new Error("NO REACH");
+      }
     });
   },
-
+  onConnect: (client) => (connection: Connection) => {
+    const edgesMap = get().ydoc.getMap<Edge>("edges");
+    if (!connection.source || !connection.target) return null;
+    remoteAddEdge({
+      source: connection.source,
+      target: connection.target,
+      client,
+    });
+    const edge = {
+      id: `${connection.source}_${connection.target}`,
+      source: connection.source,
+      sourceHandle: "top",
+      target: connection.target,
+      targetHandle: "top",
+    };
+    edgesMap.set(edge.id, edge);
+    get().updateEdgeView();
+  },
   setPaneFocus: () => set({ isPaneFocused: true }),
   setPaneBlur: () => set({ isPaneFocused: false }),
 });
+
+async function remoteAddEdge({ client, source, target }) {
+  const mutation = gql`
+    mutation addEdge($source: ID!, $target: ID!) {
+      addEdge(source: $source, target: $target)
+    }
+  `;
+  await client.mutate({
+    mutation,
+    variables: {
+      source,
+      target,
+    },
+  });
+  return true;
+}
+
+async function remoteDeleteEdge({ client, source, target }) {
+  const mutation = gql`
+    mutation deleteEdge($source: ID!, $target: ID!) {
+      deleteEdge(source: $source, target: $target)
+    }
+  `;
+  await client.mutate({
+    mutation,
+    variables: {
+      source,
+      target,
+    },
+  });
+  return true;
+}

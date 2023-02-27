@@ -23,11 +23,17 @@ export const typeDefs = gql`
     id: ID!
     name: String
     pods: [Pod]
+    edges: [Edge]
     userId: ID!
     collaborators: [User]
     public: Boolean
     createdAt: String
     updatedAt: String
+  }
+
+  type Edge {
+    source: String!
+    target: String!
   }
 
   type Pod {
@@ -121,6 +127,8 @@ export const typeDefs = gql`
     deletePod(id: String!, toDelete: [String]): Boolean
     addPods(repoId: String!, pods: [PodInput]): Boolean
     updatePod(id: String!, repoId: String!, input: PodInput): Boolean
+    addEdge(source: ID!, target: ID!): Boolean
+    deleteEdge(source: ID!, target: ID!): Boolean
     clearUser: Boolean
     clearRepo: Boolean
     clearPod: Boolean
