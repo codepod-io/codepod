@@ -288,7 +288,7 @@ function MyRepos() {
     return <CircularProgress />;
   }
   if (error) {
-    return null;
+    return <Box>ERROR: {error.message}</Box>;
   }
   const repos = data.myRepos.slice();
   return (
@@ -339,7 +339,7 @@ function SharedWithMe() {
     return <CircularProgress />;
   }
   if (error) {
-    return null;
+    return <Box>ERROR: {error.message}</Box>;
   }
   const repos = data.myCollabRepos.slice();
   return (
