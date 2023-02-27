@@ -3,7 +3,14 @@ import { useStore, getStraightPath, EdgeProps } from "reactflow";
 
 import { getEdgeParams } from "./utils";
 
-function FloatingEdge({ id, source, target, markerEnd, style }: EdgeProps) {
+function FloatingEdge({
+  id,
+  source,
+  target,
+  markerEnd,
+  style,
+  selected,
+}: EdgeProps) {
   const sourceNode = useStore(
     useCallback((store) => store.nodeInternals.get(source), [source])
   );
@@ -30,7 +37,7 @@ function FloatingEdge({ id, source, target, markerEnd, style }: EdgeProps) {
       className="react-flow__edge-path"
       d={edgePath}
       markerEnd={markerEnd}
-      style={style}
+      style={selected ? { ...style, stroke: "red" } : style}
     />
   );
 }
