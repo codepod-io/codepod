@@ -300,7 +300,7 @@ function deletePod(set, get) {
     { id }: { id: string }
   ) => {
     const pods = get().pods;
-    const toDelete: string[] = [];
+    const ids: string[] = [];
 
     // get all ids to delete. Gathering them here is easier than on the server
 
@@ -309,13 +309,13 @@ function deletePod(set, get) {
     const dfs = (id) => {
       const pod = pods[id];
       if (pod) {
-        toDelete.push(id);
+        ids.push(id);
         pod.children.forEach(dfs);
       }
     };
 
     dfs(id);
-    // pop in toDelete
+    // pop in ids
     set(
       produce((state: MyState) => {
         // delete the link to parent
@@ -326,13 +326,13 @@ function deletePod(set, get) {
           // remove all
           parent.children.splice(index, 1);
         }
-        toDelete.forEach((id) => {
+        ids.forEach((id) => {
           delete state.pods[id];
         });
       })
     );
     if (client) {
-      await doRemoteDeletePod(client, { id, toDelete });
+      await doRemoteDeletePod(client, ids);
     }
   };
 }

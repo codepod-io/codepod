@@ -215,17 +215,19 @@ function serializePodInput(pod) {
   }))(pod);
 }
 
-export async function doRemoteDeletePod(client, { id, toDelete }) {
+export async function doRemoteDeletePod(
+  client: ApolloClient<any>,
+  ids: string[]
+) {
   const mutation = gql`
-    mutation deletePod($id: String!, $toDelete: [String]) {
-      deletePod(id: $id, toDelete: $toDelete)
+    mutation deletePods($ids: [String]) {
+      deletePods(ids: $ids)
     }
   `;
   await client.mutate({
     mutation,
     variables: {
-      id,
-      toDelete,
+      ids,
     },
   });
   return true;

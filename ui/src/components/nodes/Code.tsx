@@ -305,6 +305,7 @@ function FloatingToolbar({ id }) {
           <IconButton
             size="small"
             onClick={() => {
+              // Delete all edges connected to the node.
               reactFlowInstance.deleteElements({ nodes: [{ id }] });
             }}
           >
