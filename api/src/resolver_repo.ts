@@ -433,46 +433,58 @@ async function addPods(_, { repoId, pods }, { userId }) {
   return true;
 }
 
-async function deletePod(_, { id, toDelete }, { userId }) {
+async function deletePods(_, { ids }: { ids: string[] }, { userId }) {
   if (!userId) throw new Error("Not authenticated.");
-  await ensurePodEditAccess({ id, userId });
-  // find all children of this ID
-  // FIXME how to ensure atomic
-  // 1. find the parent of this node
+  if (ids.length === 0) return false;
+  // find the repo
   const pod = await prisma.pod.findFirst({
-    where: {
-      id: id,
-    },
-    include: {
-      parent: true,
-    },
+    where: { id: ids[0] },
+    include: { repo: true },
   });
   if (!pod) throw new Error("Pod not found");
+  await ensureRepoEditAccess({ repoId: pod.repo.id, userId });
+  // If the pod is connected to a scope, the frontend will fire deleteEdge calls
+  // as well simultaneously. Thus, if this call is fired before the edges are
+  // deleted, an error will be thrown.
+  //
+  // Additional Notes:
+  // 1. The deleteEdge graphQL call will still be fired. This would be redundant
+  //    but should be fine.
+  // 2. We still need the deleteEdge graphQL calls when the edge is selected and
+  //    deleted.
 
-  // 4. update all siblings index
-  await prisma.pod.updateMany({
+  const deletedEdges = await prisma.edge.deleteMany({
     where: {
-      // CAUTION where to put null is tricky
-      parent: pod.parent
-        ? {
-            id: pod.parent.id,
-          }
-        : null,
-      index: {
-        gt: pod.index,
-      },
-    },
-    data: {
-      index: {
-        decrement: 1,
+      OR: [
+        {
+          source: {
+            id: {
+              in: ids,
+            },
+          },
+        },
+        {
+          target: {
+            id: {
+              in: ids,
+            },
+          },
+        },
+      ],
+      repo: {
+        id: pod.repo.id,
       },
     },
   });
-  // 5. delete it and all its children
-  await prisma.pod.deleteMany({
+
+  // delete all the nodes, but make sure they are in this exact repo.
+  const deletedPods = await prisma.pod.deleteMany({
     where: {
       id: {
-        in: toDelete,
+        in: ids,
+      },
+      repo: {
+        id: pod.repo.id,
       },
     },
   });
@@ -492,7 +504,7 @@ export default {
     updateRepo,
     deleteRepo,
     updatePod,
-    deletePod,
+    deletePods,
     addEdge,
     deleteEdge,
     addCollaborator,
