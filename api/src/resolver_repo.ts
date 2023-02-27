@@ -110,15 +110,15 @@ async function updateUserRepoData({ userId, repoId }) {
   if (!repoData) {
     await prisma.userRepoData.create({
       data: {
-        id: await nanoid(),
         user: { connect: { id: userId } },
         repo: { connect: { id: repoId } },
       },
     });
   } else {
-    await prisma.userRepoData.update({
+    await prisma.userRepoData.updateMany({
       where: {
-        id: repoData.id,
+        user: { id: userId },
+        repo: { id: repoId },
       },
       data: {
         dummyCount: { increment: 1 },
