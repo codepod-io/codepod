@@ -53,13 +53,15 @@ model User {
 }
 
 model UserRepoData {
-    id         String   @id
     user       User     @relation(fields: [userId], references: [id])
     userId     String
     repo       Repo     @relation(fields: [repoId], references: [id])
     repoId     String
     accessedAt DateTime @default(now()) @updatedAt
     dummyCount Int      @default(0)
+
+    // use computed ID
+    @@id([userId, repoId])
 }
 
 model Repo {
