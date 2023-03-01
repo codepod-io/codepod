@@ -38,6 +38,7 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import ContentCutIcon from "@mui/icons-material/ContentCut";
 import Grid from "@mui/material/Grid";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import PlayDisabledIcon from "@mui/icons-material/PlayDisabled";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
 import { CopyToClipboard } from "react-copy-to-clipboard";
@@ -228,6 +229,7 @@ function FloatingToolbar({ id }) {
   const devMode = useStore(store, (state) => state.devMode);
   // const pod = useStore(store, (state) => state.pods[id]);
   const wsRun = useStore(store, (state) => state.wsRun);
+  const wsRunNoRewrite = useStore(store, (state) => state.wsRunNoRewrite);
   const clearResults = useStore(store, (s) => s.clearResults);
   // right, bottom
   const [layout, setLayout] = useState("bottom");
@@ -275,6 +277,19 @@ function FloatingToolbar({ id }) {
             }}
           >
             <PlayCircleOutlineIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      )}
+      {!isGuest && (
+        <Tooltip title="Run without rewrite">
+          <IconButton
+            size="small"
+            onClick={() => {
+              clearResults(id);
+              wsRunNoRewrite(id);
+            }}
+          >
+            <PlayDisabledIcon fontSize="inherit" />
           </IconButton>
         </Tooltip>
       )}
