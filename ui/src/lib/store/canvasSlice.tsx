@@ -8,10 +8,7 @@ import { MyState, Pod } from ".";
 
 import { produce } from "immer";
 
-import { useCallback, useEffect, useState, useContext } from "react";
-import { useStore } from "zustand";
 import { ApolloClient, useApolloClient, gql } from "@apollo/client";
-import { Transaction, YEvent } from "yjs";
 
 import { match, P } from "ts-pattern";
 
@@ -33,9 +30,25 @@ import {
   MarkerType,
   NodeDragHandler,
   ReactFlowInstance,
+  Position,
 } from "reactflow";
-import { node } from "prop-types";
-import { fixTables } from "@remirror/pm/dist-types/tables";
+
+import { hierarchy, HierarchyNode, stratify, tree } from "d3-hierarchy";
+
+import {
+  forceSimulation,
+  forceLink,
+  forceManyBody,
+  forceCollide,
+  forceX,
+  forceY,
+  SimulationNodeDatum,
+  SimulationLinkDatum,
+} from "d3-force";
+
+import * as d3 from "d3";
+import { scaleLinear } from "d3-scale";
+import { flextree } from "d3-flextree";
 
 // TODO add node's data typing.
 type NodeData = {
@@ -277,6 +290,8 @@ export interface CanvasSlice {
   onNodesChange: (client: ApolloClient<any>) => OnNodesChange;
   onEdgesChange: (client: ApolloClient<any>) => OnEdgesChange;
   onConnect: (client: ApolloClient<any>) => OnConnect;
+
+  autoLayout: (scopeId: string) => void;
 }
 
 export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
@@ -799,6 +814,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   },
   setPaneFocus: () => set({ isPaneFocused: true }),
   setPaneBlur: () => set({ isPaneFocused: false }),
+  autoLayout: (scopeId: string) => myAutoLayout(scopeId, get),
 });
 
 async function remoteAddEdge({ client, source, target }) {
@@ -831,4 +847,194 @@ async function remoteDeleteEdge({ client, source, target }) {
     },
   });
   return true;
+}
+
+function myAutoLayout(scopeId, get: () => MyState) {
+  forceLayout(scopeId, get);
+  // flextreeLayout(scopeId, get);
+}
+
+// type SimNode = HierarchyNode<{ url: string; name: string }> &
+//   SimulationNodeDatum;
+
+// const root = hierarchy(tree);
+// const links = root.links();
+// const nodes = root.descendants();
+
+function forceLayout(scopeId, get: () => MyState) {
+  const nodes = get().nodes.filter((node) => node.parentNode === scopeId);
+  const edges = get().edges;
+  const tmpNodes = nodes.map((node) => ({
+    id: node.id,
+    x: node.position.x,
+    y: node.position.y,
+    r: (node.width! + node.height!) / 2,
+    width: node.width,
+    height: node.height,
+  }));
+  const tmpEdges = edges.map((edge) => ({
+    source: edge.source,
+    source0: 0,
+    target: edge.target,
+    target0: 1,
+  }));
+  const nodesMap = get().ydoc.getMap<Node>("pods");
+  // 2. construct a D3 tree for the nodes and their connections
+  // initialize the tree layout (see https://observablehq.com/@d3/tree for examples)
+  // const hierarchy = stratify<Node>()
+  //   .id((d) => d.id)
+  //   // get the id of each node by searching through the edges
+  //   // this only works if every node has one connection
+  //   .parentId((d: Node) => edges.find((e: Edge) => e.target === d.id)?.source)(
+  //   nodes
+  // );
+  const simulation = forceSimulation(tmpNodes)
+    .force(
+      "link",
+      forceLink(tmpEdges)
+        .id((d: any) => d.id)
+        .distance(300)
+        .strength(0.5)
+    )
+    // .force("charge", forceManyBody().strength(-1000))
+    .force("x", forceX())
+    .force("y", forceY())
+    .force("collide", forceCollide(200))
+    // .force("link", d3.forceLink(edges).id(d => d.id))
+    // .force("charge", d3.forceManyBody())
+    // .force("center", d3.forceCenter())
+    .stop();
+  simulation.tick(3000);
+  // get the new positions
+  // TODO need to transform the nodes to the center of the scope.
+  const scope = nodesMap.get(scopeId);
+  tmpNodes.forEach(({ id, x, y }) => {
+    // FIXME I should assert here.
+    if (nodesMap.has(id)) {
+      nodesMap.set(id, {
+        ...nodesMap.get(id)!,
+        // position: { x: x + scope!.position!.x, y: y + scope!.position!.y },
+        position: { x, y },
+      });
+    }
+  });
+  get().updateView();
+}
+
+// function rectangularCollide() {
+//   function force(alpha) {
+//     const nodes = this.nodes();
+//     const quadtree = d3
+//       .quadtree()
+//       .extent((d) => [
+//         [d.x - d.width / 2, d.y - d.height / 2],
+//         [d.x + d.width / 2, d.y + d.height / 2],
+//       ])
+//       .addAll(nodes);
+
+//     for (const node of nodes) {
+//       const x0 = node.x - node.width / 2;
+//       const y0 = node.y - node.height / 2;
+//       const x1 = x0 + node.width;
+//       const y1 = y0 + node.height;
+
+//       quadtree.visit((other, x0n, y0n, x1n, y1n) => {
+//         if (other !== node) {
+//           const vx = node.x - other.x;
+//           const vy = node.y - other.y;
+//           const dx = Math.max(
+//             0,
+//             Math.abs(vx) - node.width / 2 - other.width / 2
+//           );
+//           const dy = Math.max(
+//             0,
+//             Math.abs(vy) - node.height / 2 - other.height / 2
+//           );
+
+//           if (dx || dy) {
+//             const mag = Math.sqrt(dx * dx + dy * dy);
+//             const sx = vx / mag;
+//             const sy = vy / mag;
+//             const penetration = Math.max(
+//               0,
+//               mag - node.width / 2 - other.width / 2,
+//               mag - node.height / 2 - other.height / 2
+//             );
+
+//             node.x -= sx * penetration * alpha;
+//             node.y -= sy * penetration * alpha;
+//           }
+//         }
+
+//         return x0n > x1 || x0 > x1n || y0n > y1 || y0 > y1n;
+//       });
+//     }
+//   }
+
+//   force.initialize = function (nodes) {
+//     this.nodes(nodes);
+//   };
+
+//   return force;
+// }
+
+function flextreeLayout(scopeId: string, get: () => MyState) {
+  const nodes = get().nodes.filter((node) => node.parentNode === scopeId);
+  const edges = get().edges;
+  const nodesMap = get().ydoc.getMap<Node>("pods");
+  const hierarchy = stratify<Node>()
+    .id((d) => d.id)
+    // get the id of each node by searching through the edges
+    // this only works if every node has one connection
+    .parentId((d: Node) => edges.find((e: Edge) => e.target === d.id)?.source)(
+    nodes
+  );
+  const layout = flextree();
+  const tree = layout.hierarchy(hierarchy);
+  layout(tree);
+  tree.each((node) => console.log(`(${node.x}, ${node.y})`));
+}
+
+function treeLayout(scopeId: string, get: () => MyState) {
+  // Auto layout all nodes inside a scope.
+  // 1. gather all nodes
+  const nodes = get().nodes.filter((node) => node.parentNode === scopeId);
+  const edges = get().edges;
+  const nodesMap = get().ydoc.getMap<Node>("pods");
+  // 2. construct a D3 tree for the nodes and their connections
+  // initialize the tree layout (see https://observablehq.com/@d3/tree for examples)
+  const layout = tree<Node>()
+    // the node size configures the spacing between the nodes ([width, height])
+    .nodeSize([130, 120])
+    // .nodeSize((n: Node) => {
+    //   return [n.width, n.height]
+    // })
+    // this is needed for creating equal space between all nodes
+    .separation(() => 100);
+  const hierarchy = stratify<Node>()
+    .id((d) => d.id)
+    // get the id of each node by searching through the edges
+    // this only works if every node has one connection
+    .parentId((d: Node) => edges.find((e: Edge) => e.target === d.id)?.source)(
+    nodes
+  );
+
+  // run the layout algorithm with the hierarchy data structure
+  // 3. call d3's layout function
+  const root = layout(hierarchy);
+  // 4. retrieve the coordinates and set to the ReactFlow nodes.
+  nodes.forEach((node) => {
+    const { x, y } = root.find((d) => d.id === node.id) || {
+      x: node.position.x,
+      y: node.position.y,
+    };
+    nodesMap.set(node.id, {
+      ...node,
+      sourcePosition: Position.Bottom,
+      targetPosition: Position.Top,
+      position: { x, y },
+      style: { opacity: 1 },
+    });
+  });
+  get().updateView();
 }

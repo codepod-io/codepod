@@ -33,7 +33,7 @@ import Grid from "@mui/material/Grid";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ContentCutIcon from "@mui/icons-material/ContentCut";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import Moveable from "react-moveable";
+import ViewTimelineOutlinedIcon from "@mui/icons-material/ViewTimelineOutlined";
 
 import { useStore } from "zustand";
 
@@ -104,6 +104,8 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
     [onCopy, cutBegin, id]
   );
 
+  const autoLayout = useStore(store, (state) => state.autoLayout);
+
   return (
     <Box
       ref={ref}
@@ -164,6 +166,19 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
               </IconButton>
             </Tooltip>
           </CopyToClipboard>
+        )}
+        {!isGuest && (
+          <Tooltip title="Auto Layout">
+            <IconButton
+              size="small"
+              onClick={() => {
+                // trigger the autolayout algorithm.
+                autoLayout(id);
+              }}
+            >
+              <ViewTimelineOutlinedIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
         )}
         {!isGuest && (
           <Tooltip title="Delete" className="nodrag">
