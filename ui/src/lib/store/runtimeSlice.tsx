@@ -163,7 +163,8 @@ export interface RuntimeSlice {
   parseAllPods: () => void;
   resolvePod: (id) => void;
   resolveAllPods: () => void;
-  wsRun: (id) => void;
+  wsRun: (id: string) => void;
+  wsRunNoRewrite: (id: string) => void;
   wsInterruptKernel: ({ lang }) => void;
   clearResults: (id) => void;
   clearAllResults: () => void;
@@ -265,6 +266,33 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
     get().resolvePod(id);
     // rewrite the code
     const newcode = rewriteCode(id, get);
+
+    // Run the code in remote kernel.
+    get().setRunning(id);
+    let pod = get().pods[id];
+    get().socket?.send(
+      JSON.stringify({
+        type: "runCode",
+        payload: {
+          lang: pod.lang,
+          code: newcode,
+          raw: true,
+          podId: pod.id,
+          sessionId: get().sessionId,
+        },
+      })
+    );
+  },
+  wsRunNoRewrite: async (id) => {
+    if (!get().socket) {
+      get().addError({
+        type: "error",
+        msg: "Runtime not connected",
+      });
+      return;
+    }
+    const newcode = get().pods[id].content;
+
     // Run the code in remote kernel.
     get().setRunning(id);
     let pod = get().pods[id];
