@@ -222,7 +222,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
   );
 });
 
-function FloatingToolbar({ id }) {
+function MyFloatingToolbar({ id, layout, setLayout }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const reactFlowInstance = useReactFlow();
@@ -232,7 +232,6 @@ function FloatingToolbar({ id }) {
   const wsRunNoRewrite = useStore(store, (state) => state.wsRunNoRewrite);
   const clearResults = useStore(store, (s) => s.clearResults);
   // right, bottom
-  const [layout, setLayout] = useState("bottom");
   const getPod = useStore(store, (state) => state.getPod);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const clonePod = useStore(store, (state) => state.clonePod);
@@ -355,9 +354,6 @@ export const CodeNode = memo<NodeProps>(function ({
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const reactFlowInstance = useReactFlow();
   const devMode = useStore(store, (state) => state.devMode);
-  // const pod = useStore(store, (state) => state.pods[id]);
-  const wsRun = useStore(store, (state) => state.wsRun);
-  const clearResults = useStore(store, (s) => s.clearResults);
   // right, bottom
   const [layout, setLayout] = useState("bottom");
   const isRightLayout = layout === "right";
@@ -577,7 +573,7 @@ export const CodeNode = memo<NodeProps>(function ({
           }}
           className="nodrag"
         >
-          <FloatingToolbar id={id} />
+          <MyFloatingToolbar id={id} layout={layout} setLayout={setLayout} />
         </Box>
       </Box>
       <Box
