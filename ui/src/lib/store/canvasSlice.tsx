@@ -177,7 +177,6 @@ function getNodePositionInsideScope(
   let [dx, dy] = getAbsPos(scope, nodesMap);
   x -= dx;
   y -= dy;
-  console.log("pos", x, y, dx, dy);
   // auto-align the node to, keep it bound in the scope
   // FIXME: it assumes the scope must be larger than the node
   x = Math.max(x, 0);
@@ -407,7 +406,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       dirty: true,
       pending: true,
     });
-    console.log("add node", node.height);
     if (parent !== "ROOT") {
       // we don't assign its parent when created, because we have to adjust its position to make it inside its parent.
       get().moveIntoScope(node.id, parent);
@@ -630,7 +628,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       nodesMap,
       nodeHeight
     );
-    console.log("position", position);
     let newNode: Node = {
       ...node,
       position,
