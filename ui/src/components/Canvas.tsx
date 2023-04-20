@@ -524,10 +524,22 @@ function CanvasImpl() {
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [points, setPoints] = useState({ x: 0, y: 0 });
   const [client, setClient] = useState({ x: 0, y: 0 });
+  const [parentNode, setParentNode] = useState("ROOT");
 
   const onPaneContextMenu = (event) => {
     event.preventDefault();
     setShowContextMenu(true);
+    setParentNode("ROOT");
+    setPoints({ x: event.pageX, y: event.pageY });
+    setClient({ x: event.clientX, y: event.clientY });
+  };
+
+  const onNodeContextMenu = (event, node) => {
+    if (node?.type !== "scope") return;
+
+    event.preventDefault();
+    setShowContextMenu(true);
+    setParentNode(node.id);
     setPoints({ x: event.pageX, y: event.pageY });
     setClient({ x: event.clientX, y: event.clientY });
   };
@@ -603,6 +615,7 @@ function CanvasImpl() {
           maxZoom={10}
           minZoom={0.1}
           onPaneContextMenu={onPaneContextMenu}
+          onNodeContextMenu={onNodeContextMenu}
           nodeTypes={nodeTypes}
           // custom edge for easy connect
           edgeTypes={edgeTypes}
@@ -657,17 +670,22 @@ function CanvasImpl() {
             x={points.x}
             y={points.y}
             addCode={() =>
-              addNode("code", project({ x: client.x, y: client.y }))
+              addNode("code", project({ x: client.x, y: client.y }), parentNode)
             }
             addScope={() =>
-              addNode("scope", project({ x: client.x, y: client.y }))
+              addNode(
+                "scope",
+                project({ x: client.x, y: client.y }),
+                parentNode
+              )
             }
             addRich={() =>
-              addNode("rich", project({ x: client.x, y: client.y }))
+              addNode("rich", project({ x: client.x, y: client.y }), parentNode)
             }
             onShareClick={() => {
               setShareOpen(true);
             }}
+            parentNode={null}
           />
         )}
         {shareOpen && <ShareProjDialog open={shareOpen} id={repoId || ""} />}

@@ -113,7 +113,6 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
         border: isCutting ? "dashed 2px red" : "solid 1px #d6dee6",
         borderRadius: "4px",
       }}
-      className="custom-drag-handle"
     >
       {/* <NodeResizer color="#ff0071" minWidth={100} minHeight={30} /> */}
       <NodeResizeControl
@@ -194,6 +193,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
       <Box
         // bgcolor={"rgb(225,225,225)"}
         sx={{ display: "flex" }}
+        className="custom-drag-handle"
       >
         {devMode && (
           <Box
