@@ -559,8 +559,7 @@ export const CodeNode = memo<NodeProps>(function ({
         </Box>
         <Box
           sx={{
-            // display: "flex",
-            display: showToolbar ? "flex" : "none",
+            opacity: showToolbar ? 1 : 0,
             marginLeft: "10px",
             borderRadius: "4px",
             position: "absolute",
