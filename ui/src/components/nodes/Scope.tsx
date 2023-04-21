@@ -45,37 +45,13 @@ import { ResizableBox } from "react-resizable";
 import { ResizeIcon } from "./utils";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 
-export const ScopeNode = memo<NodeProps>(function ScopeNode({
-  data,
-  id,
-  isConnectable,
-  selected,
-  xPos,
-  yPos,
-}) {
-  // add resize to the node
-  const ref = useRef(null);
+function MyFloatingToolbar({ id }: { id: string }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const reactFlowInstance = useReactFlow();
-  const setPodName = useStore(store, (state) => state.setPodName);
-  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   // const selected = useStore(store, (state) => state.pods[id]?.selected);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
-  const inputRef = useRef<HTMLInputElement>(null);
   const clonePod = useStore(store, (state) => state.clonePod);
-
-  const devMode = useStore(store, (state) => state.devMode);
-  const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
-  const setPaneFocus = useStore(store, (state) => state.setPaneFocus);
-
-  useEffect(() => {
-    if (!data.name) return;
-    setPodName({ id, name: data.name || "" });
-    if (inputRef?.current) {
-      inputRef.current.value = data.name;
-    }
-  }, [data.name, id, setPodName]);
 
   const onCopy = useCallback(
     (clipboardData: any) => {
@@ -103,6 +79,83 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
     },
     [onCopy, cutBegin, id]
   );
+  return (
+    <Box>
+      <CopyToClipboard
+        text="dummy"
+        options={{ debug: true, format: "text/plain", onCopy } as any}
+      >
+        <Tooltip title="Copy">
+          <IconButton size="small" className="copy-button">
+            <ContentCopyIcon fontSize="inherit" className="copy-button" />
+          </IconButton>
+        </Tooltip>
+      </CopyToClipboard>
+
+      {!isGuest && (
+        <CopyToClipboard
+          text="dummy"
+          options={{ debug: true, format: "text/plain", onCopy: onCut } as any}
+        >
+          <Tooltip title="Cut">
+            <IconButton size="small">
+              <ContentCutIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        </CopyToClipboard>
+      )}
+      {!isGuest && (
+        <Tooltip title="Delete" className="nodrag">
+          <IconButton
+            size="small"
+            onClick={(e: any) => {
+              // This does not work, will throw "Parent node
+              // jqgdsz2ns6k57vich0bf not found" when deleting a scope.
+              //
+              // nodesMap.delete(id);
+              //
+              // But this works:
+              reactFlowInstance.deleteElements({ nodes: [{ id }] });
+            }}
+          >
+            <DeleteIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      )}
+    </Box>
+  );
+}
+
+export const ScopeNode = memo<NodeProps>(function ScopeNode({
+  data,
+  id,
+  isConnectable,
+  selected,
+  xPos,
+  yPos,
+}) {
+  // add resize to the node
+  const ref = useRef(null);
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const setPodName = useStore(store, (state) => state.setPodName);
+  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+  // const selected = useStore(store, (state) => state.pods[id]?.selected);
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const devMode = useStore(store, (state) => state.devMode);
+  const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
+
+  useEffect(() => {
+    if (!data.name) return;
+    setPodName({ id, name: data.name || "" });
+    if (inputRef?.current) {
+      inputRef.current.value = data.name;
+    }
+  }, [data.name, id, setPodName]);
+
+  const [showToolbar, setShowToolbar] = useState(false);
 
   return (
     <Box
@@ -112,6 +165,12 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
         height: "100%",
         border: isCutting ? "dashed 2px red" : "solid 1px #d6dee6",
         borderRadius: "4px",
+      }}
+      onMouseEnter={() => {
+        setShowToolbar(true);
+      }}
+      onMouseLeave={() => {
+        setShowToolbar(false);
       }}
     >
       {/* <NodeResizer color="#ff0071" minWidth={100} minHeight={30} /> */}
@@ -127,7 +186,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
       </NodeResizeControl>
       <Box
         sx={{
-          display: "flex",
+          opacity: showToolbar ? 1 : 0,
           marginLeft: "10px",
           borderRadius: "4px",
           position: "absolute",
@@ -138,50 +197,9 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
           zIndex: 250,
           justifyContent: "center",
         }}
+        className="nodrag"
       >
-        <CopyToClipboard
-          text="dummy"
-          options={{ debug: true, format: "text/plain", onCopy } as any}
-        >
-          <Tooltip title="Copy">
-            <IconButton size="small" className="copy-button">
-              <ContentCopyIcon fontSize="inherit" className="copy-button" />
-            </IconButton>
-          </Tooltip>
-        </CopyToClipboard>
-
-        {!isGuest && (
-          <CopyToClipboard
-            text="dummy"
-            options={
-              { debug: true, format: "text/plain", onCopy: onCut } as any
-            }
-          >
-            <Tooltip title="Cut">
-              <IconButton size="small">
-                <ContentCutIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          </CopyToClipboard>
-        )}
-        {!isGuest && (
-          <Tooltip title="Delete" className="nodrag">
-            <IconButton
-              size="small"
-              onClick={(e: any) => {
-                // This does not work, will throw "Parent node
-                // jqgdsz2ns6k57vich0bf not found" when deleting a scope.
-                //
-                // nodesMap.delete(id);
-                //
-                // But this works:
-                reactFlowInstance.deleteElements({ nodes: [{ id }] });
-              }}
-            >
-              <DeleteIcon fontSize="inherit" />
-            </IconButton>
-          </Tooltip>
-        )}
+        <MyFloatingToolbar id={id} />
       </Box>
       <Handle
         type="source"
