@@ -169,7 +169,8 @@ function getScopeAt(
 function getNodePositionInsideScope(
   node: Node,
   scope: Node,
-  nodesMap
+  nodesMap,
+  nodeHeight: number = 0
 ): XYPosition {
   // compute the actual position
   let [x, y] = getAbsPos(node, nodesMap);
@@ -178,11 +179,11 @@ function getNodePositionInsideScope(
   y -= dy;
   // auto-align the node to, keep it bound in the scope
   // FIXME: it assumes the scope must be larger than the node
-
   x = Math.max(x, 0);
   x = Math.min(x, scope.width! - node.width!);
   y = Math.max(y, 0);
-  y = Math.min(y, scope.height! - node.height!);
+  // FIXME: node.height can be undefined
+  y = Math.min(y, scope.height! - nodeHeight);
   return { x, y };
 }
 
@@ -250,7 +251,11 @@ export interface CanvasSlice {
   setPaneFocus: () => void;
   setPaneBlur: () => void;
 
-  addNode: (type: "code" | "scope" | "rich", position: XYPosition) => void;
+  addNode: (
+    type: "code" | "scope" | "rich",
+    position: XYPosition,
+    parent: string
+  ) => void;
 
   pastingNodes?: Node[];
   headPastingNodes?: Set<string>;
@@ -390,7 +395,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     get().addPod({
       id: node.id,
       children: [],
-      parent,
+      parent: "ROOT",
       type: nodetype2dbtype(node.type || ""),
       lang: "python",
       x: node.position.x,
@@ -401,6 +406,10 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       dirty: true,
       pending: true,
     });
+    if (parent !== "ROOT") {
+      // we don't assign its parent when created, because we have to adjust its position to make it inside its parent.
+      get().moveIntoScope(node.id, parent);
+    }
     get().updateView();
   },
 
@@ -610,7 +619,15 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     }
     // let [x, y] = getAbsPos(node, nodesMap);
     // let position = getNodePositionInsideParent(node, scope, { x, y });
-    let position = getNodePositionInsideScope(node, scope, nodesMap);
+
+    // FIXME: since richNode and codeNode doesn't have height when it's created, we have to pass its height manually in case crash.
+    const nodeHeight = get().getPod(nodeId)?.height || 0;
+    let position = getNodePositionInsideScope(
+      node,
+      scope,
+      nodesMap,
+      nodeHeight
+    );
     let newNode: Node = {
       ...node,
       position,
