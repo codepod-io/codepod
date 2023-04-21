@@ -79,8 +79,7 @@
   box-shadow: 0px 0px 12px 0px rgba(100, 100, 100, 0.9);
 }
 
-.react-flow__node-scope.selected,
-.react-flow__node-scope:hover {
+.react-flow__node-scope.selected {
   box-shadow: 0px 0px 8px 0px rgba(100, 100, 100, 0.5);
 }
 

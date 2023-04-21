@@ -497,6 +497,7 @@ function CanvasImpl() {
     store,
     (state) => state.removeDragHighlight
   );
+  const updateView = useStore(store, (state) => state.updateView);
 
   const addNode = useStore(store, (state) => state.addNode);
   const reactFlowInstance = useReactFlow();
@@ -584,7 +585,7 @@ function CanvasImpl() {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onNodeDragStop={(event, node) => {
-            // removeDragHighlight();
+            removeDragHighlight();
             let mousePos = project({ x: event.clientX, y: event.clientY });
             // check if the mouse is still inside this node. If not, the user
             // has beenn trying to move a pod out.
@@ -601,11 +602,14 @@ function CanvasImpl() {
             if (scope && scope.id !== node.parentNode) {
               moveIntoScope(node.id, scope.id);
             }
+            // update view manually to remove the drag highlight.
+            updateView();
           }}
           onNodeDrag={(event, node) => {
             let mousePos = project({ x: event.clientX, y: event.clientY });
             let scope = getScopeAtPos(mousePos, node.id);
             if (scope) {
+              // The view is updated at the node position change.
               setDragHighlight(scope.id);
             } else {
               removeDragHighlight();
