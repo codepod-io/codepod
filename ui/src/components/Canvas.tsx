@@ -72,7 +72,6 @@ function store2nodes(id: string, { getId2children, getPod }) {
       // position: { x: 100, y: 100 },
       position: { x: pod.x, y: pod.y },
       parentNode: pod.parent !== "ROOT" ? pod.parent : undefined,
-      extent: pod.parent !== "ROOT" ? "parent" : undefined,
       style: {
         width: pod.width || undefined,
         height: pod.height || undefined,
