@@ -315,6 +315,18 @@ async function deleteRepo(_, { id }, { userId }) {
       },
     },
   });
+  // 2. delete UserRepoData
+  await prisma.userRepoData.deleteMany({
+    where: {
+      repo: {
+        id: repo.id,
+      },
+      user: {
+        id: userId,
+      }
+    },
+  });
+  // 3. delete the repo itself
   await prisma.repo.delete({
     where: {
       id: repo.id,
