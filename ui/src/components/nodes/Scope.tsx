@@ -143,6 +143,8 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   // const selected = useStore(store, (state) => state.pods[id]?.selected);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const inputRef = useRef<HTMLInputElement>(null);
+  const getPod = useStore(store, (state) => state.getPod);
+  const pod = getPod(id);
 
   const devMode = useStore(store, (state) => state.devMode);
   const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
@@ -223,7 +225,8 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
             }}
             className="nodrag"
           >
-            {id} at ({xPos}, {yPos}), level: {data.level}
+            {id} at ({xPos}, {yPos}), w: {pod.width}, h: {pod.height} level:{" "}
+            {data.level}
           </Box>
         )}
         <Grid container spacing={2} sx={{ alignItems: "center" }}>
