@@ -2046,6 +2046,37 @@
   resolved "https://registry.yarnpkg.com/@popperjs/core/-/core-2.11.6.tgz#cee20bd55e68a1720bdab363ecf0c821ded4cd45"
   integrity sha512-50/17A98tWUfQ176raKiOGXuYpLyyVMkxxG6oylzL3BPOlA6ADGdK7EYunSa4I064xerltq9TGXs8HmOk5E+vw==
 
+"@radix-ui/react-compose-refs@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@radix-ui/react-compose-refs/-/react-compose-refs-1.0.0.tgz#37595b1f16ec7f228d698590e78eeed18ff218ae"
+  integrity sha512-0KaSv6sx787/hK3eF53iOkiSLwAGlFMx5lotrqD2pTjB18KbybKoEIgkNZTKC60YECDQTKGTRcDBILwZVqVKvA==
+  dependencies:
+    "@babel/runtime" "^7.13.10"
+
+"@radix-ui/react-portal@^1.0.1":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@radix-ui/react-portal/-/react-portal-1.0.2.tgz#102370b1027a767a371cab0243be4bc664f72330"
+  integrity sha512-swu32idoCW7KA2VEiUZGBSu9nB6qwGdV6k6HYhUoOo3M1FFpD+VgLzUqtt3mwL1ssz7r2x8MggpLSQach2Xy/Q==
+  dependencies:
+    "@babel/runtime" "^7.13.10"
+    "@radix-ui/react-primitive" "1.0.2"
+
+"@radix-ui/react-primitive@1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@radix-ui/react-primitive/-/react-primitive-1.0.2.tgz#54e22f49ca59ba88d8143090276d50b93f8a7053"
+  integrity sha512-zY6G5Qq4R8diFPNwtyoLRZBxzu1Z+SXMlfYpChN7Dv8gvmx9X3qhDqiLWvKseKVJMuedFeU/Sa0Sy/Ia+t06Dw==
+  dependencies:
+    "@babel/runtime" "^7.13.10"
+    "@radix-ui/react-slot" "1.0.1"
+
+"@radix-ui/react-slot@1.0.1":
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/@radix-ui/react-slot/-/react-slot-1.0.1.tgz#e7868c669c974d649070e9ecbec0b367ee0b4d81"
+  integrity sha512-avutXAFL1ehGvAXtPquu0YK5oz6ctS474iM3vNGQIkswrVhdrS52e3uoMQBzZhNRAIE0jBnUyXWNmSjGHhCFcw==
+  dependencies:
+    "@babel/runtime" "^7.13.10"
+    "@radix-ui/react-compose-refs" "1.0.0"
+
 "@reach/auto-id@^0.16.0":
   version "0.16.0"
   resolved "https://registry.yarnpkg.com/@reach/auto-id/-/auto-id-0.16.0.tgz#dfabc3227844e8c04f8e6e45203a8e14a8edbaed"
@@ -2053,6 +2084,11 @@
   dependencies:
     "@reach/utils" "0.16.0"
     tslib "^2.3.0"
+
+"@reach/observe-rect@^1.1.0":
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/@reach/observe-rect/-/observe-rect-1.2.0.tgz#d7a6013b8aafcc64c778a0ccb83355a11204d3b2"
+  integrity sha512-Ba7HmkFgfQxZqqaeIWWkNK0rEhpxVQHIoVyW1YDSkGsGIXzcaW4deC8B0pZrNSSyLTdIk7y+5olKt5+g0GmFIQ==
 
 "@reach/utils@0.16.0":
   version "0.16.0"
@@ -5164,6 +5200,11 @@ comma-separated-tokens@^1.0.0:
   resolved "https://registry.yarnpkg.com/comma-separated-tokens/-/comma-separated-tokens-1.0.8.tgz#632b80b6117867a158f1080ad498b2fbe7e3f5ea"
   integrity sha512-GHuDRO12Sypu2cV70d1dkA2EUmXHgntrzbpvOB+Qy+49ypNfGgFQIC2fhhXbnyrJRynDCAARsT7Ou0M6hirpfw==
 
+command-score@^0.1.2:
+  version "0.1.2"
+  resolved "https://registry.yarnpkg.com/command-score/-/command-score-0.1.2.tgz#b986ad7e8c0beba17552a56636c44ae38363d381"
+  integrity sha512-VtDvQpIJBvBatnONUsPzXYFVKQQAhuf3XTNOAsdBxCNO/QCtUUd8LSgjn0GVarBkCad6aJCZfXgrjYbl/KRr7w==
+
 commander@^2.20.0:
   version "2.20.3"
   resolved "https://registry.yarnpkg.com/commander/-/commander-2.20.3.tgz#fd485e84c03eb4881c20722ba48035e8531aeb33"
@@ -6561,6 +6602,11 @@ fast-deep-equal@^3.1.1, fast-deep-equal@^3.1.3:
   version "3.1.3"
   resolved "https://registry.yarnpkg.com/fast-deep-equal/-/fast-deep-equal-3.1.3.tgz#3a7d56b559d6cbc3eb512325244e619a65c6c525"
   integrity sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==
+
+fast-equals@^2.0.3:
+  version "2.0.4"
+  resolved "https://registry.yarnpkg.com/fast-equals/-/fast-equals-2.0.4.tgz#3add9410585e2d7364c2deeb6a707beadb24b927"
+  integrity sha512-caj/ZmjHljPrZtbzJ3kfH5ia/k4mTJe/qSiXAGzxZWRZgsgDV0cvNaQULqUX8t0/JVlzzEdYOwCN5DmzTxoD4w==
 
 fast-glob@^3.2.11, fast-glob@^3.2.9:
   version "3.2.12"
@@ -8331,6 +8377,17 @@ jsx-dom-cjs@^8.0.0:
   integrity sha512-TL+vWdFH6piot6tHXc/84L0QPwhnLxzTYm0KCrMM5wA1VdsHzDfbc7MRFgSgoeIMFH7LvZ82Gc9x5rzumtjHSA==
   dependencies:
     csstype "^3.1.0"
+
+kbar@^0.1.0-beta.40:
+  version "0.1.0-beta.40"
+  resolved "https://registry.yarnpkg.com/kbar/-/kbar-0.1.0-beta.40.tgz#89747e3c1538375fef779af986b6614bb441ae7c"
+  integrity sha512-vEV02WuEBvKaSivO2DnNtyd3gUAbruYrZCax5fXcLcVTFV6q0/w6Ew3z6Qy+AqXxbZdWguwQ3POIwgdHevp+6A==
+  dependencies:
+    "@radix-ui/react-portal" "^1.0.1"
+    command-score "^0.1.2"
+    fast-equals "^2.0.3"
+    react-virtual "^2.8.2"
+    tiny-invariant "^1.2.0"
 
 kind-of@^6.0.2:
   version "6.0.3"
@@ -10488,6 +10545,13 @@ react-use@^17.3.2:
     ts-easing "^0.2.0"
     tslib "^2.1.0"
 
+react-virtual@^2.8.2:
+  version "2.10.4"
+  resolved "https://registry.yarnpkg.com/react-virtual/-/react-virtual-2.10.4.tgz#08712f0acd79d7d6f7c4726f05651a13b24d8704"
+  integrity sha512-Ir6+oPQZTVHfa6+JL9M7cvMILstFZH/H3jqeYeKI4MSUX+rIruVwFC6nGVXw9wqAw8L0Kg2KvfXxI85OvYQdpQ==
+  dependencies:
+    "@reach/observe-rect" "^1.1.0"
+
 react@^18.2.0:
   version "18.2.0"
   resolved "https://registry.yarnpkg.com/react/-/react-18.2.0.tgz#555bd98592883255fa00de14f1151a917b5d77d5"
@@ -11714,6 +11778,11 @@ tiny-invariant@1.0.6:
   version "1.0.6"
   resolved "https://registry.yarnpkg.com/tiny-invariant/-/tiny-invariant-1.0.6.tgz#b3f9b38835e36a41c843a3b0907a5a7b3755de73"
   integrity sha512-FOyLWWVjG+aC0UqG76V53yAWdXfH8bO6FNmyZOuUrzDzK8DI3/JRY25UD7+g49JWM1LXwymsKERB+DzI0dTEQA==
+
+tiny-invariant@^1.2.0:
+  version "1.3.1"
+  resolved "https://registry.yarnpkg.com/tiny-invariant/-/tiny-invariant-1.3.1.tgz#8560808c916ef02ecfd55e66090df23a4b7aa642"
+  integrity sha512-AD5ih2NlSssTCwsMznbvwMZpJ1cbhkGd2uueNxzv2jDlEeZdU04JQfRnggJQ8DrcVBGjAsCKwFBbDlVNtEMlzw==
 
 tiny-warning@^1.0.2, tiny-warning@^1.0.3:
   version "1.0.3"

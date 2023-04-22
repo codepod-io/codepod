@@ -18,6 +18,7 @@ import { useSnackbar, VariantType } from "notistack";
 
 import { gql, useQuery, useMutation, useApolloClient } from "@apollo/client";
 import { useStore } from "zustand";
+import { MyKBar } from "./MyKBar";
 
 import { usePrompt } from "../lib/prompt";
 
@@ -468,6 +469,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   return (
     <>
+      <MyKBar />
       <Box
         sx={{
           position: "absolute",

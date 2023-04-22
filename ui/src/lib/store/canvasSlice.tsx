@@ -83,7 +83,6 @@ function createTemporaryNode(pod, position, parent = "ROOT", level = 0): any {
       parent,
       level,
     },
-    extent: level > 0 ? "parent" : undefined,
     dragHandle: ".custom-drag-handle",
     width: pod.width,
     height: pod.height!,
@@ -177,13 +176,6 @@ function getNodePositionInsideScope(
   let [dx, dy] = getAbsPos(scope, nodesMap);
   x -= dx;
   y -= dy;
-  // auto-align the node to, keep it bound in the scope
-  // FIXME: it assumes the scope must be larger than the node
-  x = Math.max(x, 0);
-  x = Math.min(x, scope.width! - node.width!);
-  y = Math.max(y, 0);
-  // FIXME: node.height can be undefined
-  y = Math.min(y, scope.height! - nodeHeight);
   return { x, y };
 }
 
@@ -282,6 +274,8 @@ export interface CanvasSlice {
   onNodesChange: (client: ApolloClient<any>) => OnNodesChange;
   onEdgesChange: (client: ApolloClient<any>) => OnEdgesChange;
   onConnect: (client: ApolloClient<any>) => OnConnect;
+
+  autoLayout: () => void;
 }
 
 export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
@@ -592,7 +586,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     let newNode: Node = {
       ...node,
       parentNode: undefined,
-      extent: undefined,
       data: {
         ...node.data,
         level: 0,
@@ -632,7 +625,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       ...node,
       position,
       parentNode: scope.id,
-      extent: "parent",
       data: {
         ...node.data,
         level: scope.data.level + 1,
@@ -816,7 +808,120 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   },
   setPaneFocus: () => set({ isPaneFocused: true }),
   setPaneBlur: () => set({ isPaneFocused: false }),
+  autoLayout: () => {
+    // Auto layout the nodes.
+    // Find all the scope nodes, and change its width and height to fit its children nodes.
+    let nodesMap = get().ydoc.getMap<Node>("pods");
+    let nodes: Node[] = Array.from(nodesMap.values());
+    let node2children = new Map<string, string[]>();
+    nodes.forEach((node) => {
+      if (!node2children.has(node.id)) {
+        node2children.set(node.id, []);
+      }
+      if (node.parentNode) {
+        if (!node2children.has(node.parentNode)) {
+          node2children.set(node.parentNode, []);
+        }
+        node2children.get(node.parentNode)?.push(node.id);
+      }
+    });
+    // fit the children.
+    nodes
+      // sort the children so that the inner scope gets processed first.
+      .sort((a: Node, b: Node) => b.data.level - a.data.level)
+      .forEach((node) => {
+        let newSize = fitChildren(node, node2children, nodesMap);
+        if (newSize === null) return;
+        let { x, y, width, height } = newSize;
+        let newNode = {
+          ...node,
+          position: {
+            x: node.position.x + x,
+            y: node.position.y + y,
+          },
+          width,
+          height,
+          style: {
+            ...node.style,
+            width,
+            height,
+          },
+        };
+        nodesMap.set(node.id, newNode);
+        // I actually need to set the children's position as well, because they are relative to the parent.
+        let children = node2children.get(node.id);
+        children?.forEach((child) => {
+          let n = nodesMap.get(child)!;
+          let newChild = {
+            ...n,
+            position: {
+              x: n.position.x - x,
+              y: n.position.y - y,
+            },
+          };
+          nodesMap.set(child, newChild);
+        });
+      });
+    // trigger update to the db
+    // get the most recent nodes
+    nodes = Array.from(nodesMap.values());
+    nodes.forEach((node) => {
+      // trigger update to the DB
+      let geoData = {
+        parent: node.parentNode ? node.parentNode : "ROOT",
+        x: node.position.x,
+        y: node.position.y,
+        width: node.width!,
+        height: node.height!,
+      };
+      get().setPodGeo(node.id, geoData, true);
+    });
+    // update the view
+    get().updateView();
+  },
 });
+
+/**
+ * Compute the rectangle of that is tightly fit to the children.
+ * @param node
+ * @param node2children
+ * @param nodesMap
+ * @returns {x,y,width,height}
+ */
+function fitChildren(
+  node: Node,
+  node2children,
+  nodesMap
+): null | { x: number; y: number; width: number; height: number } {
+  if (node.type !== "scope") return null;
+  // This is a scope node. Get all its children and calculate the x,y,width,height to tightly fit its children.
+  let children = node2children.get(node.id);
+  // If no children, nothing is changed.
+  if (children.length === 0) return null;
+  // These positions are actually relative to the parent node.
+  let x1s = children.map((child) => nodesMap.get(child)!.position.x);
+  let minx = Math.min(...x1s);
+  let y1s = children.map((child) => nodesMap.get(child)!.position.y);
+  let miny = Math.min(...y1s);
+  let x2s = children.map((child) => {
+    let n = nodesMap.get(child)!;
+    return n.position.x + n.width!;
+  });
+  let maxx = Math.max(...x2s);
+  let y2s = children.map((child) => {
+    let n = nodesMap.get(child)!;
+    return n.position.y + n.height!;
+  });
+  let maxy = Math.max(...y2s);
+  let width = maxx - minx;
+  let height = maxy - miny;
+  return {
+    x: minx - 10,
+    y: miny - 10,
+    width: width + 20,
+    height: height + 20,
+  };
+}
 
 async function remoteAddEdge({ client, source, target }) {
   const mutation = gql`
