@@ -2,6 +2,8 @@ import produce from "immer";
 import { ApolloClient, gql } from "@apollo/client";
 import { createStore, StateCreator, StoreApi } from "zustand";
 
+import { Edge } from "reactflow";
+
 // FIXME cyclic import
 import { MyState } from ".";
 import { analyzeCode, analyzeCodeViaQuery } from "../parser";
@@ -165,6 +167,7 @@ export interface RuntimeSlice {
   resolveAllPods: () => void;
   wsRun: (id: string) => void;
   wsRunNoRewrite: (id: string) => void;
+  wsRunChain: (id: string) => void;
   wsInterruptKernel: ({ lang }) => void;
   clearResults: (id) => void;
   clearAllResults: () => void;
@@ -282,6 +285,61 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
         },
       })
     );
+  },
+  wsRunChain: async (id) => {
+    if (!get().socket) {
+      get().addError({
+        type: "error",
+        msg: "Runtime not connected",
+      });
+      return;
+    }
+    // 1. get the chain: get the edges, and then get the pods
+    const edgesMap = get().ydoc.getMap<Edge>("edges");
+    let edges = Array.from(edgesMap.values());
+    // build a node2target map
+    let node2target = {};
+    edges.forEach(({ source, target }) => {
+      // TODO support multiple targets
+      node2target[source] = target;
+    });
+    // get the chain
+    let chain: string[] = [];
+    let node = id;
+    while (node) {
+      // if the node is already in the chain, then there is a loop
+      if (chain.includes(node)) break;
+      chain.push(node);
+      node = node2target[node];
+    }
+    // 2. run each pod in the chain
+    // get().wsRun(id);
+    chain.forEach((id) => {
+      // Analyze code and set symbol table
+      get().parsePod(id);
+      // update anontations according to st
+      get().resolvePod(id);
+      // rewrite the code
+      const newcode = rewriteCode(id, get);
+      // Run the code in remote kernel.
+      get().clearResults(id);
+      get().setRunning(id);
+      let pod = get().pods[id];
+      // FIXME wait for the execution result before executing the next pod.
+      // TODO show some status of pending runs.
+      get().socket?.send(
+        JSON.stringify({
+          type: "runCode",
+          payload: {
+            lang: pod.lang,
+            code: newcode,
+            raw: true,
+            podId: pod.id,
+            sessionId: get().sessionId,
+          },
+        })
+      );
+    });
   },
   wsRunNoRewrite: async (id) => {
     if (!get().socket) {

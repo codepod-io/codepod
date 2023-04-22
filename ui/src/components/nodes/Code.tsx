@@ -38,6 +38,7 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import ContentCutIcon from "@mui/icons-material/ContentCut";
 import Grid from "@mui/material/Grid";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight";
 import PlayDisabledIcon from "@mui/icons-material/PlayDisabled";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
@@ -229,6 +230,7 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
   const devMode = useStore(store, (state) => state.devMode);
   // const pod = useStore(store, (state) => state.pods[id]);
   const wsRun = useStore(store, (state) => state.wsRun);
+  const wsRunChain = useStore(store, (state) => state.wsRunChain);
   const wsRunNoRewrite = useStore(store, (state) => state.wsRunNoRewrite);
   const clearResults = useStore(store, (s) => s.clearResults);
   // right, bottom
@@ -276,6 +278,18 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
             }}
           >
             <PlayCircleOutlineIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      )}
+      {!isGuest && (
+        <Tooltip title="Run chain">
+          <IconButton
+            size="small"
+            onClick={() => {
+              wsRunChain(id);
+            }}
+          >
+            <KeyboardDoubleArrowRightIcon fontSize="inherit" />
           </IconButton>
         </Tooltip>
       )}
