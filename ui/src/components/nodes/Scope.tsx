@@ -33,6 +33,7 @@ import Grid from "@mui/material/Grid";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ContentCutIcon from "@mui/icons-material/ContentCut";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import Moveable from "react-moveable";
 
 import { useStore } from "zustand";
@@ -51,6 +52,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
   const reactFlowInstance = useReactFlow();
   // const selected = useStore(store, (state) => state.pods[id]?.selected);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const wsRunScope = useStore(store, (state) => state.wsRunScope);
   const clonePod = useStore(store, (state) => state.clonePod);
 
   const onCopy = useCallback(
@@ -81,6 +83,18 @@ function MyFloatingToolbar({ id }: { id: string }) {
   );
   return (
     <Box>
+      {!isGuest && (
+        <Tooltip title="Run (shift-enter)">
+          <IconButton
+            size="small"
+            onClick={() => {
+              wsRunScope(id);
+            }}
+          >
+            <PlayCircleOutlineIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      )}
       <CopyToClipboard
         text="dummy"
         options={{ debug: true, format: "text/plain", onCopy } as any}

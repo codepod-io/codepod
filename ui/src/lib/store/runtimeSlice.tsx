@@ -2,7 +2,7 @@ import produce from "immer";
 import { ApolloClient, gql } from "@apollo/client";
 import { createStore, StateCreator, StoreApi } from "zustand";
 
-import { Edge } from "reactflow";
+import { Edge, Node } from "reactflow";
 
 // FIXME cyclic import
 import { MyState } from ".";
@@ -167,6 +167,7 @@ export interface RuntimeSlice {
   resolveAllPods: () => void;
   runningId: string | null;
   wsRun: (id: string) => void;
+  wsRunScope: (id: string) => void;
   wsSendRun: (id: string) => void;
   wsRunNext: () => void;
   wsRunNoRewrite: (id: string) => void;
@@ -314,12 +315,43 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
    * Add a pod to the chain and run it.
    */
   wsRun: async (id) => {
-    // Add to the chain
-    get().clearResults(id);
-    get().setRunning(id);
-    set({ chain: [...get().chain, id] });
-    // if there's nothing running, run it
+    // If this pod is a code pod, add it.
+    if (get().pods[id].type === "CODE") {
+      // Add to the chain
+      get().clearResults(id);
+      get().setRunning(id);
+      set({ chain: [...get().chain, id] });
+    } else if (get().pods[id].type === "DECK") {
+      // If this pod is a scope, run all pods inside a scope by geographical order.
+      // get the pods in the scope
+      let children = get().node2children.get(id);
+      if (!children) return;
+      // The reactflow nodesMap stored in Yjs
+      let nodesMap = get().ydoc.getMap<Node>("pods");
+      // Sort by x and y positions, with the leftmost and topmost first.
+      children = [...children].sort((a, b) => {
+        let nodeA = nodesMap.get(a);
+        let nodeB = nodesMap.get(b);
+        if (nodeA && nodeB) {
+          if (nodeA.position.y === nodeB.position.y) {
+            return nodeA.position.x - nodeB.position.x;
+          } else {
+            return nodeA.position.y - nodeB.position.y;
+          }
+        } else {
+          return 0;
+        }
+      });
+      // add to the chain
+      // set({ chain: [...get().chain, ...children.map(({ id }) => id)] });
+      children.forEach((id) => get().wsRun(id));
+    }
     get().wsRunNext();
+  },
+  wsRunScope: async (id) => {
+    // This is a separate function only because we need to build the node2children map first.
+    get().buildNode2Children();
+    get().wsRun(id);
   },
   /**
    * Add the pod and all its downstream pods (defined by edges) to the chain and run the chain.
