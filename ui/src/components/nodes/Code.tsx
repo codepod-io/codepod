@@ -38,6 +38,7 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import ContentCutIcon from "@mui/icons-material/ContentCut";
 import Grid from "@mui/material/Grid";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight";
 import PlayDisabledIcon from "@mui/icons-material/PlayDisabled";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
@@ -229,8 +230,8 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
   const devMode = useStore(store, (state) => state.devMode);
   // const pod = useStore(store, (state) => state.pods[id]);
   const wsRun = useStore(store, (state) => state.wsRun);
+  const wsRunChain = useStore(store, (state) => state.wsRunChain);
   const wsRunNoRewrite = useStore(store, (state) => state.wsRunNoRewrite);
-  const clearResults = useStore(store, (s) => s.clearResults);
   // right, bottom
   const getPod = useStore(store, (state) => state.getPod);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
@@ -271,7 +272,6 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
           <IconButton
             size="small"
             onClick={() => {
-              clearResults(id);
               wsRun(id);
             }}
           >
@@ -280,11 +280,22 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
         </Tooltip>
       )}
       {!isGuest && (
+        <Tooltip title="Run chain">
+          <IconButton
+            size="small"
+            onClick={() => {
+              wsRunChain(id);
+            }}
+          >
+            <KeyboardDoubleArrowRightIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      )}
+      {!isGuest && (
         <Tooltip title="Run without rewrite">
           <IconButton
             size="small"
             onClick={() => {
-              clearResults(id);
               wsRunNoRewrite(id);
             }}
           >
