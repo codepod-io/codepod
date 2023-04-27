@@ -275,6 +275,8 @@ export interface CanvasSlice {
   onEdgesChange: (client: ApolloClient<any>) => OnEdgesChange;
   onConnect: (client: ApolloClient<any>) => OnConnect;
 
+  node2children: Map<string, string[]>;
+  buildNode2Children: () => void;
   autoLayout: () => void;
 }
 
@@ -808,9 +810,16 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   },
   setPaneFocus: () => set({ isPaneFocused: true }),
   setPaneBlur: () => set({ isPaneFocused: false }),
-  autoLayout: () => {
-    // Auto layout the nodes.
-    // Find all the scope nodes, and change its width and height to fit its children nodes.
+  /**
+   * This node2children is maintained with the canvas reactflow states, not with
+   * the pods. This mapping may be used by other components, e.g. the runtime.
+   *
+   * TODO we should optimize the performance of this function, maybe only update
+   * the mapping when the structure is changed.
+   */
+  node2children: new Map<string, string[]>(),
+  buildNode2Children: () => {
+    // build a map from node to its children
     let nodesMap = get().ydoc.getMap<Node>("pods");
     let nodes: Node[] = Array.from(nodesMap.values());
     let node2children = new Map<string, string[]>();
@@ -825,12 +834,20 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         node2children.get(node.parentNode)?.push(node.id);
       }
     });
+    set({ node2children });
+  },
+  autoLayout: () => {
+    // Auto layout the nodes.
+    // Find all the scope nodes, and change its width and height to fit its children nodes.
+    let nodesMap = get().ydoc.getMap<Node>("pods");
+    let nodes: Node[] = Array.from(nodesMap.values());
+    get().buildNode2Children();
     // fit the children.
     nodes
       // sort the children so that the inner scope gets processed first.
       .sort((a: Node, b: Node) => b.data.level - a.data.level)
       .forEach((node) => {
-        let newSize = fitChildren(node, node2children, nodesMap);
+        let newSize = fitChildren(node, get().node2children, nodesMap);
         if (newSize === null) return;
         let { x, y, width, height } = newSize;
         let newNode = {
@@ -849,7 +866,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         };
         nodesMap.set(node.id, newNode);
         // I actually need to set the children's position as well, because they are relative to the parent.
-        let children = node2children.get(node.id);
+        let children = get().node2children.get(node.id);
         children?.forEach((child) => {
           let n = nodesMap.get(child)!;
           let newChild = {
