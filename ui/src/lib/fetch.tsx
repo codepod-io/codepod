@@ -98,6 +98,37 @@ export async function doRemoteLoadRepo(client: ApolloClient<any>, id: string) {
   }
 }
 
+/**
+ * For historical reason, the backend DB schema pod.type are "CODE", "DECK",
+ * "WYSIWYG", while the node types in front-end are "CODE", "SCOPE", "RICH".
+ */
+
+function dbtype2nodetype(dbtype: string) {
+  switch (dbtype) {
+    case "CODE":
+      return "CODE";
+    case "DECK":
+      return "SCOPE";
+    case "WYSIWYG":
+      return "RICH";
+    default:
+      throw new Error(`unknown dbtype ${dbtype}`);
+  }
+}
+
+function nodetype2dbtype(nodetype: string) {
+  switch (nodetype) {
+    case "CODE":
+      return "CODE";
+    case "SCOPE":
+      return "DECK";
+    case "RICH":
+      return "WYSIWYG";
+    default:
+      throw new Error(`unknown nodetype ${nodetype}`);
+  }
+}
+
 export function normalize(pods) {
   const res: { [key: string]: Pod } = {
     ROOT: {
@@ -108,7 +139,7 @@ export function normalize(pods) {
       // Adding this to avoid errors
       // XXX should I save these to db?
       lang: "python",
-      type: "DECK",
+      type: "SCOPE",
       content: "",
       x: 0,
       y: 0,
@@ -141,19 +172,10 @@ export function normalize(pods) {
           type: res[id].type,
         }))
       : [];
-    // change children.id format
-    // UDPATE Or, I just put {id,type} in the children array
-    //
-    // pod.children = pod.children.map(({ id }) => id);
-    //
-    // sort according to index
-    // pod.children.sort((a, b) => res[a.id].index - res[b.id].index);
-    // if (pod.type === "WYSIWYG" || pod.type === "CODE") {
-    //   pod.content = JSON.parse(pod.content);
-    // }
     pod.content = JSON.parse(pod.content);
     pod.staged = JSON.parse(pod.staged);
     pod.githead = JSON.parse(pod.githead);
+    pod.type = dbtype2nodetype(pod.type);
     if (pod.result) {
       pod.result = JSON.parse(pod.result);
     }
@@ -161,9 +183,9 @@ export function normalize(pods) {
       pod.error = JSON.parse(pod.error);
     }
     // DEBUG the deck's content seems to be a long string of escaped \
-    if (pod.type === "DECK" && pod.content) {
+    if (pod.type === "SCOPE" && pod.content) {
       console.log(
-        `warning: deck ${pod.id} content is not null, setting to null:`,
+        `warning: SCOPE ${pod.id} content is not null, setting to null:`,
         pod.content
       );
       pod.content = null;
@@ -195,7 +217,7 @@ function serializePodInput(pod) {
     height,
   }) => ({
     id,
-    type,
+    type: nodetype2dbtype(type),
     column,
     lang,
     // stdout,

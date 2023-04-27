@@ -321,7 +321,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       get().clearResults(id);
       get().setRunning(id);
       set({ chain: [...get().chain, id] });
-    } else if (get().pods[id].type === "DECK") {
+    } else if (get().pods[id].type === "SCOPE") {
       // If this pod is a scope, run all pods inside a scope by geographical order.
       // get the pods in the scope
       let children = get().node2children.get(id);

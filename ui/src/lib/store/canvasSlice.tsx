@@ -15,7 +15,7 @@ import { Transaction, YEvent } from "yjs";
 
 import { match, P } from "ts-pattern";
 
-import { myNanoId, nodetype2dbtype, dbtype2nodetype } from "../utils";
+import { myNanoId } from "../utils";
 
 import {
   Connection,
@@ -69,14 +69,14 @@ function createTemporaryNode(pod, position, parent = "ROOT", level = 0): any {
     width: pod.width,
   };
 
-  if (pod.type === "DECK") {
+  if (pod.type === "SCOPE") {
     style["height"] = pod.height!;
     style["backgroundColor"] = level2color[level] || level2color["default"];
   }
 
   const newNode = {
     id,
-    type: dbtype2nodetype(pod.type),
+    type: pod.type,
     position,
     data: {
       label: id,
@@ -108,13 +108,13 @@ function createTemporaryNode(pod, position, parent = "ROOT", level = 0): any {
 /**
  * The new reactflow nodes for context-menu's addXXX items.
  */
-function createNewNode(type: "scope" | "code" | "rich", position): Node {
+function createNewNode(type: "SCOPE" | "CODE" | "RICH", position): Node {
   let id = myNanoId();
   const newNode = {
     id,
     type,
     position,
-    ...(type === "scope"
+    ...(type === "SCOPE"
       ? {
           width: 600,
           height: 600,
@@ -154,7 +154,7 @@ function getScopeAt(
   const scope = nodes.findLast((node) => {
     let [x1, y1] = getAbsPos(node, nodesMap);
     return (
-      node.type === "scope" &&
+      node.type === "SCOPE" &&
       x >= x1 &&
       !excludes.includes(node.id) &&
       x <= x1 + node.width &&
@@ -244,7 +244,7 @@ export interface CanvasSlice {
   setPaneBlur: () => void;
 
   addNode: (
-    type: "code" | "scope" | "rich",
+    type: "CODE" | "SCOPE" | "RICH",
     position: XYPosition,
     parent: string
   ) => void;
@@ -358,7 +358,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         style: {
           ...node.style,
           backgroundColor:
-            node.type === "scope" ? level2color[node.data.level] : undefined,
+            node.type === "SCOPE" ? level2color[node.data.level] : undefined,
         },
         selected: selectedPods.has(node.id),
         // className: get().dragHighlight === node.id ? "active" : "",
@@ -392,7 +392,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       id: node.id,
       children: [],
       parent: "ROOT",
-      type: nodetype2dbtype(node.type || ""),
+      type: node.type as "CODE" | "SCOPE" | "RICH",
       lang: "python",
       x: node.position.x,
       y: node.position.y,
@@ -910,7 +910,7 @@ function fitChildren(
   node2children,
   nodesMap
 ): null | { x: number; y: number; width: number; height: number } {
-  if (node.type !== "scope") return null;
+  if (node.type !== "SCOPE") return null;
   // This is a scope node. Get all its children and calculate the x,y,width,height to tightly fit its children.
   let children = node2children.get(node.id);
   // If no children, nothing is changed.
