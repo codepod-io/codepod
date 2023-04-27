@@ -33,7 +33,6 @@ import { lowercase, numbers } from "nanoid-dictionary";
 import { useStore } from "zustand";
 
 import { RepoContext } from "../lib/store";
-import { dbtype2nodetype, nodetype2dbtype } from "../lib/utils";
 import { useEdgesYjsObserver, useYjsObserver } from "../lib/nodes";
 
 import { useApolloClient } from "@apollo/client";
@@ -46,7 +45,7 @@ import { YMap } from "yjs/dist/src/types/YMap";
 import FloatingEdge from "./nodes/FloatingEdge";
 import CustomConnectionLine from "./nodes/CustomConnectionLine";
 
-const nodeTypes = { scope: ScopeNode, code: CodeNode, rich: RichNode };
+const nodeTypes = { SCOPE: ScopeNode, CODE: CodeNode, RICH: RichNode };
 const edgeTypes = {
   floating: FloatingEdge,
 };
@@ -62,7 +61,7 @@ function store2nodes(id: string, { getId2children, getPod }) {
   if (id !== "ROOT") {
     res.push({
       id: id,
-      type: dbtype2nodetype(pod.type),
+      type: pod.type,
       data: {
         // label: `ID: ${id}, parent: ${pods[id].parent}, pos: ${pods[id].x}, ${pods[id].y}`,
         label: id,
@@ -535,7 +534,7 @@ function CanvasImpl() {
   };
 
   const onNodeContextMenu = (event, node) => {
-    if (node?.type !== "scope") return;
+    if (node?.type !== "SCOPE") return;
 
     event.preventDefault();
     setShowContextMenu(true);
@@ -651,8 +650,8 @@ function CanvasImpl() {
             <MiniMap
               nodeStrokeColor={(n) => {
                 if (n.style?.borderColor) return n.style.borderColor;
-                if (n.type === "code") return "#d6dee6";
-                if (n.type === "scope") return "#f4f6f8";
+                if (n.type === "CODE") return "#d6dee6";
+                if (n.type === "SCOPE") return "#f4f6f8";
 
                 return "#d6dee6";
               }}
@@ -673,17 +672,17 @@ function CanvasImpl() {
             x={points.x}
             y={points.y}
             addCode={() =>
-              addNode("code", project({ x: client.x, y: client.y }), parentNode)
+              addNode("CODE", project({ x: client.x, y: client.y }), parentNode)
             }
             addScope={() =>
               addNode(
-                "scope",
+                "SCOPE",
                 project({ x: client.x, y: client.y }),
                 parentNode
               )
             }
             addRich={() =>
-              addNode("rich", project({ x: client.x, y: client.y }), parentNode)
+              addNode("RICH", project({ x: client.x, y: client.y }), parentNode)
             }
             onShareClick={() => {
               setShareOpen(true);

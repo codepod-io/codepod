@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState, useContext } from "react";
 import { applyNodeChanges, Edge, Node } from "reactflow";
 import { RepoContext } from "./store";
-import { nodetype2dbtype } from "./utils";
 import { useStore } from "zustand";
 import { useApolloClient } from "@apollo/client";
 import { Transaction, YEvent } from "yjs";
@@ -30,7 +29,7 @@ export function useYjsObserver() {
               id: node.id,
               children: [],
               parent: "ROOT",
-              type: nodetype2dbtype(node.type || ""),
+              type: node.type as "CODE" | "SCOPE" | "RICH",
               lang: "python",
               x: node.position.x,
               y: node.position.y,

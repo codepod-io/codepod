@@ -36,37 +36,4 @@ export function getUpTime(startedAt: string) {
   return prettyTime;
 }
 
-/**
- * For historical reason, the state.pod.type and DB schema pod.type are "CODE",
- * "DECK", "WYSIWYG", while the node types in react-flow are "code", "scope",
- * "rich". These two functions document this and handle the conversion.
- * @param dbtype
- * @returns
- */
-export function dbtype2nodetype(dbtype: string) {
-  switch (dbtype) {
-    case "CODE":
-      return "code";
-    case "DECK":
-      return "scope";
-    case "WYSIWYG":
-      return "rich";
-    default:
-      throw new Error(`unknown dbtype ${dbtype}`);
-  }
-}
-
-export function nodetype2dbtype(nodetype: string) {
-  switch (nodetype) {
-    case "code":
-      return "CODE";
-    case "scope":
-      return "DECK";
-    case "rich":
-      return "WYSIWYG";
-    default:
-      throw new Error(`unknown nodetype ${nodetype}`);
-  }
-}
-
 export const myNanoId = customAlphabet(lowercase + numbers, 20);

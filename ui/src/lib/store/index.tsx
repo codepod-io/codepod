@@ -17,7 +17,7 @@ enableMapSet();
 export type Pod = {
   id: string;
   name?: string;
-  type: string;
+  type: "CODE" | "SCOPE" | "RICH";
   content?: string;
   dirty?: boolean;
   isSyncing?: boolean;
