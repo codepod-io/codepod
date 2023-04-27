@@ -232,7 +232,6 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
   const wsRun = useStore(store, (state) => state.wsRun);
   const wsRunChain = useStore(store, (state) => state.wsRunChain);
   const wsRunNoRewrite = useStore(store, (state) => state.wsRunNoRewrite);
-  const clearResults = useStore(store, (s) => s.clearResults);
   // right, bottom
   const getPod = useStore(store, (state) => state.getPod);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
@@ -273,7 +272,6 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
           <IconButton
             size="small"
             onClick={() => {
-              clearResults(id);
               wsRun(id);
             }}
           >
@@ -298,7 +296,6 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
           <IconButton
             size="small"
             onClick={() => {
-              clearResults(id);
               wsRunNoRewrite(id);
             }}
           >

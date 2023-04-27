@@ -165,8 +165,12 @@ export interface RuntimeSlice {
   parseAllPods: () => void;
   resolvePod: (id) => void;
   resolveAllPods: () => void;
+  runningId: string | null;
   wsRun: (id: string) => void;
+  wsSendRun: (id: string) => void;
+  wsRunNext: () => void;
   wsRunNoRewrite: (id: string) => void;
+  chain: string[];
   wsRunChain: (id: string) => void;
   wsInterruptKernel: ({ lang }) => void;
   clearResults: (id) => void;
@@ -255,7 +259,25 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       }
     });
   },
-  wsRun: async (id) => {
+  // This runningId is a unique pod id indicating which pod is being run. The
+  // state.pods[id].running is a indicator of the pod in the chain that is
+  // scheduled to run.
+  runningId: null,
+  /**
+   * Actually send the run request.
+   */
+  wsSendRun: async (id) => {
+    if (get().runningId !== null) {
+      // This should never happen: there shouldn't be another pod running.
+      get().addError({
+        type: "error",
+        msg: "Another pod is running",
+      });
+      return;
+    }
+    // Set this pod as running.
+    set({ runningId: id });
+    // Actually send the run request.
     if (!get().socket) {
       get().addError({
         type: "error",
@@ -286,6 +308,24 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       })
     );
   },
+  // All pods are added to the chain before executing.
+  chain: [],
+  /**
+   * Add a pod to the chain and run it.
+   */
+  wsRun: async (id) => {
+    // Add to the chain
+    get().clearResults(id);
+    get().setRunning(id);
+    set({ chain: [...get().chain, id] });
+    // if there's nothing running, run it
+    get().wsRunNext();
+  },
+  /**
+   * Add the pod and all its downstream pods (defined by edges) to the chain and run the chain.
+   * @param id the id of the pod to start the chain
+   * @returns
+   */
   wsRunChain: async (id) => {
     if (!get().socket) {
       get().addError({
@@ -294,7 +334,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       });
       return;
     }
-    // 1. get the chain: get the edges, and then get the pods
+    // Get the chain: get the edges, and then get the pods
     const edgesMap = get().ydoc.getMap<Edge>("edges");
     let edges = Array.from(edgesMap.values());
     // build a node2target map
@@ -303,43 +343,32 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       // TODO support multiple targets
       node2target[source] = target;
     });
-    // get the chain
+    // Get the chain
     let chain: string[] = [];
     let node = id;
     while (node) {
       // if the node is already in the chain, then there is a loop
       if (chain.includes(node)) break;
+      get().clearResults(node);
+      get().setRunning(node);
       chain.push(node);
       node = node2target[node];
     }
-    // 2. run each pod in the chain
-    // get().wsRun(id);
-    chain.forEach((id) => {
-      // Analyze code and set symbol table
-      get().parsePod(id);
-      // update anontations according to st
-      get().resolvePod(id);
-      // rewrite the code
-      const newcode = rewriteCode(id, get);
-      // Run the code in remote kernel.
-      get().clearResults(id);
-      get().setRunning(id);
-      let pod = get().pods[id];
-      // FIXME wait for the execution result before executing the next pod.
-      // TODO show some status of pending runs.
-      get().socket?.send(
-        JSON.stringify({
-          type: "runCode",
-          payload: {
-            lang: pod.lang,
-            code: newcode,
-            raw: true,
-            podId: pod.id,
-            sessionId: get().sessionId,
-          },
-        })
-      );
-    });
+    set({ chain });
+    get().wsRunNext();
+  },
+  wsRunNext: async () => {
+    // run the next pod in the chain
+    if (get().runningId !== null) return;
+    if (get().chain.length > 0) {
+      // Run the first pod in the chain
+      let chain = get().chain;
+      let id = chain[0];
+      console.log("running", id, "remaining number of pods:", chain.length - 1);
+      // remove the first element
+      set({ chain: chain.slice(1) });
+      get().wsSendRun(id);
+    }
   },
   wsRunNoRewrite: async (id) => {
     if (!get().socket) {
@@ -535,6 +564,9 @@ function onMessage(set, get) {
         {
           let { podId, result, count } = payload;
           get().setPodExecuteReply({ id: podId, result, count });
+          set({ runningId: null });
+          // Continue to run the chain if there is any.
+          get().wsRunNext();
         }
         break;
       case "error":
