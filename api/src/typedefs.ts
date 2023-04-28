@@ -113,6 +113,8 @@ export const typeDefs = gql`
 
   type Mutation {
     login(email: String!, password: String!): AuthData
+    loginGuest(id: String!): AuthData
+    signupGuest: AuthData
     signup(
       email: String!
       password: String!
