@@ -217,12 +217,36 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
       >
         <MyFloatingToolbar id={id} />
       </Box>
-      <Handle
-        type="source"
-        position={Position.Top}
-        id="top"
-        isConnectable={isConnectable}
-      />
+      <Box
+        sx={{
+          opacity: showToolbar ? 1 : 0,
+        }}
+      >
+        <Handle
+          type="source"
+          position={Position.Top}
+          id="top"
+          isConnectable={isConnectable}
+        />
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          id="bottom"
+          isConnectable={isConnectable}
+        />
+        <Handle
+          type="source"
+          position={Position.Left}
+          id="left"
+          isConnectable={isConnectable}
+        />
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="right"
+          isConnectable={isConnectable}
+        />
+      </Box>
       {/* The header of scope nodes. */}
       <Box
         // bgcolor={"rgb(225,225,225)"}
@@ -287,24 +311,6 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
           <Grid item xs={4}></Grid>
         </Grid>
       </Box>
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        id="bottom"
-        isConnectable={isConnectable}
-      />
-      <Handle
-        type="source"
-        position={Position.Left}
-        id="left"
-        isConnectable={isConnectable}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="right"
-        isConnectable={isConnectable}
-      />
     </Box>
   );
 });
