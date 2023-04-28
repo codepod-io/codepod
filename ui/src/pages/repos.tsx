@@ -360,9 +360,8 @@ function SharedWithMe() {
             fontSize: "25px",
           }}
         >
-          My projects ({repos.length})
+          Projects shared with me ({repos.length})
         </Box>
-        <CreateRepoForm />
       </Box>
 
       {repos.length > 0 ? (
@@ -453,13 +452,17 @@ export default function Page() {
           position: "relative",
         }}
       >
-        👋 Welcome, {me?.firstname}! Please open or create a repository to get
+        Welcome, {me?.firstname}! Please open or create a repository to get
         started.
       </Box>
       {!isSignedIn() && (
         <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
           <Alert severity="warning">
-            Please note that you are an anonymous Guest user. Please{" "}
+            Please note that you are a{" "}
+            <Box component="span" color="red">
+              Guest
+            </Box>{" "}
+            user. Please{" "}
             <Link component={ReactLink} to="/login">
               Login
             </Link>{" "}
