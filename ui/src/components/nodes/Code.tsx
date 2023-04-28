@@ -490,30 +490,37 @@ export const CodeNode = memo<NodeProps>(function ({
       >
         <ResizeIcon />
       </NodeResizeControl> */}
-      <Handle
-        type="source"
-        position={Position.Top}
-        id="top"
-        isConnectable={isConnectable}
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        id="bottom"
-        isConnectable={isConnectable}
-      />
-      <Handle
-        type="source"
-        position={Position.Left}
-        id="left"
-        isConnectable={isConnectable}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="right"
-        isConnectable={isConnectable}
-      />
+      <Box
+        sx={{
+          opacity: showToolbar ? 1 : 0,
+        }}
+      >
+        <Handle
+          type="source"
+          position={Position.Top}
+          id="top"
+          isConnectable={isConnectable}
+        />
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          id="bottom"
+          isConnectable={isConnectable}
+        />
+        <Handle
+          type="source"
+          position={Position.Left}
+          id="left"
+          isConnectable={isConnectable}
+        />
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="right"
+          isConnectable={isConnectable}
+        />
+      </Box>
+
       {/* The header of code pods. */}
       <Box className="custom-drag-handle">
         {devMode && (
