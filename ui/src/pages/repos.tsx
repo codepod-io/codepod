@@ -27,6 +27,8 @@ import { ShareProjDialog } from "../components/ShareProjDialog";
 import useMe from "../lib/me";
 import { getUpTime } from "../lib/utils";
 import { Button } from "@mui/material";
+import { useAuth } from "../lib/auth";
+import { GoogleSignin } from "./login";
 
 function timeDifference(current, previous) {
   const msPerMinute = 60 * 1000;
@@ -406,8 +408,8 @@ function NoLogginErrorAlert() {
     </Box>
   );
 }
-export default function Page() {
-  const { me } = useMe();
+
+function RepoLists() {
   // peiredically re-render so that the "last active time" is updated
   const [counter, setCounter] = useState(0);
   useEffect(() => {
@@ -416,8 +418,27 @@ export default function Page() {
     }, 1000);
     return () => clearInterval(interval);
   }, [counter]);
+  return (
+    <>
+      <MyRepos />
+      <SharedWithMe />
+    </>
+  );
+}
+
+export default function Page() {
+  const { me } = useMe();
+  const { hasToken, loginGuest, isSignedIn } = useAuth();
+
+  useEffect(() => {
+    if (!hasToken()) {
+      loginGuest();
+    }
+  }, [hasToken]);
+
   if (!me) {
-    return <NoLogginErrorAlert />;
+    // return <NoLogginErrorAlert />;
+    return <Box>Loading user ..</Box>;
   }
   return (
     <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
@@ -435,8 +456,23 @@ export default function Page() {
         👋 Welcome, {me?.firstname}! Please open or create a repository to get
         started.
       </Box>
-      <MyRepos />
-      <SharedWithMe />
+      {!isSignedIn() && (
+        <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
+          <Alert severity="warning">
+            Please note that you are an anonymous Guest user. Please{" "}
+            <Link component={ReactLink} to="/login">
+              Login
+            </Link>{" "}
+            or
+            <Link component={ReactLink} to="/signup">
+              Signup
+            </Link>{" "}
+            to save your work.
+            <GoogleSignin />
+          </Alert>
+        </Box>
+      )}
+      <RepoLists />
     </Box>
   );
 }

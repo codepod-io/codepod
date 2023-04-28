@@ -20,6 +20,7 @@ import { useFormik } from "formik";
 import { Link as ReactLink, useNavigate } from "react-router-dom";
 
 import { useAuth } from "../lib/auth";
+import Divider from "@mui/material/Divider";
 
 function Copyright(props: any) {
   return (
@@ -42,6 +43,28 @@ function Copyright(props: any) {
 const theme = createTheme();
 
 declare var google: any;
+
+export function GoogleSignin() {
+  const { handleGoogle } = useAuth();
+
+  useEffect(() => {
+    console.log("nodeenv", process.env.NODE_ENV);
+    let client_id =
+      process.env.NODE_ENV === "development"
+        ? process.env.REACT_APP_GOOGLE_CLIENT_ID
+        : window.GOOGLE_CLIENT_ID || null;
+    console.log("google client_id", client_id);
+    google.accounts.id.initialize({
+      client_id,
+      callback: handleGoogle,
+    });
+    google.accounts.id.renderButton(
+      document.getElementById("googleLoginDiv"),
+      { theme: "outline", size: "large" } // customization attributes
+    );
+  }, [handleGoogle]);
+  return <Box id="googleLoginDiv"></Box>;
+}
 
 export default function SignIn() {
   /* eslint-disable no-unused-vars */
@@ -73,23 +96,6 @@ export default function SignIn() {
     },
   });
 
-  useEffect(() => {
-    console.log("nodeenv", process.env.NODE_ENV);
-    let client_id =
-      process.env.NODE_ENV === "development"
-        ? process.env.REACT_APP_GOOGLE_CLIENT_ID
-        : window.GOOGLE_CLIENT_ID || null;
-    console.log("google client_id", client_id);
-    google.accounts.id.initialize({
-      client_id,
-      callback: handleGoogle,
-    });
-    google.accounts.id.renderButton(
-      document.getElementById("googleLoginDiv"),
-      { theme: "outline", size: "large" } // customization attributes
-    );
-  }, [handleGoogle]);
-
   return (
     <ThemeProvider theme={theme}>
       <Container component="main" maxWidth="xs">
@@ -102,13 +108,16 @@ export default function SignIn() {
             alignItems: "center",
           }}
         >
-          <Box id="googleLoginDiv"></Box>
           <Avatar sx={{ m: 1, bgcolor: "secondary.main" }}>
             <LockOutlinedIcon />
           </Avatar>
           <Typography component="h1" variant="h5">
             Sign in
           </Typography>
+          <GoogleSignin />
+          <Divider />
+          <Box>Or login with email</Box>
+          <Divider />
           <Box
             component="form"
             onSubmit={formik.handleSubmit}

@@ -20,6 +20,8 @@ import Alert from "@mui/material/Alert";
 import { useFormik } from "formik";
 
 import { useAuth } from "../lib/auth";
+import { GoogleSignin } from "./login";
+import Divider from "@mui/material/Divider";
 
 function Copyright(props) {
   return (
@@ -90,6 +92,10 @@ export default function SignUp() {
         <Typography component="h1" variant="h5">
           Sign up
         </Typography>
+        <GoogleSignin />
+        <Divider />
+        <Box>Or sign up with email</Box>
+        <Divider />
         <Box
           component="form"
           noValidate

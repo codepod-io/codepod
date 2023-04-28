@@ -8378,6 +8378,11 @@ jsx-dom-cjs@^8.0.0:
   dependencies:
     csstype "^3.1.0"
 
+jwt-decode@^3.1.2:
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/jwt-decode/-/jwt-decode-3.1.2.tgz#3fb319f3675a2df0c2895c8f5e9fa4b67b04ed59"
+  integrity sha512-UfpWE/VZn0iP50d8cz9NrZLM9lSWhcJ+0Gt/nm4by88UL+J1SiKN8/5dkjMmbEzwL2CAe+67GsegCbIKtbp75A==
+
 kbar@^0.1.0-beta.40:
   version "0.1.0-beta.40"
   resolved "https://registry.yarnpkg.com/kbar/-/kbar-0.1.0-beta.40.tgz#89747e3c1538375fef779af986b6614bb441ae7c"
