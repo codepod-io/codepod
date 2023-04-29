@@ -425,30 +425,36 @@ export const RichNode = memo<Props>(function ({
                 : "#5e92f3",
             }}
           >
-            <Handle
-              type="source"
-              position={Position.Top}
-              id="top"
-              isConnectable={isConnectable}
-            />
-            <Handle
-              type="source"
-              position={Position.Bottom}
-              id="bottom"
-              isConnectable={isConnectable}
-            />
-            <Handle
-              type="source"
-              position={Position.Left}
-              id="left"
-              isConnectable={isConnectable}
-            />
-            <Handle
-              type="source"
-              position={Position.Right}
-              id="right"
-              isConnectable={isConnectable}
-            />
+            <Box
+              sx={{
+                opacity: showToolbar ? 1 : 0,
+              }}
+            >
+              <Handle
+                type="source"
+                position={Position.Top}
+                id="top"
+                isConnectable={isConnectable}
+              />
+              <Handle
+                type="source"
+                position={Position.Bottom}
+                id="bottom"
+                isConnectable={isConnectable}
+              />
+              <Handle
+                type="source"
+                position={Position.Left}
+                id="left"
+                isConnectable={isConnectable}
+              />
+              <Handle
+                type="source"
+                position={Position.Right}
+                id="right"
+                isConnectable={isConnectable}
+              />
+            </Box>
             <Box className="custom-drag-handle">
               {devMode && (
                 <Box
