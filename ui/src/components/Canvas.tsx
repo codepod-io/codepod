@@ -12,6 +12,7 @@ import ReactFlow, {
   applyEdgeChanges,
   applyNodeChanges,
   Background,
+  BackgroundVariant,
   MiniMap,
   Controls,
   Handle,
@@ -496,6 +497,7 @@ function CanvasImpl() {
     (state) => state.removeDragHighlight
   );
   const updateView = useStore(store, (state) => state.updateView);
+  const autoForceGlobal = useStore(store, (state) => state.autoForceGlobal);
 
   const addNode = useStore(store, (state) => state.addNode);
   const reactFlowInstance = useReactFlow();
@@ -602,6 +604,8 @@ function CanvasImpl() {
             }
             // update view manually to remove the drag highlight.
             updateView();
+            // TODO run auto layout
+            // autoForceGlobal();
           }}
           onNodeDrag={(event, node) => {
             let mousePos = project({ x: event.clientX, y: event.clientY });
@@ -665,6 +669,19 @@ function CanvasImpl() {
             <Controls showInteractive={!isGuest} />
 
             <Background />
+            <Background
+              id="1"
+              gap={10}
+              color="#f1f1f1"
+              variant={BackgroundVariant.Lines}
+            />
+            <Background
+              id="2"
+              gap={100}
+              offset={1}
+              color="#ccc"
+              variant={BackgroundVariant.Lines}
+            />
           </Box>
         </ReactFlow>
         {showContextMenu && (
