@@ -266,6 +266,30 @@ const MyEditor = ({
   );
 };
 
+function MyFloatingToolbar({ id }: { id: string }) {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const reactFlowInstance = useReactFlow();
+  // const selected = useStore(store, (state) => state.pods[id]?.selected);
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
+  return (
+    <>
+      {!isGuest && (
+        <Tooltip title="Delete">
+          <IconButton
+            size="small"
+            onClick={() => {
+              reactFlowInstance.deleteElements({ nodes: [{ id }] });
+            }}
+          >
+            <DeleteIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      )}
+    </>
+  );
+}
+
 /**
  * The React Flow node.
  */
@@ -303,6 +327,8 @@ export const RichNode = memo<Props>(function ({
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const updateView = useStore(store, (state) => state.updateView);
   const reactFlowInstance = useReactFlow();
+
+  const [showToolbar, setShowToolbar] = useState(false);
 
   const onResize = useCallback(
     (e, data) => {
@@ -343,141 +369,170 @@ export const RichNode = memo<Props>(function ({
     isGuest ? (
       <>{child}</>
     ) : (
-      <ResizableBox
-        onResizeStop={onResize}
-        height={pod.height || 100}
-        width={width || 0}
-        axis={"x"}
-        minConstraints={[200, 200]}
+      <Box
+        sx={{
+          "& .react-resizable-handle": {
+            opacity: showToolbar ? 1 : 0,
+          },
+        }}
       >
-        {child}
-      </ResizableBox>
-    );
-
-  return Wrap(
-    <Box
-      sx={{
-        border: "solid 1px #d6dee6",
-        borderWidth: "2px",
-        borderRadius: "4px",
-        width: "100%",
-        height: "100%",
-        backgroundColor: "white",
-        borderColor: pod.ispublic
-          ? "green"
-          : selected
-          ? "#003c8f"
-          : !isPodFocused
-          ? "#d6dee6"
-          : "#5e92f3",
-      }}
-    >
-      <Handle
-        type="source"
-        position={Position.Top}
-        id="top"
-        isConnectable={isConnectable}
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        id="bottom"
-        isConnectable={isConnectable}
-      />
-      <Handle
-        type="source"
-        position={Position.Left}
-        id="left"
-        isConnectable={isConnectable}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="right"
-        isConnectable={isConnectable}
-      />
-      <Box className="custom-drag-handle">
-        {devMode && (
+        <ResizableBox
+          onResizeStop={onResize}
+          height={pod.height || 100}
+          width={pod.width || 0}
+          axis={"x"}
+          minConstraints={[200, 200]}
+        >
           <Box
             sx={{
-              position: "absolute",
-              top: "-48px",
-              bottom: "0px",
-              userSelect: "text",
-              cursor: "auto",
-            }}
-            className="nodrag"
-          >
-            {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w: {pod.width}, h:{" "}
-            {pod.height})
-          </Box>
-        )}
-        <Box
-          sx={{
-            height: "1em",
-          }}
-        ></Box>
-        <Box
-          sx={{
-            position: "absolute",
-
-            top: "-24px",
-            width: "50%",
-          }}
-        >
-          <InputBase
-            inputRef={inputRef}
-            className="nodrag"
-            defaultValue={data.name || ""}
-            disabled={isGuest}
-            onBlur={(e) => {
-              const name = e.target.value;
-              if (name === data.name) return;
-              const node = nodesMap.get(id);
-              if (node) {
-                nodesMap.set(id, { ...node, data: { ...node.data, name } });
-              }
-            }}
-            inputProps={{
-              style: {
-                padding: "0px",
-                textOverflow: "ellipsis",
+              "& .react-resizable-handle": {
+                opacity: 1,
               },
             }}
-          ></InputBase>
-        </Box>
-        <Box
-          sx={{
-            display: "flex",
-            marginLeft: "10px",
-            borderRadius: "4px",
-            position: "absolute",
-            border: "solid 1px #d6dee6",
-            right: "25px",
-            top: "-15px",
-            background: "white",
-            zIndex: 250,
-            justifyContent: "center",
-          }}
-          className="nodrag"
-        >
-          {!isGuest && (
-            <Tooltip title="Delete">
-              <IconButton
-                size="small"
-                onClick={() => {
-                  reactFlowInstance.deleteElements({ nodes: [{ id }] });
+          >
+            {child}
+          </Box>
+        </ResizableBox>
+      </Box>
+    );
+
+  return (
+    <>
+      <Box
+        onMouseEnter={() => {
+          setShowToolbar(true);
+        }}
+        onMouseLeave={() => {
+          setShowToolbar(false);
+        }}
+      >
+        {" "}
+        {Wrap(
+          <Box
+            sx={{
+              border: "solid 1px #d6dee6",
+              borderWidth: "2px",
+              borderRadius: "4px",
+              width: "100%",
+              height: "100%",
+              backgroundColor: "white",
+              borderColor: pod.ispublic
+                ? "green"
+                : selected
+                ? "#003c8f"
+                : !isPodFocused
+                ? "#d6dee6"
+                : "#5e92f3",
+            }}
+          >
+            <Box
+              sx={{
+                opacity: showToolbar ? 1 : 0,
+              }}
+            >
+              <Handle
+                type="source"
+                position={Position.Top}
+                id="top"
+                isConnectable={isConnectable}
+              />
+              <Handle
+                type="source"
+                position={Position.Bottom}
+                id="bottom"
+                isConnectable={isConnectable}
+              />
+              <Handle
+                type="source"
+                position={Position.Left}
+                id="left"
+                isConnectable={isConnectable}
+              />
+              <Handle
+                type="source"
+                position={Position.Right}
+                id="right"
+                isConnectable={isConnectable}
+              />
+            </Box>
+            <Box className="custom-drag-handle">
+              {devMode && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: "-48px",
+                    bottom: "0px",
+                    userSelect: "text",
+                    cursor: "auto",
+                  }}
+                  className="nodrag"
+                >
+                  {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w:{" "}
+                  {pod.width}, h: {pod.height})
+                </Box>
+              )}
+              <Box
+                sx={{
+                  height: "1em",
+                }}
+              ></Box>
+              <Box
+                sx={{
+                  position: "absolute",
+
+                  top: "-24px",
+                  width: "50%",
                 }}
               >
-                <DeleteIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          )}
-        </Box>
+                <InputBase
+                  inputRef={inputRef}
+                  className="nodrag"
+                  defaultValue={data.name || ""}
+                  disabled={isGuest}
+                  onBlur={(e) => {
+                    const name = e.target.value;
+                    if (name === data.name) return;
+                    const node = nodesMap.get(id);
+                    if (node) {
+                      nodesMap.set(id, {
+                        ...node,
+                        data: { ...node.data, name },
+                      });
+                    }
+                  }}
+                  inputProps={{
+                    style: {
+                      padding: "0px",
+                      textOverflow: "ellipsis",
+                    },
+                  }}
+                ></InputBase>
+              </Box>
+              <Box
+                sx={{
+                  opacity: showToolbar ? 1 : 0,
+                  display: "flex",
+                  marginLeft: "10px",
+                  borderRadius: "4px",
+                  position: "absolute",
+                  border: "solid 1px #d6dee6",
+                  right: "25px",
+                  top: "-15px",
+                  background: "white",
+                  zIndex: 250,
+                  justifyContent: "center",
+                }}
+                className="nodrag"
+              >
+                <MyFloatingToolbar id={id} />
+              </Box>
+            </Box>
+            <Box>
+              <MyEditor id={id} />
+            </Box>
+          </Box>
+        )}
       </Box>
-      <Box>
-        <MyEditor id={id} />
-      </Box>
-    </Box>
+    </>
   );
 });
