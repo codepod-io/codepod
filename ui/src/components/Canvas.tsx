@@ -568,6 +568,7 @@ function CanvasImpl() {
   }, [setShowContextMenu, setPaneFocus, setPaneBlur]);
 
   const getScopeAtPos = useStore(store, (state) => state.getScopeAtPos);
+  const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
 
   return (
     <Box
@@ -604,8 +605,10 @@ function CanvasImpl() {
             }
             // update view manually to remove the drag highlight.
             updateView();
-            // TODO run auto layout
-            // autoForceGlobal();
+            // run auto layout on drag stop
+            if (autoRunLayout) {
+              autoForceGlobal();
+            }
           }}
           onNodeDrag={(event, node) => {
             let mousePos = project({ x: event.clientX, y: event.clientY });
