@@ -15,6 +15,18 @@ import { Transaction, YEvent } from "yjs";
 
 import { match, P } from "ts-pattern";
 
+import {
+  forceSimulation,
+  forceLink,
+  forceManyBody,
+  forceCollide,
+  forceCenter,
+  forceX,
+  forceY,
+  SimulationNodeDatum,
+  SimulationLinkDatum,
+} from "d3-force";
+
 import { myNanoId } from "../utils";
 
 import {
@@ -278,6 +290,8 @@ export interface CanvasSlice {
   node2children: Map<string, string[]>;
   buildNode2Children: () => void;
   autoLayout: () => void;
+  autoForce: (scopeId: string) => void;
+  autoForceGlobal: () => void;
 }
 
 export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
@@ -896,6 +910,156 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     // update the view
     get().updateView();
   },
+  autoForceGlobal: () => {
+    // get all scopes,
+    let nodesMap = get().ydoc.getMap<Node>("pods");
+    let nodes: Node[] = Array.from(nodesMap.values());
+    get().buildNode2Children();
+    nodes
+      // sort the children so that the inner scope gets processed first.
+      .sort((a: Node, b: Node) => b.data.level - a.data.level)
+      .forEach((node) => {
+        if (node.type === "SCOPE") {
+          get().autoForce(node.id);
+        }
+      });
+    // Applying on ROOT scope is not ideal.
+    get().autoForce("ROOT");
+  },
+  /**
+   * Use d3-force to auto layout the nodes.
+   */
+  autoForce: (scopeId) => {
+    // 1. get all the nodes and edges in the scope
+    // 2. get
+    type NodeType = {
+      id: string;
+      x: number;
+      y: number;
+      r: number;
+      width: number | null | undefined;
+      height: number | null | undefined;
+    };
+    const nodes = get().nodes.filter(
+      (node) => node.parentNode === (scopeId === "ROOT" ? undefined : scopeId)
+    );
+    if (nodes.length == 0) return;
+    const edges = get().edges;
+    const tmpNodes: NodeType[] = nodes.map((node) => ({
+      id: node.id,
+      x: node.position.x + (node.width! + node.height!) / 2,
+      y: node.position.y + (node.width! + node.height!) / 2,
+      r: (node.width! + node.height!) / 2,
+      width: node.width,
+      height: node.height,
+    }));
+    const tmpEdges = edges.map((edge) => ({
+      source: edge.source,
+      source0: 0,
+      target: edge.target,
+      target0: 1,
+    }));
+    const nodesMap = get().ydoc.getMap<Node>("pods");
+    // 2. construct a D3 tree for the nodes and their connections
+    // initialize the tree layout (see https://observablehq.com/@d3/tree for examples)
+    // const hierarchy = stratify<Node>()
+    //   .id((d) => d.id)
+    //   // get the id of each node by searching through the edges
+    //   // this only works if every node has one connection
+    //   .parentId((d: Node) => edges.find((e: Edge) => e.target === d.id)?.source)(
+    //   nodes
+    // );
+    const simulation = forceSimulation<NodeType>(tmpNodes)
+      // .force(
+      //   "link",
+      //   forceLink(tmpEdges)
+      //     .id((d: any) => d.id)
+      //     .distance(20)
+      //     .strength(0.5)
+      // )
+      // .force("charge", forceManyBody().strength(-1000))
+      // .force("x", forceX())
+      // .force("y", forceY())
+      .force(
+        "collide",
+        forceCollide().radius((d: any) => d.r)
+      )
+      // .force("link", d3.forceLink(edges).id(d => d.id))
+      // .force("charge", d3.forceManyBody())
+      // .force("center", forceCenter(0, 0))
+      .stop();
+    simulation.tick(3000);
+    tmpNodes.forEach((node) => {
+      node.x -= (node.width! + node.height!) / 2;
+      node.y -= (node.width! + node.height!) / 2;
+    });
+    // The nodes will all have new positions now. I'll need to make the graph to be top-left, i.e., the leftmost is 20, the topmost is 20.
+    // get the min x and y
+    let x1s = tmpNodes.map((node) => node.x);
+    let minx = Math.min(...x1s);
+    let y1s = tmpNodes.map((node) => node.y);
+    let miny = Math.min(...y1s);
+    // calculate the offset, leave 50 padding for the scope.
+    const offsetx = 50 - minx;
+    const offsety = 50 - miny;
+    // move the nodes
+    tmpNodes.forEach((node) => {
+      node.x += offsetx;
+      node.y += offsety;
+    });
+    // Apply the new positions
+    // TODO need to transform the nodes to the center of the scope.
+    tmpNodes.forEach(({ id, x, y }) => {
+      // FIXME I should assert here.
+      if (nodesMap.has(id)) {
+        nodesMap.set(id, {
+          ...nodesMap.get(id)!,
+          // position: { x: x + scope!.position!.x, y: y + scope!.position!.y },
+          position: { x, y },
+        });
+      }
+    });
+
+    if (scopeId !== "ROOT") {
+      // update the scope's size to enclose all the nodes
+      x1s = tmpNodes.map((node) => node.x);
+      minx = Math.min(...x1s);
+      y1s = tmpNodes.map((node) => node.y);
+      miny = Math.min(...y1s);
+      const x2s = tmpNodes.map((node) => node.x + node.width!);
+      const maxx = Math.max(...x2s);
+      const y2s = tmpNodes.map((node) => node.y + node.height!);
+      const maxy = Math.max(...y2s);
+      const scope = nodesMap.get(scopeId);
+      nodesMap.set(scopeId, {
+        ...scope!,
+        width: maxx - minx + 100,
+        height: maxy - minx + 100,
+        style: {
+          ...scope!.style,
+          width: maxx - minx + 100,
+          height: maxy - minx + 100,
+        },
+      });
+    }
+
+    // trigger update to the db
+    // get the most recent nodes
+    let newNodes = Array.from(nodesMap.values());
+    newNodes.forEach((node) => {
+      // trigger update to the DB
+      let geoData = {
+        parent: node.parentNode ? node.parentNode : "ROOT",
+        x: node.position.x,
+        y: node.position.y,
+        width: node.width!,
+        height: node.height!,
+      };
+      get().setPodGeo(node.id, geoData, true);
+    });
+
+    get().updateView();
+  },
 });
 
 /**
@@ -933,10 +1097,11 @@ function fitChildren(
   let width = maxx - minx;
   let height = maxy - miny;
   return {
-    x: minx - 10,
-    y: miny - 10,
-    width: width + 20,
-    height: height + 20,
+    // leave a 50 padding for the scope.
+    x: minx - 50,
+    y: miny - 50,
+    width: width + 100,
+    height: height + 100,
   };
 }
 

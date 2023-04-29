@@ -34,6 +34,8 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ContentCutIcon from "@mui/icons-material/ContentCut";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
+import ViewTimelineOutlinedIcon from "@mui/icons-material/ViewTimelineOutlined";
+import CompressIcon from "@mui/icons-material/Compress";
 import Moveable from "react-moveable";
 
 import { useStore } from "zustand";
@@ -81,6 +83,8 @@ function MyFloatingToolbar({ id }: { id: string }) {
     },
     [onCopy, cutBegin, id]
   );
+  const autoLayout = useStore(store, (state) => state.autoLayout);
+  const autoForce = useStore(store, (state) => state.autoForce);
   return (
     <Box>
       {!isGuest && (
@@ -95,6 +99,33 @@ function MyFloatingToolbar({ id }: { id: string }) {
           </IconButton>
         </Tooltip>
       )}
+      {/* auto force layout */}
+      {!isGuest && (
+        <Tooltip title="force layout">
+          <IconButton
+            size="small"
+            onClick={() => {
+              autoForce(id);
+            }}
+          >
+            <ViewTimelineOutlinedIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      )}
+      {/* auto layout (auto shrink scopes) */}
+      {/* {!isGuest && (
+        <Tooltip title="auto shrink (global)">
+          <IconButton
+            size="small"
+            onClick={() => {
+              autoLayout();
+            }}
+          >
+            <CompressIcon fontSize="inherit" />
+          </IconButton>
+        </Tooltip>
+      )} */}
+      {/* copy to clipbooard */}
       <CopyToClipboard
         text="dummy"
         options={{ debug: true, format: "text/plain", onCopy } as any}
