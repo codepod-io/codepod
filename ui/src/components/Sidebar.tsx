@@ -48,6 +48,8 @@ function SidebarSettings() {
   );
   const devMode = useStore(store, (state) => state.devMode);
   const setDevMode = useStore(store, (state) => state.setDevMode);
+  const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
+  const setAutoRunLayout = useStore(store, (state) => state.setAutoRunLayout);
   return (
     <Box>
       <Box>
@@ -68,6 +70,26 @@ function SidebarSettings() {
                 />
               }
               label="Debug Mode"
+            />
+          </FormGroup>
+        </Tooltip>
+        <Tooltip
+          title={"Automatically run auto-layout at the end of node dragging."}
+          disableInteractive
+        >
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={autoRunLayout}
+                  size="small"
+                  color="warning"
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setAutoRunLayout(event.target.checked);
+                  }}
+                />
+              }
+              label="Auto Run Layout"
             />
           </FormGroup>
         </Tooltip>

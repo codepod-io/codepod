@@ -8,6 +8,8 @@ export interface SettingSlice {
   setShowAnnotations: (b: boolean) => void;
   devMode?: boolean;
   setDevMode: (b: boolean) => void;
+  autoRunLayout?: boolean;
+  setAutoRunLayout: (b: boolean) => void;
 }
 
 export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
@@ -40,5 +42,13 @@ export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
     set({ devMode: b });
     // also write to local storage
     localStorage.setItem("devMode", JSON.stringify(b));
+  },
+  autoRunLayout: localStorage.getItem("autoRunLayout")
+    ? JSON.parse(localStorage.getItem("autoRunLayout")!)
+    : true,
+  setAutoRunLayout: (b: boolean) => {
+    set({ autoRunLayout: b });
+    // also write to local storage
+    localStorage.setItem("autoRunLayout", JSON.stringify(b));
   },
 });

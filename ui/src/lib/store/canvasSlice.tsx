@@ -132,7 +132,23 @@ function createNewNode(type: "SCOPE" | "CODE" | "RICH", position): Node {
           height: 600,
           style: { backgroundColor: level2color[0], width: 600, height: 600 },
         }
-      : { width: 300, style: { width: 300 } }),
+      : {
+          width: 300,
+          // Previously, we should not specify height, so that the pod can grow
+          // when content changes. But when we add auto-layout on adding a new
+          // node, unspecified height will cause  the node to be added always at
+          // the top-left corner (the reason is unknown). Thus, we have to
+          // specify the height here. Note that this height is a dummy value;
+          // the content height will still be adjusted based on content height.
+          height: 200,
+          style: {
+            width: 300,
+            // It turns out that this height should not be specified to let the
+            // height change automatically.
+            //
+            // height: 200
+          },
+        }),
     data: {
       label: id,
       name: "",
@@ -421,6 +437,10 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       get().moveIntoScope(node.id, parent);
     }
     get().updateView();
+    // run auto-layout
+    if (get().autoRunLayout) {
+      get().autoForceGlobal();
+    }
   },
 
   isPasting: false,
@@ -937,8 +957,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       x: number;
       y: number;
       r: number;
-      width: number | null | undefined;
-      height: number | null | undefined;
+      width: number;
+      height: number;
     };
     const nodes = get().nodes.filter(
       (node) => node.parentNode === (scopeId === "ROOT" ? undefined : scopeId)
@@ -950,8 +970,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       x: node.position.x + (node.width! + node.height!) / 2,
       y: node.position.y + (node.width! + node.height!) / 2,
       r: (node.width! + node.height!) / 2,
-      width: node.width,
-      height: node.height,
+      width: node.width!,
+      height: node.height!,
     }));
     const tmpEdges = edges.map((edge) => ({
       source: edge.source,
