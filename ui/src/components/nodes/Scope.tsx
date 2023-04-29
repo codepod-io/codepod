@@ -36,6 +36,8 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import ViewTimelineOutlinedIcon from "@mui/icons-material/ViewTimelineOutlined";
 import CompressIcon from "@mui/icons-material/Compress";
+import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+
 import Moveable from "react-moveable";
 
 import { useStore } from "zustand";
@@ -86,7 +88,12 @@ function MyFloatingToolbar({ id }: { id: string }) {
   const autoLayout = useStore(store, (state) => state.autoLayout);
   const autoForce = useStore(store, (state) => state.autoForce);
   return (
-    <Box>
+    <Box
+      sx={{
+        display: "flex",
+        alignItems: "center",
+      }}
+    >
       {!isGuest && (
         <Tooltip title="Run (shift-enter)">
           <IconButton
@@ -167,6 +174,9 @@ function MyFloatingToolbar({ id }: { id: string }) {
           </IconButton>
         </Tooltip>
       )}
+      <Box className="custom-drag-handle">
+        <DragIndicatorIcon fontSize="small" />
+      </Box>
     </Box>
   );
 }
@@ -247,7 +257,6 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
           zIndex: 250,
           justifyContent: "center",
         }}
-        className="nodrag"
       >
         <MyFloatingToolbar id={id} />
       </Box>
@@ -285,7 +294,6 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
       <Box
         // bgcolor={"rgb(225,225,225)"}
         sx={{ display: "flex" }}
-        className="custom-drag-handle"
       >
         {devMode && (
           <Box
@@ -295,7 +303,6 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
               userSelect: "text",
               cursor: "auto",
             }}
-            className="nodrag"
           >
             {id} at ({xPos}, {yPos}), w: {pod.width}, h: {pod.height} level:{" "}
             {data.level}

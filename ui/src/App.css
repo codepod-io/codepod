@@ -90,3 +90,8 @@
 .react-flow__handle {
   z-index: 100;
 }
+
+/* Remove the right scrollbar on Remirror. */
+.remirror-editor.ProseMirror {
+  overflow-y: hidden !important;
+}
