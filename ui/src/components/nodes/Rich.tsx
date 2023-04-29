@@ -49,6 +49,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
 import RectangleIcon from "@mui/icons-material/Rectangle";
 import DisabledByDefaultIcon from "@mui/icons-material/DisabledByDefault";
+import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 
 import {
   BoldExtension,
@@ -286,6 +287,9 @@ function MyFloatingToolbar({ id }: { id: string }) {
           </IconButton>
         </Tooltip>
       )}
+      <Box className="custom-drag-handle">
+        <DragIndicatorIcon fontSize="small" />
+      </Box>
     </>
   );
 }
@@ -455,7 +459,7 @@ export const RichNode = memo<Props>(function ({
                 isConnectable={isConnectable}
               />
             </Box>
-            <Box className="custom-drag-handle">
+            <Box>
               {devMode && (
                 <Box
                   sx={{
@@ -473,13 +477,7 @@ export const RichNode = memo<Props>(function ({
               )}
               <Box
                 sx={{
-                  height: "1em",
-                }}
-              ></Box>
-              <Box
-                sx={{
                   position: "absolute",
-
                   top: "-24px",
                   width: "50%",
                 }}
@@ -521,8 +519,8 @@ export const RichNode = memo<Props>(function ({
                   background: "white",
                   zIndex: 250,
                   justifyContent: "center",
+                  alignItems: "center",
                 }}
-                className="nodrag"
               >
                 <MyFloatingToolbar id={id} />
               </Box>

@@ -42,6 +42,8 @@ import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArro
 import PlayDisabledIcon from "@mui/icons-material/PlayDisabled";
 import DeleteIcon from "@mui/icons-material/Delete";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
+import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import Moveable from "react-moveable";
 import { ResizableBox } from "react-resizable";
@@ -266,7 +268,9 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
   );
 
   return (
-    <Box>
+    <Box
+      sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}
+    >
       {!isGuest && (
         <Tooltip title="Run (shift-enter)">
           <IconButton
@@ -348,6 +352,9 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
           <ViewComfyIcon fontSize="inherit" />
         </IconButton>
       </Tooltip>
+      <Box className="custom-drag-handle">
+        <DragIndicatorIcon fontSize="small" />
+      </Box>
     </Box>
   );
 }
@@ -375,10 +382,6 @@ export const CodeNode = memo<NodeProps>(function ({
   const pod = getPod(id);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
-  const index = useStore(
-    store,
-    (state) => state.pods[id]?.result?.count || " "
-  );
   const inputRef = useRef<HTMLInputElement>(null);
   const updateView = useStore(store, (state) => state.updateView);
   const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
@@ -531,7 +534,7 @@ export const CodeNode = memo<NodeProps>(function ({
             </Box>
 
             {/* The header of code pods. */}
-            <Box className="custom-drag-handle">
+            <Box>
               {devMode && (
                 <Box
                   sx={{
@@ -579,16 +582,6 @@ export const CodeNode = memo<NodeProps>(function ({
               </Box>
               <Box
                 sx={{
-                  color: "#8b8282",
-                  textAlign: "left",
-                  paddingLeft: "5px",
-                  fontSize: "12px",
-                }}
-              >
-                [{index}]
-              </Box>
-              <Box
-                sx={{
                   opacity: showToolbar ? 1 : 0,
                   marginLeft: "10px",
                   borderRadius: "4px",
@@ -600,7 +593,6 @@ export const CodeNode = memo<NodeProps>(function ({
                   zIndex: 250,
                   justifyContent: "center",
                 }}
-                className="nodrag"
               >
                 <MyFloatingToolbar
                   id={id}
@@ -612,6 +604,7 @@ export const CodeNode = memo<NodeProps>(function ({
             <Box
               sx={{
                 height: "90%",
+                py: 1,
               }}
             >
               <MyMonaco id={id} gitvalue="" />
