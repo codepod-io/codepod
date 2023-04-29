@@ -54,7 +54,7 @@ import { RepoContext } from "../../lib/store";
 import { MyMonaco } from "../MyMonaco";
 import { useApolloClient } from "@apollo/client";
 
-import { NodeResizeControl, NodeResizer } from "@reactflow/node-resizer";
+import { NodeResizeControl, NodeResizer } from "reactflow";
 
 import "@reactflow/node-resizer/dist/style.css";
 import { ResizeIcon } from "./utils";
@@ -440,191 +440,210 @@ export const CodeNode = memo<NodeProps>(function ({
     isGuest ? (
       <>{child}</>
     ) : (
-      <ResizableBox
-        onResizeStop={onResize}
-        height={pod.height || 100}
-        width={pod.width || 0}
-        axis={"x"}
-        minConstraints={[200, 200]}
-      >
-        {child}
-      </ResizableBox>
-    );
-
-  return Wrap(
-    <Box
-      id={"reactflow_node_code_" + id}
-      sx={{
-        border: "1px #d6dee6",
-        borderWidth: pod.ispublic ? "4px" : "2px",
-        borderRadius: "4px",
-        borderStyle: isCutting ? "dashed" : "solid",
-        width: "100%",
-        height: "100%",
-        backgroundColor: "rgb(244, 246, 248)",
-        borderColor: isCutting
-          ? "red"
-          : pod.ispublic
-          ? "green"
-          : selected
-          ? "#003c8f"
-          : !isPodFocused
-          ? "#d6dee6"
-          : "#5e92f3",
-      }}
-      onMouseEnter={() => {
-        setShowToolbar(true);
-      }}
-      onMouseLeave={() => {
-        setShowToolbar(false);
-      }}
-    >
-      {/* FIXME this does not support x-axis only resizing. */}
-      {/* <NodeResizeControl
-        style={{
-          background: "transparent",
-          border: "none",
-        }}
-        minWidth={100}
-        minHeight={50}
-      >
-        <ResizeIcon />
-      </NodeResizeControl> */}
       <Box
         sx={{
-          opacity: showToolbar ? 1 : 0,
+          "& .react-resizable-handle": {
+            opacity: showToolbar ? 1 : 0,
+          },
         }}
       >
-        <Handle
-          type="source"
-          position={Position.Top}
-          id="top"
-          isConnectable={isConnectable}
-        />
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          id="bottom"
-          isConnectable={isConnectable}
-        />
-        <Handle
-          type="source"
-          position={Position.Left}
-          id="left"
-          isConnectable={isConnectable}
-        />
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="right"
-          isConnectable={isConnectable}
-        />
-      </Box>
-
-      {/* The header of code pods. */}
-      <Box className="custom-drag-handle">
-        {devMode && (
+        <ResizableBox
+          onResizeStop={onResize}
+          height={pod.height || 100}
+          width={pod.width || 0}
+          axis={"x"}
+          minConstraints={[200, 200]}
+        >
           <Box
             sx={{
-              position: "absolute",
-              top: "-48px",
-              userSelect: "text",
-              cursor: "auto",
-            }}
-            className="nodrag"
-          >
-            {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w: {pod.width}, h:{" "}
-            {pod.height})
-          </Box>
-        )}
-        <Box
-          sx={{
-            position: "absolute",
-            top: "-24px",
-            width: "50%",
-          }}
-        >
-          <InputBase
-            inputRef={inputRef}
-            className="nodrag"
-            defaultValue={data.name || ""}
-            disabled={isGuest}
-            onBlur={(e) => {
-              const name = e.target.value;
-              if (name === data.name) return;
-              const node = nodesMap.get(id);
-              if (node) {
-                nodesMap.set(id, { ...node, data: { ...node.data, name } });
-              }
-            }}
-            inputProps={{
-              style: {
-                padding: "0px",
-                textOverflow: "ellipsis",
+              "& .react-resizable-handle": {
+                opacity: 1,
               },
             }}
-          ></InputBase>
-        </Box>
-        <Box
-          sx={{
-            color: "#8b8282",
-            textAlign: "left",
-            paddingLeft: "5px",
-            fontSize: "12px",
-          }}
-        >
-          [{index}]
-        </Box>
-        <Box
-          sx={{
-            opacity: showToolbar ? 1 : 0,
-            marginLeft: "10px",
-            borderRadius: "4px",
-            position: "absolute",
-            border: "solid 1px #d6dee6",
-            right: "25px",
-            top: "-15px",
-            background: "white",
-            zIndex: 250,
-            justifyContent: "center",
-          }}
-          className="nodrag"
-        >
-          <MyFloatingToolbar id={id} layout={layout} setLayout={setLayout} />
-        </Box>
+          >
+            {child}
+          </Box>
+        </ResizableBox>
       </Box>
+    );
+
+  return (
+    <>
       <Box
-        sx={{
-          height: "90%",
+        onMouseEnter={() => {
+          setShowToolbar(true);
+        }}
+        onMouseLeave={() => {
+          setShowToolbar(false);
         }}
       >
-        <MyMonaco id={id} gitvalue="" />
-        {showResult && (
+        {Wrap(
           <Box
-            className="nowheel"
-            // This also prevents the wheel event from bubbling up to the parent.
-            // onWheelCapture={(e) => {
-            //   e.stopPropagation();
-            // }}
+            id={"reactflow_node_code_" + id}
             sx={{
-              border: "solid 1px #d6dee6",
+              border: "1px #d6dee6",
+              borderWidth: pod.ispublic ? "4px" : "2px",
               borderRadius: "4px",
-              position: "absolute",
-              top: isRightLayout ? 0 : "100%",
-              left: isRightLayout ? "100%" : 0,
-              maxHeight: "160px",
-              maxWidth: isRightLayout ? "300px" : "100%",
-              minWidth: isRightLayout ? "150px" : "100%",
-              boxSizing: "border-box",
-              backgroundColor: "white",
-              zIndex: 100,
-              padding: "0 10px",
+              borderStyle: isCutting ? "dashed" : "solid",
+              width: "100%",
+              height: "100%",
+              backgroundColor: "rgb(244, 246, 248)",
+              borderColor: isCutting
+                ? "red"
+                : pod.ispublic
+                ? "green"
+                : selected
+                ? "#003c8f"
+                : !isPodFocused
+                ? "#d6dee6"
+                : "#5e92f3",
             }}
           >
-            <ResultBlock id={id} />
+            <Box
+              sx={{
+                opacity: showToolbar ? 1 : 0,
+              }}
+            >
+              <Handle
+                type="source"
+                position={Position.Top}
+                id="top"
+                isConnectable={isConnectable}
+              />
+              <Handle
+                type="source"
+                position={Position.Bottom}
+                id="bottom"
+                isConnectable={isConnectable}
+              />
+              <Handle
+                type="source"
+                position={Position.Left}
+                id="left"
+                isConnectable={isConnectable}
+              />
+              <Handle
+                type="source"
+                position={Position.Right}
+                id="right"
+                isConnectable={isConnectable}
+              />
+            </Box>
+
+            {/* The header of code pods. */}
+            <Box className="custom-drag-handle">
+              {devMode && (
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: "-48px",
+                    userSelect: "text",
+                    cursor: "auto",
+                  }}
+                  className="nodrag"
+                >
+                  {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w:{" "}
+                  {pod.width}, h: {pod.height})
+                </Box>
+              )}
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: "-24px",
+                  width: "50%",
+                }}
+              >
+                <InputBase
+                  inputRef={inputRef}
+                  className="nodrag"
+                  defaultValue={data.name || ""}
+                  disabled={isGuest}
+                  onBlur={(e) => {
+                    const name = e.target.value;
+                    if (name === data.name) return;
+                    const node = nodesMap.get(id);
+                    if (node) {
+                      nodesMap.set(id, {
+                        ...node,
+                        data: { ...node.data, name },
+                      });
+                    }
+                  }}
+                  inputProps={{
+                    style: {
+                      padding: "0px",
+                      textOverflow: "ellipsis",
+                    },
+                  }}
+                ></InputBase>
+              </Box>
+              <Box
+                sx={{
+                  color: "#8b8282",
+                  textAlign: "left",
+                  paddingLeft: "5px",
+                  fontSize: "12px",
+                }}
+              >
+                [{index}]
+              </Box>
+              <Box
+                sx={{
+                  opacity: showToolbar ? 1 : 0,
+                  marginLeft: "10px",
+                  borderRadius: "4px",
+                  position: "absolute",
+                  border: "solid 1px #d6dee6",
+                  right: "25px",
+                  top: "-15px",
+                  background: "white",
+                  zIndex: 250,
+                  justifyContent: "center",
+                }}
+                className="nodrag"
+              >
+                <MyFloatingToolbar
+                  id={id}
+                  layout={layout}
+                  setLayout={setLayout}
+                />
+              </Box>
+            </Box>
+            <Box
+              sx={{
+                height: "90%",
+              }}
+            >
+              <MyMonaco id={id} gitvalue="" />
+              {showResult && (
+                <Box
+                  className="nowheel"
+                  // This also prevents the wheel event from bubbling up to the parent.
+                  // onWheelCapture={(e) => {
+                  //   e.stopPropagation();
+                  // }}
+                  sx={{
+                    border: "solid 1px #d6dee6",
+                    borderRadius: "4px",
+                    position: "absolute",
+                    top: isRightLayout ? 0 : "100%",
+                    left: isRightLayout ? "100%" : 0,
+                    maxHeight: "160px",
+                    maxWidth: isRightLayout ? "300px" : "100%",
+                    minWidth: isRightLayout ? "150px" : "100%",
+                    boxSizing: "border-box",
+                    backgroundColor: "white",
+                    zIndex: 100,
+                    padding: "0 10px",
+                  }}
+                >
+                  <ResultBlock id={id} />
+                </Box>
+              )}
+            </Box>
           </Box>
         )}
       </Box>
-    </Box>
+    </>
   );
 });

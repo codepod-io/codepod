@@ -42,7 +42,7 @@ import { useStore } from "zustand";
 
 import { RepoContext } from "../../lib/store";
 
-import { NodeResizer, NodeResizeControl } from "@reactflow/node-resizer";
+import { NodeResizer, NodeResizeControl } from "reactflow";
 import "@reactflow/node-resizer/dist/style.css";
 import { ResizableBox } from "react-resizable";
 import { ResizeIcon } from "./utils";
@@ -221,16 +221,19 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
       }}
     >
       {/* <NodeResizer color="#ff0071" minWidth={100} minHeight={30} /> */}
-      <NodeResizeControl
-        style={{
-          background: "transparent",
-          border: "none",
-        }}
-        minWidth={100}
-        minHeight={50}
-      >
-        <ResizeIcon />
-      </NodeResizeControl>
+      <Box sx={{ opacity: showToolbar ? 1 : 0 }}>
+        <NodeResizeControl
+          style={{
+            background: "transparent",
+            border: "none",
+          }}
+          minWidth={100}
+          minHeight={50}
+        >
+          <ResizeIcon />
+        </NodeResizeControl>
+      </Box>
+
       <Box
         sx={{
           opacity: showToolbar ? 1 : 0,
