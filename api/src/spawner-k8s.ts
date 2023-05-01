@@ -14,53 +14,24 @@ kc.loadFromDefault();
 const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
 const k8sAppsApi = kc.makeApiClient(k8s.AppsV1Api);
 
-/**
- * DEPRECATED. Create deployment instead.
- */
-function getPodSpec(name) {
-  return {
-    apiVersion: "v1",
-    kind: "Pod",
-    metadata: {
-      name: `runtime-${name}`,
-    },
-    spec: {
-      containers: [
-        {
-          name: `runtime-${name}-kernel`,
-          image: process.env.ZMQ_KERNEL_IMAGE,
-        },
-        {
-          name: `runtime-${name}-ws`,
-          image: process.env.WS_RUNTIME_IMAGE,
-          // The out-facing port for proxy to talk to.
-          ports: [{ containerPort: 4020 }],
-          // It will talk to the above kernel container.
-          env: [{ name: "ZMQ_HOST", value: `${name}-kernel` }],
-        },
-      ],
-    },
-  };
-}
-
 function getDeploymentSpec(name) {
   return {
     apiVersion: "apps/v1",
     kind: "Deployment",
     metadata: {
-      name: `runtime-${name}-deployment`,
+      name: `${name}-deployment`,
     },
     spec: {
       replicas: 1,
       selector: {
-        matchLabels: { app: `runtime-${name}` },
+        matchLabels: { app: `${name}` },
       },
       template: {
-        metadata: { labels: { app: `runtime-${name}` } },
+        metadata: { labels: { app: `${name}` } },
         spec: {
           containers: [
             {
-              name: `runtime-${name}-kernel`,
+              name: `${name}-kernel`,
               image: process.env.ZMQ_KERNEL_IMAGE,
               ports: [
                 // These are pre-defined in kernel/conn.json
@@ -72,7 +43,7 @@ function getDeploymentSpec(name) {
               ],
             },
             {
-              name: `runtime-${name}-ws`,
+              name: `${name}-ws`,
               image: process.env.WS_RUNTIME_IMAGE,
               // The out-facing port for proxy to talk to.
               ports: [{ containerPort: 4020 }],
@@ -101,11 +72,11 @@ function getServiceSpec(name) {
     apiVersion: "v1",
     kind: "Service",
     metadata: {
-      name: `runtime-${name}-service`,
+      name: `${name}-service`,
     },
     spec: {
       selector: {
-        app: `runtime-${name}`,
+        app: `${name}`,
       },
       ports: [
         {
@@ -229,7 +200,7 @@ async function addRoute(ns: string, service_spec, url: string) {
 export async function spawnRuntime(_, { sessionId }) {
   let url = `/${sessionId}`;
   sessionId = sessionId.replaceAll("_", "-").toLowerCase();
-  let k8s_name = `k8s-${sessionId}`;
+  let k8s_name = `rt-${sessionId}`;
   console.log("spawnRuntime", url, k8s_name);
   console.log("Creating namespaced pod ..");
   let ns =
@@ -250,9 +221,7 @@ export async function spawnRuntime(_, { sessionId }) {
 export async function killRuntime(_, { sessionId }) {
   let url = `/${sessionId}`;
   sessionId = sessionId.replaceAll("_", "-").toLowerCase();
-  // sessionId = "runtime-k8s-user-UGY6YAk7TM-repo-34prxrgkKG-kernel";
-  // sessionId = "k8s-user-UGY6YAk7TM";
-  let k8s_name = `k8s-${sessionId}`;
+  let k8s_name = `rt-${sessionId}`;
   console.log("killRuntime", url, k8s_name);
   let ns =
     process.env.RUNTIME_NS ||
@@ -308,7 +277,7 @@ export async function killRuntime(_, { sessionId }) {
  */
 export async function infoRuntime(_, { sessionId }) {
   sessionId = sessionId.replaceAll("_", "-").toLowerCase();
-  let k8s_name = `k8s-${sessionId}`;
+  let k8s_name = `rt-${sessionId}`;
   let ns =
     process.env.RUNTIME_NS ||
     fs
@@ -375,7 +344,7 @@ export function loopKillInactiveRoutes() {
 
 function deploymentName2sessionId(deploymentName: string) {
   // NOTE: this is sessionId.replaceAll("_", "-").toLowerCase()
-  return deploymentName.match(/runtime-k8s-(.*)-deployment/)![1];
+  return deploymentName.match(/rt-(.*)-deployment/)![1];
 }
 
 async function scanRunningSessions(): Promise<string[]> {
@@ -408,7 +377,7 @@ export async function initRoutes() {
   console.log("initRoutes sessionIds", sessionIds);
   for (let id of sessionIds) {
     let url = `/${id}`;
-    let k8s_name = `k8s-${id}`;
+    let k8s_name = `rt-${id}`;
     let service_spec = getServiceSpec(k8s_name);
     await addRoute(ns, service_spec, url);
   }
