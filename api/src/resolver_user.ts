@@ -50,10 +50,11 @@ async function signupGuest(_, {}) {
   const id = await nanoid();
   const user = await prisma.user.create({
     data: {
-      id: "guest_" + id,
-      email: "guest_" + id + "@example.com",
+      id: id,
+      email: id + "@example.com",
       firstname: "Guest",
       lastname: "Guest",
+      isGuest: true,
     },
   });
   return {
@@ -70,7 +71,9 @@ async function signupGuest(_, {}) {
 async function loginGuest(_, {id}) {
   const user = await prisma.user.findFirst({
     where: {
-      id,}
+      id,
+      isGuest: true,
+    }
   });
   if (!user) throw Error(`User does not exist`);
   return {
