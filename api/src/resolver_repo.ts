@@ -293,11 +293,7 @@ async function updateRepo(_, { id, name }, { userId }) {
 
 async function deleteRepo(_, { id }, { userId }) {
   if (!userId) throw Error("Unauthenticated");
-  const user = await prisma.user.findFirst({
-    where: {
-      id: userId,
-    },
-  });
+  // only a repo owner can delete a repo.
   const repo = await prisma.repo.findFirst({
     where: {
       id,
@@ -321,9 +317,6 @@ async function deleteRepo(_, { id }, { userId }) {
       repo: {
         id: repo.id,
       },
-      user: {
-        id: userId,
-      }
     },
   });
   // 3. delete the repo itself
