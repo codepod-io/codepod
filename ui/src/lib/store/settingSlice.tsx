@@ -45,7 +45,7 @@ export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
   },
   autoRunLayout: localStorage.getItem("autoRunLayout")
     ? JSON.parse(localStorage.getItem("autoRunLayout")!)
-    : true,
+    : false,
   setAutoRunLayout: (b: boolean) => {
     set({ autoRunLayout: b });
     // also write to local storage
