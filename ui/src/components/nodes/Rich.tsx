@@ -256,12 +256,14 @@ const FloatingLinkToolbar = ({ children }) => {
     <CommandButtonGroup>
       <CommandButton
         commandName="updateLink"
+        aria-label="Edit link"
         onSelect={handleClickEdit}
         icon="pencilLine"
         enabled
       />
       <CommandButton
         commandName="removeLink"
+        aria-label="Remove link"
         onSelect={onRemove}
         icon="linkUnlink"
         enabled
@@ -271,6 +273,7 @@ const FloatingLinkToolbar = ({ children }) => {
     <CommandButtonGroup>
       <CommandButton
         commandName="updateLink"
+        aria-label="Add link"
         onSelect={handleClickEdit}
         icon="link"
         enabled
