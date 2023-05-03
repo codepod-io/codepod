@@ -54,6 +54,8 @@ import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import {
   BoldExtension,
   CalloutExtension,
+  DropCursorExtension,
+  ImageExtension,
   ItalicExtension,
   LinkExtension,
   PlaceholderExtension,
@@ -409,6 +411,8 @@ const MyEditor = ({
       new SupExtension(),
       new SubExtension(),
       new LinkExtension({ autoLink: true }),
+      new ImageExtension({ enableResizing: true }),
+      new DropCursorExtension(),
       // new CalloutExtension({ defaultType: "warn" }),
       ...wysiwygPreset(),
     ],
