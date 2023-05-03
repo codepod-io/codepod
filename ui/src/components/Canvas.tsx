@@ -588,17 +588,6 @@ function CanvasImpl() {
           onNodeDragStop={(event, node) => {
             removeDragHighlight();
             let mousePos = project({ x: event.clientX, y: event.clientY });
-            // check if the mouse is still inside this node. If not, the user
-            // has beenn trying to move a pod out.
-            if (
-              mousePos.x < node.positionAbsolute!.x ||
-              mousePos.y < node.positionAbsolute!.y ||
-              mousePos.x > node.positionAbsolute!.x + node.width! ||
-              mousePos.y > node.positionAbsolute!.y + node.height!
-            ) {
-              console.log("Cannot drop outside parent scope");
-              return;
-            }
             let scope = getScopeAtPos(mousePos, node.id);
             if (scope && scope.id !== node.parentNode) {
               moveIntoScope(node.id, scope.id);
