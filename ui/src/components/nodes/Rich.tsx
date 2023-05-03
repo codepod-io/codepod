@@ -55,10 +55,13 @@ import {
   BoldExtension,
   CalloutExtension,
   ItalicExtension,
+  LinkExtension,
   PlaceholderExtension,
+  ShortcutHandlerProps,
   SubExtension,
   SupExtension,
   TextHighlightExtension,
+  createMarkPositioner,
   wysiwygPreset,
 } from "remirror/extensions";
 import {
@@ -84,15 +87,245 @@ import {
   BaselineButtonGroup,
   CommandButton,
   CommandButtonProps,
+  useChainedCommands,
+  useCurrentSelection,
+  useAttrs,
+  useUpdateReason,
+  FloatingWrapper,
 } from "@remirror/react";
 import { WysiwygEditor } from "@remirror/react-editors/wysiwyg";
-import { FloatingToolbar } from "@remirror/react";
+import { FloatingToolbar, useExtensionEvent } from "@remirror/react";
 import { TableExtension } from "@remirror/extension-react-tables";
 import { GenIcon, IconBase } from "@remirror/react-components";
 import "remirror/styles/all.css";
 
 import { htmlToProsemirrorNode } from "remirror";
 import { styled } from "@mui/material";
+
+function useLinkShortcut() {
+  const [linkShortcut, setLinkShortcut] = useState<
+    ShortcutHandlerProps | undefined
+  >();
+  const [isEditing, setIsEditing] = useState(false);
+
+  useExtensionEvent(
+    LinkExtension,
+    "onShortcut",
+    useCallback(
+      (props) => {
+        if (!isEditing) {
+          setIsEditing(true);
+        }
+
+        return setLinkShortcut(props);
+      },
+      [isEditing]
+    )
+  );
+
+  return { linkShortcut, isEditing, setIsEditing };
+}
+
+function useFloatingLinkState() {
+  const chain = useChainedCommands();
+  const { isEditing, linkShortcut, setIsEditing } = useLinkShortcut();
+  const { to, empty } = useCurrentSelection();
+
+  const url = (useAttrs().link()?.href as string) ?? "";
+  const [href, setHref] = useState<string>(url);
+
+  // A positioner which only shows for links.
+  const linkPositioner = React.useMemo(
+    () => createMarkPositioner({ type: "link" }),
+    []
+  );
+
+  const onRemove = useCallback(() => {
+    return chain.removeLink().focus().run();
+  }, [chain]);
+
+  const updateReason = useUpdateReason();
+
+  React.useLayoutEffect(() => {
+    if (!isEditing) {
+      return;
+    }
+
+    if (updateReason.doc || updateReason.selection) {
+      setIsEditing(false);
+    }
+  }, [isEditing, setIsEditing, updateReason.doc, updateReason.selection]);
+
+  useEffect(() => {
+    setHref(url);
+  }, [url]);
+
+  const submitHref = useCallback(() => {
+    setIsEditing(false);
+    const range = linkShortcut ?? undefined;
+
+    if (href === "") {
+      chain.removeLink();
+    } else {
+      chain.updateLink({ href, auto: false }, range);
+    }
+
+    chain.focus(range?.to ?? to).run();
+  }, [setIsEditing, linkShortcut, chain, href, to]);
+
+  const cancelHref = useCallback(() => {
+    setIsEditing(false);
+  }, [setIsEditing]);
+
+  const clickEdit = useCallback(() => {
+    if (empty) {
+      chain.selectLink();
+    }
+
+    setIsEditing(true);
+  }, [chain, empty, setIsEditing]);
+
+  return React.useMemo(
+    () => ({
+      href,
+      setHref,
+      linkShortcut,
+      linkPositioner,
+      isEditing,
+      clickEdit,
+      onRemove,
+      submitHref,
+      cancelHref,
+    }),
+    [
+      href,
+      linkShortcut,
+      linkPositioner,
+      isEditing,
+      clickEdit,
+      onRemove,
+      submitHref,
+      cancelHref,
+    ]
+  );
+}
+
+const DelayAutoFocusInput = ({
+  autoFocus,
+  ...rest
+}: React.HTMLProps<HTMLInputElement>) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!autoFocus) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+    };
+  }, [autoFocus]);
+
+  return <input ref={inputRef} {...rest} />;
+};
+
+const FloatingLinkToolbar = ({ children }) => {
+  const {
+    isEditing,
+    linkPositioner,
+    clickEdit,
+    onRemove,
+    submitHref,
+    href,
+    setHref,
+    cancelHref,
+  } = useFloatingLinkState();
+  const active = useActive();
+  const activeLink = active.link();
+  const { empty } = useCurrentSelection();
+
+  const handleClickEdit = useCallback(() => {
+    clickEdit();
+  }, [clickEdit]);
+
+  const linkEditButtons = activeLink ? (
+    <CommandButtonGroup>
+      <CommandButton
+        commandName="updateLink"
+        aria-label="Edit link"
+        onSelect={handleClickEdit}
+        icon="pencilLine"
+        enabled
+      />
+      <CommandButton
+        commandName="removeLink"
+        aria-label="Remove link"
+        onSelect={onRemove}
+        icon="linkUnlink"
+        enabled
+      />
+    </CommandButtonGroup>
+  ) : (
+    <CommandButtonGroup>
+      <CommandButton
+        commandName="updateLink"
+        aria-label="Add link"
+        onSelect={handleClickEdit}
+        icon="link"
+        enabled
+      />
+    </CommandButtonGroup>
+  );
+
+  return (
+    <>
+      {!isEditing && (
+        <FloatingToolbar>
+          {linkEditButtons}
+          {children}
+        </FloatingToolbar>
+      )}
+      {!isEditing && empty && (
+        <FloatingToolbar positioner={linkPositioner}>
+          {linkEditButtons}
+          {children}
+        </FloatingToolbar>
+      )}
+
+      <FloatingWrapper
+        positioner="always"
+        placement="bottom"
+        enabled={isEditing}
+        renderOutsideEditor
+      >
+        <DelayAutoFocusInput
+          style={{ zIndex: 20 }}
+          autoFocus
+          placeholder="Enter link..."
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            setHref(event.target.value)
+          }
+          value={href}
+          onKeyPress={(event: React.KeyboardEvent<HTMLInputElement>) => {
+            const { code } = event;
+
+            if (code === "Enter") {
+              submitHref();
+            }
+
+            if (code === "Escape") {
+              cancelHref();
+            }
+          }}
+        />
+      </FloatingWrapper>
+    </>
+  );
+};
 
 export interface SetHighlightButtonProps
   extends Omit<
@@ -175,6 +408,7 @@ const MyEditor = ({
       new TextHighlightExtension(),
       new SupExtension(),
       new SubExtension(),
+      new LinkExtension({ autoLink: true }),
       // new CalloutExtension({ defaultType: "warn" }),
       ...wysiwygPreset(),
     ],
@@ -230,14 +464,16 @@ const MyEditor = ({
           >
             {/* <WysiwygToolbar /> */}
             <EditorComponent />
+
             <TableComponents />
 
             {!isGuest && (
-              <FloatingToolbar>
+              <FloatingLinkToolbar>
+                <FormattingButtonGroup />
+                <VerticalDivider />
                 <CommandButtonGroup>
                   {/* <HeadingLevelButtonGroup /> */}
-                  {/* <VerticalDivider /> */}
-                  <FormattingButtonGroup />
+
                   {/* <ListButtonGroup /> */}
                   <SetHighlightButton color="lightpink" />
                   <SetHighlightButton color="yellow" />
@@ -245,18 +481,16 @@ const MyEditor = ({
                   <SetHighlightButton color="lightcyan" />
                   <SetHighlightButton />
                 </CommandButtonGroup>
+                <VerticalDivider />
+                {/* <FormattingButtonGroup /> */}
                 {/* <DecreaseIndentButton /> */}
                 {/* <IncreaseIndentButton /> */}
                 {/* <TextAlignmentButtonGroup /> */}
                 {/* <IndentationButtonGroup /> */}
                 {/* <BaselineButtonGroup /> */}
-              </FloatingToolbar>
+              </FloatingLinkToolbar>
             )}
-            {!isGuest && (
-              <FloatingToolbar positioner="emptyBlockStart">
-                <HeadingLevelButtonGroup />
-              </FloatingToolbar>
-            )}
+
             {/* <Menu /> */}
           </Remirror>
         </MyStyledWrapper>
