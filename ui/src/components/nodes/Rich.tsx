@@ -63,6 +63,7 @@ import {
   SubExtension,
   SupExtension,
   TextHighlightExtension,
+  YjsExtension,
   createMarkPositioner,
   wysiwygPreset,
 } from "remirror/extensions";
@@ -101,8 +102,10 @@ import { TableExtension } from "@remirror/extension-react-tables";
 import { GenIcon, IconBase } from "@remirror/react-components";
 import "remirror/styles/all.css";
 
-import { htmlToProsemirrorNode } from "remirror";
+import { ProsemirrorPlugin, htmlToProsemirrorNode } from "remirror";
 import { styled } from "@mui/material";
+
+import { MyYjsExtension } from "./YjsRemirror";
 
 function useLinkShortcut() {
   const [linkShortcut, setLinkShortcut] = useState<
@@ -386,6 +389,7 @@ const MyEditor = ({
   initialContent?: string;
   id: string;
 }) => {
+  // FIXME this is re-rendered all the time.
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const setPodContent = useStore(store, (state) => state.setPodContent);
@@ -395,6 +399,9 @@ const MyEditor = ({
   const pod = getPod(id);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const setPodFocus = useStore(store, (state) => state.setPodFocus);
+  // the Yjs extension for Remirror
+  const provider = useStore(store, (state) => state.provider)!;
+
   const setPodBlur = useStore(store, (state) => state.setPodBlur);
   const resetSelection = useStore(store, (state) => state.resetSelection);
   const updateView = useStore(store, (state) => state.updateView);
@@ -413,6 +420,7 @@ const MyEditor = ({
       new LinkExtension({ autoLink: true }),
       new ImageExtension({ enableResizing: true }),
       new DropCursorExtension(),
+      new MyYjsExtension({ getProvider: () => provider, id }),
       // new CalloutExtension({ defaultType: "warn" }),
       ...wysiwygPreset(),
     ],
