@@ -352,7 +352,7 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
           <ViewComfyIcon fontSize="inherit" />
         </IconButton>
       </Tooltip>
-      <Box className="custom-drag-handle">
+      <Box className="custom-drag-handle" sx={{ cursor: "grab" }}>
         <DragIndicatorIcon fontSize="small" />
       </Box>
     </Box>
@@ -478,6 +478,9 @@ export const CodeNode = memo<NodeProps>(function ({
         }}
         onMouseLeave={() => {
           setShowToolbar(false);
+        }}
+        sx={{
+          cursor: "auto",
         }}
       >
         {Wrap(

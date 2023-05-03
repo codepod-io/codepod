@@ -174,7 +174,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
           </IconButton>
         </Tooltip>
       )}
-      <Box className="custom-drag-handle">
+      <Box className="custom-drag-handle" sx={{ cursor: "grab" }}>
         <DragIndicatorIcon fontSize="small" />
       </Box>
     </Box>
@@ -222,6 +222,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
         height: "100%",
         border: isCutting ? "dashed 2px red" : "solid 1px #d6dee6",
         borderRadius: "4px",
+        cursor: "auto",
       }}
       onMouseEnter={() => {
         setShowToolbar(true);
