@@ -1,3 +1,9 @@
+import React from "react";
+import { Editor, rootCtx } from "@milkdown/core";
+import { nord } from "@milkdown/theme-nord";
+import { Milkdown, MilkdownProvider, useEditor } from "@milkdown/react";
+import { commonmark } from "@milkdown/preset-commonmark";
+
 import {
   useCallback,
   useState,
@@ -6,7 +12,6 @@ import {
   useEffect,
   memo,
 } from "react";
-import * as React from "react";
 
 import Moveable from "react-moveable";
 import { ResizableBox } from "react-resizable";
@@ -51,102 +56,26 @@ import RectangleIcon from "@mui/icons-material/Rectangle";
 import DisabledByDefaultIcon from "@mui/icons-material/DisabledByDefault";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 
-import { BubbleMenu, useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Link from "@tiptap/extension-link";
-import Image from "@tiptap/extension-image";
-
-function MyEditor({ id }) {
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Link.configure({
-        openOnClick: false,
-      }),
-      Image,
-    ],
-    content: `
-      <p>
-        Hey, try to select some text here. There will popup a menu for selecting some inline styles. Remember: you have full control about content and styling of this menu.
-      </p>
-    `,
-  });
-
-  const setLink = useCallback(() => {
-    if (!editor) return;
-    const previousUrl = editor.getAttributes("link").href;
-    const url = window.prompt("URL", previousUrl);
-
-    // cancelled
-    if (url === null) {
-      return;
-    }
-
-    // empty
-    if (url === "") {
-      editor.chain().focus().extendMarkRange("link").unsetLink().run();
-
-      return;
-    }
-
-    // update link
-    editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
-  }, [editor]);
-
-  const addImage = useCallback(() => {
-    if (!editor) return null;
-    const url = window.prompt("URL");
-
-    if (url) {
-      editor.chain().focus().setImage({ src: url }).run();
-    }
-  }, [editor]);
-
-  if (!editor) {
-    return null;
-  }
-
-  return (
-    <Box>
-      {editor && (
-        <BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
-          <button
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            className={editor.isActive("bold") ? "is-active" : ""}
-          >
-            bold
-          </button>
-          <button
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            className={editor.isActive("italic") ? "is-active" : ""}
-          >
-            italic
-          </button>
-          <button
-            onClick={() => editor.chain().focus().toggleStrike().run()}
-            className={editor.isActive("strike") ? "is-active" : ""}
-          >
-            strike
-          </button>
-          <button
-            onClick={setLink}
-            className={editor.isActive("link") ? "is-active" : ""}
-          >
-            setLink
-          </button>
-          <button
-            onClick={() => editor.chain().focus().unsetLink().run()}
-            disabled={!editor.isActive("link")}
-          >
-            unsetLink
-          </button>
-          <button onClick={addImage}>setImage</button>
-        </BubbleMenu>
-      )}
-      <EditorContent editor={editor} style={{ padding: 1 }} />
-    </Box>
+const MilkdownEditor: React.FC = () => {
+  useEditor((root) =>
+    Editor.make()
+      .config(nord)
+      .config((ctx) => {
+        ctx.set(rootCtx, root);
+      })
+      .use(commonmark)
   );
-}
+
+  return <Milkdown />;
+};
+
+export const MilkdownEditorWrapper: React.FC = () => {
+  return (
+    <MilkdownProvider>
+      <MilkdownEditor />
+    </MilkdownProvider>
+  );
+};
 
 function MyFloatingToolbar({ id }: { id: string }) {
   const store = useContext(RepoContext);
@@ -410,7 +339,7 @@ export const RichNode = memo<Props>(function ({
               </Box>
             </Box>
             <Box>
-              <MyEditor id={id} />
+              <MilkdownEditor />
             </Box>
           </Box>
         )}

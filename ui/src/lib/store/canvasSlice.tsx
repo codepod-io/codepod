@@ -47,7 +47,6 @@ import {
   ReactFlowInstance,
 } from "reactflow";
 import { node } from "prop-types";
-import { fixTables } from "@remirror/pm/dist-types/tables";
 
 // TODO add node's data typing.
 type NodeData = {
