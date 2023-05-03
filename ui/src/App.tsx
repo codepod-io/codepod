@@ -101,6 +101,14 @@ const router = createBrowserRouter([
     ),
   },
   {
+    path: "test",
+    element: (
+      <NormalLayout>
+        <Test />
+      </NormalLayout>
+    ),
+  },
+  {
     path: "/",
     element: (
       <NormalLayout>
