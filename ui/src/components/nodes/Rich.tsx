@@ -287,7 +287,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
           </IconButton>
         </Tooltip>
       )}
-      <Box className="custom-drag-handle">
+      <Box className="custom-drag-handle" sx={{ cursor: "grab" }}>
         <DragIndicatorIcon fontSize="small" />
       </Box>
     </>
@@ -408,6 +408,9 @@ export const RichNode = memo<Props>(function ({
         }}
         onMouseLeave={() => {
           setShowToolbar(false);
+        }}
+        sx={{
+          cursor: "auto",
         }}
       >
         {" "}
