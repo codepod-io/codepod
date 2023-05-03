@@ -87,9 +87,9 @@ import {
 } from "@remirror/react";
 import { WysiwygEditor } from "@remirror/react-editors/wysiwyg";
 import { FloatingToolbar } from "@remirror/react";
-import { AllStyledComponent } from "@remirror/styles/emotion";
 import { TableExtension } from "@remirror/extension-react-tables";
 import { GenIcon, IconBase } from "@remirror/react-components";
+import "remirror/styles/all.css";
 
 import { htmlToProsemirrorNode } from "remirror";
 import { styled } from "@mui/material";
@@ -211,58 +211,56 @@ const MyEditor = ({
       ref={ref}
       overflow="auto"
     >
-      <AllStyledComponent>
-        <ThemeProvider>
-          <MyStyledWrapper>
-            <Remirror
-              manager={manager}
-              // initialContent={state}
-              state={state}
-              editable={!isGuest}
-              // FIXME: onFocus is not working
-              onChange={(parameter) => {
-                let nextState = parameter.state;
-                setState(nextState);
-                // TODO sync with DB and yjs
-                if (parameter.tr?.docChanged) {
-                  setPodContent({ id, content: nextState.doc.toJSON() });
-                }
-              }}
-            >
-              {/* <WysiwygToolbar /> */}
-              <EditorComponent />
-              <TableComponents />
+      <ThemeProvider>
+        <MyStyledWrapper>
+          <Remirror
+            manager={manager}
+            // initialContent={state}
+            state={state}
+            editable={!isGuest}
+            // FIXME: onFocus is not working
+            onChange={(parameter) => {
+              let nextState = parameter.state;
+              setState(nextState);
+              // TODO sync with DB and yjs
+              if (parameter.tr?.docChanged) {
+                setPodContent({ id, content: nextState.doc.toJSON() });
+              }
+            }}
+          >
+            {/* <WysiwygToolbar /> */}
+            <EditorComponent />
+            <TableComponents />
 
-              {!isGuest && (
-                <FloatingToolbar>
-                  <CommandButtonGroup>
-                    {/* <HeadingLevelButtonGroup /> */}
-                    {/* <VerticalDivider /> */}
-                    <FormattingButtonGroup />
-                    {/* <ListButtonGroup /> */}
-                    <SetHighlightButton color="lightpink" />
-                    <SetHighlightButton color="yellow" />
-                    <SetHighlightButton color="lightgreen" />
-                    <SetHighlightButton color="lightcyan" />
-                    <SetHighlightButton />
-                  </CommandButtonGroup>
-                  {/* <DecreaseIndentButton /> */}
-                  {/* <IncreaseIndentButton /> */}
-                  {/* <TextAlignmentButtonGroup /> */}
-                  {/* <IndentationButtonGroup /> */}
-                  {/* <BaselineButtonGroup /> */}
-                </FloatingToolbar>
-              )}
-              {!isGuest && (
-                <FloatingToolbar positioner="emptyBlockStart">
-                  <HeadingLevelButtonGroup />
-                </FloatingToolbar>
-              )}
-              {/* <Menu /> */}
-            </Remirror>
-          </MyStyledWrapper>
-        </ThemeProvider>
-      </AllStyledComponent>
+            {!isGuest && (
+              <FloatingToolbar>
+                <CommandButtonGroup>
+                  {/* <HeadingLevelButtonGroup /> */}
+                  {/* <VerticalDivider /> */}
+                  <FormattingButtonGroup />
+                  {/* <ListButtonGroup /> */}
+                  <SetHighlightButton color="lightpink" />
+                  <SetHighlightButton color="yellow" />
+                  <SetHighlightButton color="lightgreen" />
+                  <SetHighlightButton color="lightcyan" />
+                  <SetHighlightButton />
+                </CommandButtonGroup>
+                {/* <DecreaseIndentButton /> */}
+                {/* <IncreaseIndentButton /> */}
+                {/* <TextAlignmentButtonGroup /> */}
+                {/* <IndentationButtonGroup /> */}
+                {/* <BaselineButtonGroup /> */}
+              </FloatingToolbar>
+            )}
+            {!isGuest && (
+              <FloatingToolbar positioner="emptyBlockStart">
+                <HeadingLevelButtonGroup />
+              </FloatingToolbar>
+            )}
+            {/* <Menu /> */}
+          </Remirror>
+        </MyStyledWrapper>
+      </ThemeProvider>
     </Box>
   );
 };
