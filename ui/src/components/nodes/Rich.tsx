@@ -105,7 +105,7 @@ import { TableExtension } from "@remirror/extension-react-tables";
 import { GenIcon, IconBase } from "@remirror/react-components";
 import "remirror/styles/all.css";
 
-import { ProsemirrorPlugin, htmlToProsemirrorNode } from "remirror";
+import { ProsemirrorPlugin, cx, htmlToProsemirrorNode } from "remirror";
 import { styled } from "@mui/material";
 
 import { MyYjsExtension } from "./YjsRemirror";
