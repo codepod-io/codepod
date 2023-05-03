@@ -40,8 +40,8 @@ function useProvideAuth() {
     );
   }, []);
 
-  const getAuthHeaders = () => {
-    if (!authToken) return null;
+  const getAuthHeaders = (): Record<string, string> => {
+    if (!authToken) return {};
 
     return {
       authorization: `Bearer ${authToken}`,
