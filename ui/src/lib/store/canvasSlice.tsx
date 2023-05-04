@@ -48,6 +48,7 @@ import {
 } from "reactflow";
 import { node } from "prop-types";
 import { quadtree } from "d3-quadtree";
+import { getHelperLines } from "../../components/nodes/utils";
 
 // TODO add node's data typing.
 type NodeData = {
@@ -160,16 +161,18 @@ function createNewNode(type: "SCOPE" | "CODE" | "RICH", position): Node {
   return newNode;
 }
 
-function getAbsPos(node: Node, nodesMap) {
+/**
+ * Get the absoluate position of the node.
+ */
+function getAbsPos(node: Node, nodesMap: YMap<Node>): XYPosition {
   let x = node.position.x;
   let y = node.position.y;
-  if (node.parentNode) {
-    // FIXME performance.
-    let [dx, dy] = getAbsPos(nodesMap.get(node.parentNode), nodesMap);
-    return [x + dx, y + dy];
-  } else {
-    return [x, y];
+  while (node.parentNode) {
+    node = nodesMap.get(node.parentNode)!;
+    x += node.position.x;
+    y += node.position.y;
   }
+  return { x, y };
 }
 
 function getScopeAt(
@@ -180,7 +183,7 @@ function getScopeAt(
   nodesMap
 ): Node {
   const scope = nodes.findLast((node) => {
-    let [x1, y1] = getAbsPos(node, nodesMap);
+    let { x: x1, y: y1 } = getAbsPos(node, nodesMap);
     return (
       node.type === "SCOPE" &&
       x >= x1 &&
@@ -200,8 +203,8 @@ function getNodePositionInsideScope(
   nodeHeight: number = 0
 ): XYPosition {
   // compute the actual position
-  let [x, y] = getAbsPos(node, nodesMap);
-  let [dx, dy] = getAbsPos(scope, nodesMap);
+  let { x, y } = getAbsPos(node, nodesMap);
+  let { x: dx, y: dy } = getAbsPos(scope, nodesMap);
   x -= dx;
   y -= dy;
   return { x, y };
@@ -298,6 +301,11 @@ export interface CanvasSlice {
   moveIntoScope: (nodeId: string, scopeId: string) => void;
   moveIntoRoot: (nodeId: string) => void;
   tempUpdateView: ({ x, y }: XYPosition) => void;
+
+  helperLineHorizontal: number | undefined;
+  helperLineVertical: number | undefined;
+  setHelperLineHorizontal: (line: number | undefined) => void;
+  setHelperLineVertical: (line: number | undefined) => void;
 
   onNodesChange: (client: ApolloClient<any>) => OnNodesChange;
   onEdgesChange: (client: ApolloClient<any>) => OnEdgesChange;
@@ -685,10 +693,59 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     });
   },
 
+  helperLineHorizontal: undefined,
+  helperLineVertical: undefined,
+  setHelperLineHorizontal: (line) => set({ helperLineHorizontal: line }),
+  setHelperLineVertical: (line) => set({ helperLineVertical: line }),
+
   // I should modify nodesMap here
   onNodesChange: (client) => (changes: NodeChange[]) => {
     let nodesMap = get().ydoc.getMap<Node>("pods");
     const nodes = get().nodes;
+
+    // compute the helper lines
+    get().setHelperLineHorizontal(undefined);
+    get().setHelperLineVertical(undefined);
+
+    // this will be true if it's a single node being dragged
+    // inside we calculate the helper lines and snap position for the position where the node is being moved to
+    if (
+      changes.length === 1 &&
+      changes[0].type === "position" &&
+      changes[0].dragging &&
+      changes[0].position
+    ) {
+      // For hierarchical pods, we only get helper lines within the same scope.
+      const change = changes[0];
+      const movingNode = nodesMap.get(change.id)!;
+
+      const helperLines = getHelperLines(
+        changes[0],
+        nodes.filter((n) => n.parentNode === movingNode.parentNode),
+        10
+      );
+
+      // adjust the position into absolute position
+      if (movingNode.parentNode) {
+        const parent = nodesMap.get(movingNode.parentNode)!;
+        // const offset = parent?.positionAbsolute;
+        // const offset = parent?.position;
+        const offset = getAbsPos(parent, nodesMap);
+        helperLines.vertical && (helperLines.vertical += offset?.x || 0);
+        helperLines.horizontal && (helperLines.horizontal += offset?.y || 0);
+      }
+
+      // if we have a helper line, we snap the node to the helper line position
+      // this is being done by manipulating the node position inside the change object
+      changes[0].position.x =
+        helperLines.snapPosition.x ?? changes[0].position.x;
+      changes[0].position.y =
+        helperLines.snapPosition.y ?? changes[0].position.y;
+
+      // if helper lines are returned, we set them so that they can be displayed
+      get().setHelperLineHorizontal(helperLines.horizontal);
+      get().setHelperLineVertical(helperLines.vertical);
+    }
 
     // I think this place update the node's width/height
     const nextNodes = applyNodeChanges(changes, nodes);
