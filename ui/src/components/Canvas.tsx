@@ -45,6 +45,7 @@ import { ScopeNode } from "./nodes/Scope";
 import { YMap } from "yjs/dist/src/types/YMap";
 import FloatingEdge from "./nodes/FloatingEdge";
 import CustomConnectionLine from "./nodes/CustomConnectionLine";
+import HelperLines from "./HelperLines";
 
 const nodeTypes = { SCOPE: ScopeNode, CODE: CodeNode, RICH: RichNode };
 const edgeTypes = {
@@ -570,6 +571,15 @@ function CanvasImpl() {
   const getScopeAtPos = useStore(store, (state) => state.getScopeAtPos);
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
 
+  const helperLineHorizontal = useStore(
+    store,
+    (state) => state.helperLineHorizontal
+  );
+  const helperLineVertical = useStore(
+    store,
+    (state) => state.helperLineVertical
+  );
+
   return (
     <Box
       style={{
@@ -659,6 +669,11 @@ function CanvasImpl() {
               nodeBorderRadius={2}
             />
             <Controls showInteractive={!isGuest} />
+
+            <HelperLines
+              horizontal={helperLineHorizontal}
+              vertical={helperLineVertical}
+            />
 
             <Background />
             <Background
