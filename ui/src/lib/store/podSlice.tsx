@@ -74,7 +74,7 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
       // @ts-ignore
       "setPodName"
     ),
-  setPodContent: ({ id, content }) =>
+  setPodContent: ({ id, content }) => {
     set(
       produce((state) => {
         let pod = state.pods[id];
@@ -84,7 +84,22 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
       false,
       // @ts-ignore
       "setPodContent"
-    ),
+    );
+    // also calculate the sizes of the lines, and update the width of the pod
+    const sizes = content
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .map((line) => line.length);
+    // calculate the sum
+    const sum = sizes.reduce((a, b) => a + b, 0);
+    // calculate the 70% average width
+    let width = Math.round((sum / sizes.length) * 0.7);
+    // the width should be within 60 and 80
+    width = Math.min(80, Math.max(60, width));
+    // set the width
+    get().setNodeWidth(id, Math.round((width / 40) * 300));
+  },
   initPodContent: ({ id, content }) =>
     set(
       produce((state) => {
