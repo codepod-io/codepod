@@ -59,7 +59,7 @@ import { useApolloClient } from "@apollo/client";
 import { NodeResizeControl, NodeResizer } from "reactflow";
 
 import "@reactflow/node-resizer/dist/style.css";
-import { ResizeIcon } from "./utils";
+import { NewPodButtons, ResizeIcon } from "./utils";
 
 export const ResultBlock = memo<any>(function ResultBlock({ id }) {
   const store = useContext(RepoContext)!;
@@ -536,6 +536,8 @@ export const CodeNode = memo<NodeProps>(function ({
               />
             </Box>
 
+            <NewPodButtons pod={pod} xPos={xPos} yPos={yPos} />
+
             {/* The header of code pods. */}
             <Box>
               {devMode && (
@@ -549,7 +551,7 @@ export const CodeNode = memo<NodeProps>(function ({
                   className="nodrag"
                 >
                   {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w:{" "}
-                  {pod.width}, h: {pod.height})
+                  {pod.width}, h: {pod.height}), parent: {pod.parent}
                 </Box>
               )}
               <Box

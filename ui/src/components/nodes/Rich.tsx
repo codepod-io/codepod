@@ -108,6 +108,7 @@ import { ProsemirrorPlugin, cx, htmlToProsemirrorNode } from "remirror";
 import { styled } from "@mui/material";
 
 import { MyYjsExtension } from "./YjsRemirror";
+import { NewPodButtons } from "./utils";
 
 function useLinkShortcut() {
   const [linkShortcut, setLinkShortcut] = useState<
@@ -808,6 +809,7 @@ export const RichNode = memo<Props>(function ({
                 isConnectable={isConnectable}
               />
             </Box>
+            <NewPodButtons pod={pod} xPos={xPos} yPos={yPos} />
             <Box>
               {devMode && (
                 <Box
