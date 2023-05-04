@@ -239,6 +239,7 @@ let global_unbound: Parser.SyntaxNode[] = [];
 let global_errors: any[] = [];
 
 export function compileModule(node: Parser.SyntaxNode) {
+  if (!node) return { unbound: [], errors: [] };
   global_unbound = [];
   global_errors = [];
   let st: Set<any> = new Set();
@@ -267,6 +268,7 @@ export function compileModule(node: Parser.SyntaxNode) {
 }
 
 function compileForIn(node: Parser.SyntaxNode, st: any, named_expr) {
+  if (!node) return new Set();
   let [left, expr] = node.namedChildren.filter(notComment);
   compileExpression(expr, st);
   st = union(st, compileLHS(left, st));
@@ -279,11 +281,13 @@ function compileForIn(node: Parser.SyntaxNode, st: any, named_expr) {
 }
 
 function compileListComprehension(node: Parser.SyntaxNode, st: any) {
+  if (!node) return new Set();
   let named_expr = node.namedChild(0);
   return compileForIn(node.namedChild(1)!, st, named_expr);
 }
 
 function compileForStatement(node: Parser.SyntaxNode, st: any) {
+  if (!node) return new Set();
   let [left, right, body] = node.namedChildren.filter(notComment);
   compileExpression(right, st);
   st = union(st, compileLHS(left, st));
@@ -292,6 +296,7 @@ function compileForStatement(node: Parser.SyntaxNode, st: any) {
 }
 
 function compileAsPattern(node: Parser.SyntaxNode, st: any) {
+  if (!node) return new Set();
   let [source, target] = node.namedChildren.filter(notComment);
   compileExpression(source, st);
   if (target) {
@@ -301,6 +306,7 @@ function compileAsPattern(node: Parser.SyntaxNode, st: any) {
 }
 
 function compileExceptClause(node: Parser.SyntaxNode, st: any) {
+  if (!node) return new Set();
   match(node.namedChildren.filter(notComment))
     .with([{ type: "as_pattern" }, P._], ([pattern, body]) => {
       st = union(st, compileAsPattern(pattern, st));
@@ -324,6 +330,7 @@ function compileExceptClause(node: Parser.SyntaxNode, st: any) {
 }
 
 function compileTryStatement(node: Parser.SyntaxNode, st: any) {
+  if (!node) return new Set();
   let [tryClause, ...clauses] = node.namedChildren.filter(notComment);
   compileBlock(tryClause, st);
   clauses.forEach((clause) => {
@@ -348,6 +355,7 @@ function compileTryStatement(node: Parser.SyntaxNode, st: any) {
 }
 
 function compileIfStatement(node: Parser.SyntaxNode, st: any) {
+  if (!node) return new Set();
   // There's no way to get the children by field names. let cond =
   // node.childForFieldName("condition"); let alt =
   // node.childForFieldName("alternative");
@@ -383,6 +391,7 @@ function compileIfStatement(node: Parser.SyntaxNode, st: any) {
  * @returns
  */
 function compileLHS(node, st) {
+  if (!node) return new Set();
   // left hand side
   switch (node.type) {
     case "identifier":
@@ -408,12 +417,14 @@ function compileLHS(node, st) {
 }
 
 function compileAssignment(node: Parser.SyntaxNode, st: any) {
+  if (!node) return new Set();
   let [left, right] = node.namedChildren.filter(notComment);
   compileExpression(right, st);
   return union(st, compileLHS(left, st));
 }
 
 function compileAugmentedAssignment(node: Parser.SyntaxNode, st: any) {
+  if (!node) return new Set();
   let [left, right] = node.namedChildren.filter(notComment);
   compileExpression(left, st);
   compileExpression(right, st);
@@ -421,6 +432,7 @@ function compileAugmentedAssignment(node: Parser.SyntaxNode, st: any) {
 }
 
 function compileClassDefinition(node: Parser.SyntaxNode, st) {
+  if (!node) return new Set();
   match(node.namedChildren.filter(notComment))
     .with(
       [{ type: "identifier" }, { type: "argument_list" }, { type: "block" }],
@@ -453,6 +465,7 @@ function compileClassDefinition(node: Parser.SyntaxNode, st) {
 }
 
 function compileWithStatement(node: Parser.SyntaxNode, st: any) {
+  if (!node) return new Set();
   match(node.namedChildren.filter(notComment))
     .with(
       [{ type: "with_clause" }, { type: "block" }],
@@ -482,6 +495,7 @@ function compileWithStatement(node: Parser.SyntaxNode, st: any) {
 }
 
 function compileStatement(node: Parser.SyntaxNode, st) {
+  if (!node) return new Set();
   switch (node.type) {
     case "function_definition":
       return compileFunctionDefinition(node, st);
@@ -534,6 +548,7 @@ function compileStatement(node: Parser.SyntaxNode, st) {
 }
 
 function compileWhileStatement(node: Parser.SyntaxNode, st) {
+  if (!node) return new Set();
   let [comp, body] = node.namedChildren.filter(notComment);
   compileExpression(comp, st);
   compileBlock(body, st);
@@ -541,6 +556,7 @@ function compileWhileStatement(node: Parser.SyntaxNode, st) {
 }
 
 function compileRaiseStatement(node: Parser.SyntaxNode, st) {
+  if (!node) return new Set();
   node.namedChildren.filter(notComment).forEach((n) => {
     compileExpression(n, st);
   });
@@ -548,12 +564,14 @@ function compileRaiseStatement(node: Parser.SyntaxNode, st) {
 }
 
 function compileBlock(node: Parser.SyntaxNode, st) {
+  if (!node) return new Set();
   return node.namedChildren.filter(notComment).reduce((acc, n) => {
     return union(acc, compileStatement(n, acc));
   }, st);
 }
 
 function compileArgs(node: Parser.SyntaxNode, st) {
+  if (!node) return new Set();
   let argnames = node.namedChildren
     .filter(notComment)
     .map((arg) => {
@@ -586,6 +604,7 @@ function compileArgs(node: Parser.SyntaxNode, st) {
 }
 
 function compileFunctionDefinition(node: Parser.SyntaxNode, st) {
+  if (!node) return new Set();
   let [name, args, ...bodies] = node.namedChildren.filter(notComment);
   // there may be (return) "type" or "comment" nodes in between.
   let body = bodies[bodies.length - 1];
@@ -596,12 +615,14 @@ function compileFunctionDefinition(node: Parser.SyntaxNode, st) {
 }
 
 function compileGeneratorExpression(node: Parser.SyntaxNode, st) {
+  if (!node) return new Set();
   let [exp, forin] = node.namedChildren.filter(notComment);
   compileForIn(forin, st, exp);
   return new Set();
 }
 
 function compileCall(node: Parser.SyntaxNode, st) {
+  if (!node) return new Set();
   let [callee, args] = node.namedChildren.filter(notComment);
   compileExpression(callee, st);
   switch (args.type) {
@@ -623,6 +644,7 @@ function compileCall(node: Parser.SyntaxNode, st) {
 }
 
 function compileDictionary(node: Parser.SyntaxNode, st) {
+  if (!node) return new Set();
   node.namedChildren.filter(notComment).forEach((n) => {
     compileExpression(n, st);
   });
@@ -630,6 +652,7 @@ function compileDictionary(node: Parser.SyntaxNode, st) {
 }
 
 function compileConditionalExpression(node: Parser.SyntaxNode, st) {
+  if (!node) return new Set();
   let [left, cond, right] = node.namedChildren.filter(notComment);
   compileExpression(cond, st);
   compileExpression(left, st);
@@ -638,6 +661,7 @@ function compileConditionalExpression(node: Parser.SyntaxNode, st) {
 }
 
 function compileLambda(node: Parser.SyntaxNode, st) {
+  if (!node) return new Set();
   match(node.namedChildren.filter(notComment))
     .with([{ type: "lambda_parameters" }, P._], ([args, exp]) => {
       compileExpression(exp, union(st, compileArgs(args, st)));
@@ -658,6 +682,7 @@ function compileLambda(node: Parser.SyntaxNode, st) {
 }
 
 function compileExpression(node: Parser.SyntaxNode, st) {
+  if (!node) return new Set();
   switch (node.type) {
     case "comment":
       return new Set();
@@ -774,6 +799,7 @@ function compileExpression(node: Parser.SyntaxNode, st) {
 }
 
 function compileModuleItem(node, st) {
+  if (!node) return new Set();
   switch (node.type) {
     case "expression":
       return compileExpression(node, st);
