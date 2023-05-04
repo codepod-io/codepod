@@ -182,6 +182,7 @@ export function normalize(pods) {
     if (pod.error) {
       pod.error = JSON.parse(pod.error);
     }
+    if (pod.stdout) pod.stdout = JSON.parse(pod.stdout);
     // DEBUG the deck's content seems to be a long string of escaped \
     if (pod.type === "SCOPE" && pod.content) {
       console.log(
@@ -220,14 +221,14 @@ function serializePodInput(pod) {
     type: nodetype2dbtype(type),
     column,
     lang,
-    // stdout,
     fold,
     thundar,
     utility,
     name,
     content: JSON.stringify(content),
-    // result: JSON.stringify(result),
-    // error: JSON.stringify(error),
+    stdout: JSON.stringify(stdout),
+    result: JSON.stringify(result),
+    error: JSON.stringify(error),
     x,
     y,
     width,

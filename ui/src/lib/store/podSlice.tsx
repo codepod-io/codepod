@@ -144,6 +144,7 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
     set(
       produce((state) => {
         state.pods[id].stdout = stdout;
+        state.pods[id].dirty = true;
       })
     ),
   setPodResult: setPodResult(set, get),
@@ -157,6 +158,7 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
           image: content.data["image/png"],
           count: count,
         };
+        state.pods[id].dirty = true;
       })
     ),
   setPodExecuteReply: ({ id, result, count }) =>
@@ -192,6 +194,7 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
           evalue,
           stacktrace,
         };
+        state.pods[id].dirty = true;
       })
     ),
   setPodStream: ({ id, content }) =>
@@ -215,6 +218,7 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
           };
         }
         pod.stdout += content.text;
+        pod.dirty = true;
       })
     ),
   setPodExecuteResult: ({ id, result, name }) =>
@@ -364,6 +368,7 @@ function setPodResult(set, get) {
             // file,
             count,
           };
+          state.pods[id].dirty = true;
           // state.pods[id].running = false;
         } else {
           // most likely this id is "CODEPOD", which is for startup code and
