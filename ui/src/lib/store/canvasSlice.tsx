@@ -26,6 +26,7 @@ import {
   SimulationNodeDatum,
   SimulationLinkDatum,
 } from "d3-force";
+import { YMap } from "yjs/dist/src/types/YMap";
 
 import { myNanoId } from "../utils";
 
