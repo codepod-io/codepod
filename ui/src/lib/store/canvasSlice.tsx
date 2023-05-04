@@ -47,6 +47,7 @@ import {
   ReactFlowInstance,
 } from "reactflow";
 import { node } from "prop-types";
+import { quadtree } from "d3-quadtree";
 
 // TODO add node's data typing.
 type NodeData = {
@@ -950,15 +951,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
    */
   autoForce: (scopeId) => {
     // 1. get all the nodes and edges in the scope
-    // 2. get
-    type NodeType = {
-      id: string;
-      x: number;
-      y: number;
-      r: number;
-      width: number;
-      height: number;
-    };
     const nodes = get().nodes.filter(
       (node) => node.parentNode === (scopeId === "ROOT" ? undefined : scopeId)
     );
@@ -966,9 +958,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     const edges = get().edges;
     const tmpNodes: NodeType[] = nodes.map((node) => ({
       id: node.id,
-      x: node.position.x + (node.width! + node.height!) / 2,
-      y: node.position.y + (node.width! + node.height!) / 2,
-      r: (node.width! + node.height!) / 2,
+      x: node.position.x + node.width! / 2,
+      y: node.position.y + node.height! / 2,
       width: node.width!,
       height: node.height!,
     }));
@@ -999,18 +990,15 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       // .force("charge", forceManyBody().strength(-1000))
       // .force("x", forceX())
       // .force("y", forceY())
-      .force(
-        "collide",
-        forceCollide().radius((d: any) => d.r)
-      )
+      .force("collide", forceCollideRect())
       // .force("link", d3.forceLink(edges).id(d => d.id))
       // .force("charge", d3.forceManyBody())
       // .force("center", forceCenter(0, 0))
       .stop();
-    simulation.tick(3000);
+    simulation.tick(1);
     tmpNodes.forEach((node) => {
-      node.x -= (node.width! + node.height!) / 2;
-      node.y -= (node.width! + node.height!) / 2;
+      node.x -= node.width! / 2;
+      node.y -= node.height! / 2;
     });
     // The nodes will all have new positions now. I'll need to make the graph to be top-left, i.e., the leftmost is 20, the topmost is 20.
     // get the min x and y
@@ -1080,6 +1068,68 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     get().updateView();
   },
 });
+
+type NodeType = {
+  id: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+function forceCollideRect() {
+  let nodes;
+
+  function force(alpha) {
+    const padding = 0;
+    const quad = quadtree(
+      nodes,
+      (d: NodeType) => d.x,
+      (d) => d.y
+    );
+    for (const d of nodes) {
+      quad.visit((q: any, x1, y1, x2, y2) => {
+        let updated = false;
+        if (q.data && q.data !== d) {
+          let x = d.x - q.data.x,
+            y = d.y - q.data.y,
+            xSpacing = padding + (q.data.width + d.width) / 2,
+            ySpacing = padding + (q.data.height + d.height) / 2,
+            absX = Math.abs(x),
+            absY = Math.abs(y),
+            l,
+            lx,
+            ly;
+
+          if (absX < xSpacing && absY < ySpacing) {
+            l = Math.sqrt(x * x + y * y);
+
+            lx = (absX - xSpacing) / l;
+            ly = (absY - ySpacing) / l;
+
+            // the one that's barely within the bounds probably triggered the collision
+            if (Math.abs(lx) > Math.abs(ly)) {
+              lx = 0;
+            } else {
+              ly = 0;
+            }
+            d.x -= x *= lx;
+            d.y -= y *= ly;
+            q.data.x += x;
+            q.data.y += y;
+
+            updated = true;
+          }
+        }
+        return updated;
+      });
+    }
+  }
+
+  force.initialize = (_) => (nodes = _);
+
+  return force;
+}
 
 /**
  * Compute the rectangle of that is tightly fit to the children.
