@@ -359,6 +359,163 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
   );
 }
 
+function NewPodButtons({ pod, xPos, yPos }) {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const addNode = useStore(store, (state) => state.addNode);
+  return (
+    <>
+      {/* Bottom 1 */}
+      <Button
+        variant="outlined"
+        size="small"
+        sx={{
+          // place it at the BOTTOM of the pod, centered
+          position: "absolute",
+          bottom: "0px",
+          left: "25%",
+          transform: "translate(-50%, 50%)",
+          zIndex: 100,
+          whiteSpace: "nowrap",
+          // opacity: showToolbar ? 0.5 : 0,
+          opacity: 0,
+          "&:hover": {
+            opacity: 1,
+          },
+        }}
+        onClick={() => {
+          addNode("CODE", { x: xPos, y: yPos + pod!.height! + 50 }, pod.parent);
+        }}
+      >
+        + New Pod
+      </Button>
+
+      {/* Bottom 2 */}
+      <Button
+        variant="outlined"
+        size="small"
+        sx={{
+          position: "absolute",
+          bottom: "0px",
+          left: "75%",
+          transform: "translate(-50%, 50%)",
+          zIndex: 100,
+          whiteSpace: "nowrap",
+          // opacity: showToolbar ? 0.5 : 0,
+          opacity: 0,
+          "&:hover": {
+            opacity: 1,
+          },
+        }}
+        onClick={() => {
+          addNode("CODE", { x: xPos, y: yPos + pod!.height! + 50 }, pod.parent);
+        }}
+      >
+        + New Pod
+      </Button>
+      {/* Left 1 */}
+      <Button
+        variant="outlined"
+        size="small"
+        sx={{
+          // place it at the LEFT of the pod, centered
+          position: "absolute",
+          top: "25%",
+          left: "0px",
+          transform: "translate(-50%, -50%)",
+          zIndex: 100,
+          whiteSpace: "nowrap",
+          // opacity: showToolbar ? 0.5 : 0,
+          opacity: 0,
+          "&:hover": {
+            opacity: 1,
+          },
+        }}
+        onClick={() => {
+          addNode("CODE", { x: xPos - pod!.width! - 50, y: yPos }, pod.parent);
+        }}
+      >
+        + New Pod
+      </Button>
+
+      {/* Left 2 */}
+      <Button
+        variant="outlined"
+        size="small"
+        sx={{
+          // place it at the LEFT of the pod, centered
+          position: "absolute",
+          top: "75%",
+          left: "0px",
+          transform: "translate(-50%, -50%)",
+          zIndex: 100,
+          whiteSpace: "nowrap",
+          // opacity: showToolbar ? 0.5 : 0,
+          opacity: 0,
+          "&:hover": {
+            opacity: 1,
+          },
+        }}
+        onClick={() => {
+          addNode("CODE", { x: xPos - pod!.width! - 50, y: yPos }, pod.parent);
+        }}
+      >
+        + New Pod
+      </Button>
+
+      {/* Right 1 */}
+      <Button
+        variant="outlined"
+        size="small"
+        sx={{
+          // place at the RIGHT of the pod, centered
+          position: "absolute",
+          top: "25%",
+          right: "0px",
+          transform: "translate(50%, -50%)",
+          zIndex: 100,
+          whiteSpace: "nowrap",
+          // opacity: showToolbar ? 0.5 : 0,
+          opacity: 0,
+          "&:hover": {
+            opacity: 1,
+          },
+        }}
+        onClick={() => {
+          addNode("CODE", { x: xPos + pod!.width! + 50, y: yPos }, pod.parent);
+        }}
+      >
+        + New Pod
+      </Button>
+
+      {/* Right 2 */}
+      <Button
+        variant="outlined"
+        size="small"
+        sx={{
+          // place at the RIGHT of the pod, centered
+          position: "absolute",
+          top: "75%",
+          right: "0px",
+          transform: "translate(50%, -50%)",
+          zIndex: 100,
+          whiteSpace: "nowrap",
+          // opacity: showToolbar ? 0.5 : 0,
+          opacity: 0,
+          "&:hover": {
+            opacity: 1,
+          },
+        }}
+        onClick={() => {
+          addNode("CODE", { x: xPos + pod!.width! + 50, y: yPos }, pod.parent);
+        }}
+      >
+        + New Pod
+      </Button>
+    </>
+  );
+}
+
 export const CodeNode = memo<NodeProps>(function ({
   data,
   id,
@@ -536,6 +693,8 @@ export const CodeNode = memo<NodeProps>(function ({
               />
             </Box>
 
+            <NewPodButtons pod={pod} xPos={xPos} yPos={yPos} />
+
             {/* The header of code pods. */}
             <Box>
               {devMode && (
@@ -549,7 +708,7 @@ export const CodeNode = memo<NodeProps>(function ({
                   className="nodrag"
                 >
                   {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w:{" "}
-                  {pod.width}, h: {pod.height})
+                  {pod.width}, h: {pod.height}), parent: {pod.parent}
                 </Box>
               )}
               <Box
