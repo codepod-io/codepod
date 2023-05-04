@@ -99,7 +99,6 @@ import {
   FloatingWrapper,
   useMention,
 } from "@remirror/react";
-import { WysiwygEditor } from "@remirror/react-editors/wysiwyg";
 import { FloatingToolbar, useExtensionEvent } from "@remirror/react";
 import { TableExtension } from "@remirror/extension-react-tables";
 import { GenIcon, IconBase } from "@remirror/react-components";
