@@ -1007,8 +1007,9 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     let y1s = tmpNodes.map((node) => node.y);
     let miny = Math.min(...y1s);
     // calculate the offset, leave 50 padding for the scope.
-    const offsetx = 50 - minx;
-    const offsety = 50 - miny;
+    const padding = 50;
+    const offsetx = padding - minx;
+    const offsety = padding - miny;
     // move the nodes
     tmpNodes.forEach((node) => {
       node.x += offsetx;
@@ -1040,12 +1041,12 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       const scope = nodesMap.get(scopeId);
       nodesMap.set(scopeId, {
         ...scope!,
-        width: maxx - minx + 100,
-        height: maxy - minx + 100,
+        width: maxx - minx + padding * 2,
+        height: maxy - minx + padding * 2,
         style: {
           ...scope!.style,
-          width: maxx - minx + 100,
-          height: maxy - minx + 100,
+          width: maxx - minx + padding * 2,
+          height: maxy - minx + padding * 2,
         },
       });
     }
@@ -1081,7 +1082,7 @@ function forceCollideRect() {
   let nodes;
 
   function force(alpha) {
-    const padding = 0;
+    const padding = 5;
     const quad = quadtree(
       nodes,
       (d: NodeType) => d.x,
@@ -1165,12 +1166,13 @@ function fitChildren(
   let maxy = Math.max(...y2s);
   let width = maxx - minx;
   let height = maxy - miny;
+  const padding = 50;
   return {
     // leave a 50 padding for the scope.
-    x: minx - 50,
-    y: miny - 50,
-    width: width + 100,
-    height: height + 100,
+    x: minx - padding,
+    y: miny - padding,
+    width: width + padding * 2,
+    height: height + padding * 2,
   };
 }
 
