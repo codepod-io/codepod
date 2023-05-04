@@ -387,7 +387,7 @@ function NewPodButtons({ pod, xPos, yPos }) {
           addNode("CODE", { x: xPos, y: yPos + pod!.height! + 50 }, pod.parent);
         }}
       >
-        + New Pod
+        + Code
       </Button>
 
       {/* Bottom 2 */}
@@ -408,10 +408,10 @@ function NewPodButtons({ pod, xPos, yPos }) {
           },
         }}
         onClick={() => {
-          addNode("CODE", { x: xPos, y: yPos + pod!.height! + 50 }, pod.parent);
+          addNode("RICH", { x: xPos, y: yPos + pod!.height! + 50 }, pod.parent);
         }}
       >
-        + New Pod
+        + Note
       </Button>
       {/* Left 1 */}
       <Button
@@ -435,7 +435,7 @@ function NewPodButtons({ pod, xPos, yPos }) {
           addNode("CODE", { x: xPos - pod!.width! - 50, y: yPos }, pod.parent);
         }}
       >
-        + New Pod
+        + Code
       </Button>
 
       {/* Left 2 */}
@@ -457,10 +457,10 @@ function NewPodButtons({ pod, xPos, yPos }) {
           },
         }}
         onClick={() => {
-          addNode("CODE", { x: xPos - pod!.width! - 50, y: yPos }, pod.parent);
+          addNode("RICH", { x: xPos - pod!.width! - 50, y: yPos }, pod.parent);
         }}
       >
-        + New Pod
+        + Note
       </Button>
 
       {/* Right 1 */}
@@ -485,7 +485,7 @@ function NewPodButtons({ pod, xPos, yPos }) {
           addNode("CODE", { x: xPos + pod!.width! + 50, y: yPos }, pod.parent);
         }}
       >
-        + New Pod
+        + Code
       </Button>
 
       {/* Right 2 */}
@@ -507,10 +507,10 @@ function NewPodButtons({ pod, xPos, yPos }) {
           },
         }}
         onClick={() => {
-          addNode("CODE", { x: xPos + pod!.width! + 50, y: yPos }, pod.parent);
+          addNode("RICH", { x: xPos + pod!.width! + 50, y: yPos }, pod.parent);
         }}
       >
-        + New Pod
+        + Note
       </Button>
     </>
   );
