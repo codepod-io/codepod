@@ -284,7 +284,7 @@ function compileListComprehension(node: Parser.SyntaxNode, st: any) {
 }
 
 function compileForStatement(node: Parser.SyntaxNode, st: any) {
-  let [left, right, body] = node.namedChildren;
+  let [left, right, body] = node.namedChildren.filter(notComment);
   compileExpression(right, st);
   st = union(st, compileLHS(left, st));
   compileBlock(body, st);
