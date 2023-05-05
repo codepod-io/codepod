@@ -122,3 +122,7 @@
 .hovered {
   background: #7963d222;
 }
+
+.react-flow__edges {
+  z-index: 9999 !important;
+}
