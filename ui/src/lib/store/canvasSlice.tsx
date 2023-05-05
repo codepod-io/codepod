@@ -1053,7 +1053,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       // .force("charge", d3.forceManyBody())
       // .force("center", forceCenter(0, 0))
       .stop();
-    simulation.tick(1);
+    simulation.tick(10);
     tmpNodes.forEach((node) => {
       node.x -= node.width! / 2;
       node.y -= node.height! / 2;
