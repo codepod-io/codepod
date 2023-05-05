@@ -723,7 +723,7 @@ function compileExpression(node: Parser.SyntaxNode, st) {
       return compileExpression(obj, st);
     case "binary_operator":
     case "boolean_operator": {
-      let [left, , right] = node.namedChildren.filter(notComment);
+      let [left, right] = node.namedChildren.filter(notComment);
       compileExpression(left, st);
       compileExpression(right, st);
       return new Set();
