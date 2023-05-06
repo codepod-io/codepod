@@ -281,6 +281,8 @@ export interface CanvasSlice {
     parent: string
   ) => void;
 
+  setNodeWidth: (id: string, width: number) => void;
+
   pastingNodes?: Node[];
   headPastingNodes?: Set<string>;
   mousePos?: XYPosition | undefined;
@@ -450,6 +452,22 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     if (get().autoRunLayout) {
       get().autoForceGlobal();
     }
+  },
+
+  setNodeWidth: (id, width) => {
+    let nodesMap = get().ydoc.getMap<Node>("pods");
+    let node = nodesMap.get(id);
+    if (!node) return;
+    nodesMap.set(id, { ...node, width });
+    let geoData = {
+      parent: node.parentNode ? node.parentNode : "ROOT",
+      x: node.position.x,
+      y: node.position.y,
+      width: node.width!,
+      height: node.height!,
+    };
+    get().setPodGeo(node.id, geoData, true);
+    get().updateView();
   },
 
   isPasting: false,
