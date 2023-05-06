@@ -27,6 +27,7 @@ import { RepoContext } from "../lib/store";
 import useMe from "../lib/me";
 import { FormControlLabel, FormGroup, Stack, Switch } from "@mui/material";
 import { getUpTime } from "../lib/utils";
+import { toSvg } from "html-to-image";
 
 function Flex(props) {
   return (
@@ -452,6 +453,9 @@ function ExportFile() {
   return (
     <>
       <Button
+        variant="outlined"
+        size="small"
+        color="secondary"
         onClick={() => {
           // call export graphQL api to get the AWS S3 url
           exportJSON({ variables: { repoId } });
@@ -484,6 +488,9 @@ function ExportJSON() {
   return (
     <>
       <Button
+        variant="outlined"
+        size="small"
+        color="secondary"
         onClick={() => {
           // call export graphQL api to get the AWS S3 url
           exportJSON({ variables: { repoId } });
@@ -494,6 +501,58 @@ function ExportJSON() {
       </Button>
       {error && <Box>Error: {error.message}</Box>}
     </>
+  );
+}
+
+function ExportSVG() {
+  // The name should contain the name of the repo, the ID of the repo, and the current date
+  const { id: repoId } = useParams();
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const repoName = useStore(store, (state) => state.repoName);
+  const filename = `${repoName?.replaceAll(
+    " ",
+    "-"
+  )}-${repoId}-${new Date().toISOString()}.svg`;
+
+  const onClick = () => {
+    const elem = document.querySelector(".react-flow");
+    if (!elem) return;
+    toSvg(elem as HTMLElement, {
+      filter: (node) => {
+        // we don't want to add the minimap and the controls to the image
+        if (
+          node?.classList?.contains("react-flow__minimap") ||
+          node?.classList?.contains("react-flow__controls")
+        ) {
+          return false;
+        }
+
+        return true;
+      },
+    }).then((dataUrl) => {
+      const a = document.createElement("a");
+
+      a.setAttribute("download", filename);
+      a.setAttribute("href", dataUrl);
+      a.click();
+    });
+  };
+
+  return (
+    <Button variant="outlined" size="small" color="secondary" onClick={onClick}>
+      Download Image
+    </Button>
+  );
+}
+
+function ExportButtons() {
+  return (
+    <Stack spacing={1}>
+      <ExportFile />
+      <ExportJSON />
+      <ExportSVG />
+    </Stack>
   );
 }
 
@@ -571,8 +630,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
             <Divider />
             <Typography variant="h6">Export to ..</Typography>
-            <ExportFile />
-            <ExportJSON />
+            <ExportButtons />
+
             <Divider />
             <Typography variant="h6">Site Settings</Typography>
             <SidebarSettings />
