@@ -600,7 +600,8 @@ function CanvasImpl() {
             let mousePos = project({ x: event.clientX, y: event.clientY });
             let scope = getScopeAtPos(mousePos, node.id);
             let toScope = scope ? scope.id : "ROOT";
-            if (toScope !== node.parentNode) {
+            const parentScope = node.parentNode ? node.parentNode : "ROOT";
+            if (toScope !== parentScope) {
               moveIntoScope(node.id, toScope);
             }
             // update view manually to remove the drag highlight.
