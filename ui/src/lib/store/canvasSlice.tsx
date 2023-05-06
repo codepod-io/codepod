@@ -281,6 +281,8 @@ export interface CanvasSlice {
     parent: string
   ) => void;
 
+  setNodeCharWidth: (id: string, width: number) => void;
+
   pastingNodes?: Node[];
   headPastingNodes?: Set<string>;
   mousePos?: XYPosition | undefined;
@@ -444,11 +446,35 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       // we don't assign its parent when created, because we have to adjust its position to make it inside its parent.
       get().moveIntoScope(node.id, parent);
     }
+    // Set initial width as about 30 characters.
+    get().setNodeCharWidth(node.id, 30);
     get().updateView();
     // run auto-layout
     if (get().autoRunLayout) {
       get().autoForceGlobal();
     }
+  },
+
+  setNodeCharWidth: (id, width) => {
+    let nodesMap = get().ydoc.getMap<Node>("pods");
+    let node = nodesMap.get(id);
+    if (!node) return;
+    // I'll need to map this character width into the width of the node, taking into consideration of the font size.
+    console.log("setNodeCharWidth", width, node.data.level);
+    // calculate the actual width given the fontSzie and the character width
+    const fontsize = get().level2fontsize(node.data.level);
+    // the fontSize is in pt, but the width is in px
+    width = width * fontsize * 0.67;
+    nodesMap.set(id, { ...node, width, style: { ...node.style, width } });
+    let geoData = {
+      parent: node.parentNode ? node.parentNode : "ROOT",
+      x: node.position.x,
+      y: node.position.y,
+      width: width,
+      height: node.height!,
+    };
+    get().setPodGeo(node.id, geoData, true);
+    get().updateView();
   },
 
   isPasting: false,
@@ -629,27 +655,33 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       console.warn("Node not found", node);
       return;
     }
+    let fromLevel = node?.data.level;
     let toLevel: number;
     let position: XYPosition;
     if (scopeId === "ROOT") {
       toLevel = 0;
       position = getAbsPos(node, nodesMap);
     } else {
-    let scope = nodesMap.get(scopeId);
-    if (!node || !scope) {
+      let scope = nodesMap.get(scopeId);
+      if (!node || !scope) {
         console.warn("Scope not found", scope);
-      return;
-    }
+        return;
+      }
       toLevel = scope.data.level + 1;
-    // FIXME: since richNode and codeNode doesn't have height when it's created, we have to pass its height manually in case crash.
-    const nodeHeight = get().getPod(nodeId)?.height || 0;
+      // FIXME: since richNode and codeNode doesn't have height when it's created, we have to pass its height manually in case crash.
+      const nodeHeight = get().getPod(nodeId)?.height || 0;
       position = getNodePositionInsideScope(node, scope, nodesMap, nodeHeight);
     }
+    // need to adjust the node width according to the from and to scopes
+    const fromFontSize = get().level2fontsize(fromLevel);
+    const toFontSize = get().level2fontsize(toLevel);
+    const newWidth = node.width! * (toFontSize / fromFontSize);
     // create the new node
     let newNode: Node = {
       ...node,
       position,
       parentNode: scopeId === "ROOT" ? undefined : scopeId,
+      width: newWidth,
       data: {
         ...node.data,
         level: toLevel,

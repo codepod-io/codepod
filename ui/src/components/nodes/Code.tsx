@@ -21,6 +21,7 @@ import ReactFlow, {
   MarkerType,
   Node,
   NodeProps,
+  useStore as useReactFlowStore,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -106,7 +107,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
                       borderTopLeftRadius: "20px",
                       borderTopRightRadius: "20px",
                       display: "flex",
-                      fontSize: "14px",
+                      fontSize: "0.8em",
                     }}
                   >
                     <CheckCircleIcon
@@ -139,7 +140,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
             }}
             sx={[
               {
-                fontSize: 10,
+                fontSize: "0.8em",
                 paddingTop: "3px",
                 paddingBottom: "2px",
                 lineHeight: "10px",
@@ -155,7 +156,10 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
             Hide output
           </Button>
           {stdout && (
-            <Box whiteSpace="pre-wrap" sx={{ fontSize: 10, paddingBottom: 1 }}>
+            <Box
+              whiteSpace="pre-wrap"
+              sx={{ fontSize: "0.8em", paddingBottom: 1 }}
+            >
               <Ansi>{stdout}</Ansi>
             </Box>
           )}
@@ -163,7 +167,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
             <Box
               sx={{
                 display: "flex",
-                fontSize: 10,
+                fontSize: "0.8em",
                 flexDirection: "row",
                 alignItems: "center",
                 borderTop: "1px solid rgb(214, 222, 230)",
@@ -178,7 +182,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
           {error?.stacktrace && (
             <Box>
               <Box>StackTrace</Box>
-              <Box whiteSpace="pre-wrap" sx={{ fontSize: 10 }}>
+              <Box whiteSpace="pre-wrap" sx={{ fontSize: "0.8em" }}>
                 <Ansi>{error.stacktrace.join("\n")}</Ansi>
               </Box>
             </Box>
@@ -195,7 +199,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
         >
           <Box
             sx={{
-              fontSize: 10,
+              fontSize: "0.8em",
               color: "rgb(151, 151, 151)",
               whiteSpace: "pre",
               paddingTop: "2px",
@@ -208,7 +212,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
               setShowOutput(!showOutput);
             }}
             sx={{
-              fontSize: 10,
+              fontSize: "0.8em",
               paddingTop: "3px",
               paddingBottom: "2px",
               lineHeight: "10px",
@@ -274,7 +278,6 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
       {!isGuest && (
         <Tooltip title="Run (shift-enter)">
           <IconButton
-            size="small"
             onClick={() => {
               wsRun(id);
             }}
@@ -286,7 +289,6 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
       {!isGuest && (
         <Tooltip title="Run chain">
           <IconButton
-            size="small"
             onClick={() => {
               wsRunChain(id);
             }}
@@ -298,7 +300,6 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
       {!isGuest && (
         <Tooltip title="Run without rewrite">
           <IconButton
-            size="small"
             onClick={() => {
               wsRunNoRewrite(id);
             }}
@@ -312,7 +313,7 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
         options={{ debug: true, format: "text/plain", onCopy } as any}
       >
         <Tooltip title="Copy">
-          <IconButton size="small" className="copy-button">
+          <IconButton className="copy-button">
             <ContentCopyIcon fontSize="inherit" className="copy-button" />
           </IconButton>
         </Tooltip>
@@ -323,7 +324,7 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
           options={{ debug: true, format: "text/plain", onCopy: onCut } as any}
         >
           <Tooltip title="Cut">
-            <IconButton size="small">
+            <IconButton>
               <ContentCutIcon fontSize="inherit" />
             </IconButton>
           </Tooltip>
@@ -332,7 +333,6 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
       {!isGuest && (
         <Tooltip title="Delete">
           <IconButton
-            size="small"
             onClick={() => {
               // Delete all edges connected to the node.
               reactFlowInstance.deleteElements({ nodes: [{ id }] });
@@ -344,7 +344,6 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
       )}
       <Tooltip title="Change layout">
         <IconButton
-          size="small"
           onClick={() => {
             setLayout(layout === "bottom" ? "right" : "bottom");
           }}
@@ -353,7 +352,7 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
         </IconButton>
       </Tooltip>
       <Box className="custom-drag-handle" sx={{ cursor: "grab" }}>
-        <DragIndicatorIcon fontSize="small" />
+        <DragIndicatorIcon fontSize="inherit" />
       </Box>
     </Box>
   );
@@ -430,12 +429,68 @@ export const CodeNode = memo<NodeProps>(function ({
     }
   }, [data.name, setPodName, id]);
 
+  const zoomLevel = useReactFlowStore((s) => s.transform[2]);
+  const contextualZoom = useStore(store, (state) => state.contextualZoom);
+  const level2fontsize = useStore(store, (state) => state.level2fontsize);
+
   // if (!pod) throw new Error(`Pod not found: ${id}`);
 
   if (!pod) {
     // FIXME this will be fired when removing a node. Why?
     console.log("[WARN] CodePod rendering pod not found", id);
     return null;
+  }
+
+  const node = nodesMap.get(id);
+
+  const fontSize = level2fontsize(node?.data.level);
+  const parentFontSize = level2fontsize(node?.data.level - 1);
+
+  if (
+    contextualZoom &&
+    node?.data.level > 0 &&
+    parentFontSize * zoomLevel < 8
+  ) {
+    // The parent scope is not shown, this node is not gonna be rendered at all.
+    return <Box></Box>;
+  }
+
+  if (contextualZoom && fontSize * zoomLevel < 8) {
+    // Return a collapsed block.
+    let text = pod.content;
+    if (text) {
+      const index = text.indexOf("\n");
+      if (index !== -1) {
+        text = text.substring(0, index);
+      }
+    }
+    text = text || "Empty";
+    return (
+      <Box
+        sx={{
+          fontSize: fontSize * 4,
+          background: "#eee",
+          borderRadius: "5px",
+          border: "5px solid red",
+          textAlign: "center",
+          height: pod.height,
+          width: pod.width,
+          color: "green",
+        }}
+        className="custom-drag-handle"
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          {text}
+        </Box>
+      </Box>
+    );
   }
 
   // onsize is banned for a guest, FIXME: ugly code
@@ -481,6 +536,7 @@ export const CodeNode = memo<NodeProps>(function ({
         }}
         sx={{
           cursor: "auto",
+          fontSize,
         }}
       >
         {Wrap(
@@ -544,21 +600,34 @@ export const CodeNode = memo<NodeProps>(function ({
                 <Box
                   sx={{
                     position: "absolute",
-                    top: "-48px",
                     userSelect: "text",
                     cursor: "auto",
+                    // place it at the top left corner, above the pod
+                    top: 0,
+                    left: 0,
+                    transform: "translate(0, -100%)",
+                    background: "rgba(255, 255, 255, 0.8)",
+                    padding: "5px",
+                    lineHeight: "1.2",
+                    color: "#000",
                   }}
                   className="nodrag"
                 >
                   {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w:{" "}
-                  {pod.width}, h: {pod.height}), parent: {pod.parent}
+                  {pod.width}, h: {pod.height}), parent: {pod.parent} level:{" "}
+                  {node?.data.level} fontSize: {fontSize}
                 </Box>
               )}
+              {/* We actually don't need the name for a pod. Users can just write comments. */}
               <Box
                 sx={{
                   position: "absolute",
-                  top: "-24px",
-                  width: "50%",
+                  // place it at the top left corner, above the pod
+                  top: 0,
+                  left: 0,
+                  transform: "translate(0, -100%)",
+                  padding: "5px",
+                  lineHeight: "1.2",
                 }}
               >
                 <InputBase
@@ -588,12 +657,13 @@ export const CodeNode = memo<NodeProps>(function ({
               <Box
                 sx={{
                   opacity: showToolbar ? 1 : 0,
-                  marginLeft: "10px",
                   borderRadius: "4px",
                   position: "absolute",
                   border: "solid 1px #d6dee6",
-                  right: "25px",
-                  top: "-15px",
+                  // put it in the top right corner, above the pod
+                  top: 0,
+                  right: 0,
+                  transform: "translate(0, -100%)",
                   background: "white",
                   zIndex: 250,
                   justifyContent: "center",
@@ -612,7 +682,7 @@ export const CodeNode = memo<NodeProps>(function ({
                 py: 1,
               }}
             >
-              <MyMonaco id={id} gitvalue="" />
+              <MyMonaco id={id} fontSize={fontSize} />
               {showResult && (
                 <Box
                   className="nowheel"
