@@ -406,14 +406,15 @@ async function updatePod(_, { id, repoId, input }, { userId }) {
     },
     data: {
       ...input,
-      parent:
-        input.parent && input.parent !== "ROOT"
-          ? {
+      parent: input.parent
+        ? input.parent === "ROOT"
+          ? { disconnect: true }
+          : {
               connect: {
                 id: input.parent,
               },
             }
-          : undefined,
+        : undefined,
       children: {
         connect: input.children?.map((id) => ({ id })),
       },
