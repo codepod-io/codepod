@@ -432,6 +432,10 @@ export const CodeNode = memo<NodeProps>(function ({
   const zoomLevel = useReactFlowStore((s) => s.transform[2]);
   const contextualZoom = useStore(store, (state) => state.contextualZoom);
   const level2fontsize = useStore(store, (state) => state.level2fontsize);
+  const threshold = useStore(
+    store,
+    (state) => state.contextualZoomParams.threshold
+  );
 
   // if (!pod) throw new Error(`Pod not found: ${id}`);
 
@@ -449,13 +453,13 @@ export const CodeNode = memo<NodeProps>(function ({
   if (
     contextualZoom &&
     node?.data.level > 0 &&
-    parentFontSize * zoomLevel < 8
+    parentFontSize * zoomLevel < threshold
   ) {
     // The parent scope is not shown, this node is not gonna be rendered at all.
     return <Box></Box>;
   }
 
-  if (contextualZoom && fontSize * zoomLevel < 8) {
+  if (contextualZoom && fontSize * zoomLevel < threshold) {
     // Return a collapsed block.
     let text = pod.content;
     if (text) {
@@ -468,7 +472,7 @@ export const CodeNode = memo<NodeProps>(function ({
     return (
       <Box
         sx={{
-          fontSize: fontSize * 4,
+          fontSize: fontSize * 2,
           background: "#eee",
           borderRadius: "5px",
           border: "5px solid red",

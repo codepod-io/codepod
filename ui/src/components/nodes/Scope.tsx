@@ -213,6 +213,10 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   const [showToolbar, setShowToolbar] = useState(false);
 
   const contextualZoom = useStore(store, (state) => state.contextualZoom);
+  const threshold = useStore(
+    store,
+    (state) => state.contextualZoomParams.threshold
+  );
   const zoomLevel = useReactFlowStore((s) => s.transform[2]);
   const node = nodesMap.get(id);
   const level2fontsize = useStore(store, (state) => state.level2fontsize);
@@ -222,19 +226,19 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   if (
     contextualZoom &&
     node?.data.level > 0 &&
-    parentFontSize * zoomLevel < 8
+    parentFontSize * zoomLevel < threshold
   ) {
     // The parent scope is not shown, this node is not gonna be rendered at all.
     return <Box></Box>;
   }
 
-  if (contextualZoom && fontSize * zoomLevel < 8) {
+  if (contextualZoom && fontSize * zoomLevel < threshold) {
     // Return a collapsed blcok.
     let text = node?.data.name ? `${node?.data.name}` : "A Scope";
     return (
       <Box
         sx={{
-          fontSize: fontSize * 4,
+          fontSize: fontSize * 2,
           background: "#eee",
           borderRadius: "5px",
           border: "5px solid red",

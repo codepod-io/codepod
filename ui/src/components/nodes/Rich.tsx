@@ -104,6 +104,7 @@ import { FloatingToolbar, useExtensionEvent } from "@remirror/react";
 import { TableExtension } from "@remirror/extension-react-tables";
 import { GenIcon, IconBase } from "@remirror/react-components";
 import "remirror/styles/all.css";
+import "./remirror-size.css";
 
 import { ProsemirrorPlugin, cx, htmlToProsemirrorNode } from "remirror";
 import { styled } from "@mui/material";
@@ -717,6 +718,10 @@ export const RichNode = memo<Props>(function ({
   const zoomLevel = useReactFlowStore((s) => s.transform[2]);
   const contextualZoom = useStore(store, (state) => state.contextualZoom);
   const level2fontsize = useStore(store, (state) => state.level2fontsize);
+  const threshold = useStore(
+    store,
+    (state) => state.contextualZoomParams.threshold
+  );
 
   if (!pod) return null;
 
@@ -728,13 +733,13 @@ export const RichNode = memo<Props>(function ({
   if (
     contextualZoom &&
     node?.data.level > 0 &&
-    parentFontSize * zoomLevel < 8
+    parentFontSize * zoomLevel < threshold
   ) {
     // The parent scope is not shown, this node is not gonna be rendered at all.
     return <Box></Box>;
   }
 
-  if (contextualZoom && fontSize * zoomLevel < 8) {
+  if (contextualZoom && fontSize * zoomLevel < threshold) {
     // Return a collapsed block.
     let text = "";
     if (pod.content) {
@@ -746,7 +751,7 @@ export const RichNode = memo<Props>(function ({
     return (
       <Box
         sx={{
-          fontSize: fontSize * 4,
+          fontSize: fontSize * 2,
           background: "#eee",
           borderRadius: "5px",
           border: "5px solid red",
@@ -814,6 +819,7 @@ export const RichNode = memo<Props>(function ({
         }}
         sx={{
           cursor: "auto",
+          fontSize,
         }}
       >
         {" "}

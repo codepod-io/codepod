@@ -11,7 +11,7 @@ export interface SettingSlice {
   autoRunLayout?: boolean;
   setAutoRunLayout: (b: boolean) => void;
 
-  fontSizeLevels: Record<any, number>;
+  contextualZoomParams: Record<any, number>;
   contextualZoom: boolean;
   setContextualZoom: (b: boolean) => void;
   level2fontsize: (level: number) => number;
@@ -66,13 +66,14 @@ export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
     localStorage.setItem("contextualZoom", JSON.stringify(b));
   },
   // TODO Make it configurable.
-  fontSizeLevels: {
+  contextualZoomParams: {
     prev: 56,
     0: 48,
     1: 32,
     2: 24,
     3: 16,
     next: 8,
+    threshold: 16,
   },
   level2fontsize: (level: number) => {
     // default font size
@@ -80,17 +81,17 @@ export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
     // when contextual zoom is on
     switch (level) {
       case -1:
-        return get().fontSizeLevels.prev;
+        return get().contextualZoomParams.prev;
       case 0:
-        return get().fontSizeLevels[0];
+        return get().contextualZoomParams[0];
       case 1:
-        return get().fontSizeLevels[1];
+        return get().contextualZoomParams[1];
       case 2:
-        return get().fontSizeLevels[2];
+        return get().contextualZoomParams[2];
       case 3:
-        return get().fontSizeLevels[3];
+        return get().contextualZoomParams[3];
       default:
-        return get().fontSizeLevels.next;
+        return get().contextualZoomParams.next;
     }
   },
 });
