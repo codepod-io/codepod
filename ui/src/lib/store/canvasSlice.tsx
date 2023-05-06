@@ -300,7 +300,6 @@ export interface CanvasSlice {
   adjustLevel: () => void;
   getScopeAtPos: ({ x, y }: XYPosition, exclude: string) => Node | undefined;
   moveIntoScope: (nodeId: string, scopeId: string) => void;
-  moveIntoRoot: (nodeId: string) => void;
   tempUpdateView: ({ x, y }: XYPosition) => void;
 
   helperLineHorizontal: number | undefined;
@@ -620,65 +619,46 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       }
     });
   },
-  moveIntoRoot: (nodeId: string) => {
-    console.log("Moving into root", nodeId);
-    let nodesMap = get().ydoc.getMap<Node>("pods");
-    let node = nodesMap.get(nodeId);
-    if (!node) {
-      console.warn("Node not found", node);
-      return;
-    }
-    let newNode: Node = {
-      ...node,
-      parentNode: undefined,
-      data: {
-        ...node.data,
-        level: 0,
-      },
-    };
-    nodesMap.set(node.id, newNode);
-    // update zustand & db
-    get().setPodGeo(node.id, { parent: "ROOT" }, true);
-    get().adjustLevel();
-    // update view
-    get().updateView();
-  },
-
   moveIntoScope: (nodeId: string, scopeId: string) => {
     console.log(`Moving ${nodeId} into scope ${scopeId}`);
     // move a node into a scope.
     // 1. update the node's parentNode & position
     let nodesMap = get().ydoc.getMap<Node>("pods");
     let node = nodesMap.get(nodeId);
-    let scope = nodesMap.get(scopeId);
-    if (!node || !scope) {
-      console.warn("Node or scope not found", node, scope);
+    if (!node) {
+      console.warn("Node not found", node);
       return;
     }
-    // let [x, y] = getAbsPos(node, nodesMap);
-    // let position = getNodePositionInsideParent(node, scope, { x, y });
-
+    let toLevel: number;
+    let position: XYPosition;
+    if (scopeId === "ROOT") {
+      toLevel = 0;
+      position = getAbsPos(node, nodesMap);
+    } else {
+    let scope = nodesMap.get(scopeId);
+    if (!node || !scope) {
+        console.warn("Scope not found", scope);
+      return;
+    }
+      toLevel = scope.data.level + 1;
     // FIXME: since richNode and codeNode doesn't have height when it's created, we have to pass its height manually in case crash.
     const nodeHeight = get().getPod(nodeId)?.height || 0;
-    let position = getNodePositionInsideScope(
-      node,
-      scope,
-      nodesMap,
-      nodeHeight
-    );
+      position = getNodePositionInsideScope(node, scope, nodesMap, nodeHeight);
+    }
+    // create the new node
     let newNode: Node = {
       ...node,
       position,
-      parentNode: scope.id,
+      parentNode: scopeId === "ROOT" ? undefined : scopeId,
       data: {
         ...node.data,
-        level: scope.data.level + 1,
+        level: toLevel,
       },
     };
     // update peer
     nodesMap.set(node.id, newNode);
     // update zustand & db
-    get().setPodGeo(node.id, { parent: scope.id, ...position }, true);
+    get().setPodGeo(node.id, { parent: scopeId, ...position }, true);
     get().adjustLevel();
     // update view
     get().updateView();
@@ -720,10 +700,12 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       const change = changes[0];
       const movingNode = nodesMap.get(change.id)!;
 
+      // distance is the sensitivity for snapping to helper lines.
+      const distance = 10;
       const helperLines = getHelperLines(
         changes[0],
         nodes.filter((n) => n.parentNode === movingNode.parentNode),
-        10
+        distance
       );
 
       // adjust the position into absolute position
