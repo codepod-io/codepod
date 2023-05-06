@@ -1,0 +1,95 @@
+
+.remirror-theme h1 {
+    font-size: 1.5em;
+    font-weight: 600;
+    margin: 0.5em 0;
+  }
+  
+  .remirror-theme h2 {
+    font-size: 1.25em;
+    font-weight: 600;
+    margin: 0.5em 0;
+  }
+  
+  .remirror-theme h3 {
+    font-size: 1.1em;
+    font-weight: 600;
+    margin: 0.5em 0;
+  }
+  
+  .remirror-theme h4 {
+    font-size: 1em;
+    font-weight: 600;
+    margin: 0.5em 0;
+  }
+  
+  
+  .remirror-theme h5 {
+    font-size: 0.9em;
+    font-weight: 600;
+    margin: 0.5em 0;
+  }
+  
+  
+  .remirror-theme h6 {
+    font-size: 0.8em;
+    font-weight: 600;
+    margin: 0.5em 0;
+  }
+  
+  .remirror-theme p {
+    margin: 0.5em 0;
+  }
+  
+  .remirror-theme ul {
+    margin: 0.5em 0;
+  }
+  
+  .remirror-theme ol {
+    margin: 0.5em 0;
+  }
+  
+  .remirror-theme li {
+    margin: 0.5em 0;
+  }
+  
+  .remirror-theme blockquote {
+    margin: 0.5em 0;
+  }
+  
+  .remirror-theme pre {
+    margin: 0.5em 0;
+  }
+  
+  
+  .remirror-theme code {
+    font-family: monospace;
+    font-size: 0.9em;
+    background: #f5f5f5;
+    padding: 0.1em 0.2em;
+    border-radius: 4px;
+  }
+  
+  
+  .remirror-theme hr {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 0.5em 0;
+  }
+  
+  
+  .remirror-theme table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    margin: 0.5em 0;
+  }
+  
+  
+  .remirror-theme table td,
+  .remirror-theme table th {
+    border: 1px solid #ddd;
+    padding: 0.5em 1em;
+  }
+  
+  
+  

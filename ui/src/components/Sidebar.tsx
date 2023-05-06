@@ -50,6 +50,8 @@ function SidebarSettings() {
   const setDevMode = useStore(store, (state) => state.setDevMode);
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
   const setAutoRunLayout = useStore(store, (state) => state.setAutoRunLayout);
+  const contextualZoom = useStore(store, (state) => state.contextualZoom);
+  const setContextualZoom = useStore(store, (state) => state.setContextualZoom);
   return (
     <Box>
       <Box>
@@ -90,6 +92,23 @@ function SidebarSettings() {
                 />
               }
               label="Auto Run Layout"
+            />
+          </FormGroup>
+        </Tooltip>
+        <Tooltip title={"Enable contextual zoom."} disableInteractive>
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={contextualZoom}
+                  size="small"
+                  color="warning"
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setContextualZoom(event.target.checked);
+                  }}
+                />
+              }
+              label="Contextual Zoom"
             />
           </FormGroup>
         </Tooltip>

@@ -29,6 +29,7 @@ import ReactFlow, {
   ConnectionMode,
   MarkerType,
   Node,
+  useStore as useReactFlowStore,
 } from "reactflow";
 import "reactflow/dist/style.css";
 import Ansi from "ansi-to-react";
@@ -103,6 +104,7 @@ import { FloatingToolbar, useExtensionEvent } from "@remirror/react";
 import { TableExtension } from "@remirror/extension-react-tables";
 import { GenIcon, IconBase } from "@remirror/react-components";
 import "remirror/styles/all.css";
+import "./remirror-size.css";
 
 import { ProsemirrorPlugin, cx, htmlToProsemirrorNode } from "remirror";
 import { styled } from "@mui/material";
@@ -713,7 +715,66 @@ export const RichNode = memo<Props>(function ({
     }
   }, [data.name, setPodName, id]);
 
+  const zoomLevel = useReactFlowStore((s) => s.transform[2]);
+  const contextualZoom = useStore(store, (state) => state.contextualZoom);
+  const level2fontsize = useStore(store, (state) => state.level2fontsize);
+  const threshold = useStore(
+    store,
+    (state) => state.contextualZoomParams.threshold
+  );
+
   if (!pod) return null;
+
+  const node = nodesMap.get(id);
+
+  const fontSize = level2fontsize(node?.data.level);
+  const parentFontSize = level2fontsize(node?.data.level - 1);
+
+  if (
+    contextualZoom &&
+    node?.data.level > 0 &&
+    parentFontSize * zoomLevel < threshold
+  ) {
+    // The parent scope is not shown, this node is not gonna be rendered at all.
+    return <Box></Box>;
+  }
+
+  if (contextualZoom && fontSize * zoomLevel < threshold) {
+    // Return a collapsed block.
+    let text = "";
+    if (pod.content) {
+      // let json = JSON.parse(pod.content);
+      const plain = prosemirrorToPlainText(pod.content);
+      text = plain.split("\n")[0];
+    }
+    text = text || "Empty";
+    return (
+      <Box
+        sx={{
+          fontSize: fontSize * 2,
+          background: "#eee",
+          borderRadius: "5px",
+          border: "5px solid red",
+          textAlign: "center",
+          height: pod.height,
+          width: pod.width,
+          color: "darkorchid",
+        }}
+        className="custom-drag-handle"
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          {text}
+        </Box>
+      </Box>
+    );
+  }
 
   // onsize is banned for a guest, FIXME: ugly code
   const Wrap = (child) =>
@@ -758,6 +819,7 @@ export const RichNode = memo<Props>(function ({
         }}
         sx={{
           cursor: "auto",
+          fontSize,
         }}
       >
         {" "}
@@ -885,3 +947,52 @@ export const RichNode = memo<Props>(function ({
     </>
   );
 });
+
+function prosemirrorToPlainText(prosemirrorJson) {
+  let plainText = "";
+
+  // Iterate through each node in the prosemirror JSON object
+  prosemirrorJson.content.forEach((node) => {
+    // Handle each node type
+    switch (node.type) {
+      // Handle paragraph nodes
+      case "paragraph": {
+        // Iterate through each child of the paragraph
+        if (node.content) {
+          node.content.forEach((child) => {
+            // If the child is text, add its value to the plainText string
+            if (child.type === "text") {
+              plainText += child.text;
+            }
+          });
+          // Add a newline character after the paragraph
+          plainText += "\n";
+        }
+        break;
+      }
+      // Handle heading nodes
+      case "heading": {
+        // Add the heading text to the plainText string
+        node.content.forEach((child) => {
+          // If the child is text, add its value to the plainText string
+          if (child.type === "text") {
+            plainText += child.text;
+          }
+        });
+        // Add two newline characters after the heading
+        plainText += "\n\n";
+        break;
+      }
+      // Handle other node types
+      default: {
+        // If the node has content, recursively call the function on its content
+        if (node.content) {
+          plainText += prosemirrorToPlainText(node);
+        }
+        break;
+      }
+    }
+  });
+
+  return plainText;
+}

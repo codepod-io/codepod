@@ -21,6 +21,7 @@ import ReactFlow, {
   MarkerType,
   Node,
   NodeProps,
+  useStore as useReactFlowStore,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -97,7 +98,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
       {!isGuest && (
         <Tooltip title="Run (shift-enter)">
           <IconButton
-            size="small"
             onClick={() => {
               wsRunScope(id);
             }}
@@ -110,7 +110,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
       {!isGuest && (
         <Tooltip title="force layout">
           <IconButton
-            size="small"
             onClick={() => {
               autoForce(id);
             }}
@@ -138,7 +137,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
         options={{ debug: true, format: "text/plain", onCopy } as any}
       >
         <Tooltip title="Copy">
-          <IconButton size="small" className="copy-button">
+          <IconButton className="copy-button">
             <ContentCopyIcon fontSize="inherit" className="copy-button" />
           </IconButton>
         </Tooltip>
@@ -150,7 +149,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
           options={{ debug: true, format: "text/plain", onCopy: onCut } as any}
         >
           <Tooltip title="Cut">
-            <IconButton size="small">
+            <IconButton>
               <ContentCutIcon fontSize="inherit" />
             </IconButton>
           </Tooltip>
@@ -159,7 +158,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
       {!isGuest && (
         <Tooltip title="Delete" className="nodrag">
           <IconButton
-            size="small"
             onClick={(e: any) => {
               // This does not work, will throw "Parent node
               // jqgdsz2ns6k57vich0bf not found" when deleting a scope.
@@ -175,7 +173,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
         </Tooltip>
       )}
       <Box className="custom-drag-handle" sx={{ cursor: "grab" }}>
-        <DragIndicatorIcon fontSize="small" />
+        <DragIndicatorIcon fontSize="inherit" />
       </Box>
     </Box>
   );
@@ -214,6 +212,57 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
 
   const [showToolbar, setShowToolbar] = useState(false);
 
+  const contextualZoom = useStore(store, (state) => state.contextualZoom);
+  const threshold = useStore(
+    store,
+    (state) => state.contextualZoomParams.threshold
+  );
+  const zoomLevel = useReactFlowStore((s) => s.transform[2]);
+  const node = nodesMap.get(id);
+  const level2fontsize = useStore(store, (state) => state.level2fontsize);
+  const fontSize = level2fontsize(node?.data.level);
+  const parentFontSize = level2fontsize(node?.data.level - 1);
+
+  if (
+    contextualZoom &&
+    node?.data.level > 0 &&
+    parentFontSize * zoomLevel < threshold
+  ) {
+    // The parent scope is not shown, this node is not gonna be rendered at all.
+    return <Box></Box>;
+  }
+
+  if (contextualZoom && fontSize * zoomLevel < threshold) {
+    // Return a collapsed blcok.
+    let text = node?.data.name ? `${node?.data.name}` : "A Scope";
+    return (
+      <Box
+        sx={{
+          fontSize: fontSize * 2,
+          background: "#eee",
+          borderRadius: "5px",
+          border: "5px solid red",
+          textAlign: "center",
+          height: pod.height,
+          width: pod.width,
+          color: "deeppink",
+        }}
+        className="custom-drag-handle scope-block"
+      >
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+          }}
+        >
+          {text}
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <Box
       ref={ref}
@@ -223,6 +272,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
         border: isCutting ? "dashed 2px red" : "solid 1px #d6dee6",
         borderRadius: "4px",
         cursor: "auto",
+        fontSize,
       }}
       onMouseEnter={() => {
         setShowToolbar(true);
@@ -305,8 +355,8 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
               cursor: "auto",
             }}
           >
-            {id} at ({xPos}, {yPos}), w: {pod.width}, h: {pod.height} level:{" "}
-            {data.level}
+            {id} at ({xPos}, {yPos}), w: {pod.width}, h: {pod.height} parent:{" "}
+            {pod.parent} level: {data.level} fontSize: {fontSize}
           </Box>
         )}
         <Grid container spacing={2} sx={{ alignItems: "center" }}>
@@ -321,6 +371,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
                 display: "flex",
                 flexGrow: 1,
                 justifyContent: "center",
+                fontSize,
               }}
             >
               <InputBase
@@ -345,6 +396,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
                     padding: "0px",
                     textAlign: "center",
                     textOverflow: "ellipsis",
+                    fontSize,
                   },
                 }}
               ></InputBase>

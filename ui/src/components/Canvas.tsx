@@ -23,6 +23,7 @@ import ReactFlow, {
   Node,
   ReactFlowProvider,
   Edge,
+  useViewport,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -213,12 +214,6 @@ function useInitNodes() {
         console.warn(
           "The yjs server is not consistent with the database. Resetting the yjs server"
         );
-        // throw new Error("Inconsistent state");
-        //
-        // CAUTION should not use nodesMap.clear(), as it would delete all
-        // nodes! Both local and in database.
-        let nodesMap2 = new Map<string, Node>();
-        nodes.forEach((node) => nodesMap2.set(node.id, node));
         // Not only should we set nodes, but also delete.
         nodesMap.clear();
         // add the nodes, so that the nodesMap is consistent with the database.
@@ -467,6 +462,30 @@ function CanvasImplWrap() {
   return (
     <Box sx={{ height: "100%" }} ref={reactFlowWrapper}>
       <CanvasImpl />
+      <ViewportInfo />
+    </Box>
+  );
+}
+
+function ViewportInfo() {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const { x, y, zoom } = useViewport();
+  return (
+    <Box
+      sx={{
+        position: "absolute",
+        bottom: 0,
+        right: 0,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        color: "white",
+        padding: 1,
+        fontSize: 12,
+        borderRadius: 1,
+        zIndex: 100,
+      }}
+    >
+      {`x: ${x.toFixed(2)}, y: ${y.toFixed(2)}, zoom: ${zoom.toFixed(2)}`}
     </Box>
   );
 }

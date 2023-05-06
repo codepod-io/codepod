@@ -2,6 +2,7 @@ import { Position } from "monaco-editor";
 import { useState, useContext, memo, useCallback, useEffect } from "react";
 import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
 import { monaco } from "react-monaco-editor";
+import { Node } from "reactflow";
 import { useStore } from "zustand";
 import { RepoContext } from "../lib/store";
 import { MonacoBinding } from "y-monaco";
@@ -373,12 +374,12 @@ async function updateGitGutter(editor) {
 
 interface MyMonacoProps {
   id: string;
-  gitvalue: string;
+  fontSize: number;
 }
 
 export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   id = "0",
-  gitvalue = null,
+  fontSize = 14,
 }) {
   // there's no racket language support
   console.debug("[perf] rendering MyMonaco", id);
@@ -535,6 +536,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
           alwaysConsumeMouseWheel: false,
           vertical: "hidden",
         },
+        fontSize,
       }}
       onChange={onChange}
       editorDidMount={onEditorDidMount}
