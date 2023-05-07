@@ -15,25 +15,35 @@ function collectSymbolTables({ id, get }: { id: string; get: () => MyState }) {
   let pods = get().pods;
   let pod = pods[id];
   // Collect from parent scope.
-  if (!pod.parent) return {};
-  let allSymbolTables = pods[pod.parent].children.map(({ id, type }) => {
-    // FIXME make this consistent, CODE, POD, DECK, SCOPE; use enums
-    if (pods[id].type === "CODE") {
-      return pods[id].symbolTable || {};
-    } else {
-      // FIXME dfs, or re-export?
-      let tables = (pods[id].children || [])
-        .filter(({ id }) => pods[id].ispublic)
-        .map(({ id }) => pods[id].symbolTable);
-      return Object.assign({}, ...tables);
-    }
-  });
+  let parentId = pod.parent;
+  let allSymbolTables: Record<string, string>[] = [];
+  // do this for all ancestor scopes.
+  while (parentId) {
+    let siblings = get().node2children.get(parentId) || [];
+    const tables = siblings.map((id) => {
+      // FIXME make this consistent, CODE, POD, DECK, SCOPE; use enums
+      if (pods[id].type === "CODE") {
+        return pods[id].symbolTable || {};
+      } else {
+        // FIXME dfs, or re-export?
+        let tables = (pods[id].children || [])
+          .filter(({ id }) => pods[id].ispublic)
+          .map(({ id }) => pods[id].symbolTable);
+        return Object.assign({}, ...tables);
+      }
+    });
+    allSymbolTables.push(Object.assign({}, ...tables));
+    if (parentId === "ROOT") break;
+    let parentPod = pods[parentId];
+    parentId = parentPod.parent;
+  }
+  // collect from all ancestor scopes.
   // Collect from scopes by Arrows.
   const edges = get().edges;
   edges.forEach(({ source, target }) => {
     if (target === pod.parent) {
       if (pods[source].type === "CODE") {
-        allSymbolTables.push(pods[target].symbolTable);
+        allSymbolTables.push(pods[target].symbolTable || {});
       } else {
         let tables = (pods[source].children || [])
           .filter(({ id }) => pods[id].ispublic)
@@ -350,7 +360,6 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
   },
   wsRunScope: async (id) => {
     // This is a separate function only because we need to build the node2children map first.
-    get().buildNode2Children();
     get().wsRun(id);
   },
   /**

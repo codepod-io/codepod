@@ -206,6 +206,10 @@ function useInitNodes() {
   const updateView = useStore(store, (state) => state.updateView);
   const updateEdgeView = useStore(store, (state) => state.updateEdgeView);
   const adjustLevel = useStore(store, (state) => state.adjustLevel);
+  const buildNode2Children = useStore(
+    store,
+    (state) => state.buildNode2Children
+  );
   useEffect(() => {
     const init = () => {
       let nodes = store2nodes("ROOT", { getId2children, getPod });
@@ -255,6 +259,7 @@ function useInitNodes() {
       }
       updateEdgeView();
       setLoading(false);
+      buildNode2Children();
     };
 
     if (!provider) return;

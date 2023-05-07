@@ -315,7 +315,6 @@ export interface CanvasSlice {
 
   node2children: Map<string, string[]>;
   buildNode2Children: () => void;
-  autoLayout: () => void;
   autoForce: (scopeId: string) => void;
   autoForceGlobal: () => void;
 }
@@ -694,6 +693,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     get().adjustLevel();
     // update view
     get().updateView();
+    get().buildNode2Children();
   },
 
   tempUpdateView: (position) => {
@@ -855,6 +855,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           nodesMap.delete(change.id);
           // remove from store
           get().deletePod(client, { id: change.id });
+          // run auto-layout
+          get().autoForceGlobal();
           break;
         default:
           // should not reach here.
@@ -925,10 +927,12 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
    */
   node2children: new Map<string, string[]>(),
   buildNode2Children: () => {
+    // console.log("Building node2children..");
     // build a map from node to its children
     let nodesMap = get().ydoc.getMap<Node>("pods");
     let nodes: Node[] = Array.from(nodesMap.values());
     let node2children = new Map<string, string[]>();
+    node2children.set("ROOT", []);
     nodes.forEach((node) => {
       if (!node2children.has(node.id)) {
         node2children.set(node.id, []);
@@ -938,75 +942,16 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           node2children.set(node.parentNode, []);
         }
         node2children.get(node.parentNode)?.push(node.id);
+      } else {
+        node2children.get("ROOT")?.push(node.id);
       }
     });
     set({ node2children });
-  },
-  autoLayout: () => {
-    // Auto layout the nodes.
-    // Find all the scope nodes, and change its width and height to fit its children nodes.
-    let nodesMap = get().ydoc.getMap<Node>("pods");
-    let nodes: Node[] = Array.from(nodesMap.values());
-    get().buildNode2Children();
-    // fit the children.
-    nodes
-      // sort the children so that the inner scope gets processed first.
-      .sort((a: Node, b: Node) => b.data.level - a.data.level)
-      .forEach((node) => {
-        let newSize = fitChildren(node, get().node2children, nodesMap);
-        if (newSize === null) return;
-        let { x, y, width, height } = newSize;
-        let newNode = {
-          ...node,
-          position: {
-            x: node.position.x + x,
-            y: node.position.y + y,
-          },
-          width,
-          height,
-          style: {
-            ...node.style,
-            width,
-            height,
-          },
-        };
-        nodesMap.set(node.id, newNode);
-        // I actually need to set the children's position as well, because they are relative to the parent.
-        let children = get().node2children.get(node.id);
-        children?.forEach((child) => {
-          let n = nodesMap.get(child)!;
-          let newChild = {
-            ...n,
-            position: {
-              x: n.position.x - x,
-              y: n.position.y - y,
-            },
-          };
-          nodesMap.set(child, newChild);
-        });
-      });
-    // trigger update to the db
-    // get the most recent nodes
-    nodes = Array.from(nodesMap.values());
-    nodes.forEach((node) => {
-      // trigger update to the DB
-      let geoData = {
-        parent: node.parentNode ? node.parentNode : "ROOT",
-        x: node.position.x,
-        y: node.position.y,
-        width: node.width!,
-        height: node.height!,
-      };
-      get().setPodGeo(node.id, geoData, true);
-    });
-    // update the view
-    get().updateView();
   },
   autoForceGlobal: () => {
     // get all scopes,
     let nodesMap = get().ydoc.getMap<Node>("pods");
     let nodes: Node[] = Array.from(nodesMap.values());
-    get().buildNode2Children();
     nodes
       // sort the children so that the inner scope gets processed first.
       .sort((a: Node, b: Node) => b.data.level - a.data.level)
@@ -1023,6 +968,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
    */
   autoForce: (scopeId) => {
     // 1. get all the nodes and edges in the scope
+    let nodesMap = get().ydoc.getMap<Node>("pods");
     const nodes = get().nodes.filter(
       (node) => node.parentNode === (scopeId === "ROOT" ? undefined : scopeId)
     );
@@ -1041,7 +987,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       target: edge.target,
       target0: 1,
     }));
-    const nodesMap = get().ydoc.getMap<Node>("pods");
     // 2. construct a D3 tree for the nodes and their connections
     // initialize the tree layout (see https://observablehq.com/@d3/tree for examples)
     // const hierarchy = stratify<Node>()
