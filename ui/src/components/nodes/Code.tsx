@@ -395,29 +395,32 @@ export const CodeNode = memo<NodeProps>(function ({
       state.pods[id]?.stderr
   );
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+  const autoForceGlobal = useStore(store, (state) => state.autoForceGlobal);
 
-  const onResize = useCallback(
+  const onResizeStop = useCallback(
     (e, data) => {
       const { size } = data;
       const node = nodesMap.get(id);
       if (node) {
-        node.style = { ...node.style, width: size.width };
-        nodesMap.set(id, node);
+        // new width
+        nodesMap.set(id, { ...node, width: size.width });
         setPodGeo(
           id,
           {
             parent: node.parentNode ? node.parentNode : "ROOT",
             x: node.position.x,
             y: node.position.y,
+            // new width
             width: size.width!,
             height: node.height!,
           },
           true
         );
         updateView();
+        autoForceGlobal();
       }
     },
-    [id, nodesMap, setPodGeo, updateView]
+    [id, nodesMap, setPodGeo, updateView, autoForceGlobal]
   );
 
   const [showToolbar, setShowToolbar] = useState(false);
@@ -510,7 +513,7 @@ export const CodeNode = memo<NodeProps>(function ({
         }}
       >
         <ResizableBox
-          onResizeStop={onResize}
+          onResizeStop={onResizeStop}
           height={pod.height || 100}
           width={pod.width || 0}
           axis={"x"}
@@ -669,7 +672,7 @@ export const CodeNode = memo<NodeProps>(function ({
                   right: 0,
                   transform: "translate(0, -100%)",
                   background: "white",
-                  zIndex: 250,
+                  zIndex: 10,
                   justifyContent: "center",
                 }}
               >
