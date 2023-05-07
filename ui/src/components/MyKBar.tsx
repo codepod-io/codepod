@@ -39,7 +39,6 @@ function RenderResults() {
 export function MyKBar() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const autoLayout = useStore(store, (state) => state.autoLayout);
   const autoForceGlobal = useStore(store, (state) => state.autoForceGlobal);
   const actions = [
     {
@@ -48,14 +47,6 @@ export function MyKBar() {
       keywords: "auto force",
       perform: () => {
         autoForceGlobal();
-      },
-    },
-    {
-      id: "auto-layout",
-      name: "Auto Layout",
-      keywords: "auto layout",
-      perform: () => {
-        autoLayout();
       },
     },
     // {

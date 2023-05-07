@@ -15,6 +15,10 @@ export function useYjsObserver() {
   const nodesMap = ydoc.getMap<Node>("pods");
   const updateView = useStore(store, (state) => state.updateView);
   const resetSelection = useStore(store, (state) => state.resetSelection);
+  const buildNode2Children = useStore(
+    store,
+    (state) => state.buildNode2Children
+  );
 
   useEffect(() => {
     const observer = (YMapEvent: YEvent<any>, transaction: Transaction) => {
@@ -56,6 +60,11 @@ export function useYjsObserver() {
               },
               false
             );
+            // FIXME debug this.
+            // if the pod parent changed, triggger buildNode2Children
+            if (node.parentNode !== change.oldValue.parentNode) {
+              buildNode2Children();
+            }
 
             break;
           default:

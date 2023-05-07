@@ -86,7 +86,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
     },
     [onCopy, cutBegin, id]
   );
-  const autoLayout = useStore(store, (state) => state.autoLayout);
   const autoForce = useStore(store, (state) => state.autoForce);
   return (
     <Box
@@ -118,19 +117,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
           </IconButton>
         </Tooltip>
       )}
-      {/* auto layout (auto shrink scopes) */}
-      {/* {!isGuest && (
-        <Tooltip title="auto shrink (global)">
-          <IconButton
-            size="small"
-            onClick={() => {
-              autoLayout();
-            }}
-          >
-            <CompressIcon fontSize="inherit" />
-          </IconButton>
-        </Tooltip>
-      )} */}
       {/* copy to clipbooard */}
       <CopyToClipboard
         text="dummy"
