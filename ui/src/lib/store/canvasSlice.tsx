@@ -855,6 +855,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           nodesMap.delete(change.id);
           // remove from store
           get().deletePod(client, { id: change.id });
+          get().buildNode2Children();
           // run auto-layout
           get().autoForceGlobal();
           break;

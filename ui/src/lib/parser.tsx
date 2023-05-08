@@ -34,7 +34,7 @@ export async function initParser(prefix = "/", callback = () => {}) {
 
 export type Annotation = {
   name: string;
-  type: string;
+  type: "function" | "callsite" | "vardef" | "varuse" | "bridge";
   startIndex: number;
   endIndex: number;
   startPosition: { row: number; column: number };
@@ -43,11 +43,22 @@ export type Annotation = {
   origin?: string;
 };
 
+type CodeAnalysisResult = {
+  ispublic: boolean;
+  isbridge?: boolean;
+  annotations: Annotation[];
+  errors?: string[];
+  error_messages?: string[];
+};
+
 /**
  * Use tree-sitter query to analyze the code. This only work for functions.
  * @param code
  */
-export function analyzeCodeViaQuery(code) {
+export function analyzeCodeViaQuery(code: string): CodeAnalysisResult {
+  console.warn(
+    "DEPRECATED: analyzeCodeViaQuery is deprecated. Enable scoped variables instead."
+  );
   let annotations: Annotation[] = [];
   let ispublic = false;
   // FIXME better error handling
@@ -76,7 +87,8 @@ export function analyzeCodeViaQuery(code) {
     let node = match.captures[0].node;
     annotations.push({
       name: node.text, // the name of the function or variable
-      type: match.captures[0].name, // "function" or "variable"
+      // FIXME the name may not be "callsite".
+      type: match.captures[0].name as "function" | "callsite",
       startIndex: node.startIndex,
       endIndex: node.endIndex,
       startPosition: node.startPosition,
@@ -96,11 +108,33 @@ export function analyzeCodeViaQuery(code) {
  * @param code the code
  * @returns a list of names defined in this code.
  */
-export function analyzeCode(code) {
+export function analyzeCode(code: string): CodeAnalysisResult {
   let annotations: Annotation[] = [];
   let ispublic = false;
   // FIXME better error handling
   if (!code) return { ispublic, annotations };
+  // check for @export statements, a regular expression that matches a starting
+  // of the line followed by @export and a name
+
+  const re = /^@export +([a-zA-Z0-9_]+)$/gm;
+  code = code.replaceAll(re, (match, name, offset) => {
+    // parse the first name as a function definition
+    annotations.push({
+      name,
+      type: "bridge",
+      // This should be the actual start and end index of the name.
+      startIndex: offset,
+      endIndex: offset + match.length,
+      // The row & column are placeholders.
+      startPosition: { row: 0, column: 0 },
+      endPosition: { row: 0, column: 0 },
+    });
+    return " ".repeat(match.length);
+  });
+  if (annotations.length > 0) {
+    return { ispublic: true, isbridge: true, annotations };
+  }
+
   if (code.trim().startsWith("@export")) {
     ispublic = true;
     code = code.replace("@export", " ".repeat("@export".length));
@@ -128,7 +162,7 @@ export function analyzeCode(code) {
     let node = match.captures[0].node;
     annotations.push({
       name: node.text, // the name of the function or variable
-      type: match.captures[0].name, // "function" or "variable"
+      type: "function",
       startIndex: node.startIndex,
       endIndex: node.endIndex,
       startPosition: node.startPosition,
@@ -149,16 +183,14 @@ export function analyzeCode(code) {
     .forEach((child) => {
       query_var.matches(child).forEach((match) => {
         let node = match.captures[0].node;
-        let annotation = {
+        annotations.push({
           name: node.text, // the name of the function or variable
-          type: match.captures[0].name, // "function" or "variable"
+          type: "function",
           startIndex: node.startIndex,
           endIndex: node.endIndex,
           startPosition: node.startPosition,
           endPosition: node.endPosition,
-        };
-        // index2annotation[node.startIndex] = annotation;
-        annotations.push(annotation);
+        });
       });
     });
 
@@ -169,7 +201,7 @@ export function analyzeCode(code) {
   unbound
     .filter((node) => !keywords.has(node.text))
     .forEach((node) => {
-      let annotation = {
+      let annotation: Annotation = {
         name: node.text,
         type: "varuse",
         startIndex: node.startIndex,

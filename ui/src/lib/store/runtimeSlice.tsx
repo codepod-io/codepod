@@ -11,22 +11,36 @@ import { analyzeCode, analyzeCodeViaQuery } from "../parser";
 /**
  * Collect symbol tables from all the pods in scope.
  */
-function collectSymbolTables({ id, get }: { id: string; get: () => MyState }) {
+function collectSymbolTables(
+  id: string,
+  get: () => MyState
+): Record<string, string> {
   let pods = get().pods;
   let pod = pods[id];
+  const isbridge = pod.isbridge;
   // Collect from parent scope.
   let parentId = pod.parent;
   let allSymbolTables: Record<string, string>[] = [];
   // do this for all ancestor scopes.
   while (parentId) {
     let siblings = get().node2children.get(parentId) || [];
-    const tables = siblings.map((id) => {
+    const tables = siblings.map((_id) => {
       // FIXME make this consistent, CODE, POD, DECK, SCOPE; use enums
-      if (pods[id].type === "CODE") {
-        return pods[id].symbolTable || {};
+      if (pods[_id].type === "CODE") {
+        if (isbridge && _id === id) {
+          // The key to support recursive export bridge are:
+          // 1. not to add the name to symbol table when resolving this bridge
+          //    pod, so that we can correctly set name_thisScope =
+          //    name_originScope.
+          // 2. do add the name to symbol table when resolving other pods, so
+          //    that other pods can see its definition.
+          return {};
+        } else {
+          return pods[_id].symbolTable || {};
+        }
       } else {
         // FIXME dfs, or re-export?
-        let tables = (pods[id].children || [])
+        let tables = (pods[_id].children || [])
           .filter(({ id }) => pods[id].ispublic)
           .map(({ id }) => pods[id].symbolTable);
         return Object.assign({}, ...tables);
@@ -53,7 +67,11 @@ function collectSymbolTables({ id, get }: { id: string; get: () => MyState }) {
     }
   });
   // Combine the tables and return.
-  let res = Object.assign({}, pods[id].symbolTable, ...allSymbolTables);
+  let res: Record<string, string> = Object.assign(
+    {},
+    pods[id].symbolTable,
+    ...allSymbolTables
+  );
   return res;
 }
 
@@ -96,6 +114,17 @@ function rewriteCode(id: string, get: () => MyState) {
           newcode += `${annotation.name}_${pods[annotation.origin].parent}`;
         } else {
           console.log("function not found", annotation.name);
+          newcode += annotation.name;
+        }
+        break;
+      case "bridge":
+        // replace "@export x" with "x_thisScope = x_originScope"
+        if (annotation.origin) {
+          newcode += `${annotation.name}_${pods[id].parent} = ${
+            annotation.name
+          }_${pods[annotation.origin].parent}`;
+        } else {
+          console.log("bridge not found", annotation.name);
           newcode += annotation.name;
         }
         break;
@@ -222,13 +251,18 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
     set(
       produce((state) => {
         let analyze = get().scopedVars ? analyzeCode : analyzeCodeViaQuery;
-        let { ispublic, annotations } = analyze(state.pods[id].content);
+        let { ispublic, isbridge, annotations } = analyze(
+          state.pods[id].content
+        );
         state.pods[id].ispublic = ispublic;
+        state.pods[id].isbridge = isbridge;
 
         state.pods[id].symbolTable = Object.assign(
           {},
           ...annotations
-            .filter(({ type }) => ["function", "vardef"].includes(type))
+            .filter(({ type }) =>
+              ["function", "vardef", "bridge"].includes(type)
+            )
             .map(({ name }) => ({
               [name]: id,
             }))
@@ -247,7 +281,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
   },
   resolvePod: (id) => {
     // 1. collect symbol table
-    let st = collectSymbolTables({ id, get });
+    let st = collectSymbolTables(id, get);
     // 2. resolve symbols
     set(
       produce((state) => {
