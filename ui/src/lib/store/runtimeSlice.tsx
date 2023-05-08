@@ -495,6 +495,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
         state.pods[id].result = null;
         state.pods[id].stdout = "";
         state.pods[id].error = null;
+        state.pods[id].dirty = true;
       })
     );
   },
@@ -505,6 +506,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
           state.pods[id].result = null;
           state.pods[id].stdout = "";
           state.pods[id].error = null;
+          state.pods[id].dirty = true;
         });
       })
     );

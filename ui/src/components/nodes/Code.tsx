@@ -62,6 +62,7 @@ import { NodeResizeControl, NodeResizer } from "reactflow";
 import "@reactflow/node-resizer/dist/style.css";
 import { NewPodButtons, ResizeIcon } from "./utils";
 import { timeDifference } from "../../lib/utils";
+import { ButtonGroup } from "@mui/material";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);
@@ -85,6 +86,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
     (state) => state.pods[id].lastExecutedAt
   );
   const [showOutput, setShowOutput] = useState(true);
+  const clearResults = useStore(store, (state) => state.clearResults);
   return (
     <Box
       sx={{
@@ -150,11 +152,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
           maxHeight="1000px"
           border="1px"
         >
-          {/* <Box bgcolor="lightgray">Error</Box> */}
-          <Button
-            onClick={() => {
-              setShowOutput(!showOutput);
-            }}
+          <ButtonGroup
             sx={[
               {
                 fontSize: "0.8em",
@@ -168,10 +166,28 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
               },
             ]}
             variant="text"
-            size="small"
+            aria-label="outlined primary button group"
           >
-            Hide output
-          </Button>
+            <Button
+              onClick={() => {
+                setShowOutput(!showOutput);
+              }}
+              variant="text"
+              size="small"
+            >
+              Hide
+            </Button>
+            <Button
+              onClick={() => {
+                clearResults(id);
+              }}
+              variant="text"
+              size="small"
+            >
+              Clear
+            </Button>
+          </ButtonGroup>
+
           {stdout && (
             <Box
               whiteSpace="pre-wrap"
