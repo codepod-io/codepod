@@ -130,7 +130,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
         <Box
           sx={{ paddingBottom: "2px" }}
           overflow="auto"
-          maxHeight="140px"
+          maxHeight="1000px"
           border="1px"
         >
           {/* <Box bgcolor="lightgray">Error</Box> */}
@@ -395,7 +395,7 @@ export const CodeNode = memo<NodeProps>(function ({
       state.pods[id]?.stderr
   );
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
-  const autoForceGlobal = useStore(store, (state) => state.autoForceGlobal);
+  const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
 
   const onResizeStop = useCallback(
     (e, data) => {
@@ -417,10 +417,10 @@ export const CodeNode = memo<NodeProps>(function ({
           true
         );
         updateView();
-        autoForceGlobal();
+        autoLayoutROOT();
       }
     },
-    [id, nodesMap, setPodGeo, updateView, autoForceGlobal]
+    [id, nodesMap, setPodGeo, updateView, autoLayoutROOT]
   );
 
   const [showToolbar, setShowToolbar] = useState(false);
@@ -692,7 +692,13 @@ export const CodeNode = memo<NodeProps>(function ({
               <MyMonaco id={id} fontSize={fontSize} />
               {showResult && (
                 <Box
-                  className="nowheel"
+                  className={"nowheel"}
+                  // This ID is used for autolayout.
+                  //
+                  // TODO save result box position to DB.
+                  id={
+                    isRightLayout ? `result-${id}-right` : `result-${id}-bottom`
+                  }
                   // This also prevents the wheel event from bubbling up to the parent.
                   // onWheelCapture={(e) => {
                   //   e.stopPropagation();
@@ -703,9 +709,9 @@ export const CodeNode = memo<NodeProps>(function ({
                     position: "absolute",
                     top: isRightLayout ? 0 : "100%",
                     left: isRightLayout ? "100%" : 0,
-                    maxHeight: "160px",
-                    maxWidth: isRightLayout ? "300px" : "100%",
-                    minWidth: isRightLayout ? "150px" : "100%",
+                    ...(isRightLayout
+                      ? {}
+                      : { maxWidth: "100%", minWidth: "100%" }),
                     boxSizing: "border-box",
                     backgroundColor: "white",
                     zIndex: 100,

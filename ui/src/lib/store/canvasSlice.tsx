@@ -315,8 +315,8 @@ export interface CanvasSlice {
 
   node2children: Map<string, string[]>;
   buildNode2Children: () => void;
-  autoForce: (scopeId: string) => void;
-  autoForceGlobal: () => void;
+  autoLayout: (scopeId: string) => void;
+  autoLayoutROOT: () => void;
 }
 
 export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
@@ -450,7 +450,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     get().updateView();
     // run auto-layout
     if (get().autoRunLayout) {
-      get().autoForceGlobal();
+      get().autoLayoutROOT();
     }
   },
 
@@ -857,7 +857,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           get().deletePod(client, { id: change.id });
           get().buildNode2Children();
           // run auto-layout
-          get().autoForceGlobal();
+          get().autoLayoutROOT();
           break;
         default:
           // should not reach here.
@@ -949,7 +949,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     });
     set({ node2children });
   },
-  autoForceGlobal: () => {
+  autoLayoutROOT: () => {
     // get all scopes,
     let nodesMap = get().ydoc.getMap<Node>("pods");
     let nodes: Node[] = Array.from(nodesMap.values());
@@ -958,16 +958,16 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       .sort((a: Node, b: Node) => b.data.level - a.data.level)
       .forEach((node) => {
         if (node.type === "SCOPE") {
-          get().autoForce(node.id);
+          get().autoLayout(node.id);
         }
       });
     // Applying on ROOT scope is not ideal.
-    get().autoForce("ROOT");
+    get().autoLayout("ROOT");
   },
   /**
    * Use d3-force to auto layout the nodes.
    */
-  autoForce: (scopeId) => {
+  autoLayout: (scopeId) => {
     // 1. get all the nodes and edges in the scope
     let nodesMap = get().ydoc.getMap<Node>("pods");
     const nodes = get().nodes.filter(
@@ -975,12 +975,25 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     );
     if (nodes.length == 0) return;
     const edges = get().edges;
+    // consider the output box
+    const id2height = new Map<string, number>();
+    const id2width = new Map<string, number>();
+    nodes.forEach((node) => {
+      const bottom = document.querySelector(`#result-${node.id}-bottom`);
+      const right = document.querySelector("#result-" + node.id + "-right");
+      const boxheight = bottom?.clientHeight || 0;
+      const boxwidth = right?.clientWidth || 0;
+      // FIXME a scope's height is NaN
+      id2height.set(node.id, (node.height || 0) + boxheight);
+      id2width.set(node.id, (node.width || 0) + boxwidth);
+      // id2height.set(node.id, node.height!);
+    });
     const tmpNodes: NodeType[] = nodes.map((node) => ({
       id: node.id,
-      x: node.position.x + node.width! / 2,
-      y: node.position.y + node.height! / 2,
-      width: node.width!,
-      height: node.height!,
+      x: node.position.x + id2width.get(node.id)! / 2,
+      y: node.position.y + id2height.get(node.id)! / 2,
+      width: id2width.get(node.id)!,
+      height: id2height.get(node.id)!,
     }));
     const tmpEdges = edges.map((edge) => ({
       source: edge.source,
@@ -1015,8 +1028,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       .stop();
     simulation.tick(10);
     tmpNodes.forEach((node) => {
-      node.x -= node.width! / 2;
-      node.y -= node.height! / 2;
+      node.x -= id2width.get(node.id)! / 2;
+      node.y -= id2height.get(node.id)! / 2;
     });
     // The nodes will all have new positions now. I'll need to make the graph to be top-left, i.e., the leftmost is 20, the topmost is 20.
     // get the min x and y
@@ -1052,9 +1065,9 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       minx = Math.min(...x1s);
       y1s = tmpNodes.map((node) => node.y);
       miny = Math.min(...y1s);
-      const x2s = tmpNodes.map((node) => node.x + node.width!);
+      const x2s = tmpNodes.map((node) => node.x + id2width.get(node.id)!);
       const maxx = Math.max(...x2s);
-      const y2s = tmpNodes.map((node) => node.y + node.height!);
+      const y2s = tmpNodes.map((node) => node.y + id2height.get(node.id)!);
       const maxy = Math.max(...y2s);
       const scope = nodesMap.get(scopeId);
       nodesMap.set(scopeId, {
