@@ -61,6 +61,18 @@ import { NodeResizeControl, NodeResizer } from "reactflow";
 
 import "@reactflow/node-resizer/dist/style.css";
 import { NewPodButtons, ResizeIcon } from "./utils";
+import { timeDifference } from "../../lib/utils";
+
+function Timer({ lastExecutedAt }) {
+  const [counter, setCounter] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCounter(counter + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [counter]);
+  return <Box>Last executed: {timeDifference(new Date(), lastExecutedAt)}</Box>;
+}
 
 export const ResultBlock = memo<any>(function ResultBlock({ id }) {
   const store = useContext(RepoContext)!;
@@ -68,6 +80,10 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
   const error = useStore(store, (state) => state.pods[id].error);
   const stdout = useStore(store, (state) => state.pods[id].stdout);
   const running = useStore(store, (state) => state.pods[id].running);
+  const lastExecutedAt = useStore(
+    store,
+    (state) => state.pods[id].lastExecutedAt
+  );
   const [showOutput, setShowOutput] = useState(true);
   return (
     <Box
@@ -82,7 +98,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
             <div dangerouslySetInnerHTML={{ __html: result.html }}></div>
           ) : (
             <>
-              {!error && (
+              {lastExecutedAt && !error && (
                 <Box
                   color="rgb(0, 183, 87)"
                   sx={{
@@ -114,6 +130,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
                       style={{ marginTop: "5px" }}
                       fontSize="inherit"
                     />
+                    <Timer lastExecutedAt={lastExecutedAt} />
                   </Box>
                 </Box>
               )}
@@ -714,7 +731,7 @@ export const CodeNode = memo<NodeProps>(function ({
                     top: isRightLayout ? 0 : "100%",
                     left: isRightLayout ? "100%" : 0,
                     ...(isRightLayout
-                      ? {}
+                      ? { minWidth: "250px" }
                       : { maxWidth: "100%", minWidth: "100%" }),
                     boxSizing: "border-box",
                     backgroundColor: "white",
