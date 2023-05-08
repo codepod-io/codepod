@@ -320,9 +320,6 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       });
       return;
     }
-    // Set this pod as running.
-    set({ runningId: id });
-    // Actually send the run request.
     if (!get().socket) {
       get().addError({
         type: "error",
@@ -330,6 +327,9 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       });
       return;
     }
+    // Set this pod as running.
+    set({ runningId: id });
+    // Actually send the run request.
     // Analyze code and set symbol table
     get().parsePod(id);
     // update anontations according to st
@@ -359,6 +359,13 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
    * Add a pod to the chain and run it.
    */
   wsRun: async (id) => {
+    if (!get().socket) {
+      get().addError({
+        type: "error",
+        msg: "Runtime not connected",
+      });
+      return;
+    }
     // If this pod is a code pod, add it.
     if (get().pods[id].type === "CODE") {
       // Add to the chain
@@ -606,7 +613,7 @@ function wsConnect(set, get: () => MyState) {
   };
 }
 
-function onMessage(set, get) {
+function onMessage(set, get: () => MyState) {
   return (msg) => {
     // console.log("onMessage", msg.data || msg.body || undefined);
     // msg.data for websocket
@@ -654,21 +661,6 @@ function onMessage(set, get) {
         {
           let { podId, content } = payload;
           get().setPodStream({ id: podId, content });
-        }
-        break;
-      case "IO:execute_result":
-        {
-          let { podId, result, name } = payload;
-          get().setPodExecuteResult({ id: podId, result, name });
-        }
-        break;
-      case "IO:execute_reply":
-        // CAUTION ignore
-        break;
-      case "IO:error":
-        {
-          let { podId, name, ename, evalue, stacktrace } = payload;
-          get().setIOResult({ id: podId, name, ename, evalue, stacktrace });
         }
         break;
       case "status":
