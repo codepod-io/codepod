@@ -624,6 +624,17 @@ function MyFloatingToolbar({ id }: { id: string }) {
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   return (
     <>
+      <Box
+        className="custom-drag-handle"
+        sx={{
+          cursor: "grab",
+          fontSize: "1.5rem",
+          padding: "8px",
+          display: "inline-flex",
+        }}
+      >
+        <DragIndicatorIcon fontSize="inherit" />
+      </Box>
       {!isGuest && (
         <Tooltip title="Delete">
           <IconButton
@@ -636,8 +647,16 @@ function MyFloatingToolbar({ id }: { id: string }) {
           </IconButton>
         </Tooltip>
       )}
-      <Box className="custom-drag-handle" sx={{ cursor: "grab" }}>
-        <DragIndicatorIcon fontSize="small" />
+      <Box
+        className="custom-drag-handle"
+        sx={{
+          cursor: "grab",
+          fontSize: "1.5rem",
+          padding: "8px",
+          display: "inline-flex",
+        }}
+      >
+        <DragIndicatorIcon fontSize="inherit" />
       </Box>
     </>
   );

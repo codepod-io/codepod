@@ -94,6 +94,17 @@ function MyFloatingToolbar({ id }: { id: string }) {
         alignItems: "center",
       }}
     >
+      <Box
+        className="custom-drag-handle"
+        sx={{
+          cursor: "grab",
+          fontSize: "1.5rem",
+          padding: "8px",
+          display: "inline-flex",
+        }}
+      >
+        <DragIndicatorIcon fontSize="inherit" />
+      </Box>
       {!isGuest && (
         <Tooltip title="Run (shift-enter)">
           <IconButton
@@ -158,7 +169,15 @@ function MyFloatingToolbar({ id }: { id: string }) {
           </IconButton>
         </Tooltip>
       )}
-      <Box className="custom-drag-handle" sx={{ cursor: "grab" }}>
+      <Box
+        className="custom-drag-handle"
+        sx={{
+          cursor: "grab",
+          fontSize: "1.5rem",
+          padding: "8px",
+          display: "inline-flex",
+        }}
+      >
         <DragIndicatorIcon fontSize="inherit" />
       </Box>
     </Box>
