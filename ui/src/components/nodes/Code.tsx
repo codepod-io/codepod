@@ -396,6 +396,10 @@ export const CodeNode = memo<NodeProps>(function ({
   );
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
+  useEffect(() => {
+    // Run auto-layout when the output box layout changes.
+    autoLayoutROOT();
+  }, [layout]);
 
   const onResizeStop = useCallback(
     (e, data) => {
