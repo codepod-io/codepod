@@ -682,7 +682,7 @@ export const RichNode = memo<Props>(function ({
   const reactFlowInstance = useReactFlow();
 
   const [showToolbar, setShowToolbar] = useState(false);
-  const autoForceGlobal = useStore(store, (state) => state.autoForceGlobal);
+  const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
 
   const onResizeStop = useCallback(
     (e, data) => {
@@ -704,10 +704,10 @@ export const RichNode = memo<Props>(function ({
           true
         );
         updateView();
-        autoForceGlobal();
+        autoLayoutROOT();
       }
     },
-    [id, nodesMap, setPodGeo, updateView, autoForceGlobal]
+    [id, nodesMap, setPodGeo, updateView, autoLayoutROOT]
   );
 
   useEffect(() => {

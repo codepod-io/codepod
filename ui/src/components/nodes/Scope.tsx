@@ -86,7 +86,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
     },
     [onCopy, cutBegin, id]
   );
-  const autoForce = useStore(store, (state) => state.autoForce);
+  const autoLayout = useStore(store, (state) => state.autoLayout);
   return (
     <Box
       sx={{
@@ -110,7 +110,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
         <Tooltip title="force layout">
           <IconButton
             onClick={() => {
-              autoForce(id);
+              autoLayout(id);
             }}
           >
             <ViewTimelineOutlinedIcon fontSize="inherit" />

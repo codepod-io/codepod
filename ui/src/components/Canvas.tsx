@@ -522,7 +522,7 @@ function CanvasImpl() {
     (state) => state.removeDragHighlight
   );
   const updateView = useStore(store, (state) => state.updateView);
-  const autoForceGlobal = useStore(store, (state) => state.autoForceGlobal);
+  const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
 
   const addNode = useStore(store, (state) => state.addNode);
   const reactFlowInstance = useReactFlow();
@@ -632,7 +632,7 @@ function CanvasImpl() {
             updateView();
             // run auto layout on drag stop
             if (autoRunLayout) {
-              autoForceGlobal();
+              autoLayoutROOT();
             }
           }}
           onNodeDrag={(event, node) => {
