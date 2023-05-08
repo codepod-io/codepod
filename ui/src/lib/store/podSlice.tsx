@@ -178,6 +178,7 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
           // };
           // console.log("WS_EXECUTE_REPLY", result);
           state.pods[id].running = false;
+          state.pods[id].lastExecutedAt = Date.now();
           if (!state.pods[id].result) {
             state.pods[id].result = {
               text: result,

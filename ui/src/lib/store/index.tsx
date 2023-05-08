@@ -28,6 +28,7 @@ export type Pod = {
   stdout?: string;
   stderr?: string;
   error?: { evalue: string; stacktrace: string[] } | null;
+  lastExecutedAt?: Date;
   lang: string;
   column?: number;
   raw?: boolean;
