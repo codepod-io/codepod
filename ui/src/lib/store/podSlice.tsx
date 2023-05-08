@@ -49,6 +49,12 @@ export interface PodSlice {
     content: { data: { html: string; text: string; image: string } };
     count: number;
   }) => void;
+  setPodDisplayData: ({ id, content, count }) => void;
+  setPodExecuteReply: ({ id, result, count }) => void;
+  setPodStdout: ({ id, stdout }: { id: string; stdout: string }) => void;
+  setPodError: ({ id, ename, evalue, stacktrace }) => void;
+  setPodStream: ({ id, content }) => void;
+  setPodStatus: ({ id, status, lang }) => void;
   clonePod: (id: string) => any;
 }
 
