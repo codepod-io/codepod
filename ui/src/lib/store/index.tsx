@@ -35,6 +35,7 @@ export type Pod = {
   symbolTable?: { [key: string]: string };
   annotations?: Annotation[];
   ispublic?: boolean;
+  isbridge?: boolean;
   x: number;
   y: number;
   width?: number;

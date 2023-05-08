@@ -282,6 +282,8 @@ function highlightAnnotations(
                 return "myDecoration-varuse";
               case "varuse":
                 return "myDecoration-varuse";
+              case "bridge":
+                return "myDecoration-bridge-unused";
               default:
                 throw new Error("unknown type: " + type);
             }
