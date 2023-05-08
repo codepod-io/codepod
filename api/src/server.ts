@@ -41,6 +41,7 @@ async function startServer() {
     plugins: [ApolloServerPluginLandingPageLocalDefault({ embed: true })],
   });
   const expapp = express();
+  expapp.use(express.json({ limit: "20mb" }));
   const http_server = http.createServer(expapp);
   const wss = new WebSocketServer({ server: http_server });
   // graphql api will be available at /graphql
