@@ -319,9 +319,7 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
   // const pod = useStore(store, (state) => state.pods[id]);
   const wsRun = useStore(store, (state) => state.wsRun);
   const wsRunChain = useStore(store, (state) => state.wsRunChain);
-  const wsRunNoRewrite = useStore(store, (state) => state.wsRunNoRewrite);
   // right, bottom
-  const getPod = useStore(store, (state) => state.getPod);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const clonePod = useStore(store, (state) => state.clonePod);
   const setPaneFocus = useStore(store, (state) => state.setPaneFocus);
@@ -387,17 +385,6 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
             }}
           >
             <KeyboardDoubleArrowRightIcon fontSize="inherit" />
-          </IconButton>
-        </Tooltip>
-      )}
-      {!isGuest && (
-        <Tooltip title="Run without rewrite">
-          <IconButton
-            onClick={() => {
-              wsRunNoRewrite(id);
-            }}
-          >
-            <PlayDisabledIcon fontSize="inherit" />
           </IconButton>
         </Tooltip>
       )}
