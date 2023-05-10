@@ -709,7 +709,11 @@ export const RichNode = memo<Props>(function ({
       const node = nodesMap.get(id);
       if (node) {
         // new width
-        nodesMap.set(id, { ...node, width: size.width });
+        nodesMap.set(id, {
+          ...node,
+          width: size.width,
+          style: { ...node.style, width: size.width },
+        });
         setPodGeo(
           id,
           {
