@@ -149,8 +149,8 @@ export function analyzeCode(code: string): CodeAnalysisResult {
   const function_def = "(function_definition (identifier) @function)";
 
   const vardef = `
-    (expression_statement (assignment (identifier) @vardef))
-    (expression_statement (assignment (pattern_list (identifier) @vardef)))
+    (module (expression_statement (assignment (identifier) @vardef)))
+    (module (expression_statement (assignment (pattern_list (identifier) @vardef))))
   `;
 
   let query_func = parser.getLanguage().query(`
@@ -174,29 +174,23 @@ export function analyzeCode(code: string): CodeAnalysisResult {
       ${vardef}
     ]
     `);
-  // Do not parse variable def/use inside a function definition.
-  // FIXME there might be duplicate.
-  // let index2annotation: Record<number, Annotation> = {};
-  // annotations = annotations.concat(Object.values(index2annotation));
-  tree.rootNode.children
-    .filter(({ type }) => type !== "function_definition")
-    .forEach((child) => {
-      query_var.matches(child).forEach((match) => {
+
+  query_var.matches(tree.rootNode).forEach((match) => {
         let node = match.captures[0].node;
         annotations.push({
           name: node.text, // the name of the function or variable
-          type: "function",
+      type: "vardef",
           startIndex: node.startIndex,
           endIndex: node.endIndex,
           startPosition: node.startPosition,
           endPosition: node.endPosition,
         });
       });
-    });
 
+  // Do the compilation: unbound variable analysis.
   let { unbound, errors } = compileModule(tree.rootNode);
   if (errors.length > 0) {
-    console.log("ERROR in compileModule", errors);
+    console.warn("ERROR in compileModule", errors);
   }
   unbound
     .filter((node) => !keywords.has(node.text))
