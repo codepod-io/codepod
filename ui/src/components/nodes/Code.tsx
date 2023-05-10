@@ -156,41 +156,44 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
           maxHeight="1000px"
           border="1px"
         >
-          <ButtonGroup
-            sx={[
-              {
-                fontSize: "0.8em",
-                paddingTop: "3px",
-                paddingBottom: "2px",
-                lineHeight: "10px",
-                zIndex: 201,
-                position: "absolute",
-                top: 0,
-                right: 0,
-              },
-            ]}
-            variant="text"
-            aria-label="outlined primary button group"
-          >
-            <Button
-              onClick={() => {
-                setShowOutput(!showOutput);
-              }}
+          {/* FIXME result?.count is not correct, always 0 or 1. */}
+          {(stdout || (result?.text && result?.count > 0) || error) && (
+            <ButtonGroup
+              sx={[
+                {
+                  fontSize: "0.8em",
+                  paddingTop: "3px",
+                  paddingBottom: "2px",
+                  lineHeight: "10px",
+                  zIndex: 201,
+                  position: "absolute",
+                  top: 0,
+                  right: 0,
+                },
+              ]}
               variant="text"
-              size="small"
+              aria-label="outlined primary button group"
             >
-              Hide
-            </Button>
-            <Button
-              onClick={() => {
-                clearResults(id);
-              }}
-              variant="text"
-              size="small"
-            >
-              Clear
-            </Button>
-          </ButtonGroup>
+              <Button
+                onClick={() => {
+                  setShowOutput(!showOutput);
+                }}
+                variant="text"
+                size="small"
+              >
+                Hide
+              </Button>
+              <Button
+                onClick={() => {
+                  clearResults(id);
+                }}
+                variant="text"
+                size="small"
+              >
+                Clear
+              </Button>
+            </ButtonGroup>
+          )}
 
           {stdout && (
             <Box
