@@ -146,7 +146,10 @@ export function analyzeCode(code: string): CodeAnalysisResult {
   }
   let tree = parser.parse(code);
 
-  const function_def = "(function_definition (identifier) @function)";
+  // Only match module-level functions, to avoid Class methods.
+  const function_def = "(module (function_definition (identifier) @function))";
+  // Match module-level classes as well. Just record as a function.
+  const class_def = "(module (class_definition (identifier) @class))";
 
   const vardef = `
     (module (expression_statement (assignment (identifier) @vardef)))
@@ -156,6 +159,7 @@ export function analyzeCode(code: string): CodeAnalysisResult {
   let query_func = parser.getLanguage().query(`
   [
     ${function_def}
+    ${class_def}
   ]
   `);
   query_func.matches(tree.rootNode).forEach((match) => {
@@ -176,16 +180,16 @@ export function analyzeCode(code: string): CodeAnalysisResult {
     `);
 
   query_var.matches(tree.rootNode).forEach((match) => {
-        let node = match.captures[0].node;
-        annotations.push({
-          name: node.text, // the name of the function or variable
+    let node = match.captures[0].node;
+    annotations.push({
+      name: node.text, // the name of the function or variable
       type: "vardef",
-          startIndex: node.startIndex,
-          endIndex: node.endIndex,
-          startPosition: node.startPosition,
-          endPosition: node.endPosition,
-        });
-      });
+      startIndex: node.startIndex,
+      endIndex: node.endIndex,
+      startPosition: node.startPosition,
+      endPosition: node.endPosition,
+    });
+  });
 
   // Do the compilation: unbound variable analysis.
   let { unbound, errors } = compileModule(tree.rootNode);
