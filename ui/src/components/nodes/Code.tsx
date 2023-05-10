@@ -77,17 +77,17 @@ function Timer({ lastExecutedAt }) {
 
 export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
   const store = useContext(RepoContext)!;
-  const result = useStore(store, (state) => state.pods[id].result);
-  const error = useStore(store, (state) => state.pods[id].error);
-  const stdout = useStore(store, (state) => state.pods[id].stdout);
-  const running = useStore(store, (state) => state.pods[id].running);
+  const result = useStore(store, (state) => state.pods[id]?.result);
+  const error = useStore(store, (state) => state.pods[id]?.error);
+  const stdout = useStore(store, (state) => state.pods[id]?.stdout);
+  const running = useStore(store, (state) => state.pods[id]?.running);
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
   useEffect(() => {
     autoLayoutROOT();
   }, [running]);
   const lastExecutedAt = useStore(
     store,
-    (state) => state.pods[id].lastExecutedAt
+    (state) => state.pods[id]?.lastExecutedAt
   );
   const [showOutput, setShowOutput] = useState(true);
   const hasResult = useStore(
