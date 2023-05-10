@@ -978,6 +978,9 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     // consider the output box
     const id2height = new Map<string, number>();
     const id2width = new Map<string, number>();
+    // Leave some room for the top toolbar.
+    // FIXME fixed value.
+    const paddingTopPod = 50;
     nodes.forEach((node) => {
       const bottom = document.querySelector(`#result-${node.id}-bottom`);
       const right = document.querySelector("#result-" + node.id + "-right");
@@ -991,9 +994,9 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     const tmpNodes: NodeType[] = nodes.map((node) => ({
       id: node.id,
       x: node.position.x + id2width.get(node.id)! / 2,
-      y: node.position.y + id2height.get(node.id)! / 2,
+      y: node.position.y + id2height.get(node.id)! / 2 + paddingTopPod / 2,
       width: id2width.get(node.id)!,
-      height: id2height.get(node.id)!,
+      height: id2height.get(node.id)! + paddingTopPod,
     }));
     const tmpEdges = edges.map((edge) => ({
       source: edge.source,
@@ -1029,7 +1032,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     simulation.tick(10);
     tmpNodes.forEach((node) => {
       node.x -= id2width.get(node.id)! / 2;
-      node.y -= id2height.get(node.id)! / 2;
+      node.y -= id2height.get(node.id)! / 2 - paddingTopPod;
     });
     // The nodes will all have new positions now. I'll need to make the graph to be top-left, i.e., the leftmost is 20, the topmost is 20.
     // get the min x and y
@@ -1038,9 +1041,13 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     let y1s = tmpNodes.map((node) => node.y);
     let miny = Math.min(...y1s);
     // calculate the offset, leave 50 padding for the scope.
-    const padding = 50;
-    const offsetx = padding - minx;
-    const offsety = padding - miny;
+    // Leave some room at the top of the scope for inner pod toolbars.
+    const paddingTop = 70;
+    const paddingBottom = 50;
+    const paddingLeft = 50;
+    const paddingRight = 50;
+    const offsetx = paddingLeft - minx;
+    const offsety = paddingTop - miny;
     // move the nodes
     tmpNodes.forEach((node) => {
       node.x += offsetx;
@@ -1072,12 +1079,12 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       const scope = nodesMap.get(scopeId);
       nodesMap.set(scopeId, {
         ...scope!,
-        width: maxx - minx + padding * 2,
-        height: maxy - minx + padding * 2,
+        width: maxx - minx + paddingLeft + paddingRight,
+        height: maxy - miny + paddingTop + paddingBottom,
         style: {
           ...scope!.style,
-          width: maxx - minx + padding * 2,
-          height: maxy - minx + padding * 2,
+          width: maxx - minx + paddingLeft + paddingRight,
+          height: maxy - miny + paddingTop + paddingBottom,
         },
       });
     }
