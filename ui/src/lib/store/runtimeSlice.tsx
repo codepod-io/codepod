@@ -448,7 +448,19 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       console.log("running", id, "remaining number of pods:", chain.length - 1);
       // remove the first element
       set({ chain: chain.slice(1) });
-      get().wsSendRun(id);
+      // If the pod is empty, the kernel won't reply. So, we need to skip it.
+      if (
+        get().pods[id].content === undefined ||
+        get().pods[id].content === ""
+      ) {
+        set(
+          produce((state) => {
+            state.pods[id].running = false;
+          })
+        );
+      } else {
+        get().wsSendRun(id);
+      }
     }
   },
   wsInterruptKernel: ({ lang }) => {
