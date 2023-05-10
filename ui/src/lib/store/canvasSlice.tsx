@@ -444,6 +444,9 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     if (parent !== "ROOT") {
       // we don't assign its parent when created, because we have to adjust its position to make it inside its parent.
       get().moveIntoScope(node.id, parent);
+    } else {
+      // moveIntoScope will build the node2children map, but we need to build it here for the ROOT nodes.
+      get().buildNode2Children();
     }
     // Set initial width as about 30 characters.
     get().setNodeCharWidth(node.id, 30);
@@ -645,7 +648,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     });
   },
   moveIntoScope: (nodeId: string, scopeId: string) => {
-    console.log(`Moving ${nodeId} into scope ${scopeId}`);
     // move a node into a scope.
     // 1. update the node's parentNode & position
     let nodesMap = get().ydoc.getMap<Node>("pods");
@@ -654,6 +656,14 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       console.warn("Node not found", node);
       return;
     }
+    if (
+      node.parentNode === scopeId ||
+      (scopeId === "ROOT" && node.parentNode === undefined)
+    ) {
+      console.warn("Node already in scope", node);
+      return;
+    }
+    console.log(`Moving ${nodeId} into scope ${scopeId}`);
     let fromLevel = node?.data.level;
     let toLevel: number;
     let position: XYPosition;
@@ -928,7 +938,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
    */
   node2children: new Map<string, string[]>(),
   buildNode2Children: () => {
-    // console.log("Building node2children..");
+    console.debug("Building node2children..");
     // build a map from node to its children
     let nodesMap = get().ydoc.getMap<Node>("pods");
     let nodes: Node[] = Array.from(nodesMap.values());
