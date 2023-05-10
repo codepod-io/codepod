@@ -81,6 +81,10 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
   const error = useStore(store, (state) => state.pods[id].error);
   const stdout = useStore(store, (state) => state.pods[id].stdout);
   const running = useStore(store, (state) => state.pods[id].running);
+  const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
+  useEffect(() => {
+    autoLayoutROOT();
+  }, [running]);
   const lastExecutedAt = useStore(
     store,
     (state) => state.pods[id].lastExecutedAt
