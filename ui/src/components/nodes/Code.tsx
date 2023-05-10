@@ -75,7 +75,7 @@ function Timer({ lastExecutedAt }) {
   return <Box>Last executed: {timeDifference(new Date(), lastExecutedAt)}</Box>;
 }
 
-export const ResultBlock = memo<any>(function ResultBlock({ id }) {
+export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
   const store = useContext(RepoContext)!;
   const result = useStore(store, (state) => state.pods[id].result);
   const error = useStore(store, (state) => state.pods[id].error);
@@ -90,10 +90,43 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
     (state) => state.pods[id].lastExecutedAt
   );
   const [showOutput, setShowOutput] = useState(true);
+  const hasResult = useStore(
+    store,
+    (state) =>
+      state.pods[id]?.running ||
+      state.pods[id]?.result ||
+      state.pods[id]?.error ||
+      state.pods[id]?.stdout ||
+      state.pods[id]?.stderr
+  );
+  const [resultScroll, setResultScroll] = useState(false);
   const clearResults = useStore(store, (state) => state.clearResults);
+  if (!hasResult) return <></>;
   return (
     <Box
+      // This ID is used for autolayout.
+      //
+      // TODO save result box position to DB.
+      id={layout === "right" ? `result-${id}-right` : `result-${id}-bottom`}
+      // This also prevents the wheel event from bubbling up to the parent.
+      // onWheelCapture={(e) => {
+      //   e.stopPropagation();
+      // }}
+      className={showOutput && resultScroll ? "nowheel" : ""}
       sx={{
+        border:
+          showOutput && resultScroll ? "solid 1px red" : "solid 1px #d6dee6",
+        borderRadius: "4px",
+        position: "absolute",
+        top: layout === "right" ? 0 : "100%",
+        left: layout === "right" ? "100%" : 0,
+        ...(layout === "right"
+          ? { minWidth: "250px" }
+          : { maxWidth: "100%", minWidth: "100%" }),
+        boxSizing: "border-box",
+        backgroundColor: "white",
+        zIndex: 100,
+        padding: "0 10px",
         userSelect: "text",
         cursor: "auto",
       }}
@@ -174,6 +207,15 @@ export const ResultBlock = memo<any>(function ResultBlock({ id }) {
               variant="text"
               aria-label="outlined primary button group"
             >
+              <Button
+                onClick={() => {
+                  setResultScroll(!resultScroll);
+                }}
+                variant="text"
+                size="small"
+              >
+                {resultScroll ? "Unfocus" : "Focus"}
+              </Button>
               <Button
                 onClick={() => {
                   setShowOutput(!showOutput);
@@ -432,7 +474,6 @@ export const CodeNode = memo<NodeProps>(function ({
   const devMode = useStore(store, (state) => state.devMode);
   // right, bottom
   const [layout, setLayout] = useState("bottom");
-  const isRightLayout = layout === "right";
   const setPodName = useStore(store, (state) => state.setPodName);
   const setPodGeo = useStore(store, (state) => state.setPodGeo);
   const getPod = useStore(store, (state) => state.getPod);
@@ -444,15 +485,6 @@ export const CodeNode = memo<NodeProps>(function ({
   const updateView = useStore(store, (state) => state.updateView);
   const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
 
-  const showResult = useStore(
-    store,
-    (state) =>
-      state.pods[id]?.running ||
-      state.pods[id]?.result ||
-      state.pods[id]?.error ||
-      state.pods[id]?.stdout ||
-      state.pods[id]?.stderr
-  );
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
   useEffect(() => {
@@ -757,37 +789,8 @@ export const CodeNode = memo<NodeProps>(function ({
               }}
             >
               <MyMonaco id={id} fontSize={fontSize} />
-              {showResult && (
-                <Box
-                  className={"nowheel"}
-                  // This ID is used for autolayout.
-                  //
-                  // TODO save result box position to DB.
-                  id={
-                    isRightLayout ? `result-${id}-right` : `result-${id}-bottom`
-                  }
-                  // This also prevents the wheel event from bubbling up to the parent.
-                  // onWheelCapture={(e) => {
-                  //   e.stopPropagation();
-                  // }}
-                  sx={{
-                    border: "solid 1px #d6dee6",
-                    borderRadius: "4px",
-                    position: "absolute",
-                    top: isRightLayout ? 0 : "100%",
-                    left: isRightLayout ? "100%" : 0,
-                    ...(isRightLayout
-                      ? { minWidth: "250px" }
-                      : { maxWidth: "100%", minWidth: "100%" }),
-                    boxSizing: "border-box",
-                    backgroundColor: "white",
-                    zIndex: 100,
-                    padding: "0 10px",
-                  }}
-                >
-                  <ResultBlock id={id} />
-                </Box>
-              )}
+
+              <ResultBlock id={id} layout={layout} />
             </Box>
           </Box>
         )}
