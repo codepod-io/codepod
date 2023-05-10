@@ -991,10 +991,14 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       id2width.set(node.id, (node.width || 0) + boxwidth);
       // id2height.set(node.id, node.height!);
     });
+    // Save initial minimum offset of the nodes.
+    let initOffX = Math.min(...nodes.map((node) => node.position.x));
+    let initOffY = Math.min(...nodes.map((node) => node.position.y));
+
     const tmpNodes: NodeType[] = nodes.map((node) => ({
       id: node.id,
       x: node.position.x + id2width.get(node.id)! / 2,
-      y: node.position.y + id2height.get(node.id)! / 2 + paddingTopPod / 2,
+      y: node.position.y + id2height.get(node.id)! / 2,
       width: id2width.get(node.id)!,
       height: id2height.get(node.id)! + paddingTopPod,
     }));
@@ -1032,41 +1036,52 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     simulation.tick(10);
     tmpNodes.forEach((node) => {
       node.x -= id2width.get(node.id)! / 2;
-      node.y -= id2height.get(node.id)! / 2 - paddingTopPod;
-    });
-    // The nodes will all have new positions now. I'll need to make the graph to be top-left, i.e., the leftmost is 20, the topmost is 20.
-    // get the min x and y
-    let x1s = tmpNodes.map((node) => node.x);
-    let minx = Math.min(...x1s);
-    let y1s = tmpNodes.map((node) => node.y);
-    let miny = Math.min(...y1s);
-    // calculate the offset, leave 50 padding for the scope.
-    // Leave some room at the top of the scope for inner pod toolbars.
-    const paddingTop = 70;
-    const paddingBottom = 50;
-    const paddingLeft = 50;
-    const paddingRight = 50;
-    const offsetx = paddingLeft - minx;
-    const offsety = paddingTop - miny;
-    // move the nodes
-    tmpNodes.forEach((node) => {
-      node.x += offsetx;
-      node.y += offsety;
-    });
-    // Apply the new positions
-    // TODO need to transform the nodes to the center of the scope.
-    tmpNodes.forEach(({ id, x, y }) => {
-      // FIXME I should assert here.
-      if (nodesMap.has(id)) {
-        nodesMap.set(id, {
-          ...nodesMap.get(id)!,
-          // position: { x: x + scope!.position!.x, y: y + scope!.position!.y },
-          position: { x, y },
-        });
-      }
+      node.y -= id2height.get(node.id)! / 2;
     });
 
-    if (scopeId !== "ROOT") {
+    if (scopeId === "ROOT") {
+      // reset the node positions
+      tmpNodes.forEach(({ id, x, y }) => {
+        // FIXME I should assert here.
+        if (nodesMap.has(id)) {
+          nodesMap.set(id, {
+            ...nodesMap.get(id)!,
+            position: { x, y },
+          });
+        }
+      });
+    } else {
+      // The nodes will all have new positions now. I'll need to make the graph to be top-left, i.e., the leftmost is 20, the topmost is 20.
+      // get the min x and y
+      let x1s = tmpNodes.map((node) => node.x);
+      let minx = Math.min(...x1s);
+      let y1s = tmpNodes.map((node) => node.y);
+      let miny = Math.min(...y1s);
+      // calculate the offset, leave 50 padding for the scope.
+      // Leave some room at the top of the scope for inner pod toolbars.
+      const paddingTop = 70;
+      const paddingBottom = 50;
+      const paddingLeft = 50;
+      const paddingRight = 50;
+      const offsetx = paddingLeft - minx;
+      const offsety = paddingTop - miny;
+      // move the nodes
+      tmpNodes.forEach((node) => {
+        node.x += offsetx;
+        node.y += offsety;
+      });
+      // Apply the new positions
+      // TODO need to transform the nodes to the center of the scope.
+      tmpNodes.forEach(({ id, x, y }) => {
+        // FIXME I should assert here.
+        if (nodesMap.has(id)) {
+          nodesMap.set(id, {
+            ...nodesMap.get(id)!,
+            // position: { x: x + scope!.position!.x, y: y + scope!.position!.y },
+            position: { x, y },
+          });
+        }
+      });
       // update the scope's size to enclose all the nodes
       x1s = tmpNodes.map((node) => node.x);
       minx = Math.min(...x1s);
@@ -1076,9 +1091,13 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       const maxx = Math.max(...x2s);
       const y2s = tmpNodes.map((node) => node.y + id2height.get(node.id)!);
       const maxy = Math.max(...y2s);
-      const scope = nodesMap.get(scopeId);
+      const scope = nodesMap.get(scopeId)!;
       nodesMap.set(scopeId, {
-        ...scope!,
+        ...scope,
+        position: {
+          x: scope.position.x + initOffX - paddingLeft,
+          y: scope.position.y + initOffY - paddingTop,
+        },
         width: maxx - minx + paddingLeft + paddingRight,
         height: maxy - miny + paddingTop + paddingBottom,
         style: {
