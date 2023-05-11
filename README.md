@@ -5,7 +5,7 @@ with scalability and production-readiness. Users can still incrementally build
 up code by trying out a small code snippet each time. But they would not be
 overwhelmed by the great number of code snippets as the projects grow.
 
-<div align="center"><h2>Try it online at <a href="https://app.codepod.io">https://app.codepod.io!</a></a></div>
+<div align="center"><h2>Feel free to visit <a href="https://codepod.io">our homepage</a>, read the <a href="https://codepod.io/docs/manual/">manual</a>, or <a href="https://app.codepod.io">try it online</a></h2></div>
 
 ![screenshot](./screenshot-canvas.png)
 
