@@ -460,7 +460,7 @@ function ExportFile() {
           // call export graphQL api to get the AWS S3 url
           exportJSON({ variables: { repoId } });
         }}
-        disabled={loading}
+        disabled={true}
       >
         Python File
       </Button>
@@ -495,7 +495,7 @@ function ExportJSON() {
           // call export graphQL api to get the AWS S3 url
           exportJSON({ variables: { repoId } });
         }}
-        disabled={loading}
+        disabled={true}
       >
         Raw JSON
       </Button>
@@ -514,8 +514,10 @@ function ExportSVG() {
     " ",
     "-"
   )}-${repoId}-${new Date().toISOString()}.svg`;
+  const [loading, setLoading] = useState(false);
 
   const onClick = () => {
+    setLoading(true);
     const elem = document.querySelector(".react-flow");
     if (!elem) return;
     toSvg(elem as HTMLElement, {
@@ -536,11 +538,18 @@ function ExportSVG() {
       a.setAttribute("download", filename);
       a.setAttribute("href", dataUrl);
       a.click();
+      setLoading(false);
     });
   };
 
   return (
-    <Button variant="outlined" size="small" color="secondary" onClick={onClick}>
+    <Button
+      variant="outlined"
+      size="small"
+      color="secondary"
+      onClick={onClick}
+      disabled={loading}
+    >
       Download Image
     </Button>
   );
