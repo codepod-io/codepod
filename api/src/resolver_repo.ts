@@ -497,6 +497,65 @@ async function deletePods(_, { ids }: { ids: string[] }, { userId }) {
   return true;
 }
 
+async function copyRepo(_, { repoId, name, isPublic }, { userId }) {
+  // Find the repo
+  const repo = await prisma.repo.findFirst({
+    where: {
+      id: repoId,
+    },
+    include: {
+      pods: {
+        include: {
+          children: true,
+          parent: true,
+        },
+      },
+    },
+  });
+  if (!repo) throw new Error("Repo not found");
+
+  // Create a new repo
+  const { id } = await createRepo(_, { name, isPublic, id: "" }, { userId });
+
+  // Create new id for each pod
+  const sourcePods = repo.pods;
+  const idMap = await sourcePods.reduce(async (acc, pod) => {
+    const map = await acc;
+    const newId = await nanoid();
+    map.set(pod.id, newId);
+    return map;
+  }, Promise.resolve(new Map()));
+
+  // Update the parent/child relationship with their new ids
+  const targetPods = sourcePods.map((pod) => {
+    return {
+      ...pod,
+      id: idMap.get(pod.id),
+      parent: pod.parent ? { id: idMap.get(pod.parent.id) } : undefined,
+      children: pod.children.map((child) => child.id),
+      repoId: id,
+      parentId: pod.parentId ? idMap.get(pod.parentId) : undefined,
+    };
+  });
+
+  // Add all nodes without parent/child relationship to the new repo.
+  // TODO: it updates the parent/child relationship automatically somehow,maybe because the parentId? Try to figure out why, then refactor addPods method.
+  await prisma.pod.createMany({
+    data: targetPods.map((pod) => {
+      const res = {
+        ...pod,
+        id: pod.id,
+        index: 0,
+        parent: undefined,
+      } as any;
+      if (res.children) delete res.children;
+      return res;
+    }),
+  });
+  
+  return id;
+}
+
 export default {
   Query: {
     myRepos,
@@ -509,6 +568,7 @@ export default {
     createRepo,
     updateRepo,
     deleteRepo,
+    copyRepo,
     updatePod,
     deletePods,
     addEdge,

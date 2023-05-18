@@ -5,6 +5,7 @@ import Link from "@mui/material/Link";
 import Alert from "@mui/material/Alert";
 import AlertTitle from "@mui/material/AlertTitle";
 import ShareIcon from "@mui/icons-material/Share";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import Button from "@mui/material/Button";
 import { gql, useApolloClient, useMutation } from "@apollo/client";
 
@@ -139,6 +140,18 @@ function RepoWrapper({ children, id }) {
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
 
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
+  const navigate = useNavigate();
+  const [copyRepo] = useMutation(
+    gql`
+      mutation CopyRepo($id: String!) {
+        copyRepo(repoId: $id)
+      }
+    `,
+    { variables: { id } }
+  );
+  // if(result.data.copyRepo){
+  //   navigate(`/repo/${result.data.copyRepo}`);
+  // }
 
   const DrawerWidth = 240;
 
@@ -178,6 +191,19 @@ function RepoWrapper({ children, id }) {
               variant="contained"
             >
               Share
+            </Button>
+          }
+          forkButton={
+            <Button
+              endIcon={<ContentCopyIcon />}
+              onClick={async () => {
+                const result = await copyRepo();
+                const newRepoId = result.data.copyRepo;
+                navigate(`/repo/${newRepoId}`);
+              }}
+              variant="contained"
+            >
+              Fork
             </Button>
           }
         />
