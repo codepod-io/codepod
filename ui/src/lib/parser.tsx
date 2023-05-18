@@ -427,16 +427,20 @@ function compileLHS(node, st) {
     case "identifier":
       return new Set([node.text]);
     case "pattern_list":
+      // [a,b,c] = [1,2,3]
       return new Set(node.namedChildren.filter(notComment).map((n) => n.text));
     case "tuple_pattern":
+      // (a,b,c) = (1,2,3)
       return new Set(node.namedChildren.filter(notComment).map((n) => n.text));
     case "subscript":
+      // a[1] = 2
       let [l, r] = node.namedChildren.filter(notComment);
       compileExpression(r, st);
-      return compileLHS(l, st);
+      return compileExpression(l, st);
     case "attribute":
+      // a.b = 2
       let [obj, attr] = node.namedChildren.filter(notComment);
-      return compileLHS(obj, st);
+      return compileExpression(obj, st);
     default:
       global_errors.push({
         message: `unknown LHS type: ${node.type} in ${mysubstr(node.text)}`,

@@ -46,4 +46,45 @@ describe("sum module", () => {
         expect(errors).toStrictEqual([]);
       });
   });
+
+  test("parse subscript LHS", async () => {
+    let { annotations, errors } = analyzeCode(`
+       x = [1,2,3]
+       x[0] = 1
+       `);
+    expect(annotations).toStrictEqual([
+      {
+        name: "x",
+        type: "vardef",
+        startIndex: 8,
+        endIndex: 9,
+        startPosition: { row: 1, column: 7 },
+        endPosition: { row: 1, column: 8 },
+      },
+      {
+        name: "x",
+        type: "varuse",
+        startIndex: 27,
+        endIndex: 28,
+        startPosition: { row: 2, column: 7 },
+        endPosition: { row: 2, column: 8 },
+      },
+    ]);
+  });
+
+  test("parse attribute LHS", async () => {
+    let { annotations } = analyzeCode(`
+    a.b = 3
+    `);
+    expect(annotations).toStrictEqual([
+      {
+        name: "a",
+        type: "varuse",
+        startIndex: 5,
+        endIndex: 6,
+        startPosition: { row: 1, column: 4 },
+        endPosition: { row: 1, column: 5 },
+      },
+    ]);
+  });
 });
