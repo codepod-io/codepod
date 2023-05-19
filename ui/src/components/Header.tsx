@@ -31,6 +31,7 @@ type HeaderProps = {
   currentPage?: string | null;
   breadcrumbItem?: React.ReactNode;
   shareButton?: React.ReactNode;
+  forkButton?: React.ReactNode;
 };
 
 export const Header: React.FC<HeaderProps> = ({
@@ -39,6 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
   currentPage = null,
   breadcrumbItem = null,
   shareButton = null,
+  forkButton = null,
 }) => {
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
@@ -95,6 +97,16 @@ export const Header: React.FC<HeaderProps> = ({
             )}
             {breadcrumbItem}
           </Breadcrumbs>
+
+          <Box
+            sx={{
+              display: { xs: "none", md: "flex" },
+              alignItems: "center",
+              paddingRight: "10px",
+            }}
+          >
+            {forkButton}
+          </Box>
 
           <Box
             sx={{
