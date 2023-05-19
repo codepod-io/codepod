@@ -199,11 +199,11 @@ function RepoWrapper({ children, id }) {
               onClick={async () => {
                 const result = await copyRepo();
                 const newRepoId = result.data.copyRepo;
-                navigate(`/repo/${newRepoId}`);
+                window.open(`/repo/${newRepoId}`);
               }}
               variant="contained"
             >
-              Fork
+              Make a copy
             </Button>
           }
         />

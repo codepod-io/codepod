@@ -216,7 +216,7 @@ async function deleteEdge(_, { source, target }, { userId }) {
   return true;
 }
 
-async function createRepo(_, { id, name, isPublic }, { userId }) {
+async function createRepo(_, {}, { userId }) {
   if (!userId) throw Error("Unauthenticated");
   const repo = await prisma.repo.create({
     data: {
@@ -497,7 +497,7 @@ async function deletePods(_, { ids }: { ids: string[] }, { userId }) {
   return true;
 }
 
-async function copyRepo(_, { repoId, name, isPublic }, { userId }) {
+async function copyRepo(_, { repoId }, { userId }) {
   // Find the repo
   const repo = await prisma.repo.findFirst({
     where: {
@@ -506,7 +506,6 @@ async function copyRepo(_, { repoId, name, isPublic }, { userId }) {
     include: {
       pods: {
         include: {
-          children: true,
           parent: true,
         },
       },
@@ -515,7 +514,16 @@ async function copyRepo(_, { repoId, name, isPublic }, { userId }) {
   if (!repo) throw new Error("Repo not found");
 
   // Create a new repo
-  const { id } = await createRepo(_, { name, isPublic, id: "" }, { userId });
+  const { id } = await createRepo(_, {}, { userId });
+  // update the repo name
+  await prisma.repo.update({
+    where: {
+      id,
+    },
+    data: {
+      name: repo.name ? `Copy of ${repo.name}` : `Copy of ${repo.id}`,
+    },
+  });
 
   // Create new id for each pod
   const sourcePods = repo.pods;
@@ -532,7 +540,6 @@ async function copyRepo(_, { repoId, name, isPublic }, { userId }) {
       ...pod,
       id: idMap.get(pod.id),
       parent: pod.parent ? { id: idMap.get(pod.parent.id) } : undefined,
-      children: pod.children.map((child) => child.id),
       repoId: id,
       parentId: pod.parentId ? idMap.get(pod.parentId) : undefined,
     };
@@ -541,18 +548,14 @@ async function copyRepo(_, { repoId, name, isPublic }, { userId }) {
   // Add all nodes without parent/child relationship to the new repo.
   // TODO: it updates the parent/child relationship automatically somehow,maybe because the parentId? Try to figure out why, then refactor addPods method.
   await prisma.pod.createMany({
-    data: targetPods.map((pod) => {
-      const res = {
-        ...pod,
-        id: pod.id,
-        index: 0,
-        parent: undefined,
-      } as any;
-      if (res.children) delete res.children;
-      return res;
-    }),
+    data: targetPods.map((pod) => ({
+      ...pod,
+      id: pod.id,
+      index: 0,
+      parent: undefined,
+    })),
   });
-  
+
   return id;
 }
 
