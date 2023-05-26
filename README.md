@@ -15,12 +15,14 @@ overwhelmed by the great number of code snippets as the projects grow.
 
 # Contributing
 
-CodePod is open source under MIT license. Feel free to contribute! We can make
-it better together. You can contribute by opening an issue, discussion, or
-submitting a pull request. Do use [Prettier](https://prettier.io/) (e.g., [its
-VSCode
+CodePod is open-source under an MIT license. Feel free to contribute to make
+it better together with us. You can contribute by [creating awesome showcases](#gallery), 
+[reporting a bug, suggesting a feature](https://github.com/codepod-io/codepod/issues), 
+or submitting a pull request. 
+Do use [Prettier](https://prettier.io/) (e.g., [its VSCode
 plugin](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode))
-to format your code before checking in.
+to format your code before checking in. 
+Last but not least, give us a star on Github! 
 
 # Citation
 
@@ -37,6 +39,14 @@ https://arxiv.org/abs/2301.02410
   copyright = {Creative Commons Attribution 4.0 International}
 }
 ```
+
+# Gallery 
+
+Thanks to our community, we now have CodePod showcases ranging from analytical geometry to bioinformatics. 
+
+* [plotting common functions](https://app.codepod.io/repo/2ncnioylo9abo3otdxjs)
+* [image operations using skimage](https://user-images.githubusercontent.com/44469195/239033643-decbd7ae-29bb-44b9-af33-d4cb7c2bce46.png)
+* [tel-siRNA sequence detector](https://app.codepod.io/repo/b94n7n00a9395xwhv1o8)
 
 # Developing CodePod using docker-compose
 
