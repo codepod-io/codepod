@@ -677,6 +677,7 @@ function CanvasImpl() {
           multiSelectionKeyCode={isMac ? "Meta" : "Control"}
           // TODO restore previous viewport
           defaultViewport={{ zoom: 1, x: 0, y: 0 }}
+          proOptions={{ hideAttribution: true }}
         >
           <Box>
             <MiniMap
