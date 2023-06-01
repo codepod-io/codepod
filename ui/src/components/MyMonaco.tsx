@@ -8,6 +8,7 @@ import { RepoContext } from "../lib/store";
 import { MonacoBinding } from "y-monaco";
 import { useReactFlow } from "reactflow";
 import { Annotation } from "../lib/parser";
+import { MonacoCompletionProvider } from "../lib/monacoCompletionProvider";
 
 const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",
@@ -26,6 +27,9 @@ monaco.languages.setLanguageConfiguration("julia", {
     decreaseIndentPattern: /^\s*(end|else|elseif|catch|finally)\b.*$/,
   },
 });
+
+console.log("monaco", monaco);
+console.log("languages", monaco.languages.registerInlineCompletionsProvider);
 function construct_indent(pos, indent) {
   return [
     {
@@ -402,6 +406,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const showAnnotations = useStore(store, (state) => state.showAnnotations);
   const scopedVars = useStore(store, (state) => state.scopedVars);
   const updateView = useStore(store, (state) => state.updateView);
+  const setMonaco = useStore(store, (state) => state.setMonaco);
 
   const value = getPod(id)?.content || "";
   let lang = getPod(id)?.lang || "javascript";
@@ -441,6 +446,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     monaco
   ) {
     setEditor(editor);
+    setMonaco(monaco);
     // console.log(Math.min(1000, editor.getContentHeight()));
     const updateHeight = () => {
       // max height: 400
@@ -479,6 +485,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     // });
 
     // bind it to the ytext with pod id
+    // if (monaco.languages.registerInlineCompletionsProvider)
     const ytext = ydoc.getText("monaco-" + id);
     const monacoBinding = new MonacoBinding(
       ytext,

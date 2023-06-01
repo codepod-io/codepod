@@ -2,6 +2,7 @@ import { createStore, StateCreator, StoreApi } from "zustand";
 import { devtools } from "zustand/middleware";
 import produce from "immer";
 import { createContext } from "react";
+import { MonacoCompletionProvider } from "../monacoCompletionProvider";
 
 import {
   normalize,
@@ -21,6 +22,8 @@ import { ApolloClient } from "@apollo/client";
 import { addAwarenessStyle } from "../styles";
 import { Annotation } from "../parser";
 import { MyState, Pod } from ".";
+
+declare type Monaco = typeof import("monaco-editor");
 
 let serverURL;
 if (window.location.protocol === "http:") {
@@ -46,6 +49,7 @@ export interface RepoStateSlice {
   clients: Map<string, any>;
   user: any;
   ydoc: Doc;
+  monaco: Monaco | null;
   collaborators: any[];
   addCollaborator: (client: ApolloClient<object>, email: string) => any;
   deleteCollaborator: (client: ApolloClient<object>, id: string) => any;
@@ -74,6 +78,12 @@ export interface RepoStateSlice {
   yjsConnecting: boolean;
   connectYjs: () => void;
   disconnectYjs: () => void;
+  setMonaco: (monaco: Monaco) => void;
+  autoCompletion: boolean;
+  unregisterCompletionHandler: null | (() => void);
+  registerCompletion: () => void;
+  unregisterCompletion: () => void;
+  flipAutoCompletion: () => void;
 }
 
 export const createRepoStateSlice: StateCreator<
@@ -96,7 +106,9 @@ export const createRepoStateSlice: StateCreator<
   currentEditor: null,
   //TODO: all presence information are now saved in clients map for future usage. create a modern UI to show those information from clients (e.g., online users)
   clients: new Map(),
-
+  monaco: null,
+  autoCompletion: false,
+  unregisterCompletionHandler: null,
   loadError: null,
   role: "GUEST",
   collaborators: [],
@@ -281,6 +293,64 @@ export const createRepoStateSlice: StateCreator<
           state.provider = null;
         }
         state.ydoc.destroy();
+      })
+    ),
+  setMonaco: (monaco) => {
+    set(
+      produce((state) => {
+        if (state.monaco === null) {
+          state.monaco = monaco;
+          console.log("set monaco as", monaco);
+          if (state.autoCompletion) {
+            state.registerCompletion();
+          }
+        }
+      })
+    );
+  },
+  registerCompletion: () => {
+    set(
+      produce((state) => {
+        if (state.monaco && !state.unregisterCompletionHandler) {
+          const completionProvider = new MonacoCompletionProvider();
+          const { dispose } =
+            state.monaco.languages.registerCompletionItemProvider(
+              "codeium",
+              completionProvider
+            );
+          console.log("register completion", dispose);
+          state.unregisterCompletionHandler = dispose;
+          state.monaco.editor.registerCommand(
+            "codeium.acceptCompletion",
+            (accessor, args) => {
+              console.log("acceptCompletion", args);
+            }
+          );
+        }
+      })
+    );
+  },
+
+  unregisterCompletion: () =>
+    set(
+      produce((state) => {
+        if (state.unregisterCompletionHandler) {
+          console.log("unregister", state.unregisterCompletionHandler);
+          state.unregisterCompletionHandler();
+          state.unregisterCompletionHandler = null;
+        }
+      })
+    ),
+
+  flipAutoCompletion: () =>
+    set(
+      produce((state) => {
+        state.autoCompletion = !state.autoCompletion;
+        if (state.autoCompletion) {
+          state.registerCompletion();
+        } else {
+          state.unregisterCompletion();
+        }
       })
     ),
 });

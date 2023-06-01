@@ -9,6 +9,7 @@ import React, { useContext } from "react";
 import CodeIcon from "@mui/icons-material/Code";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import NoteIcon from "@mui/icons-material/Note";
+import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import FormatListNumberedIcon from "@mui/icons-material/FormatListNumbered";
 
 const paneMenuStyle = (left, top) => {
@@ -39,6 +40,11 @@ export function CanvasContextMenu(props) {
   const flipShowLineNumbers = useStore(
     store,
     (state) => state.flipShowLineNumbers
+  );
+  const autoCompletion = useStore(store, (state) => state.autoCompletion);
+  const flipAutoCompletion = useStore(
+    store,
+    (state) => state.flipAutoCompletion
   );
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   return (
@@ -74,6 +80,15 @@ export function CanvasContextMenu(props) {
           </ListItemIcon>
           <ListItemText>
             {showLineNumbers ? "Hide " : "Show "} Line Numbers
+          </ListItemText>
+        </MenuItem>
+        <MenuItem onClick={flipAutoCompletion} sx={ItemStyle}>
+          <ListItemIcon sx={{ color: "inherit" }}>
+            <AutoFixHighIcon />
+          </ListItemIcon>
+          <ListItemText>
+            {autoCompletion ? "Disable " : "Enable "} Auto Completion (Provided
+            by Codeium)
           </ListItemText>
         </MenuItem>
       </MenuList>
