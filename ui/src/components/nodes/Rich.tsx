@@ -473,11 +473,9 @@ const MyStyledWrapper = styled("div")(
 // FIXME re-rendering performance
 const MyEditor = ({
   placeholder = "Start typing...",
-  initialContent,
   id,
 }: {
   placeholder?: string;
-  initialContent?: string;
   id: string;
 }) => {
   // FIXME this is re-rendered all the time.
@@ -540,6 +538,8 @@ const MyEditor = ({
     stringHandler: htmlToProsemirrorNode,
   });
 
+  let index_onChange = 0;
+
   return (
     <Box
       className="remirror-theme"
@@ -567,6 +567,16 @@ const MyEditor = ({
               setState(nextState);
               // TODO sync with DB and yjs
               if (parameter.tr?.docChanged) {
+                index_onChange += 1;
+                if (index_onChange == 1) {
+                  if (
+                    JSON.stringify(pod.content) ===
+                    JSON.stringify(nextState.doc.toJSON())
+                  ) {
+                    // This is the first onChange trigger, and the content is the same. Skip it.
+                    return;
+                  }
+                }
                 setPodContent({ id, content: nextState.doc.toJSON() });
               }
             }}
@@ -702,6 +712,7 @@ export const RichNode = memo<Props>(function ({
 
   const [showToolbar, setShowToolbar] = useState(false);
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
+  const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
 
   const onResizeStop = useCallback(
     (e, data) => {
@@ -727,7 +738,9 @@ export const RichNode = memo<Props>(function ({
           true
         );
         updateView();
-        autoLayoutROOT();
+        if (autoRunLayout) {
+          autoLayoutROOT();
+        }
       }
     },
     [id, nodesMap, setPodGeo, updateView, autoLayoutROOT]

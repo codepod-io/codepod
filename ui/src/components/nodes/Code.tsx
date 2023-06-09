@@ -80,11 +80,20 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
   const result = useStore(store, (state) => state.pods[id]?.result);
   const error = useStore(store, (state) => state.pods[id]?.error);
   const stdout = useStore(store, (state) => state.pods[id]?.stdout);
-  const running = useStore(store, (state) => state.pods[id]?.running);
+  const running = useStore(store, (state) => state.pods[id]?.running || false);
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
+  const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
+
+  const prevRunning = useRef(false);
   useEffect(() => {
-    autoLayoutROOT();
+    if (autoRunLayout) {
+      if (prevRunning.current != running) {
+        autoLayoutROOT();
+        prevRunning.current = running;
+      }
+    }
   }, [running]);
+
   const lastExecutedAt = useStore(
     store,
     (state) => state.pods[id]?.lastExecutedAt
@@ -474,9 +483,17 @@ export const CodeNode = memo<NodeProps>(function ({
 
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
+  const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
+
+  const prevLayout = useRef(layout);
   useEffect(() => {
-    // Run auto-layout when the output box layout changes.
-    autoLayoutROOT();
+    if (autoRunLayout) {
+      // Run auto-layout when the output box layout changes.
+      if (prevLayout.current != layout) {
+        autoLayoutROOT();
+        prevLayout.current = layout;
+      }
+    }
   }, [layout]);
 
   const onResizeStop = useCallback(
@@ -503,7 +520,9 @@ export const CodeNode = memo<NodeProps>(function ({
           true
         );
         updateView();
-        autoLayoutROOT();
+        if (autoRunLayout) {
+          autoLayoutROOT();
+        }
       }
     },
     [id, nodesMap, setPodGeo, updateView, autoLayoutROOT]
