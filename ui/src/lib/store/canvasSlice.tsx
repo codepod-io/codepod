@@ -165,7 +165,7 @@ function createNewNode(type: "SCOPE" | "CODE" | "RICH", position): Node {
 /**
  * Get the absoluate position of the node.
  */
-function getAbsPos(node: Node, nodesMap: YMap<Node>): XYPosition {
+export function getAbsPos(node: Node, nodesMap: YMap<Node>): XYPosition {
   let x = node.position.x;
   let y = node.position.y;
   while (node.parentNode) {
