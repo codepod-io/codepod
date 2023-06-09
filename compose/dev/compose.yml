@@ -63,7 +63,7 @@ services:
     volumes:
       - ../../ui:/app
       - ui-node-modules:/app/node_modules
-    command: sh -c "yarn && yarn dev"
+    command: sh -c "yarn && yarn run generate && yarn dev"
 
   proxy:
     image: node:18
