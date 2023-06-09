@@ -11,6 +11,7 @@ import PostAddIcon from "@mui/icons-material/PostAdd";
 import NoteIcon from "@mui/icons-material/Note";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import FormatListNumberedIcon from "@mui/icons-material/FormatListNumbered";
+import { useApolloClient } from "@apollo/client";
 
 const paneMenuStyle = (left, top) => {
   return {
@@ -41,11 +42,14 @@ export function CanvasContextMenu(props) {
     store,
     (state) => state.flipShowLineNumbers
   );
+  const client = useApolloClient();
   const autoCompletion = useStore(store, (state) => state.autoCompletion);
   const flipAutoCompletion = useStore(
     store,
     (state) => state.flipAutoCompletion
   );
+
+  console.log("autoCompletion", autoCompletion);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   return (
     <Box sx={paneMenuStyle(props.x, props.y)}>
@@ -82,7 +86,7 @@ export function CanvasContextMenu(props) {
             {showLineNumbers ? "Hide " : "Show "} Line Numbers
           </ListItemText>
         </MenuItem>
-        <MenuItem onClick={flipAutoCompletion} sx={ItemStyle}>
+        <MenuItem onClick={() => flipAutoCompletion(client)} sx={ItemStyle}>
           <ListItemIcon sx={{ color: "inherit" }}>
             <AutoFixHighIcon />
           </ListItemIcon>

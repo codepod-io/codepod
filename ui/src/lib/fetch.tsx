@@ -373,3 +373,22 @@ export async function doRemoteDeleteCollaborator(
     return { success: false, error: e };
   }
 }
+
+export async function doRemoteUpdateCodeiumAPIKey(client, { apiKey }) {
+  const mutation = gql`
+    mutation updateCodeiumAPIKey($apiKey: String!) {
+      updateCodeiumAPIKey(apiKey: $apiKey)
+    }
+  `;
+  try {
+    const res = await client.mutate({
+      mutation,
+      variables: {
+        apiKey,
+      },
+    });
+    return { success: true, error: null };
+  } catch (e) {
+    return { success: false, error: e };
+  }
+}

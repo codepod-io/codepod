@@ -12,6 +12,7 @@ export const typeDefs = gql`
     password: String!
     firstname: String!
     lastname: String!
+    codeiumAPIKey: String!
   }
 
   type Visibility {
@@ -143,5 +144,6 @@ export const typeDefs = gql`
 
     exportJSON(repoId: String!): String!
     exportFile(repoId: String!): String!
+    updateCodeiumAPIKey(apiKey: String!): Boolean
   }
 `;

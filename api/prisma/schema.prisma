@@ -51,6 +51,8 @@ model User {
     Repo         Repo[]         @relation("OWNER")
     sharedRepos  Repo[]         @relation("COLLABORATOR")
     UserRepoData UserRepoData[]
+
+    codeiumAPIKey String? @default("")
 }
 
 model UserRepoData {

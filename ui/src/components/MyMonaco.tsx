@@ -406,7 +406,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const showAnnotations = useStore(store, (state) => state.showAnnotations);
   const scopedVars = useStore(store, (state) => state.scopedVars);
   const updateView = useStore(store, (state) => state.updateView);
-  const setMonaco = useStore(store, (state) => state.setMonaco);
 
   const value = getPod(id)?.content || "";
   let lang = getPod(id)?.lang || "javascript";
@@ -446,7 +445,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     monaco
   ) {
     setEditor(editor);
-    setMonaco(monaco);
     // console.log(Math.min(1000, editor.getContentHeight()));
     const updateHeight = () => {
       // max height: 400

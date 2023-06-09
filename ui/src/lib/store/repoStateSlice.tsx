@@ -3,6 +3,7 @@ import { devtools } from "zustand/middleware";
 import produce from "immer";
 import { createContext } from "react";
 import { MonacoCompletionProvider } from "../monacoCompletionProvider";
+import { monaco } from "react-monaco-editor";
 
 import {
   normalize,
@@ -13,6 +14,7 @@ import {
   doRemoteAddCollaborator,
   doRemoteDeleteCollaborator,
   doRemoteAddPods,
+  doRemoteUpdateCodeiumAPIKey,
 } from "../fetch";
 
 import { Doc } from "yjs";
@@ -22,8 +24,7 @@ import { ApolloClient } from "@apollo/client";
 import { addAwarenessStyle } from "../styles";
 import { Annotation } from "../parser";
 import { MyState, Pod } from ".";
-
-declare type Monaco = typeof import("monaco-editor");
+import { v4 as uuidv4 } from "uuid";
 
 let serverURL;
 if (window.location.protocol === "http:") {
@@ -32,6 +33,37 @@ if (window.location.protocol === "http:") {
   serverURL = `wss://${window.location.host}/socket`;
 }
 console.log("yjs server url: ", serverURL);
+
+const openTokenPage = () => {
+  const PROFILE_URL = "https://www.codeium.com/profile";
+  const params = new URLSearchParams({
+    response_type: "token",
+    redirect_uri: "chrome-show-auth-token",
+    scope: "openid profile email",
+    prompt: "login",
+    redirect_parameters_type: "query",
+    state: uuidv4(),
+  });
+  window.open(`${PROFILE_URL}?${params}`);
+};
+
+export async function registerUser(
+  token: string
+): Promise<{ api_key: string; name: string }> {
+  const url = new URL("register_user/", "https://api.codeium.com");
+  const response = await fetch(url, {
+    body: JSON.stringify({ firebase_id_token: token }),
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!response.ok) {
+    throw new Error(response.statusText);
+  }
+  const user = await response.json();
+  return user as { api_key: string; name: string };
+}
 
 export interface RepoStateSlice {
   pods: Record<string, Pod>;
@@ -49,7 +81,6 @@ export interface RepoStateSlice {
   clients: Map<string, any>;
   user: any;
   ydoc: Doc;
-  monaco: Monaco | null;
   collaborators: any[];
   addCollaborator: (client: ApolloClient<object>, email: string) => any;
   deleteCollaborator: (client: ApolloClient<object>, id: string) => any;
@@ -78,13 +109,14 @@ export interface RepoStateSlice {
   yjsConnecting: boolean;
   connectYjs: () => void;
   disconnectYjs: () => void;
-  setMonaco: (monaco: Monaco) => void;
   autoCompletion: boolean;
   unregisterCompletionHandler: null | (() => void);
-  registerCompletion: () => void;
+  registerCompletion: (client: ApolloClient<object>) => void;
   unregisterCompletion: () => void;
-  flipAutoCompletion: () => void;
+  flipAutoCompletion: (client: ApolloClient<object>) => void;
 }
+
+let unregister: any = null;
 
 export const createRepoStateSlice: StateCreator<
   MyState,
@@ -106,7 +138,6 @@ export const createRepoStateSlice: StateCreator<
   currentEditor: null,
   //TODO: all presence information are now saved in clients map for future usage. create a modern UI to show those information from clients (e.g., online users)
   clients: new Map(),
-  monaco: null,
   autoCompletion: false,
   unregisterCompletionHandler: null,
   loadError: null,
@@ -295,62 +326,92 @@ export const createRepoStateSlice: StateCreator<
         state.ydoc.destroy();
       })
     ),
-  setMonaco: (monaco) => {
-    set(
-      produce((state) => {
-        if (state.monaco === null) {
-          state.monaco = monaco;
-          console.log("set monaco as", monaco);
-          if (state.autoCompletion) {
-            state.registerCompletion();
-          }
-        }
-      })
-    );
-  },
-  registerCompletion: () => {
-    set(
-      produce((state) => {
-        if (state.monaco && !state.unregisterCompletionHandler) {
-          const completionProvider = new MonacoCompletionProvider();
-          const { dispose } =
-            state.monaco.languages.registerCompletionItemProvider(
-              "codeium",
-              completionProvider
-            );
-          console.log("register completion", dispose);
-          state.unregisterCompletionHandler = dispose;
-          state.monaco.editor.registerCommand(
-            "codeium.acceptCompletion",
-            (accessor, args) => {
-              console.log("acceptCompletion", args);
+
+  registerCompletion: async (client) => {
+    if (get().autoCompletion || unregister) return;
+    console.log(get().user);
+    if (
+      get().user.codeiumAPIKey === undefined ||
+      get().user.codeiumAPIKey === ""
+    ) {
+      openTokenPage();
+      const token = prompt("Codeium Token:");
+      console.log("token", token);
+      try {
+        if (token) {
+          const { api_key, name } = await registerUser(token);
+          if (api_key !== undefined && api_key !== "") {
+            const { success } = await doRemoteUpdateCodeiumAPIKey(client, {
+              apiKey: api_key,
+            });
+            if (success) {
+              set({ user: { ...get().user, codeiumAPIKey: api_key } });
             }
-          );
+          }
+          console.log("registerCompletion", api_key, name);
         }
-      })
+      } catch (e) {
+        console.log("registerCompletion error", e);
+      }
+    }
+    const apiKey = get().user.codeiumAPIKey;
+    const completionProvider = new MonacoCompletionProvider(apiKey);
+    // const completionProvider = new MonacoCompletionProvider();
+    console.log("completionProvider", completionProvider);
+    console.log(monaco.editor.getModels());
+    monaco.editor.getModels().forEach((model) => {
+      console.log("model", model.getValue());
+    });
+    const { dispose } = monaco.languages.registerInlineCompletionsProvider(
+      { pattern: "**" },
+      completionProvider
+    );
+    console.log("register completion", dispose);
+    unregister = dispose;
+    console.log("state.autoCompletion", get().autoCompletion);
+    // monaco.editor.registerCommand(
+    //   "codeium.acceptCompletion",
+    //   (accessor, args) => {
+    //     console.log("acceptCompletion", args);
+    //   }
+    // );
+    monaco.editor.registerCommand(
+      "codeium.acceptCompletion",
+      (
+        _: unknown,
+        apiKey: string,
+        completionId: string,
+        callback?: () => void
+      ) => {
+        callback?.();
+        completionProvider.acceptedLastCompletion(apiKey, completionId);
+      }
     );
   },
 
   unregisterCompletion: () =>
     set(
       produce((state) => {
-        if (state.unregisterCompletionHandler) {
-          console.log("unregister", state.unregisterCompletionHandler);
-          state.unregisterCompletionHandler();
-          state.unregisterCompletionHandler = null;
+        console.log("unregisterCompletion", state.unregisterCompletionHandler);
+        if (typeof unregister === "function") {
+          console.log("unregister", unregister);
+          unregister();
+          unregister = null;
         }
       })
     ),
 
-  flipAutoCompletion: () =>
+  flipAutoCompletion: (client) =>
     set(
       produce((state) => {
-        state.autoCompletion = !state.autoCompletion;
+        console.log("state.autoCompletion", state.autoCompletion);
         if (state.autoCompletion) {
-          state.registerCompletion();
-        } else {
           state.unregisterCompletion();
+        } else {
+          state.registerCompletion(client);
         }
+        state.autoCompletion = !state.autoCompletion;
+        console.log("unregister", state.unregisterCompletionHandler);
       })
     ),
 });
