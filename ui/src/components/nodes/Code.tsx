@@ -109,10 +109,13 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
       state.pods[id]?.stderr
   );
   const [resultScroll, setResultScroll] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const clearResults = useStore(store, (state) => state.clearResults);
   if (!hasResult) return <></>;
   return (
     <Box
+      onMouseEnter={() => setShowMenu(true)}
+      onMouseLeave={() => setShowMenu(false)}
       // This ID is used for autolayout.
       //
       // TODO save result box position to DB.
@@ -199,52 +202,59 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
           border="1px"
         >
           {/* FIXME result?.count is not correct, always 0 or 1. */}
-          {(stdout || (result?.text && result?.count > 0) || error) && (
-            <ButtonGroup
-              sx={[
-                {
-                  fontSize: "0.8em",
-                  paddingTop: "3px",
-                  paddingBottom: "2px",
-                  lineHeight: "10px",
-                  zIndex: 201,
-                  position: "absolute",
-                  top: 0,
-                  right: 0,
-                },
-              ]}
-              variant="text"
-              aria-label="outlined primary button group"
-            >
-              <Button
-                onClick={() => {
-                  setResultScroll(!resultScroll);
-                }}
-                variant="text"
-                size="small"
+          {(stdout || (result?.text && result?.count > 0) || error) &&
+            showMenu && (
+              <ButtonGroup
+                sx={[
+                  {
+                    fontSize: "0.8em",
+                    paddingTop: "3px",
+                    paddingBottom: "2px",
+                    lineHeight: "10px",
+                    zIndex: 201,
+                    position: "absolute",
+                    top: "-64.5px",
+                    right: "15px",
+                    "& .MuiButton-root": {
+                      fontSize: ".9em",
+                      paddingTop: 0,
+                      paddingBottom: 0,
+                    },
+                  },
+                ]}
+                variant="outlined"
+                aria-label="outlined primary button group"
+                orientation="vertical"
               >
-                {resultScroll ? "Unfocus" : "Focus"}
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowOutput(!showOutput);
-                }}
-                variant="text"
-                size="small"
-              >
-                Hide
-              </Button>
-              <Button
-                onClick={() => {
-                  clearResults(id);
-                }}
-                variant="text"
-                size="small"
-              >
-                Clear
-              </Button>
-            </ButtonGroup>
-          )}
+                <Button
+                  onClick={() => {
+                    setResultScroll(!resultScroll);
+                  }}
+                  variant="text"
+                  size="small"
+                >
+                  {resultScroll ? "Unfocus" : "Focus"}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowOutput(!showOutput);
+                  }}
+                  variant="text"
+                  size="small"
+                >
+                  Hide
+                </Button>
+                <Button
+                  onClick={() => {
+                    clearResults(id);
+                  }}
+                  variant="text"
+                  size="small"
+                >
+                  Clear
+                </Button>
+              </ButtonGroup>
+            )}
 
           {stdout && (
             <Box
