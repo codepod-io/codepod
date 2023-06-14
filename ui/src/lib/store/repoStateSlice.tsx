@@ -328,7 +328,7 @@ export const createRepoStateSlice: StateCreator<
     ),
 
   registerCompletion: async (client) => {
-    if (get().autoCompletion || unregister) return;
+    if (get().autoCompletion || get().unregisterCompletionHandler) return;
     console.log(get().user);
     if (
       get().user.codeiumAPIKey === undefined ||
@@ -348,26 +348,21 @@ export const createRepoStateSlice: StateCreator<
               set({ user: { ...get().user, codeiumAPIKey: api_key } });
             }
           }
-          console.log("registerCompletion", api_key, name);
+          console.log("get api key", api_key, name);
         }
       } catch (e) {
-        console.log("registerCompletion error", e);
+        console.log("api key error", e);
       }
     }
     const apiKey = get().user.codeiumAPIKey;
     const completionProvider = new MonacoCompletionProvider(apiKey);
     // const completionProvider = new MonacoCompletionProvider();
-    console.log("completionProvider", completionProvider);
-    console.log(monaco.editor.getModels());
-    monaco.editor.getModels().forEach((model) => {
-      console.log("model", model.getValue());
-    });
     const { dispose } = monaco.languages.registerInlineCompletionsProvider(
       { pattern: "**" },
       completionProvider
     );
     console.log("register completion", dispose);
-    unregister = dispose;
+    set({ unregisterCompletionHandler: dispose });
     console.log("state.autoCompletion", get().autoCompletion);
     // monaco.editor.registerCommand(
     //   "codeium.acceptCompletion",
@@ -387,33 +382,26 @@ export const createRepoStateSlice: StateCreator<
         completionProvider.acceptedLastCompletion(apiKey, completionId);
       }
     );
+
+    set({ autoCompletion: true });
   },
 
-  unregisterCompletion: () =>
-    set(
-      produce((state) => {
-        console.log("unregisterCompletion", state.unregisterCompletionHandler);
-        if (typeof unregister === "function") {
-          console.log("unregister", unregister);
-          unregister();
-          unregister = null;
-        }
-      })
-    ),
+  unregisterCompletion: () => {
+    const dispose = get().unregisterCompletionHandler;
+    if (typeof dispose === "function") {
+      console.log("unregister", dispose);
+      dispose();
+      set({ unregisterCompletionHandler: null, autoCompletion: false });
+    }
+  },
 
-  flipAutoCompletion: (client) =>
-    set(
-      produce((state) => {
-        console.log("state.autoCompletion", state.autoCompletion);
-        if (state.autoCompletion) {
-          state.unregisterCompletion();
-        } else {
-          state.registerCompletion(client);
-        }
-        state.autoCompletion = !state.autoCompletion;
-        console.log("unregister", state.unregisterCompletionHandler);
-      })
-    ),
+  flipAutoCompletion: (client) => {
+    if (get().autoCompletion) {
+      get().unregisterCompletion();
+    } else {
+      get().registerCompletion(client);
+    }
+  },
 });
 
 function loadRepo(set, get) {

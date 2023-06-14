@@ -151,42 +151,48 @@ export class MonacoCompletionProvider
     const { text, utf8ByteOffset, additionalUtf8ByteOffset } =
       this.computeTextAndOffsets(model, position);
     const numUtf8Bytes = additionalUtf8ByteOffset + utf8ByteOffset;
-    const request = new GetCompletionsRequest({
-      metadata: this.client.getMetadata(this.ideinfo, apiKey),
-      document: {
-        text: text,
-        editorLanguage: "python",
-        language: Language.PYTHON,
-        cursorOffset: BigInt(numUtf8Bytes),
-        lineEnding: "\n",
-        relativePath: undefined,
-        absolutePath: this.absolutePath(model),
-      },
-      editorOptions: {
-        tabSize: BigInt(model.getOptions().tabSize),
-        insertSpaces: model.getOptions().insertSpaces,
-      },
-    });
-    const response = await this.client.getCompletions(request);
-    console.log("codeium request", request);
-    console.log("codeium response", response);
-    if (response === undefined) {
+    try {
+      const request = new GetCompletionsRequest({
+        metadata: this.client.getMetadata(this.ideinfo, apiKey),
+        document: {
+          text: text,
+          editorLanguage: "python",
+          language: Language.PYTHON,
+          cursorOffset: BigInt(numUtf8Bytes),
+          lineEnding: "\n",
+          relativePath: undefined,
+          absolutePath: this.absolutePath(model),
+        },
+        editorOptions: {
+          tabSize: BigInt(model.getOptions().tabSize),
+          insertSpaces: model.getOptions().insertSpaces,
+        },
+      });
+      const response = await this.client.getCompletions(request);
+      console.log("codeium request", request);
+      console.log("codeium response", response);
+      if (response === undefined) {
+        return { items: [] };
+      }
+      const items = response.completionItems
+        .map((completionItem) =>
+          createInlineCompletionItem(
+            completionItem,
+            model,
+            additionalUtf8ByteOffset,
+            apiKey,
+            this.modelUriToEditor.get(model.uri.toString())
+          )
+        )
+        .filter(
+          (item): item is monaco.languages.InlineCompletion =>
+            item !== undefined
+        );
+      return { items };
+    } catch (e) {
+      console.log(e);
       return { items: [] };
     }
-    const items = response.completionItems
-      .map((completionItem) =>
-        createInlineCompletionItem(
-          completionItem,
-          model,
-          additionalUtf8ByteOffset,
-          apiKey,
-          this.modelUriToEditor.get(model.uri.toString())
-        )
-      )
-      .filter(
-        (item): item is monaco.languages.InlineCompletion => item !== undefined
-      );
-    return { items };
   }
 
   handleItemDidShow(): void {

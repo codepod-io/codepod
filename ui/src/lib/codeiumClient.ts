@@ -59,11 +59,11 @@ export class LanguageServerClient {
     this.abortController?.abort();
     this.abortController = new AbortController();
     const signal = this.abortController.signal;
-    const getCompletionsPromise = this.client.getCompletions(request, {
-      signal,
-      headers: this.getHeaders(request.metadata?.apiKey),
-    });
     try {
+      const getCompletionsPromise = this.client.getCompletions(request, {
+        signal,
+        headers: this.getHeaders(request.metadata?.apiKey),
+      });
       console.log("codeium request", request);
       return await getCompletionsPromise;
     } catch (err) {

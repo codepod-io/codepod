@@ -53,6 +53,12 @@ function SidebarSettings() {
   const setAutoRunLayout = useStore(store, (state) => state.setAutoRunLayout);
   const contextualZoom = useStore(store, (state) => state.contextualZoom);
   const setContextualZoom = useStore(store, (state) => state.setContextualZoom);
+  const autoCompletion = useStore(store, (state) => state.autoCompletion);
+  const flipAutoCompletion = useStore(
+    store,
+    (state) => state.flipAutoCompletion
+  );
+  const client = useApolloClient();
   return (
     <Box>
       <Box>
@@ -127,6 +133,23 @@ function SidebarSettings() {
                 />
               }
               label="Scoped Variables"
+            />
+          </FormGroup>
+        </Tooltip>
+        <Tooltip title={"Enable Auto Completion"} disableInteractive>
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={autoCompletion}
+                  size="small"
+                  color="warning"
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    flipAutoCompletion(client);
+                  }}
+                />
+              }
+              label="Auto Completion"
             />
           </FormGroup>
         </Tooltip>
