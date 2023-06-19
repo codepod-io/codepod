@@ -154,6 +154,46 @@ cd ./api/
 yarn
 ```
 
+## Starting two stacks simultaneously
+
+It might be necessary to create two Docker stacks for two verions of CodePod, respectively. For example, you might want to test the new version of CodePod while keeping the old version running.
+
+Because Docker uses the folder name as the default suffix in container names, these two stacks may conflict with each other. To avoid this, you can use the `COMPOSE_PROJECT_NAME` environment variable to set a prefix for the container names. For example, you can set `COMPOSE_PROJECT_NAME=codepod-v2` in the `CODEPOD_ROOT/compose/dev/.env` file of the new stack, and then [start](#starting-the-stack) the new stack. 
+
+The two stacks also may share the same network ports due to the same configuration files used. To set the ports, search for the following lines in  `CODEPOD_ROOT/compose/dev/nginx.conf` (two occurences of the two lines in the file) file of the new stack:
+
+```yaml
+        listen 80; 
+        listen [::]:80;
+```
+
+and the following section in the `CODEPOD_ROOT/compose/dev/compose.yml` file of the new stack:
+
+```
+  nginx:
+    image: nginx:alpine
+    ports:
+      - 80:80
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+```
+
+and replace the default port number 80 to a new port number. For example, you can set the port number to 8080 for all occurences of 80. 
+
+Also, comment out the port section of the `ui` container in `CODEPOD_ROOT/compose/dev/compose.yml` as: 
+
+```
+  ui:
+    image: node:18
+    working_dir: /app
+#    ports:
+      # For react hot-reloading in development.
+#    - 3000:3000
+```
+
+
+Then, you can access the new stack at `http://localhost:8080`.
+
 
 # Citation
 
