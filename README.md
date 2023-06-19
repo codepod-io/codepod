@@ -3,7 +3,7 @@
 Codepod provides the interactive coding experience popularized by Jupyter, but
 with scalability and production-readiness. Users can still incrementally build
 up code by trying out a small code snippet each time. But they would not be
-overwhelmed by the great number of code snippets as the projects grow.
+overwhelmed by the great number of code snippets as the projects grow.k
 
 <div align="center"><h2>Feel free to
   visit <a href="https://codepod.io" target="_blank">our homepage</a>,
@@ -96,8 +96,7 @@ From the `CODEPOD_ROOT/compose/dev` folder, run:
 docker compose up -d
 ```
 
-If you this is your first time starting CodePod, you will also need to initialize the database.  See [below](#initializing-the-database).
-If the database has been updated (you can tell by some errors) since you last pulled the code, you will need to update the database. See [below](#updating-the-database).
+If you this is your first time setting up CodePod, or the database schema has been updated (which you can tell from errors), you will also need to [initalize database tables](#initializing-the-database).
 
 Wait a few minutes for the package installation and compilation. Once the `ui` and
 `api` containers are ready, go to `http://localhost:80` to see the app.
@@ -105,9 +104,9 @@ Wait a few minutes for the package installation and compilation. Once the `ui` a
 - `http://localhost:80/graphql`: Apollo GraphQL explorer for the backend APIs
 - `http://prisma.127.0.0.1.sslip.io`: Prisma Studio for viewing and debugging the database.
 
-### Initializing the database 
+### Initializing database tables
 
-To initialize the database, open a shell into the API container (by default called `dev-api-1` but please use `docker ps` to confirm): 
+To initialize or update the database schema, open a shell into the API container (by default called `dev-api-1` but please use `docker ps` to confirm): 
   
   ```bash
   docker exec -it dev-api-1 /bin/bash
@@ -115,24 +114,24 @@ To initialize the database, open a shell into the API container (by default call
 
 and then **from the shell of the API container** run:
 
-```bash
-npx prisma migrate deploy
-```
 
-### Updating the database
 
-If the schema has been updated since you last pulled the code (you will most likely observe database-related issues), you will need to update the database. 
-To do that, enter the shell of the API container (by default called `dev-api-1` but please use `docker ps` to confirm) : 
-  
-  ```bash
-  docker exec -it dev-api-1 /bin/bash
-  ```
-    
-and then **from the shell of the API container** run
- 
-  ```bash
-  npx prisma migrate dev
-  ``` 
+> Known issues: if you get the error below during the migration, 
+> 
+> ```bash
+> EACCES: permission denied, unlink '/app/node_modules/.prisma/client/index.js'
+> EACCES: permission denied, unlink '/app/node_modules/.prisma/client/index.js'
+> ```
+> then please change the ownership of the folder `node_modules` (**from the shell of the API container**):
+> ```bash
+> chown node:node node_modules/ -R
+> ```
+> Afterwards, re-run 
+> ```bash
+> npx prisma migrate dev
+> ```
+
+### Preparing for database migration
 
 If you are a developer who wants to change the database schema for adding a feature, you can update the schema file `CODEPOD_ROOT/api/prisma/schema.prisma` and then run 
 
@@ -141,7 +140,7 @@ If you are a developer who wants to change the database schema for adding a feat
   ```
 
 to generate a migration, like [this](./api/prisma/migrations/20221206194247_add_google_login/migration.sql).
-  The schema change along with this migration need to be checked in (add, commit, and push) to git.
+The schema change along with this migration need to be checked in (add, commit, and push) to git.
 
 ## Auto-completion & Linting
 
