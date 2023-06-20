@@ -90,7 +90,6 @@ function SidebarSettings() {
                   color="warning"
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                     setAutoRunLayout(event.target.checked);
-                    // if event.target.checked then run autoLayoutRoot??
                     if (event.target.checked) {
                       autoLayoutROOT();
                     }
