@@ -72,7 +72,15 @@ function Timer({ lastExecutedAt }) {
     }, 1000);
     return () => clearInterval(interval);
   }, [counter]);
-  return <Box>Last executed: {timeDifference(new Date(), lastExecutedAt)}</Box>;
+  return (
+    <Box
+      sx={{
+        padding: "5px",
+      }}
+    >
+      Last run: {timeDifference(new Date(), lastExecutedAt)}
+    </Box>
+  );
 }
 
 export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
@@ -173,6 +181,9 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                       borderImage: "initial",
                       borderTopLeftRadius: "20px",
                       borderTopRightRadius: "20px",
+                      // FIXME: Why not a complete oval?
+                      // borderBottomLeftRadius: "20px",
+                      // borderBottomRightRadius: "20px",
                       display: "flex",
                       fontSize: "0.8em",
                     }}
@@ -180,7 +191,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                     <CheckCircleIcon
                       style={{ marginTop: "5px" }}
                       fontSize="inherit"
-                    />
+                    />{" "}
                     <Timer lastExecutedAt={lastExecutedAt} />
                   </Box>
                 </Box>
@@ -205,33 +216,41 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
           {(stdout || (result?.text && result?.count > 0) || error) &&
             showMenu && (
               <ButtonGroup
-                sx={[
-                  {
-                    fontSize: "0.8em",
-                    paddingTop: "3px",
-                    paddingBottom: "2px",
-                    lineHeight: "10px",
-                    zIndex: 201,
-                    position: "absolute",
-                    top: "-64.5px",
-                    right: "15px",
-                    "& .MuiButton-root": {
-                      fontSize: ".9em",
-                      paddingTop: 0,
-                      paddingBottom: 0,
-                    },
-                  },
-                ]}
-                variant="outlined"
+                sx={{
+                  // border: '1px solid #757ce8',
+                  fontSize: "0.8em",
+                  backgroundColor: "white",
+                  zIndex: 201,
+                  position: "absolute",
+                  top: "10px",
+                  right: "25px",
+                  // "& .MuiButton-root": {
+                  //   fontSize: ".9em",
+                  //   paddingTop: 0,
+                  //   paddingBottom: 0,
+                  // },
+                }}
+                variant="contained"
+                size="small"
                 aria-label="outlined primary button group"
-                orientation="vertical"
+                // orientation="vertical"
               >
+                <Box
+                  sx={{
+                    color: "primary.main",
+                    fontWeight: "bold",
+                    display: "flex",
+                    padding: "5px 5px",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  Output options:
+                </Box>
                 <Button
                   onClick={() => {
                     setResultScroll(!resultScroll);
                   }}
-                  variant="text"
-                  size="small"
                 >
                   {resultScroll ? "Unfocus" : "Focus"}
                 </Button>
@@ -239,8 +258,6 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                   onClick={() => {
                     setShowOutput(!showOutput);
                   }}
-                  variant="text"
-                  size="small"
                 >
                   Hide
                 </Button>
@@ -248,8 +265,6 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                   onClick={() => {
                     clearResults(id);
                   }}
-                  variant="text"
-                  size="small"
                 >
                   Clear
                 </Button>
@@ -292,10 +307,10 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
       ) : (
         <Box
           sx={{
-            paddingBottom: "5px",
+            padding: "10px",
             display: "flex",
             justifyContent: "center",
-            alignItems: "center",
+            alignItems: "bottom",
           }}
         >
           <Box
@@ -306,7 +321,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
               paddingTop: "2px",
             }}
           >
-            This output has been hidden.{" "}
+            Output hidden.{" "}
           </Box>
           <Button
             onClick={() => {
@@ -314,15 +329,13 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
             }}
             sx={{
               fontSize: "0.8em",
-              paddingTop: "3px",
-              paddingBottom: "2px",
-              lineHeight: "10px",
+              // lineHeight: "8px",
               zIndex: 201,
             }}
             size="small"
-            variant="text"
+            variant="contained"
           >
-            Show it
+            Reveal
           </Button>
         </Box>
       )}
