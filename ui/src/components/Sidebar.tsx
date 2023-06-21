@@ -53,6 +53,7 @@ function SidebarSettings() {
   const setAutoRunLayout = useStore(store, (state) => state.setAutoRunLayout);
   const contextualZoom = useStore(store, (state) => state.contextualZoom);
   const setContextualZoom = useStore(store, (state) => state.setContextualZoom);
+  const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
   return (
     <Box>
       <Box>
@@ -89,6 +90,9 @@ function SidebarSettings() {
                   color="warning"
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                     setAutoRunLayout(event.target.checked);
+                    if (event.target.checked) {
+                      autoLayoutROOT();
+                    }
                   }}
                 />
               }
