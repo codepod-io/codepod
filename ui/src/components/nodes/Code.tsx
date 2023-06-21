@@ -73,13 +73,14 @@ function Timer({ lastExecutedAt }) {
     return () => clearInterval(interval);
   }, [counter]);
   return (
-    <Box 
+    <Box
       sx={{
         padding: "5px",
       }}
-      >
+    >
       Last run: {timeDifference(new Date(), lastExecutedAt)}
-    </Box>);
+    </Box>
+  );
 }
 
 export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
@@ -188,7 +189,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                     }}
                   >
                     <CheckCircleIcon
-                      style={{ marginTop: "5px"}}
+                      style={{ marginTop: "5px" }}
                       fontSize="inherit"
                     />{" "}
                     <Timer lastExecutedAt={lastExecutedAt} />
@@ -216,9 +217,9 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
             showMenu && (
               <ButtonGroup
                 sx={{
-                  // border: '1px solid #757ce8', 
+                  // border: '1px solid #757ce8',
                   fontSize: "0.8em",
-                  backgroundColor: 'white', 
+                  backgroundColor: "white",
                   zIndex: 201,
                   position: "absolute",
                   top: "10px",
@@ -234,22 +235,23 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                 aria-label="outlined primary button group"
                 // orientation="vertical"
               >
-              <Box 
-                sx={{
-                  color: 'primary.main',
-                  fontWeight: 'bold', 
-                  display: 'flex',
-                  padding: '5px 5px',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                Output options:
-              </Box>
+                <Box
+                  sx={{
+                    color: "primary.main",
+                    fontWeight: "bold",
+                    display: "flex",
+                    padding: "5px 5px",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  Output options:
+                </Box>
                 <Button
                   onClick={() => {
                     setResultScroll(!resultScroll);
-                  }}                >
+                  }}
+                >
                   {resultScroll ? "Unfocus" : "Focus"}
                 </Button>
                 <Button
@@ -305,10 +307,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
       ) : (
         <Box
           sx={{
-            paddingTop: "5px",
-            paddingBottom: "5px",
-            paddingLeft: "5px",
-            paddingRight: "5px",
+            padding: "10px",
             display: "flex",
             justifyContent: "center",
             alignItems: "bottom",
@@ -330,15 +329,13 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
             }}
             sx={{
               fontSize: "0.8em",
-              paddingTop: "0px",
-              paddingBottom: "0px",
               // lineHeight: "8px",
-              // zIndex: 201,
+              zIndex: 201,
             }}
             size="small"
             variant="contained"
           >
-            Reveal it
+            Reveal
           </Button>
         </Box>
       )}
