@@ -23,7 +23,7 @@
 - Database: [PostgreSQL](https://www.postgresql.org/) + [Prisma](https://github.com/prisma/prisma)
 
 ## Codepod System Architecture
-
+![System arch](./Codepod_system_arch.png)
 ## Codepod GitHub Repo
 
 ### Frontend
