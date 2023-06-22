@@ -49,6 +49,11 @@ function SidebarSettings() {
   );
   const devMode = useStore(store, (state) => state.devMode);
   const setDevMode = useStore(store, (state) => state.setDevMode);
+  const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
+  const setShowLineNumbers = useStore(
+    store,
+    (state) => state.setShowLineNumbers
+  );
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
   const setAutoRunLayout = useStore(store, (state) => state.setAutoRunLayout);
   const contextualZoom = useStore(store, (state) => state.contextualZoom);
@@ -57,6 +62,23 @@ function SidebarSettings() {
   return (
     <Box>
       <Box>
+        <Tooltip title={"Show Line Numbers"} disableInteractive>
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={showLineNumbers}
+                  size="small"
+                  color="warning"
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setShowLineNumbers(event.target.checked);
+                  }}
+                />
+              }
+              label="Show Line Numbers"
+            />
+          </FormGroup>
+        </Tooltip>
         <Tooltip
           title={"Enable Debug Mode, e.g., show pod IDs"}
           disableInteractive
