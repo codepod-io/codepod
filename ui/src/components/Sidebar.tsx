@@ -486,7 +486,7 @@ function ExportFile() {
           // call export graphQL api to get the AWS S3 url
           exportJSON({ variables: { repoId } });
         }}
-        disabled={false}
+        disabled={true}
       >
         Python File
       </Button>
@@ -521,7 +521,7 @@ function ExportJSON() {
           // call export graphQL api to get the AWS S3 url
           exportJSON({ variables: { repoId } });
         }}
-        disabled={false}
+        disabled={true}
       >
         Raw JSON
       </Button>
