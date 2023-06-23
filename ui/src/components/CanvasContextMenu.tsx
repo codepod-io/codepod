@@ -78,14 +78,6 @@ export function CanvasContextMenu(props) {
             <ListItemText>New Scope</ListItemText>
           </MenuItem>
         )}
-        <MenuItem onClick={flipShowLineNumbers} sx={ItemStyle}>
-          <ListItemIcon sx={{ color: "inherit" }}>
-            <FormatListNumberedIcon />
-          </ListItemIcon>
-          <ListItemText>
-            {showLineNumbers ? "Hide " : "Show "} Line Numbers
-          </ListItemText>
-        </MenuItem>
         <MenuItem onClick={() => flipAutoCompletion(client)} sx={ItemStyle}>
           <ListItemIcon sx={{ color: "inherit" }}>
             <AutoFixHighIcon />

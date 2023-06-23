@@ -165,7 +165,7 @@ function createNewNode(type: "SCOPE" | "CODE" | "RICH", position): Node {
 /**
  * Get the absoluate position of the node.
  */
-function getAbsPos(node: Node, nodesMap: YMap<Node>): XYPosition {
+export function getAbsPos(node: Node, nodesMap: YMap<Node>): XYPosition {
   let x = node.position.x;
   let y = node.position.y;
   while (node.parentNode) {
@@ -790,7 +790,17 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
             // be filed for CodeNode at the beginning or anytime the node height
             // is changed due to content height changes.
             const node = nextNodes.find((n) => n.id === change.id);
-            if (!node) throw new Error("Node not found");
+            const prevNode = nodes.find((n) => n.id === change.id);
+            if (!node || !prevNode) throw new Error("Node not found");
+            // At the beginning, a dimension change is fired for all pods for no
+            // good reason. This will cause all pods being marked dirty and get
+            // uploaded. Filter out that situation here.
+            if (
+              node.width === prevNode.width &&
+              node.height === prevNode.height
+            ) {
+              break;
+            }
 
             let geoData = {
               parent: node.parentNode ? node.parentNode : "ROOT",
@@ -867,7 +877,9 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           get().deletePod(client, { id: change.id });
           get().buildNode2Children();
           // run auto-layout
-          get().autoLayoutROOT();
+          if (get().autoRunLayout) {
+            get().autoLayoutROOT();
+          }
           break;
         default:
           // should not reach here.
@@ -961,6 +973,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   },
   autoLayoutROOT: () => {
     // get all scopes,
+    console.debug("autoLayoutROOT");
     let nodesMap = get().ydoc.getMap<Node>("pods");
     let nodes: Node[] = Array.from(nodesMap.values());
     nodes

@@ -72,7 +72,15 @@ function Timer({ lastExecutedAt }) {
     }, 1000);
     return () => clearInterval(interval);
   }, [counter]);
-  return <Box>Last executed: {timeDifference(new Date(), lastExecutedAt)}</Box>;
+  return (
+    <Box
+      sx={{
+        padding: "5px",
+      }}
+    >
+      Last run: {timeDifference(new Date(), lastExecutedAt)}
+    </Box>
+  );
 }
 
 export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
@@ -80,11 +88,20 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
   const result = useStore(store, (state) => state.pods[id]?.result);
   const error = useStore(store, (state) => state.pods[id]?.error);
   const stdout = useStore(store, (state) => state.pods[id]?.stdout);
-  const running = useStore(store, (state) => state.pods[id]?.running);
+  const running = useStore(store, (state) => state.pods[id]?.running || false);
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
+  const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
+
+  const prevRunning = useRef(false);
   useEffect(() => {
-    autoLayoutROOT();
+    if (autoRunLayout) {
+      if (prevRunning.current != running) {
+        autoLayoutROOT();
+        prevRunning.current = running;
+      }
+    }
   }, [running]);
+
   const lastExecutedAt = useStore(
     store,
     (state) => state.pods[id]?.lastExecutedAt
@@ -100,10 +117,13 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
       state.pods[id]?.stderr
   );
   const [resultScroll, setResultScroll] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const clearResults = useStore(store, (state) => state.clearResults);
   if (!hasResult) return <></>;
   return (
     <Box
+      onMouseEnter={() => setShowMenu(true)}
+      onMouseLeave={() => setShowMenu(false)}
       // This ID is used for autolayout.
       //
       // TODO save result box position to DB.
@@ -161,6 +181,9 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                       borderImage: "initial",
                       borderTopLeftRadius: "20px",
                       borderTopRightRadius: "20px",
+                      // FIXME: Why not a complete oval?
+                      // borderBottomLeftRadius: "20px",
+                      // borderBottomRightRadius: "20px",
                       display: "flex",
                       fontSize: "0.8em",
                     }}
@@ -168,7 +191,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                     <CheckCircleIcon
                       style={{ marginTop: "5px" }}
                       fontSize="inherit"
-                    />
+                    />{" "}
                     <Timer lastExecutedAt={lastExecutedAt} />
                   </Box>
                 </Box>
@@ -190,52 +213,63 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
           border="1px"
         >
           {/* FIXME result?.count is not correct, always 0 or 1. */}
-          {(stdout || (result?.text && result?.count > 0) || error) && (
-            <ButtonGroup
-              sx={[
-                {
+          {(stdout || (result?.text && result?.count > 0) || error) &&
+            showMenu && (
+              <ButtonGroup
+                sx={{
+                  // border: '1px solid #757ce8',
                   fontSize: "0.8em",
-                  paddingTop: "3px",
-                  paddingBottom: "2px",
-                  lineHeight: "10px",
+                  backgroundColor: "white",
                   zIndex: 201,
                   position: "absolute",
-                  top: 0,
-                  right: 0,
-                },
-              ]}
-              variant="text"
-              aria-label="outlined primary button group"
-            >
-              <Button
-                onClick={() => {
-                  setResultScroll(!resultScroll);
+                  top: "10px",
+                  right: "25px",
+                  // "& .MuiButton-root": {
+                  //   fontSize: ".9em",
+                  //   paddingTop: 0,
+                  //   paddingBottom: 0,
+                  // },
                 }}
-                variant="text"
+                variant="contained"
                 size="small"
+                aria-label="outlined primary button group"
+                // orientation="vertical"
               >
-                {resultScroll ? "Unfocus" : "Focus"}
-              </Button>
-              <Button
-                onClick={() => {
-                  setShowOutput(!showOutput);
-                }}
-                variant="text"
-                size="small"
-              >
-                Hide
-              </Button>
-              <Button
-                onClick={() => {
-                  clearResults(id);
-                }}
-                variant="text"
-                size="small"
-              >
-                Clear
-              </Button>
-            </ButtonGroup>
-          )}
+                <Box
+                  sx={{
+                    color: "primary.main",
+                    fontWeight: "bold",
+                    display: "flex",
+                    padding: "5px 5px",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  Output options:
+                </Box>
+                <Button
+                  onClick={() => {
+                    setResultScroll(!resultScroll);
+                  }}
+                >
+                  {resultScroll ? "Unfocus" : "Focus"}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setShowOutput(!showOutput);
+                  }}
+                >
+                  Hide
+                </Button>
+                <Button
+                  onClick={() => {
+                    clearResults(id);
+                  }}
+                >
+                  Clear
+                </Button>
+              </ButtonGroup>
+            )}
 
           {stdout && (
             <Box
@@ -273,10 +307,10 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
       ) : (
         <Box
           sx={{
-            paddingBottom: "5px",
+            padding: "10px",
             display: "flex",
             justifyContent: "center",
-            alignItems: "center",
+            alignItems: "bottom",
           }}
         >
           <Box
@@ -287,7 +321,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
               paddingTop: "2px",
             }}
           >
-            This output has been hidden.{" "}
+            Output hidden.{" "}
           </Box>
           <Button
             onClick={() => {
@@ -295,15 +329,13 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
             }}
             sx={{
               fontSize: "0.8em",
-              paddingTop: "3px",
-              paddingBottom: "2px",
-              lineHeight: "10px",
+              // lineHeight: "8px",
               zIndex: 201,
             }}
             size="small"
-            variant="text"
+            variant="contained"
           >
-            Show it
+            Reveal
           </Button>
         </Box>
       )}
@@ -474,9 +506,17 @@ export const CodeNode = memo<NodeProps>(function ({
 
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
+  const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
+
+  const prevLayout = useRef(layout);
   useEffect(() => {
-    // Run auto-layout when the output box layout changes.
-    autoLayoutROOT();
+    if (autoRunLayout) {
+      // Run auto-layout when the output box layout changes.
+      if (prevLayout.current != layout) {
+        autoLayoutROOT();
+        prevLayout.current = layout;
+      }
+    }
   }, [layout]);
 
   const onResizeStop = useCallback(
@@ -503,7 +543,9 @@ export const CodeNode = memo<NodeProps>(function ({
           true
         );
         updateView();
-        autoLayoutROOT();
+        if (autoRunLayout) {
+          autoLayoutROOT();
+        }
       }
     },
     [id, nodesMap, setPodGeo, updateView, autoLayoutROOT]

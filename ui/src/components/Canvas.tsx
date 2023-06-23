@@ -24,6 +24,7 @@ import ReactFlow, {
   ReactFlowProvider,
   Edge,
   useViewport,
+  XYPosition,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -47,6 +48,7 @@ import { YMap } from "yjs/dist/src/types/YMap";
 import FloatingEdge from "./nodes/FloatingEdge";
 import CustomConnectionLine from "./nodes/CustomConnectionLine";
 import HelperLines from "./HelperLines";
+import { getAbsPos } from "../lib/store/canvasSlice";
 
 const nodeTypes = { SCOPE: ScopeNode, CODE: CodeNode, RICH: RichNode };
 const edgeTypes = {
@@ -273,6 +275,152 @@ function useInitNodes() {
   return { loading };
 }
 
+function getBestNode(
+  nodes: Node[],
+  from,
+  direction: "up" | "down" | "left" | "right"
+) {
+  // find the best node to jump to from (x,y) in the given direction
+  let bestNode: Node | null = null;
+  let bestDistance = Infinity;
+  nodes = nodes.filter((node) => {
+    switch (direction) {
+      case "up":
+        return (
+          node.position.y + node.height! / 2 <
+          from.position.y + from.height! / 2
+        );
+      case "down":
+        return (
+          node.position.y + node.height! / 2 >
+          from.position.y + from.height! / 2
+        );
+      case "left":
+        return (
+          node.position.x + node.width! / 2 < from.position.x + from.width! / 2
+        );
+      case "right":
+        return (
+          node.position.x + node.width! / 2 > from.position.x + from.width! / 2
+        );
+    }
+  });
+  for (let node of nodes) {
+    // I should start from the edge, instead of the center
+    const startPoint: XYPosition = (() => {
+      // the center
+      // return {
+      //   x: from.position.x + from.width! / 2,
+      //   y: from.position.y + from.height! / 2,
+      // };
+      // the edge depending on direction.
+      switch (direction) {
+        case "up":
+          return {
+            x: from.position.x + from.width! / 2,
+            y: from.position.y,
+          };
+        case "down":
+          return {
+            x: from.position.x + from.width! / 2,
+            y: from.position.y + from.height!,
+          };
+        case "left":
+          return {
+            x: from.position.x,
+            y: from.position.y + from.height! / 2,
+          };
+        case "right":
+          return {
+            x: from.position.x + from.width!,
+            y: from.position.y + from.height! / 2,
+          };
+      }
+    })();
+    let distance =
+      Math.pow(node.position.x + node.width! / 2 - startPoint.x, 2) *
+        (["left", "right"].includes(direction) ? 1 : 2) +
+      Math.pow(node.position.y + node.height! / 2 - startPoint.y, 2) *
+        (["up", "down"].includes(direction) ? 1 : 2);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestNode = node;
+    }
+  }
+  return bestNode;
+}
+
+function useJump() {
+  const store = useContext(RepoContext)!;
+
+  const selectPod = useStore(store, (state) => state.selectPod);
+  const resetSelection = useStore(store, (state) => state.resetSelection);
+  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+
+  const reactflow = useReactFlow();
+
+  const selectedPods = useStore(store, (state) => state.selectedPods);
+  const handleKeyDown = (event) => {
+    const id = selectedPods.values().next().value; // Assuming only one node can be selected at a time
+    if (!id) {
+      console.log("No node selected");
+      return; // Ignore arrow key presses if there's no selected node or if the user is typing in an input field
+    }
+    const pod = nodesMap.get(id);
+    if (!pod) {
+      console.log("pod is undefined");
+      return;
+    }
+
+    // get the sibling nodes
+    const nodes = Array.from(nodesMap.values()).filter(
+      (node) => node.parentNode === pod.parentNode
+    );
+
+    let to: null | Node = null;
+
+    switch (event.key) {
+      case "ArrowUp":
+        to = getBestNode(nodes, pod, "up");
+        break;
+      case "ArrowDown":
+        to = getBestNode(nodes, pod, "down");
+        break;
+      case "ArrowLeft":
+        to = getBestNode(nodes, pod, "left");
+        break;
+      case "ArrowRight":
+        to = getBestNode(nodes, pod, "right");
+        break;
+      default:
+        return;
+    }
+
+    if (to) {
+      // set the to node as selected
+      resetSelection();
+      selectPod(to.id, true);
+      // move the viewport to the to node
+      // get the absolute position of the to node
+      const pos = getAbsPos(to, nodesMap);
+
+      reactflow.setCenter(pos.x + to.width! / 2, pos.y + to.height! / 2, {
+        zoom: reactflow.getZoom(),
+        duration: 800,
+      });
+    }
+
+    event.preventDefault(); // Prevent default browser behavior for arrow keys
+  };
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [selectedPods]);
+}
+
 function usePaste(reactFlowWrapper) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -461,6 +609,7 @@ function CanvasImplWrap() {
   useEdgesYjsObserver();
   usePaste(reactFlowWrapper);
   useCut(reactFlowWrapper);
+  useJump();
 
   const { loading } = useInitNodes();
   if (loading) return <div>Loading...</div>;
@@ -677,6 +826,8 @@ function CanvasImpl() {
           multiSelectionKeyCode={isMac ? "Meta" : "Control"}
           // TODO restore previous viewport
           defaultViewport={{ zoom: 1, x: 0, y: 0 }}
+          proOptions={{ hideAttribution: true }}
+          disableKeyboardA11y={true}
         >
           <Box>
             <MiniMap
