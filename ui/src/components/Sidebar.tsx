@@ -1,37 +1,37 @@
-import { useEffect, useContext, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import Box from '@mui/material/Box';
-import Button from '@mui/material/Button';
-import Divider from '@mui/material/Divider';
-import Tooltip from '@mui/material/Tooltip';
-import IconButton from '@mui/material/IconButton';
-import StopIcon from '@mui/icons-material/Stop';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import Drawer from '@mui/material/Drawer';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import Grid from '@mui/material/Grid';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import RestartAltIcon from '@mui/icons-material/RestartAlt';
-import Typography from '@mui/material/Typography';
-import { useSnackbar, VariantType } from 'notistack';
+import { useEffect, useContext, useState } from "react";
+import { useParams } from "react-router-dom";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Divider from "@mui/material/Divider";
+import Tooltip from "@mui/material/Tooltip";
+import IconButton from "@mui/material/IconButton";
+import StopIcon from "@mui/icons-material/Stop";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import Drawer from "@mui/material/Drawer";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import Grid from "@mui/material/Grid";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import Typography from "@mui/material/Typography";
+import { useSnackbar, VariantType } from "notistack";
 
-import { gql, useQuery, useMutation, useApolloClient } from '@apollo/client';
-import { useStore } from 'zustand';
-import { MyKBar } from './MyKBar';
+import { gql, useQuery, useMutation, useApolloClient } from "@apollo/client";
+import { useStore } from "zustand";
+import { MyKBar } from "./MyKBar";
 
-import { usePrompt } from '../lib/prompt';
+import { usePrompt } from "../lib/prompt";
 
-import { RepoContext } from '../lib/store';
+import { RepoContext } from "../lib/store";
 
-import useMe from '../lib/me';
-import { FormControlLabel, FormGroup, Stack, Switch } from '@mui/material';
-import { getUpTime } from '../lib/utils';
-import { toSvg } from 'html-to-image';
+import useMe from "../lib/me";
+import { FormControlLabel, FormGroup, Stack, Switch } from "@mui/material";
+import { getUpTime } from "../lib/utils";
+import { toSvg } from "html-to-image";
 
 function Flex(props) {
   return (
-    <Box sx={{ display: 'flex' }} {...props}>
+    <Box sx={{ display: "flex" }} {...props}>
       {props.children}
     </Box>
   );
@@ -39,7 +39,7 @@ function Flex(props) {
 
 function SidebarSettings() {
   const store = useContext(RepoContext);
-  if (!store) throw new Error('Missing BearContext.Provider in the tree');
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const scopedVars = useStore(store, (state) => state.scopedVars);
   const setScopedVars = useStore(store, (state) => state.setScopedVars);
   const showAnnotations = useStore(store, (state) => state.showAnnotations);
@@ -62,7 +62,7 @@ function SidebarSettings() {
   return (
     <Box>
       <Box>
-        <Tooltip title={'Show Line Numbers'} disableInteractive>
+        <Tooltip title={"Show Line Numbers"} disableInteractive>
           <FormGroup>
             <FormControlLabel
               control={
@@ -80,7 +80,7 @@ function SidebarSettings() {
           </FormGroup>
         </Tooltip>
         <Tooltip
-          title={'Enable Debug Mode, e.g., show pod IDs'}
+          title={"Enable Debug Mode, e.g., show pod IDs"}
           disableInteractive
         >
           <FormGroup>
@@ -100,7 +100,7 @@ function SidebarSettings() {
           </FormGroup>
         </Tooltip>
         <Tooltip
-          title={'Automatically run auto-layout at the end of node dragging.'}
+          title={"Automatically run auto-layout at the end of node dragging."}
           disableInteractive
         >
           <FormGroup>
@@ -122,7 +122,7 @@ function SidebarSettings() {
             />
           </FormGroup>
         </Tooltip>
-        <Tooltip title={'Enable contextual zoom.'} disableInteractive>
+        <Tooltip title={"Enable contextual zoom."} disableInteractive>
           <FormGroup>
             <FormControlLabel
               control={
@@ -139,7 +139,7 @@ function SidebarSettings() {
             />
           </FormGroup>
         </Tooltip>
-        <Tooltip title={'Enable Scoped Variables'} disableInteractive>
+        <Tooltip title={"Enable Scoped Variables"} disableInteractive>
           <FormGroup>
             <FormControlLabel
               control={
@@ -156,7 +156,7 @@ function SidebarSettings() {
             />
           </FormGroup>
         </Tooltip>
-        <Tooltip title={'Show Annotations in Editor'} disableInteractive>
+        <Tooltip title={"Show Annotations in Editor"} disableInteractive>
           <FormGroup>
             <FormControlLabel
               control={
@@ -190,7 +190,7 @@ function SidebarSettings() {
 
 function SidebarRuntime() {
   const store = useContext(RepoContext);
-  if (!store) throw new Error('Missing BearContext.Provider in the tree');
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
   const runtimeConnecting = useStore(store, (state) => state.runtimeConnecting);
   const { loading, me } = useMe();
@@ -206,7 +206,7 @@ function SidebarRuntime() {
     }
   `);
   // update time every second
-  let [uptime, setUptime] = useState('');
+  let [uptime, setUptime] = useState("");
   useEffect(() => {
     if (data?.infoRuntime?.startedAt) {
       setUptime(getUpTime(data.infoRuntime.startedAt));
@@ -228,7 +228,7 @@ function SidebarRuntime() {
         {runtimeConnected && (
           <Stack>
             <Box>
-              Runtime{' '}
+              Runtime{" "}
               <Box component="span" color="green">
                 connected
               </Box>
@@ -262,7 +262,7 @@ function SidebarRuntime() {
 
 function SidebarKernel() {
   const store = useContext(RepoContext);
-  if (!store) throw new Error('Missing BearContext.Provider in the tree');
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const kernels = useStore(store, (state) => state.kernels);
   const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
   const wsRequestStatus = useStore(store, (state) => state.wsRequestStatus);
@@ -275,10 +275,10 @@ function SidebarKernel() {
           <Box>
             <Box component="span" color="blue">
               {lang}
-            </Box>{' '}
+            </Box>{" "}
             {runtimeConnected ? (
               <Box component="span" color="green">
-                {kernel.status ? kernel.status : 'Unknown'}
+                {kernel.status ? kernel.status : "Unknown"}
               </Box>
             ) : (
               <Box color="red" component="span">
@@ -314,7 +314,7 @@ function SidebarKernel() {
 
 function SyncStatus() {
   const store = useContext(RepoContext);
-  if (!store) throw new Error('Missing BearContext.Provider in the tree');
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
   // FIXME performance issue
   const dirtyIds = useStore(store, (state) => {
     let res: string[] = [];
@@ -351,9 +351,9 @@ function SyncStatus() {
       <Stack
         direction="row"
         spacing={2}
-        color={dirtyIds.length === 0 ? 'gray' : 'blue'}
+        color={dirtyIds.length === 0 ? "gray" : "blue"}
         sx={{
-          alignItems: 'center',
+          alignItems: "center",
         }}
       >
         <CloudUploadIcon />
@@ -379,10 +379,10 @@ function ActiveSessions() {
     }
   `);
   const store = useContext(RepoContext);
-  if (!store) throw new Error('Missing BearContext.Provider in the tree');
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
   useEffect(() => {
-    console.log('----- refetching active sessions ..');
+    console.log("----- refetching active sessions ..");
     refetch();
   }, [runtimeConnected, refetch]);
   const [killSession] = useMutation(
@@ -392,7 +392,7 @@ function ActiveSessions() {
       }
     `,
     {
-      refetchQueries: ['GetActiveSessions'],
+      refetchQueries: ["GetActiveSessions"],
     }
   );
   if (loading) {
@@ -428,7 +428,7 @@ function ActiveSessions() {
 
 function ToastError() {
   const store = useContext(RepoContext);
-  if (!store) throw new Error('Missing BearContext.Provider in the tree');
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const { enqueueSnackbar } = useSnackbar();
   const error = useStore(store, (state) => state.error);
   const clearError = useStore(store, (state) => state.clearError);
@@ -452,9 +452,9 @@ type SidebarProps = {
 };
 
 function download(url) {
-  const link = document.createElement('a');
+  const link = document.createElement("a");
   link.href = url;
-  link.download = '';
+  link.download = "";
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -521,7 +521,7 @@ function ExportJSON() {
           // call export graphQL api to get the AWS S3 url
           exportJSON({ variables: { repoId } });
         }}
-        disabled={false}
+        disabled={true}
       >
         Jupyter Notebook
       </Button>
@@ -534,24 +534,24 @@ function ExportSVG() {
   // The name should contain the name of the repo, the ID of the repo, and the current date
   const { id: repoId } = useParams();
   const store = useContext(RepoContext);
-  if (!store) throw new Error('Missing BearContext.Provider in the tree');
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const repoName = useStore(store, (state) => state.repoName);
   const filename = `${repoName?.replaceAll(
-    ' ',
-    '-'
+    " ",
+    "-"
   )}-${repoId}-${new Date().toISOString()}.svg`;
   const [loading, setLoading] = useState(false);
 
   const onClick = () => {
     setLoading(true);
-    const elem = document.querySelector('.react-flow');
+    const elem = document.querySelector(".react-flow");
     if (!elem) return;
     toSvg(elem as HTMLElement, {
       filter: (node) => {
         // we don't want to add the minimap and the controls to the image
         if (
-          node?.classList?.contains('react-flow__minimap') ||
-          node?.classList?.contains('react-flow__controls')
+          node?.classList?.contains("react-flow__minimap") ||
+          node?.classList?.contains("react-flow__controls")
         ) {
           return false;
         }
@@ -559,10 +559,10 @@ function ExportSVG() {
         return true;
       },
     }).then((dataUrl) => {
-      const a = document.createElement('a');
+      const a = document.createElement("a");
 
-      a.setAttribute('download', filename);
-      a.setAttribute('href', dataUrl);
+      a.setAttribute("download", filename);
+      a.setAttribute("href", dataUrl);
       a.click();
       setLoading(false);
     });
@@ -600,15 +600,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   // never render saving status / runtime module for a guest
   // FIXME: improve the implementation logic
   const store = useContext(RepoContext);
-  if (!store) throw new Error('Missing BearContext.Provider in the tree');
-  const isGuest = useStore(store, (state) => state.role === 'GUEST');
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
   return (
     <>
       <MyKBar />
       <Box
         sx={{
-          position: 'absolute',
-          display: open ? 'none' : 'block',
+          position: "absolute",
+          display: open ? "none" : "block",
           top: `54px`,
           left: 1,
         }}
@@ -627,9 +627,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
         sx={{
           width: width,
           flexShrink: 0,
-          '& .MuiDrawer-paper': {
+          "& .MuiDrawer-paper": {
             width: width,
-            boxSizing: 'border-box',
+            boxSizing: "border-box",
           },
         }}
         variant="persistent"
@@ -638,9 +638,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
       >
         <Box
           sx={{
-            display: 'flex',
-            alignItems: 'center',
-            paddingLeft: '8px',
+            display: "flex",
+            alignItems: "center",
+            paddingLeft: "8px",
             height: 48,
           }}
         >
@@ -651,7 +651,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <Divider />
         <Box
           sx={{
-            padding: '8px 16px',
+            padding: "8px 16px",
           }}
         >
           <Stack>

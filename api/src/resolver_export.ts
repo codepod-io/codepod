@@ -1,10 +1,9 @@
-import Prisma from '@prisma/client';
+import Prisma from "@prisma/client";
 
-import AWS, { ConnectContactLens } from 'aws-sdk';
-import { Console } from 'console';
-import { writeFile, readFile, unlink } from 'fs/promises';
+import AWS from "aws-sdk";
+import { writeFile, readFile, unlink } from "fs/promises";
 
-console.log('REGION', process.env.EXPORT_AWS_S3_REGION);
+console.log("REGION", process.env.EXPORT_AWS_S3_REGION);
 
 // Set your AWS region and credentials
 AWS.config.update({
@@ -34,7 +33,7 @@ async function uploadToS3WithExpiration(filename, content) {
     await unlink(filename);
     return Location;
   } catch (error) {
-    console.log('Error uploading file:', error);
+    console.log("Error uploading file:", error);
   }
 }
 
@@ -50,8 +49,8 @@ async function exportJSON(_, { repoId }, { userId }) {
     where: {
       OR: [
         { id: repoId, public: true },
-        { id: repoId, owner: { id: userId || 'undefined' } },
-        { id: repoId, collaborators: { some: { id: userId || 'undefined' } } },
+        { id: repoId, owner: { id: userId || "undefined" } },
+        { id: repoId, collaborators: { some: { id: userId || "undefined" } } },
       ],
     },
     include: {
@@ -61,14 +60,13 @@ async function exportJSON(_, { repoId }, { userId }) {
           parent: true,
         },
         orderBy: {
-          index: 'asc',
+          index: "asc",
         },
       },
     },
   });
   // now export repo to a file
-  if (!repo) throw Error('Repo not exists.');
-
+  if (!repo) throw Error("Repo not exists.");
   // podId -> parentId mapping
   let adj = {};
   // Hard-code Jupyter cell format. Reference, https://nbformat.readthedocs.io/en/latest/format_description.html
@@ -83,14 +81,14 @@ async function exportJSON(_, { repoId }, { userId }) {
     // Build podId -> parentId mapping
     adj[pod.id] = { name: pod.name, parentId: pod.parentId };
     // Filter by non-empty 'CODE' pods
-    if (!pod.name && pod.type == 'CODE') {
+    if (!pod.name && pod.type == "CODE") {
       jupyterCellList.push({
-        cell_type: 'code',
+        cell_type: "code",
         // hard-code execution_count
         execution_count: 1,
         // TODO: expand other Codepod related-metadata fields, or run a real-time search in database when importing.
         metadata: { id: pod.id },
-        source: [pod.content || ''],
+        source: [pod.content || ""],
       });
     }
   }
@@ -98,7 +96,7 @@ async function exportJSON(_, { repoId }, { userId }) {
   // Append the scope structure as comment for each cell and also format source
   for (const cell of jupyterCellList) {
     let scopes: string[] = [];
-    let parentId = adj[cell.metadata['id']].parentId;
+    let parentId = adj[cell.metadata["id"]].parentId;
 
     // iterative {parentId,name} retrieval
     while (parentId) {
@@ -109,7 +107,7 @@ async function exportJSON(_, { repoId }, { userId }) {
     // Add scope structure as a block comment at the head of each cell
     let scopeStructureAsComment = [
       "'''\n",
-      `CodePod Scope structure: ${scopes.reverse().join('/')}\n`,
+      `CodePod Scope structure: ${scopes.reverse().join("/")}\n`,
       "'''\n",
     ];
     // TO-FIX, split by newline doesn't work
@@ -122,15 +120,15 @@ async function exportJSON(_, { repoId }, { userId }) {
   console.log(jupyterCellList);
 
   const filename = `${
-    repo.name || 'Untitled'
+    repo.name || "Untitled"
   }-${new Date().toISOString()}.ipynb`;
   const aws_url = await uploadToS3WithExpiration(
     filename,
     JSON.stringify({
       metadata: {
         name: repo.name,
-        language_info: { name: 'python' },
-        Codepod_version: 'v0.0.1',
+        language_info: { name: "python" },
+        Codepod_version: "v0.0.1",
       },
       nbformat: 4,
       nbformat_minor: 0,
@@ -141,7 +139,7 @@ async function exportJSON(_, { repoId }, { userId }) {
 }
 
 interface Pod {
-  type: 'CODE' | 'DECK';
+  type: "CODE" | "DECK";
   id: string;
   children: string[];
   content: string;
@@ -149,24 +147,24 @@ interface Pod {
 }
 
 function generate_dfs(pod: Pod, pods: Record<string, Pod>, level) {
-  const space = '  '.repeat(level);
-  if (pod.type === 'CODE')
+  const space = "  ".repeat(level);
+  if (pod.type === "CODE")
     return [
       space + `# BEGIN POD ${pod.id}`,
       space + `${pod.content}`,
       space + `# END POD ${pod.id}`,
-    ].join('\n');
+    ].join("\n");
   else {
     // this is a DECK
     let ids = pod.children;
     const children_content = ids
       .map((id) => generate_dfs(pods[id], pods, level + 1))
-      .join('\n\n');
+      .join("\n\n");
     return [
       space + `# BEGIN SCOPE ${pod.name} ${pod.id}`,
       children_content,
       space + `# END SCOPE ${pod.name} ${pod.id}`,
-    ].join('\n');
+    ].join("\n");
   }
 }
 
@@ -178,15 +176,15 @@ function pods_list2dict(pods) {
     pod.children = [];
     pod.content = JSON.parse(pod.content);
   }
-  d['ROOT'] = {
-    id: 'ROOT',
-    type: 'DECK',
-    ns: 'ROOT',
+  d["ROOT"] = {
+    id: "ROOT",
+    type: "DECK",
+    ns: "ROOT",
     children: [],
   };
   // construct .children
   for (const pod of pods) {
-    pod.parentId = pod.parentId || 'ROOT';
+    pod.parentId = pod.parentId || "ROOT";
     d[pod.parentId].children.push(pod.id);
   }
   return d;
@@ -200,8 +198,8 @@ async function exportFile(_, { repoId }, { userId }) {
     where: {
       OR: [
         { id: repoId, public: true },
-        { id: repoId, owner: { id: userId || 'undefined' } },
-        { id: repoId, collaborators: { some: { id: userId || 'undefined' } } },
+        { id: repoId, owner: { id: userId || "undefined" } },
+        { id: repoId, collaborators: { some: { id: userId || "undefined" } } },
       ],
     },
     include: {
@@ -211,20 +209,20 @@ async function exportFile(_, { repoId }, { userId }) {
           parent: true,
         },
         orderBy: {
-          index: 'asc',
+          index: "asc",
         },
       },
     },
   });
   // now export repo to a file
-  if (!repo) throw Error('Repo not exists.');
+  if (!repo) throw Error("Repo not exists.");
 
   let d = pods_list2dict(repo.pods);
   // let decks = pods.filter((pod) => pod.type === "DECK");
-  const content = generate_dfs(d['ROOT'], d, 0);
+  const content = generate_dfs(d["ROOT"], d, 0);
 
   // create a hierarchy of the pods
-  const filename = `${repo.name || 'Untitled'}-${new Date().toISOString()}.py`;
+  const filename = `${repo.name || "Untitled"}-${new Date().toISOString()}.py`;
   const aws_url = await uploadToS3WithExpiration(filename, content);
   return aws_url;
 }
