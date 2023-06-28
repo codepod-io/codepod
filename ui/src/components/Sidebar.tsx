@@ -320,7 +320,11 @@ function SyncStatus() {
     let res: string[] = [];
     if (state.repoLoaded) {
       for (const id in state.pods) {
-        if (state.pods[id].dirty || state.pods[id].isSyncing) {
+        if (
+          state.pods[id].dirty ||
+          state.pods[id].dirtyPending ||
+          state.pods[id].isSyncing
+        ) {
           res.push(id);
         }
       }
