@@ -320,7 +320,11 @@ function SyncStatus() {
     let res: string[] = [];
     if (state.repoLoaded) {
       for (const id in state.pods) {
-        if (state.pods[id].dirty || state.pods[id].isSyncing) {
+        if (
+          state.pods[id].dirty ||
+          state.pods[id].dirtyPending ||
+          state.pods[id].isSyncing
+        ) {
           res.push(id);
         }
       }
@@ -339,7 +343,7 @@ function SyncStatus() {
   useEffect(() => {
     let id = setInterval(() => {
       remoteUpdateAllPods(client);
-    }, 1000);
+    }, 3000);
     return () => {
       clearInterval(id);
     };
