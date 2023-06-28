@@ -275,6 +275,13 @@ export interface CanvasSlice {
   setPaneFocus: () => void;
   setPaneBlur: () => void;
 
+  // onMove indicator
+  moved: boolean;
+  toggleMoved: () => void;
+  // clicked-on-canvas indicator
+  clicked: boolean;
+  toggleClicked: () => void;
+
   addNode: (
     type: "CODE" | "SCOPE" | "RICH",
     position: XYPosition,
@@ -941,6 +948,12 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   },
   setPaneFocus: () => set({ isPaneFocused: true }),
   setPaneBlur: () => set({ isPaneFocused: false }),
+
+  moved: false,
+  toggleMoved: () => set({ moved: !get().moved }),
+  clicked: false,
+  toggleClicked: () => set({ clicked: !get().clicked }),
+
   /**
    * This node2children is maintained with the canvas reactflow states, not with
    * the pods. This mapping may be used by other components, e.g. the runtime.
