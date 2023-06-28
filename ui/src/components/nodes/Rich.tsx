@@ -243,6 +243,23 @@ const DelayAutoFocusInput = ({
   return <input ref={inputRef} {...rest} />;
 };
 
+function useUpdatePositionerOnMove() {
+  // Update (all) the positioners whenever there's a move (pane) on reactflow,
+  // so that the toolbar moves with the Rich pod and content.
+  const { forceUpdatePositioners, emptySelection } = useCommands();
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const moved = useStore(store, (state) => state.moved);
+  const clicked = useStore(store, (state) => state.clicked);
+  useEffect(() => {
+    forceUpdatePositioners();
+  }, [moved]);
+  useEffect(() => {
+    emptySelection();
+  }, [clicked]);
+  return;
+}
+
 const FloatingLinkToolbar = ({ children }) => {
   const {
     isEditing,
@@ -254,6 +271,7 @@ const FloatingLinkToolbar = ({ children }) => {
     setHref,
     cancelHref,
   } = useFloatingLinkState();
+  useUpdatePositionerOnMove();
   const active = useActive();
   const activeLink = active.link();
   const { empty } = useCurrentSelection();
@@ -294,13 +312,16 @@ const FloatingLinkToolbar = ({ children }) => {
   return (
     <>
       {!isEditing && (
-        <FloatingToolbar>
+        // By default, MUI's Popper creates a Portal, which is a ROOT html
+        // elements that prevents paning on reactflow canvas. Therefore, we
+        // disable the portal behavior.
+        <FloatingToolbar disablePortal>
           {linkEditButtons}
           {children}
         </FloatingToolbar>
       )}
       {!isEditing && empty && (
-        <FloatingToolbar positioner={linkPositioner}>
+        <FloatingToolbar positioner={linkPositioner} disablePortal>
           {linkEditButtons}
           {children}
         </FloatingToolbar>
