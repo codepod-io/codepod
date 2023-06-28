@@ -343,7 +343,7 @@ function SyncStatus() {
   useEffect(() => {
     let id = setInterval(() => {
       remoteUpdateAllPods(client);
-    }, 3000);
+    }, 1000);
     return () => {
       clearInterval(id);
     };
