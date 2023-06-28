@@ -93,7 +93,7 @@ async function exportJSON(_, { repoId }, { userId }) {
     }
   }
 
-  // Append the scope structure as comment for each cell and also format source
+  // Append the scope structure as comment for each cell and format source
   for (const cell of jupyterCellList) {
     let scopes: string[] = [];
     let parentId = adj[cell.metadata["id"]].parentId;
@@ -105,28 +105,34 @@ async function exportJSON(_, { repoId }, { userId }) {
     }
 
     // Add scope structure as a block comment at the head of each cell
-    let scopeStructureAsComment = [
-      "'''\n",
-      `CodePod Scope structure: ${scopes.reverse().join("/")}\n`,
-      "'''\n",
-    ];
-    // TO-FIX, split by newline doesn't work
-    const sourceArray = cell.source[0]
-      .substring(1, cell.source[0].length - 1)
-      .split(/\r?\n/);
+    let scopeStructureAsComment =
+      scopes.length > 0
+        ? [
+            "'''\n",
+            `CodePod Scope structure: ${scopes.reverse().join("/")}\n`,
+            "'''\n",
+          ]
+        : [""];
+
+    const sourceArray = JSON.parse(cell.source[0])
+      .split(/\r?\n/)
+      .map((line) => line + "\n");
 
     cell.source = [...scopeStructureAsComment, ...sourceArray];
   }
-  console.log(jupyterCellList);
-
   const filename = `${
     repo.name || "Untitled"
   }-${new Date().toISOString()}.ipynb`;
   const aws_url = await uploadToS3WithExpiration(
     filename,
     JSON.stringify({
+      // hard-code Jupyter Notebook top-level metadata
       metadata: {
         name: repo.name,
+        kernelspec: {
+          name: "python3",
+          display_name: "Python 3",
+        },
         language_info: { name: "python" },
         Codepod_version: "v0.0.1",
       },
