@@ -603,7 +603,10 @@ export const CodeNode = memo<NodeProps>(function ({
     return (
       <Box
         sx={{
-          fontSize: fontSize * 2,
+          fontSize:
+            fontSize * zoomLevel > threshold / 1.5
+              ? fontSize * 1.25
+              : fontSize * 2,
           background: "#eee",
           borderRadius: "5px",
           border: "5px solid red",
