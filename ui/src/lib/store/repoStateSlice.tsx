@@ -113,7 +113,7 @@ export const createRepoStateSlice: StateCreator<
   remoteUpdateAllPods: async (client) => {
     // The pods that haven't been inserted to the database yet
     const pendingPods = Object.values(get().pods).filter(
-      (pod) => pod.dirty && pod.pending
+      (pod) => (pod.dirty || pod.dirtyPending) && pod.pending
     );
 
     // First insert all pending pods and ignore their relationship for now
@@ -139,11 +139,17 @@ export const createRepoStateSlice: StateCreator<
       if (!pod) return;
       pod.children?.map(({ id }) => helper(id));
       if (id !== "ROOT") {
-        if (pod.dirty && !pod.isSyncing) {
+        if ((pod.dirty || pod.dirtyPending) && !pod.isSyncing) {
           set(
             produce((state) => {
               // FIXME when doRemoteUpdatePod fails, this will be stuck.
               state.pods[id].isSyncing = true;
+              // Transfer the dirty status from dirty to dirtyPending. This is
+              // because pod may be updated during remote syncing, and the flag
+              // might be cleared by a successful return, causing unsaved
+              // content.
+              state.pods[id].dirty = false;
+              state.pods[id].dirtyPending = true;
             })
           );
           try {
@@ -156,7 +162,7 @@ export const createRepoStateSlice: StateCreator<
                 state.pods[id].isSyncing = false;
                 // pod may be updated during remote syncing
                 // clear dirty flag only when remote update is successful
-                if (res) state.pods[id].dirty = false;
+                if (res) state.pods[id].dirtyPending = false;
               })
             );
           } catch (e) {
