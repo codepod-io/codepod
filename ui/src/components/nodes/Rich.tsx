@@ -61,7 +61,6 @@ import {
   wysiwygPreset,
   MarkdownExtension,
 } from "remirror/extensions";
-//import { MarkdownExtension } from "@remirror/extension-markdown";
 import {
   Remirror,
   EditorComponent,

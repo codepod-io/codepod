@@ -29,10 +29,6 @@ import { FormControlLabel, FormGroup, Stack, Switch } from "@mui/material";
 import { getUpTime } from "../lib/utils";
 import { toSvg } from "html-to-image";
 
-//import { MarkdownExtension } from "remirror/extensions";
-//import { useRemirror } from "@remirror/react";
-//import { MarkdownExtension } from "@remirror/extension-markdown";
-
 function Flex(props) {
   return (
     <Box sx={{ display: "flex" }} {...props}>
