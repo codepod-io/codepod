@@ -64,9 +64,9 @@ docker compose up -d
 If you this is your first time setting up CodePod, or the database schema has been updated (which you can tell from errors), you will also need to [initalize database tables](#initializing-the-database).
 
 Wait a few minutes for the package installation and compilation. Once the `ui` and
-`api` containers are ready, go to `http://localhost:80` to see the app.
+`api` containers are ready, go to `http://localhost:8080` to see the app.
 
-- `http://localhost:80/graphql`: Apollo GraphQL explorer for the backend APIs
+- `http://localhost:8080/graphql`: Apollo GraphQL explorer for the backend APIs
 - `http://prisma.127.0.0.1.sslip.io`: Prisma Studio for viewing and debugging the database.
 
 ### Initializing database tables
@@ -130,8 +130,8 @@ Because Docker uses the folder name as the default suffix in container names, th
 The two stacks also may share the same network ports due to the same configuration files used. To set the ports, search for the following lines in `CODEPOD_ROOT/compose/dev/nginx.conf` (two occurences of the two lines in the file) file of the new stack:
 
 ```yaml
-listen 80;
-listen [::]:80;
+listen 8080;
+listen [::]:8080;
 ```
 
 and the following section in the `CODEPOD_ROOT/compose/dev/compose.yml` file of the new stack:
@@ -140,12 +140,12 @@ and the following section in the `CODEPOD_ROOT/compose/dev/compose.yml` file of 
   nginx:
     image: nginx:alpine
     ports:
-      - 80:80
+      - 8080:8080
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
 ```
 
-and replace the default port number 80 to a new port number. For example, you can set the port number to 8080 for all occurences of 80.
+and replace the default port number 8080 to a new port number. For example, you can set the port number to 8081 for all occurences of 8080.
 
 Also, comment out the port section of the `ui` container in `CODEPOD_ROOT/compose/dev/compose.yml` as:
 
@@ -169,18 +169,18 @@ Then, you can access the new stack at `http://localhost:8080`.
 ### Libraries and Frameworks
 
 - [React](https://react.dev/) framework
-    - [Apollo GraphQL](https://www.apollographql.com/)
-    - [Zustand](https://docs.pmnd.rs/zustand/getting-started/introduction) (scalable state management)
-    - [Monaco](https://github.com/microsoft/monaco-editor) editor
-    - [Remirror](https://github.com/remirror/remirror) rich-text editor
-    - [Material](https://mui.com/core/) UI
-    - [Nano ID](https://github.com/ai/nanoid/blob/HEAD/README.zh-CN.md) UUID generator
-    - [Express](https://expressjs.com/)
+  - [Apollo GraphQL](https://www.apollographql.com/)
+  - [Zustand](https://docs.pmnd.rs/zustand/getting-started/introduction) (scalable state management)
+  - [Monaco](https://github.com/microsoft/monaco-editor) editor
+  - [Remirror](https://github.com/remirror/remirror) rich-text editor
+  - [Material](https://mui.com/core/) UI
+  - [Nano ID](https://github.com/ai/nanoid/blob/HEAD/README.zh-CN.md) UUID generator
+  - [Express](https://expressjs.com/)
 - [Jupyter](https://jupyter-client.readthedocs.io/en/stable/messaging.html)
-    - [ZeroMQ](https://github.com/zeromq/zeromq.js) Node.js bindings
+  - [ZeroMQ](https://github.com/zeromq/zeromq.js) Node.js bindings
 - [Docker](https://docs.docker.com/compose/compose-file/)
 - [Kubernetes](https://kubernetes.io/docs/concepts/overview/)
-    - [Helm](https://github.com/helm/helm) Chart
+  - [Helm](https://github.com/helm/helm) Chart
 - Proxy configuration: [NGINX](https://github.com/nginx/nginx)
 - Database: [PostgreSQL](https://www.postgresql.org/) + [Prisma](https://github.com/prisma/prisma)
 
@@ -191,12 +191,13 @@ Then, you can access the new stack at `http://localhost:8080`.
 ### Codepod GitHub Repo
 
 - Frontend
-    - [Ui](https://github.com/codepod-io/codepod/tree/main/ui): root folder for Codepod client implementation, it contains the implementation of pod, [Canvas](https://github.com/codepod-io/codepod/blob/main/ui/src/components/Canvas.tsx) and [Scope](https://github.com/codepod-io/codepod/blob/main/ui/src/components/nodes/Scope.tsx)
+
+  - [Ui](https://github.com/codepod-io/codepod/tree/main/ui): root folder for Codepod client implementation, it contains the implementation of pod, [Canvas](https://github.com/codepod-io/codepod/blob/main/ui/src/components/Canvas.tsx) and [Scope](https://github.com/codepod-io/codepod/blob/main/ui/src/components/nodes/Scope.tsx)
 
 - Backend
-    - [Proxy](https://github.com/codepod-io/codepod/tree/main/proxy): reverse proxy server, it forwards/redirects client requests to proper servers in the backbone.
-    - [Api](https://github.com/codepod-io/codepod/tree/main/api): the API server handles users’ actions on the Codepod client app, it authenticates users, persists the repo, scope and pod states to the Postgres database.
-    - [Runtime](https://github.com/codepod-io/codepod/tree/main/runtime): Codepod runtime server, <http://localhost:4020>, this URL is used in the front-end runtime.js to connect to the runtime, it handles the code execution logic on various kernels, e.g., IPython.
+  - [Proxy](https://github.com/codepod-io/codepod/tree/main/proxy): reverse proxy server, it forwards/redirects client requests to proper servers in the backbone.
+  - [Api](https://github.com/codepod-io/codepod/tree/main/api): the API server handles users’ actions on the Codepod client app, it authenticates users, persists the repo, scope and pod states to the Postgres database.
+  - [Runtime](https://github.com/codepod-io/codepod/tree/main/runtime): Codepod runtime server, <http://localhost:4020>, this URL is used in the front-end runtime.js to connect to the runtime, it handles the code execution logic on various kernels, e.g., IPython.
 
 ### References
 
