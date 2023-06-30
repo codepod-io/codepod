@@ -67,12 +67,79 @@ async function exportJSON(_, { repoId }, { userId }) {
   });
   // now export repo to a file
   if (!repo) throw Error("Repo not exists.");
+  // podId -> parentId mapping
+  let adj = {};
+  // Hard-code Jupyter cell format. Reference, https://nbformat.readthedocs.io/en/latest/format_description.html
+  let jupyterCellList: {
+    cell_type: string;
+    execution_count: number;
+    metadata: object;
+    source: string[];
+  }[] = [];
+
+  for (const pod of repo.pods) {
+    // Build podId -> parentId mapping
+    adj[pod.id] = { name: pod.name, parentId: pod.parentId };
+    // Filter by non-empty 'CODE' pods
+    if (!pod.name && pod.type == "CODE") {
+      jupyterCellList.push({
+        cell_type: "code",
+        // hard-code execution_count
+        execution_count: 1,
+        // TODO: expand other Codepod related-metadata fields, or run a real-time search in database when importing.
+        metadata: { id: pod.id },
+        source: [pod.content || ""],
+      });
+    }
+  }
+
+  // Append the scope structure as comment for each cell and format source
+  for (const cell of jupyterCellList) {
+    let scopes: string[] = [];
+    let parentId = adj[cell.metadata["id"]].parentId;
+
+    // iterative {parentId,name} retrieval
+    while (parentId) {
+      scopes.push(adj[parentId].name);
+      parentId = adj[parentId].parentId;
+    }
+
+    // Add scope structure as a block comment at the head of each cell
+    let scopeStructureAsComment =
+      scopes.length > 0
+        ? [
+            "'''\n",
+            `CodePod Scope structure: ${scopes.reverse().join("/")}\n`,
+            "'''\n",
+          ]
+        : [""];
+
+    const sourceArray = JSON.parse(cell.source[0])
+      .split(/\r?\n/)
+      .map((line) => line + "\n");
+
+    cell.source = [...scopeStructureAsComment, ...sourceArray];
+  }
   const filename = `${
     repo.name || "Untitled"
-  }-${new Date().toISOString()}.json`;
+  }-${new Date().toISOString()}.ipynb`;
   const aws_url = await uploadToS3WithExpiration(
     filename,
-    JSON.stringify({ name: repo.name, version: "v0.0.1", pods: repo.pods })
+    JSON.stringify({
+      // hard-code Jupyter Notebook top-level metadata
+      metadata: {
+        name: repo.name,
+        kernelspec: {
+          name: "python3",
+          display_name: "Python 3",
+        },
+        language_info: { name: "python" },
+        Codepod_version: "v0.0.1",
+      },
+      nbformat: 4,
+      nbformat_minor: 0,
+      cells: jupyterCellList,
+    })
   );
   return aws_url;
 }

@@ -525,9 +525,9 @@ function ExportJSON() {
           // call export graphQL api to get the AWS S3 url
           exportJSON({ variables: { repoId } });
         }}
-        disabled={true}
+        disabled={false}
       >
-        Raw JSON
+        Jupyter Notebook
       </Button>
       {error && <Box>Error: {error.message}</Box>}
     </>
