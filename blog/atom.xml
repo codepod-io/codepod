@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://codepod.io/blog</id>
+    <title>Codepod IDE Blog</title>
+    <updated>2023-02-07T00:00:00.000Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://codepod.io/blog"/>
+    <subtitle>Codepod IDE Blog</subtitle>
+    <icon>https://codepod.io/img/logo.png</icon>
+    <entry>
+        <title type="html"><![CDATA[First Blog Post]]></title>
+        <id>https://codepod.io/blog/first-blog-post</id>
+        <link href="https://codepod.io/blog/first-blog-post"/>
+        <updated>2023-02-07T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[Greetings! We'll publish blog posts when we are ready to announce, stay tuned!]]></summary>
+        <content type="html"><![CDATA[<p>Greetings! We'll publish blog posts when we are ready to announce, stay tuned!</p>]]></content>
+        <author>
+            <name>Hebi Li</name>
+            <uri>https://lihebi.com</uri>
+        </author>
+        <category label="greetings" term="greetings"/>
+    </entry>
+</feed>
