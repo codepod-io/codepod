@@ -1,4 +1,4 @@
-name: Test deployment
+name: Build Website on PRs
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ on:
 
 jobs:
   website-build-on-PR:
-    name: Build Website on PRs
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
