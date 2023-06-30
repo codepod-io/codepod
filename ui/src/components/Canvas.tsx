@@ -752,6 +752,8 @@ function CanvasImpl() {
     store,
     (state) => state.helperLineVertical
   );
+  const toggleMoved = useStore(store, (state) => state.toggleMoved);
+  const toggleClicked = useStore(store, (state) => state.toggleClicked);
 
   return (
     <Box
@@ -768,6 +770,12 @@ function CanvasImpl() {
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onMove={() => {
+            toggleMoved();
+          }}
+          onPaneClick={() => {
+            toggleClicked();
+          }}
           onNodeDragStop={(event, node) => {
             removeDragHighlight();
             let mousePos = project({ x: event.clientX, y: event.clientY });

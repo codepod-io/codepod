@@ -36,21 +36,11 @@ import Ansi from "ansi-to-react";
 
 import Box from "@mui/material/Box";
 import InputBase from "@mui/material/InputBase";
-import CircularProgress from "@mui/material/CircularProgress";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import Stack from "@mui/material/Stack";
-import Button from "@mui/material/Button";
-import CircleIcon from "@mui/icons-material/Circle";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import Grid from "@mui/material/Grid";
-import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import DeleteIcon from "@mui/icons-material/Delete";
-import ViewComfyIcon from "@mui/icons-material/ViewComfy";
-import RectangleIcon from "@mui/icons-material/Rectangle";
-import DisabledByDefaultIcon from "@mui/icons-material/DisabledByDefault";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+import FormatColorResetIcon from "@mui/icons-material/FormatColorReset";
 
 import {
   BoldExtension,
@@ -99,6 +89,11 @@ import {
   useUpdateReason,
   FloatingWrapper,
   useMention,
+  ToggleBoldButton,
+  ToggleItalicButton,
+  ToggleUnderlineButton,
+  ToggleCodeButton,
+  ToggleStrikeButton,
 } from "@remirror/react";
 import { FloatingToolbar, useExtensionEvent } from "@remirror/react";
 import { TableExtension } from "@remirror/extension-react-tables";
@@ -243,7 +238,24 @@ const DelayAutoFocusInput = ({
   return <input ref={inputRef} {...rest} />;
 };
 
-const FloatingLinkToolbar = ({ children }) => {
+function useUpdatePositionerOnMove() {
+  // Update (all) the positioners whenever there's a move (pane) on reactflow,
+  // so that the toolbar moves with the Rich pod and content.
+  const { forceUpdatePositioners, emptySelection } = useCommands();
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const moved = useStore(store, (state) => state.moved);
+  const clicked = useStore(store, (state) => state.clicked);
+  useEffect(() => {
+    forceUpdatePositioners();
+  }, [moved]);
+  useEffect(() => {
+    emptySelection();
+  }, [clicked]);
+  return;
+}
+
+const EditorToolbar = () => {
   const {
     isEditing,
     linkPositioner,
@@ -254,6 +266,7 @@ const FloatingLinkToolbar = ({ children }) => {
     setHref,
     cancelHref,
   } = useFloatingLinkState();
+  useUpdatePositionerOnMove();
   const active = useActive();
   const activeLink = active.link();
   const { empty } = useCurrentSelection();
@@ -262,47 +275,69 @@ const FloatingLinkToolbar = ({ children }) => {
     clickEdit();
   }, [clickEdit]);
 
-  const linkEditButtons = activeLink ? (
-    <CommandButtonGroup>
-      <CommandButton
-        commandName="updateLink"
-        aria-label="Edit link"
-        onSelect={handleClickEdit}
-        icon="pencilLine"
-        enabled
-      />
-      <CommandButton
-        commandName="removeLink"
-        aria-label="Remove link"
-        onSelect={onRemove}
-        icon="linkUnlink"
-        enabled
-      />
-    </CommandButtonGroup>
-  ) : (
-    <CommandButtonGroup>
-      <CommandButton
-        commandName="updateLink"
-        aria-label="Add link"
-        onSelect={handleClickEdit}
-        icon="link"
-        enabled
-      />
-    </CommandButtonGroup>
-  );
-
   return (
     <>
       {!isEditing && (
-        <FloatingToolbar>
-          {linkEditButtons}
-          {children}
-        </FloatingToolbar>
-      )}
-      {!isEditing && empty && (
-        <FloatingToolbar positioner={linkPositioner}>
-          {linkEditButtons}
-          {children}
+        // By default, MUI's Popper creates a Portal, which is a ROOT html
+        // elements that prevents paning on reactflow canvas. Therefore, we
+        // disable the portal behavior.
+        <FloatingToolbar
+          disablePortal
+          sx={{
+            button: {
+              padding: 0,
+              border: "none",
+              borderRadius: "5px",
+              marginLeft: "5px",
+            },
+            paddingX: "4px",
+            border: "2px solid grey",
+            borderRadius: "5px",
+            alignItems: "center",
+            backgroundColor: "white",
+          }}
+        >
+          <ToggleBoldButton />
+          <ToggleItalicButton />
+          <ToggleUnderlineButton />
+          <ToggleStrikeButton />
+          <ToggleCodeButton />
+          {activeLink && (
+            <CommandButton
+              commandName="updateLink"
+              aria-label="Edit link"
+              onSelect={handleClickEdit}
+              icon="pencilLine"
+              enabled
+            />
+          )}
+          {activeLink && (
+            <CommandButton
+              commandName="removeLink"
+              aria-label="Remove link"
+              onSelect={onRemove}
+              icon="linkUnlink"
+              enabled
+            />
+          )}
+          {!activeLink && (
+            <CommandButton
+              commandName="updateLink"
+              aria-label="Add link"
+              onSelect={handleClickEdit}
+              icon="link"
+              enabled
+            />
+          )}
+          <SetHighlightButton color="lightpink" />
+          <SetHighlightButton color="yellow" />
+          <SetHighlightButton color="lightgreen" />
+          <SetHighlightButton color="lightcyan" />
+          <SetHighlightButton />
+
+          {/* <TextAlignmentButtonGroup /> */}
+          {/* <IndentationButtonGroup /> */}
+          {/* <BaselineButtonGroup /> */}
         </FloatingToolbar>
       )}
 
@@ -363,14 +398,24 @@ export const SetHighlightButton: React.FC<
     <CommandButton
       {...props}
       commandName="setHighlight"
-      label={color ? "Highlight" : "Un-Highlight"}
+      label={color ? "Highlight" : "Clear Highlight"}
       enabled={enabled}
       onSelect={handleSelect}
       icon={
-        <IconBase viewBox="0 0 24 24">
-          color === null ? <DisabledByDefaultIcon /> :{" "}
-          <RectangleIcon sx={{ color }} />
-        </IconBase>
+        color ? (
+          <Box
+            sx={{
+              backgroundColor: color,
+              paddingX: "4px",
+              borderRadius: "4px",
+              lineHeight: 1.2,
+            }}
+          >
+            A
+          </Box>
+        ) : (
+          <FormatColorResetIcon />
+        )
       }
     />
   );
@@ -595,28 +640,7 @@ const MyEditor = ({
               ]}
             />
 
-            {!isGuest && (
-              <FloatingLinkToolbar>
-                <FormattingButtonGroup />
-                <VerticalDivider />
-                <CommandButtonGroup>
-                  {/* <HeadingLevelButtonGroup /> */}
-
-                  {/* <ListButtonGroup /> */}
-                  <SetHighlightButton color="lightpink" />
-                  <SetHighlightButton color="yellow" />
-                  <SetHighlightButton color="lightgreen" />
-                  <SetHighlightButton color="lightcyan" />
-                  <SetHighlightButton />
-                </CommandButtonGroup>
-                {/* <FormattingButtonGroup /> */}
-                {/* <DecreaseIndentButton /> */}
-                {/* <IncreaseIndentButton /> */}
-                {/* <TextAlignmentButtonGroup /> */}
-                {/* <IndentationButtonGroup /> */}
-                {/* <BaselineButtonGroup /> */}
-              </FloatingLinkToolbar>
-            )}
+            {!isGuest && <EditorToolbar />}
 
             {/* <Menu /> */}
           </Remirror>
