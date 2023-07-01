@@ -106,7 +106,6 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
           return;
         }
         pod.richContent = richContent;
-        pod.dirty = true;
       }),
       false,
       // @ts-ignore

@@ -591,7 +591,7 @@ function ExportJupyterNB() {
         };
 
         if (pod.type == "SCOPE") {
-          q.push([pod, geoScore]);
+          q.push([pod, geoScore.substring(0, 2) + "0" + geoScore.substring(2)]);
         } else if (pod.type == "CODE") {
           jupyterCellList.push({
             cell_type: "code",
