@@ -534,6 +534,168 @@ function ExportJSON() {
   );
 }
 
+function ExportJupyterNB() {
+  const { id: repoId } = useParams();
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const repoName = useStore(store, (state) => state.repoName);
+  const pods = useStore(store, (state) => state.pods);
+  const filename = `${
+    repoName || "Untitled"
+  }-${new Date().toISOString()}.ipynb`;
+  const [loading, setLoading] = useState(false);
+
+  const onClick = () => {
+    setLoading(true);
+
+    // Hard-code Jupyter cell format. Reference, https://nbformat.readthedocs.io/en/latest/format_description.html
+    let jupyterCellList: {
+      cell_type: string;
+      execution_count: number;
+      metadata: object;
+      source: string[];
+    }[] = [];
+
+    // Queue to sort the pods geographically
+    let q = new Array();
+    // adjacency list for podId -> parentId mapping
+    let adj = {};
+    q.push([pods["ROOT"], "0.0"]);
+    while (q.length > 0) {
+      let [curPod, curScore] = q.shift();
+
+      // sort the pods geographically(top-down, left-right)
+      let sortedChildren = curPod.children
+        .map((x) => x.id)
+        .sort((id1, id2) => {
+          let pod1 = pods[id1];
+          let pod2 = pods[id2];
+          if (pod1 && pod2) {
+            if (pod1.y === pod2.y) {
+              return pod1.x - pod2.x;
+            } else {
+              return pod1.y - pod2.y;
+            }
+          } else {
+            return 0;
+          }
+        });
+
+      for (let i = 0; i < sortedChildren.length; i++) {
+        let pod = pods[sortedChildren[i]];
+        let geoScore = curScore + `${i + 1}`;
+        adj[pod.id] = {
+          name: pod.name,
+          parentId: pod.parent,
+          geoScore: geoScore,
+        };
+
+        if (pod.type == "SCOPE") {
+          q.push([pod, geoScore.substring(0, 2) + "0" + geoScore.substring(2)]);
+        } else if (pod.type == "CODE") {
+          jupyterCellList.push({
+            cell_type: "code",
+            // hard-code execution_count
+            execution_count: 1,
+            // TODO: expand other Codepod related-metadata fields, or run a real-time search in database when importing.
+            metadata: { id: pod.id, geoScore: Number(geoScore) },
+            source: [pod.content || ""],
+          });
+        } else if (pod.type == "RICH") {
+          jupyterCellList.push({
+            cell_type: "markdown",
+            // hard-code execution_count
+            execution_count: 1,
+            // TODO: expand other Codepod related-metadata fields, or run a real-time search in database when importing.
+            metadata: { id: pod.id, geoScore: Number(geoScore) },
+            source: [pod.richContent || ""],
+          });
+        }
+      }
+    }
+
+    // sort the generated cells by their geoScore
+    jupyterCellList.sort((cell1, cell2) => {
+      if (
+        Number(cell1.metadata["geoScore"]) < Number(cell2.metadata["geoScore"])
+      ) {
+        return -1;
+      } else {
+        return 1;
+      }
+    });
+
+    // Append the scope structure as comment for each cell and format source
+    for (const cell of jupyterCellList) {
+      let scopes: string[] = [];
+      let parentId = adj[cell.metadata["id"]].parentId;
+
+      // iterative {parentId,name} retrieval
+      while (parentId && parentId != "ROOT") {
+        scopes.push(adj[parentId].name);
+        parentId = adj[parentId].parentId;
+      }
+
+      // Add scope structure as a block comment at the head of each cell
+      let scopeStructureAsComment =
+        scopes.length > 0
+          ? [
+              "'''\n",
+              `CodePod Scope structure: ${scopes.reverse().join("/")}\n`,
+              "'''\n",
+            ]
+          : [""];
+
+      const sourceArray = cell.source[0]
+        .split(/\r?\n/)
+        .map((line) => line + "\n");
+
+      cell.source = [...scopeStructureAsComment, ...sourceArray];
+    }
+
+    const fileContent = JSON.stringify({
+      // hard-code Jupyter Notebook top-level metadata
+      metadata: {
+        name: repoName,
+        kernelspec: {
+          name: "python3",
+          display_name: "Python 3",
+        },
+        language_info: { name: "python" },
+        Codepod_version: "v0.0.1",
+      },
+      nbformat: 4,
+      nbformat_minor: 0,
+      cells: jupyterCellList,
+    });
+
+    // Generate the download link on the fly
+    let element = document.createElement("a");
+    element.setAttribute(
+      "href",
+      "data:text/plain;charset=utf-8," + encodeURIComponent(fileContent)
+    );
+    element.setAttribute("download", filename);
+
+    element.style.display = "none";
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
+  };
+
+  return (
+    <Button
+      variant="outlined"
+      size="small"
+      color="secondary"
+      onClick={onClick}
+      disabled={false}
+    >
+      Jupyter Notebook
+    </Button>
+  );
+}
+
 function ExportSVG() {
   // The name should contain the name of the repo, the ID of the repo, and the current date
   const { id: repoId } = useParams();
@@ -590,6 +752,7 @@ function ExportButtons() {
     <Stack spacing={1}>
       <ExportFile />
       <ExportJSON />
+      <ExportJupyterNB />
       <ExportSVG />
     </Stack>
   );

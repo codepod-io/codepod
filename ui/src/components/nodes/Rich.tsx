@@ -59,6 +59,7 @@ import {
   YjsExtension,
   createMarkPositioner,
   wysiwygPreset,
+  MarkdownExtension,
 } from "remirror/extensions";
 import {
   Remirror,
@@ -527,6 +528,7 @@ const MyEditor = ({
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const setPodContent = useStore(store, (state) => state.setPodContent);
+  const setPodRichContent = useStore(store, (state) => state.setPodRichContent);
   // initial content
   const getPod = useStore(store, (state) => state.getPod);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
@@ -554,6 +556,7 @@ const MyEditor = ({
       new LinkExtension({ autoLink: true }),
       new ImageExtension({ enableResizing: true }),
       new DropCursorExtension(),
+      new MarkdownExtension(),
       new MyYjsExtension({ getProvider: () => provider, id }),
       new MentionExtension({
         extraAttributes: { type: "user" },
@@ -623,6 +626,10 @@ const MyEditor = ({
                   }
                 }
                 setPodContent({ id, content: nextState.doc.toJSON() });
+                setPodRichContent({
+                  id,
+                  richContent: parameter.helpers.getMarkdown(),
+                });
               }
             }}
           >

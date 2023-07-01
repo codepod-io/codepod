@@ -34,6 +34,13 @@ export interface PodSlice {
   ) => void;
   setPodName: ({ id, name }: { id: string; name: string }) => void;
   setPodContent: ({ id, content }: { id: string; content: string }) => void;
+  setPodRichContent: ({
+    id,
+    richContent,
+  }: {
+    id: string;
+    richContent: string;
+  }) => void;
   initPodContent: ({ id, content }: { id: string; content: string }) => void;
   addPod: (pod: Pod) => void;
   deletePod: (
@@ -90,6 +97,19 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
       false,
       // @ts-ignore
       "setPodContent"
+    ),
+  setPodRichContent: ({ id, richContent }) =>
+    set(
+      produce((state) => {
+        let pod = state.pods[id];
+        if (pod.type != "RICH") {
+          return;
+        }
+        pod.richContent = richContent;
+      }),
+      false,
+      // @ts-ignore
+      "setPodRichContent"
     ),
   initPodContent: ({ id, content }) =>
     set(
