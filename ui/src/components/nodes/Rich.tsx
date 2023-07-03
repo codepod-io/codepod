@@ -615,6 +615,10 @@ const MyEditor = ({
               setState(nextState);
               // TODO sync with DB and yjs
               if (parameter.tr?.docChanged) {
+                setPodRichContent({
+                  id,
+                  richContent: parameter.helpers.getMarkdown(),
+                });
                 index_onChange += 1;
                 if (index_onChange == 1) {
                   if (
@@ -626,10 +630,6 @@ const MyEditor = ({
                   }
                 }
                 setPodContent({ id, content: nextState.doc.toJSON() });
-                setPodRichContent({
-                  id,
-                  richContent: parameter.helpers.getMarkdown(),
-                });
               }
             }}
           >
