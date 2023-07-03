@@ -85,8 +85,10 @@ export interface RepoStateSlice {
   addCollaborator: (client: ApolloClient<object>, email: string) => any;
   deleteCollaborator: (client: ApolloClient<object>, id: string) => any;
   shareOpen: boolean;
+  settingOpen: boolean;
   cutting: string | null;
   setShareOpen: (open: boolean) => void;
+  setSettingOpen: (open: boolean) => void;
   setCutting: (id: string | null) => void;
   loadError: any;
   role: "OWNER" | "COLLABORATOR" | "GUEST";
@@ -94,6 +96,10 @@ export interface RepoStateSlice {
   updateVisibility: (
     client: ApolloClient<object>,
     isPublic: boolean
+  ) => Promise<boolean>;
+  updateAPIKey: (
+    client: ApolloClient<object>,
+    apiKey: string
   ) => Promise<boolean>;
   loadVisibility: (client: ApolloClient<object>, repoId: string) => void;
   currentEditor: string | null;
@@ -109,11 +115,6 @@ export interface RepoStateSlice {
   yjsConnecting: boolean;
   connectYjs: () => void;
   disconnectYjs: () => void;
-  autoCompletion: boolean;
-  unregisterCompletionHandler: null | (() => void);
-  registerCompletion: (client: ApolloClient<object>) => void;
-  unregisterCompletion: () => void;
-  flipAutoCompletion: (client: ApolloClient<object>) => void;
 }
 
 let unregister: any = null;
@@ -138,13 +139,12 @@ export const createRepoStateSlice: StateCreator<
   currentEditor: null,
   //TODO: all presence information are now saved in clients map for future usage. create a modern UI to show those information from clients (e.g., online users)
   clients: new Map(),
-  autoCompletion: false,
-  unregisterCompletionHandler: null,
   loadError: null,
   role: "GUEST",
   collaborators: [],
   isPublic: false,
   shareOpen: false,
+  settingOpen: false,
   cutting: null,
   showLineNumbers: false,
   setSessionId: (id) => set({ sessionId: id }),
@@ -249,6 +249,7 @@ export const createRepoStateSlice: StateCreator<
     set((state) => ({ showLineNumbers: !state.showLineNumbers })),
 
   setShareOpen: (open: boolean) => set({ shareOpen: open }),
+  setSettingOpen: (open: boolean) => set({ settingOpen: open }),
   loadVisibility: async (client, repoId) => {
     if (!repoId) return;
     const { collaborators, isPublic } = await doRemoteLoadVisibility(client, {
@@ -326,80 +327,20 @@ export const createRepoStateSlice: StateCreator<
         state.ydoc.destroy();
       })
     ),
-
-  registerCompletion: async (client) => {
-    if (get().autoCompletion || get().unregisterCompletionHandler) return;
-    console.log(get().user);
-    if (
-      get().user.codeiumAPIKey === undefined ||
-      get().user.codeiumAPIKey === ""
-    ) {
-      openTokenPage();
-      const token = prompt("Codeium Token:");
-      console.log("token", token);
-      try {
-        if (token) {
-          const { api_key, name } = await registerUser(token);
-          if (api_key !== undefined && api_key !== "") {
-            const { success } = await doRemoteUpdateCodeiumAPIKey(client, {
-              apiKey: api_key,
-            });
-            if (success) {
-              set({ user: { ...get().user, codeiumAPIKey: api_key } });
-            }
-          }
-          console.log("get api key", api_key, name);
-        }
-      } catch (e) {
-        console.log("api key error", e);
+  updateAPIKey: async (client, apiKey) => {
+    const { success } = await doRemoteUpdateCodeiumAPIKey(client, {
+      apiKey,
+    });
+    try {
+      if (success) {
+        set({ user: { ...get().user, codeiumAPIKey: apiKey } });
+        return true;
+      } else {
+        return false;
       }
-    }
-    const apiKey = get().user.codeiumAPIKey;
-    const completionProvider = new MonacoCompletionProvider(apiKey);
-    // const completionProvider = new MonacoCompletionProvider();
-    const { dispose } = monaco.languages.registerInlineCompletionsProvider(
-      { pattern: "**" },
-      completionProvider
-    );
-    console.log("register completion", dispose);
-    set({ unregisterCompletionHandler: dispose });
-    console.log("state.autoCompletion", get().autoCompletion);
-    // monaco.editor.registerCommand(
-    //   "codeium.acceptCompletion",
-    //   (accessor, args) => {
-    //     console.log("acceptCompletion", args);
-    //   }
-    // );
-    monaco.editor.registerCommand(
-      "codeium.acceptCompletion",
-      (
-        _: unknown,
-        apiKey: string,
-        completionId: string,
-        callback?: () => void
-      ) => {
-        callback?.();
-        completionProvider.acceptedLastCompletion(apiKey, completionId);
-      }
-    );
-
-    set({ autoCompletion: true });
-  },
-
-  unregisterCompletion: () => {
-    const dispose = get().unregisterCompletionHandler;
-    if (typeof dispose === "function") {
-      console.log("unregister", dispose);
-      dispose();
-      set({ unregisterCompletionHandler: null, autoCompletion: false });
-    }
-  },
-
-  flipAutoCompletion: (client) => {
-    if (get().autoCompletion) {
-      get().unregisterCompletion();
-    } else {
-      get().registerCompletion(client);
+    } catch (e) {
+      console.log(e);
+      return false;
     }
   },
 });

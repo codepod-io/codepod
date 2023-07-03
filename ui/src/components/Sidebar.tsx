@@ -13,6 +13,7 @@ import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import Grid from "@mui/material/Grid";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import Typography from "@mui/material/Typography";
 import { useSnackbar, VariantType } from "notistack";
 
@@ -27,7 +28,11 @@ import { RepoContext } from "../lib/store";
 import useMe from "../lib/me";
 import { FormControlLabel, FormGroup, Stack, Switch } from "@mui/material";
 import { getUpTime } from "../lib/utils";
+import { registerCompletion } from "../lib/monacoCompletionProvider";
+import { SettingDialog } from "./SettingDialog";
 import { toSvg } from "html-to-image";
+
+const defaultAPIKey = process.env.REACT_APP_CODEIUM_API_KEY;
 
 function Flex(props) {
   return (
@@ -54,17 +59,34 @@ function SidebarSettings() {
     store,
     (state) => state.setShowLineNumbers
   );
+  const isGuest = useStore(store, (state) => state.role === "GUEST");
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
   const setAutoRunLayout = useStore(store, (state) => state.setAutoRunLayout);
   const contextualZoom = useStore(store, (state) => state.contextualZoom);
   const setContextualZoom = useStore(store, (state) => state.setContextualZoom);
-  const autoCompletion = useStore(store, (state) => state.autoCompletion);
-  const flipAutoCompletion = useStore(
+  const autoCompletion = useStore(
     store,
-    (state) => state.flipAutoCompletion
+    (state) => !isGuest && state.autoCompletion
   );
-  const client = useApolloClient();
+
+  const setAutoCompletion = useStore(store, (state) => state.setAutoCompletion);
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
+  const apiKey = useStore(store, (state) =>
+    state.isCustomToken
+      ? state.user.codeiumAPIKey ?? defaultAPIKey
+      : defaultAPIKey
+  );
+  const setSettingOpen = useStore(store, (state) => state.setSettingOpen);
+
+  useEffect(() => {
+    console.log("apiKey", apiKey);
+    if (autoCompletion) {
+      const dispose = registerCompletion(apiKey);
+      if (dispose !== null) {
+        return dispose;
+      }
+    }
+  }, [autoCompletion, apiKey]);
   return (
     <Box>
       <Box>
@@ -162,7 +184,7 @@ function SidebarSettings() {
             />
           </FormGroup>
         </Tooltip>
-        <Tooltip title={"Enable Auto Completion"} disableInteractive>
+        <Tooltip title={"Auto Completion"} disableInteractive>
           <FormGroup>
             <FormControlLabel
               control={
@@ -171,11 +193,32 @@ function SidebarSettings() {
                   size="small"
                   color="warning"
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    flipAutoCompletion(client);
+                    setAutoCompletion(event.target.checked);
                   }}
                 />
               }
-              label="Auto Completion"
+              label={
+                <>
+                  Auto Completion
+                  <Tooltip
+                    title={"Help"}
+                    disableInteractive
+                    sx={{ display: "inline" }}
+                  >
+                    <IconButton
+                      size="small"
+                      sx={{ display: "inline" }}
+                      onClick={() => setSettingOpen(true)}
+                      disabled={isGuest}
+                    >
+                      <HelpOutlineOutlinedIcon
+                        sx={{ fontSize: 14 }}
+                      ></HelpOutlineOutlinedIcon>
+                    </IconButton>
+                  </Tooltip>
+                </>
+              }
+              disabled={isGuest}
             />
           </FormGroup>
         </Tooltip>
@@ -625,6 +668,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const settingOpen = useStore(store, (state) => state.settingOpen);
   return (
     <>
       <MyKBar />
@@ -697,6 +741,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </Stack>
         </Box>
       </Drawer>
+
+      {settingOpen && <SettingDialog open={settingOpen} />}
     </>
   );
 };

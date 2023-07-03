@@ -399,10 +399,6 @@ export default function Repo() {
   let { id } = useParams();
   const store = useRef(createRepoStore()).current;
   const disconnectYjs = useStore(store, (state) => state.disconnectYjs);
-  const unregisterCompletion = useStore(
-    store,
-    (state) => state.unregisterCompletion
-  );
   const connectYjs = useStore(store, (state) => state.connectYjs);
   const setRepo = useStore(store, (state) => state.setRepo);
   // console.log("load store", useRef(createRepoStore()));
@@ -416,7 +412,6 @@ export default function Repo() {
     return () => {
       clearInterval(intervalId);
       // clean up the connected provider after exiting the page
-      unregisterCompletion();
       disconnectYjs();
     };
   }, [connectYjs, disconnectYjs, id, setRepo]);

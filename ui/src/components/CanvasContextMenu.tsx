@@ -37,17 +37,8 @@ const ItemStyle = {
 export function CanvasContextMenu(props) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
-  const flipShowLineNumbers = useStore(
-    store,
-    (state) => state.flipShowLineNumbers
-  );
   const client = useApolloClient();
   const autoCompletion = useStore(store, (state) => state.autoCompletion);
-  const flipAutoCompletion = useStore(
-    store,
-    (state) => state.flipAutoCompletion
-  );
 
   console.log("autoCompletion", autoCompletion);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
@@ -78,15 +69,6 @@ export function CanvasContextMenu(props) {
             <ListItemText>New Scope</ListItemText>
           </MenuItem>
         )}
-        <MenuItem onClick={() => flipAutoCompletion(client)} sx={ItemStyle}>
-          <ListItemIcon sx={{ color: "inherit" }}>
-            <AutoFixHighIcon />
-          </ListItemIcon>
-          <ListItemText>
-            {autoCompletion ? "Disable " : "Enable "} Auto Completion (Provided
-            by Codeium)
-          </ListItemText>
-        </MenuItem>
       </MenuList>
     </Box>
   );

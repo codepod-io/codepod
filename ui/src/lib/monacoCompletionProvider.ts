@@ -1,4 +1,5 @@
 import { monaco } from "react-monaco-editor";
+import { v4 as uuidv4 } from "uuid";
 import { LanguageServerClient } from "./codeiumClient";
 import {
   numUtf8BytesToNumCodeUnits,
@@ -62,8 +63,6 @@ function createInlineCompletionItem(
   );
   const range = new MonacoRange(startPosition, endPosition);
   let completionText = completionItem.completion.text;
-  console.log(completionText, "text", range);
-  console.log("start", startPosition, "end", endPosition);
   let callback: (() => void) | undefined = undefined;
   if (
     editor &&
@@ -142,7 +141,6 @@ export class MonacoCompletionProvider
     model: monaco.editor.ITextModel,
     position: monaco.Position
   ): Promise<monaco.languages.InlineCompletions | undefined> {
-    console.log("provideInlineCompletions", position, model);
     const apiKey = this.apiKey;
     if (apiKey === undefined) {
       return;
@@ -169,8 +167,6 @@ export class MonacoCompletionProvider
         },
       });
       const response = await this.client.getCompletions(request);
-      console.log("codeium request", request);
-      console.log("codeium response", response);
       if (response === undefined) {
         return { items: [] };
       }
@@ -212,5 +208,62 @@ export class MonacoCompletionProvider
       apiKey,
       completionId
     );
+  }
+}
+
+export const openTokenPage = () => {
+  const PROFILE_URL = "https://www.codeium.com/profile";
+  const params = new URLSearchParams({
+    response_type: "token",
+    redirect_uri: "chrome-show-auth-token",
+    scope: "openid profile email",
+    prompt: "login",
+    redirect_parameters_type: "query",
+    state: uuidv4(),
+  });
+  window.open(`${PROFILE_URL}?${params}`);
+};
+
+export async function registerUser(
+  token: string
+): Promise<{ api_key: string; name: string }> {
+  const url = new URL("register_user/", "https://api.codeium.com");
+  const response = await fetch(url, {
+    body: JSON.stringify({ firebase_id_token: token }),
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!response.ok) {
+    throw new Error(response.statusText);
+  }
+  const user = await response.json();
+  return user as { api_key: string; name: string };
+}
+
+export function registerCompletion(apiKey: string) {
+  const completionProvider = new MonacoCompletionProvider(apiKey);
+  try {
+    const { dispose } = monaco.languages.registerInlineCompletionsProvider(
+      { pattern: "**" },
+      completionProvider
+    );
+    monaco.editor.registerCommand(
+      "codeium.acceptCompletion",
+      (
+        _: unknown,
+        apiKey: string,
+        completionId: string,
+        callback?: () => void
+      ) => {
+        callback?.();
+        completionProvider.acceptedLastCompletion(apiKey, completionId);
+      }
+    );
+    return dispose;
+  } catch (e) {
+    console.log(e);
+    return null;
   }
 }
