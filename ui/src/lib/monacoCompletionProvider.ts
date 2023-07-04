@@ -85,9 +85,6 @@ function createInlineCompletionItem(
         document.getOffsetAt(selection.getPosition()) + deltaCursorOffset
       );
       editor.setSelection(new MonacoRange(newPosition, newPosition));
-      // editor._commandService.executeCommand(
-      //   "editor.action.inlineSuggest.trigger"
-      // );
     };
   }
 

@@ -76,10 +76,6 @@ export function SettingDialog({ open = false }: SettingDiagProps) {
     } catch (e) {
       setStatus("error");
       setMessage((e as Error).message || "Unknown error");
-      console.log(
-        (e as Error).message === undefined,
-        (e as Error).message === ""
-      );
       setInfoShow(true);
       return;
     }
@@ -92,7 +88,11 @@ export function SettingDialog({ open = false }: SettingDiagProps) {
         <DialogContentText>
           The AI code auto completion is powered by{" "}
           <Link href="https://codeium.com/" target="_blank" rel="noreferrer">
-            Codeium <LaunchIcon fontSize="small" />
+            Codeium{" "}
+            <LaunchIcon
+              fontSize="small"
+              sx={{ marginBottom: -0.5, marginLeft: -0.5 }}
+            />
           </Link>{" "}
           You can also use your own token instead of our default API keys, which
           records your own activities of using Codeium.

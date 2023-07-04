@@ -10,7 +10,6 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import Drawer from "@mui/material/Drawer";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
-import Grid from "@mui/material/Grid";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
@@ -79,14 +78,14 @@ function SidebarSettings() {
   const setSettingOpen = useStore(store, (state) => state.setSettingOpen);
 
   useEffect(() => {
-    console.log("apiKey", apiKey);
-    if (autoCompletion) {
+    if (autoCompletion && apiKey) {
       const dispose = registerCompletion(apiKey);
       if (dispose !== null) {
         return dispose;
       }
     }
   }, [autoCompletion, apiKey]);
+
   return (
     <Box>
       <Box>
@@ -189,11 +188,15 @@ function SidebarSettings() {
             <FormControlLabel
               control={
                 <Switch
-                  checked={autoCompletion}
+                  checked={(apiKey && autoCompletion) as boolean}
                   size="small"
                   color="warning"
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setAutoCompletion(event.target.checked);
+                    if (apiKey) {
+                      setAutoCompletion(event.target.checked);
+                    } else {
+                      setSettingOpen(true);
+                    }
                   }}
                 />
               }

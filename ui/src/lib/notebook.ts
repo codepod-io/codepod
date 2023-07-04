@@ -106,42 +106,9 @@ export function computeTextAndOffsets<T>(
     maybeNotebook.currentTextModel,
     undefined
   );
-  //   const modelIsMarkdown = modelLanguage === Language.MARKDOWN;
-  //   const modelIsExpected = isAllowedLanguage(modelLanguage);
-  //   const relevantDocumentTexts: string[] = [];
+
   let additionalUtf8ByteOffset = 0;
-  //   let found = false;
-  //   for (const [idx, previousModel] of textModels.entries()) {
-  //     if (modelIsExpected && maybeNotebook.currentTextModel === previousModel) {
-  //       // There is an offset for all previous cells and the \n\n spacing after each one.
-  //       additionalUtf8ByteOffset =
-  //         relevantDocumentTexts
-  //           .map((el) => numCodeUnitsToNumUtf8Bytes(el))
-  //           .reduce((a, b) => a + b, 0) +
-  //         '\n\n'.length * relevantDocumentTexts.length;
-  //       found = true;
-  //     }
-  //     const previousModelLanguage = maybeNotebook.getLanguage(previousModel, idx);
-  //     if (modelIsExpected && !modelIsMarkdown) {
-  //       // Don't use markdown in the Python prompt construction.
-  //       // TODO(prem): Consider adding as comments.
-  //       if (previousModelLanguage === Language.MARKDOWN) {
-  //         continue;
-  //       } else if (previousModelLanguage === modelLanguage) {
-  //         relevantDocumentTexts.push(maybeNotebook.getText(previousModel));
-  //       }
-  //     } else if (modelIsMarkdown) {
-  //       if (previousModelLanguage === Language.MARKDOWN) {
-  //         relevantDocumentTexts.push(maybeNotebook.getText(previousModel));
-  //       } else if (isAllowedLanguage(previousModelLanguage)) {
-  //         relevantDocumentTexts.push(
-  //           `\`\`\`${
-  //             NOTEBOOK_LANGUAGES[previousModelLanguage as AllowedLanguages]
-  //           }\n${maybeNotebook.getText(previousModel)}\n\`\`\``
-  //         );
-  //       }
-  //     }
-  //   }
+
   const currentModelText = maybeNotebook.getText(
     maybeNotebook.currentTextModel
   );
