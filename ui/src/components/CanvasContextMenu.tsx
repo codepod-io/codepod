@@ -9,9 +9,6 @@ import React, { useContext } from "react";
 import CodeIcon from "@mui/icons-material/Code";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import NoteIcon from "@mui/icons-material/Note";
-import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
-import FormatListNumberedIcon from "@mui/icons-material/FormatListNumbered";
-import { useApolloClient } from "@apollo/client";
 
 const paneMenuStyle = (left, top) => {
   return {
@@ -37,10 +34,7 @@ const ItemStyle = {
 export function CanvasContextMenu(props) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const client = useApolloClient();
-  const autoCompletion = useStore(store, (state) => state.autoCompletion);
 
-  console.log("autoCompletion", autoCompletion);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   return (
     <Box sx={paneMenuStyle(props.x, props.y)}>

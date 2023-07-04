@@ -111,6 +111,7 @@ export function SettingDialog({ open = false }: SettingDiagProps) {
               size="small"
               variant="outlined"
               icon={<DoneIcon />}
+              sx={{ marginTop: 1 }}
             />
           ) : (
             <Chip
@@ -119,7 +120,17 @@ export function SettingDialog({ open = false }: SettingDiagProps) {
               size="small"
               variant="outlined"
               icon={<CloseIcon />}
+              sx={{ marginTop: 1 }}
             />
+          )}
+
+          {apiKey && (
+            <Button
+              endIcon={<CloseIcon />}
+              onClick={() => updateAPIKey(client, "")}
+            >
+              Clear Stored Token
+            </Button>
           )}
           <Button endIcon={<LaunchIcon />} onClick={() => openTokenPage()}>
             Get Token

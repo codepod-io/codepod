@@ -64,28 +64,12 @@ export class LanguageServerClient {
         signal,
         headers: this.getHeaders(request.metadata?.apiKey),
       });
-      console.log("codeium request", request);
       return await getCompletionsPromise;
     } catch (err) {
       if (signal.aborted) {
         return;
       }
       console.log(err);
-      //   if (err instanceof ConnectError) {
-      //     if (err.code != Code.Canceled) {
-      //       console.log(err.message);
-      //       await chrome.runtime.sendMessage(chrome.runtime.id, {
-      //         type: 'error',
-      //         message: err.message,
-      //       });
-      //     }
-      //   } else {
-      //     console.log((err as Error).message);
-      //     await chrome.runtime.sendMessage(chrome.runtime.id, {
-      //       type: 'error',
-      //       message: (err as Error).message,
-      //     });
-      //   }
       return;
     }
   }
