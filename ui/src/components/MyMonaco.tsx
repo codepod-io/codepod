@@ -8,6 +8,7 @@ import { RepoContext } from "../lib/store";
 import { MonacoBinding } from "y-monaco";
 import { useReactFlow } from "reactflow";
 import { Annotation } from "../lib/parser";
+import { MonacoCompletionProvider } from "../lib/monacoCompletionProvider";
 
 const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",
@@ -26,6 +27,9 @@ monaco.languages.setLanguageConfiguration("julia", {
     decreaseIndentPattern: /^\s*(end|else|elseif|catch|finally)\b.*$/,
   },
 });
+
+console.log("monaco", monaco);
+console.log("languages", monaco.languages.registerInlineCompletionsProvider);
 function construct_indent(pos, indent) {
   return [
     {
@@ -479,6 +483,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     // });
 
     // bind it to the ytext with pod id
+    // if (monaco.languages.registerInlineCompletionsProvider)
     const ytext = ydoc.getText("monaco-" + id);
     const monacoBinding = new MonacoBinding(
       ytext,

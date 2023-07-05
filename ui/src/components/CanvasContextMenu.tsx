@@ -9,7 +9,6 @@ import React, { useContext } from "react";
 import CodeIcon from "@mui/icons-material/Code";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import NoteIcon from "@mui/icons-material/Note";
-import FormatListNumberedIcon from "@mui/icons-material/FormatListNumbered";
 
 const paneMenuStyle = (left, top) => {
   return {
@@ -35,11 +34,7 @@ const ItemStyle = {
 export function CanvasContextMenu(props) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
-  const flipShowLineNumbers = useStore(
-    store,
-    (state) => state.flipShowLineNumbers
-  );
+
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   return (
     <Box sx={paneMenuStyle(props.x, props.y)}>
