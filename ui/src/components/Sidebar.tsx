@@ -188,7 +188,7 @@ function SidebarSettings() {
             <FormControlLabel
               control={
                 <Switch
-                  checked={(apiKey && autoCompletion) as boolean}
+                  checked={!!(apiKey && autoCompletion)}
                   size="small"
                   color="warning"
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -208,16 +208,18 @@ function SidebarSettings() {
                     disableInteractive
                     sx={{ display: "inline" }}
                   >
-                    <IconButton
-                      size="small"
-                      sx={{ display: "inline" }}
-                      onClick={() => setSettingOpen(true)}
-                      disabled={isGuest}
-                    >
-                      <HelpOutlineOutlinedIcon
-                        sx={{ fontSize: 14 }}
-                      ></HelpOutlineOutlinedIcon>
-                    </IconButton>
+                    <Box>
+                      <IconButton
+                        size="small"
+                        sx={{ display: "inline" }}
+                        onClick={() => setSettingOpen(true)}
+                        disabled={isGuest}
+                      >
+                        <HelpOutlineOutlinedIcon
+                          sx={{ fontSize: 14 }}
+                        ></HelpOutlineOutlinedIcon>
+                      </IconButton>
+                    </Box>
                   </Tooltip>
                 </>
               }
