@@ -361,6 +361,17 @@ function useJump() {
 
   const selectedPods = useStore(store, (state) => state.selectedPods);
   const handleKeyDown = (event) => {
+    // Only handle the arrow keys.
+    switch (event.key) {
+      case "ArrowUp":
+      case "ArrowDown":
+      case "ArrowLeft":
+      case "ArrowRight":
+        break;
+      default:
+        return;
+    }
+    // Get the selected node.
     const id = selectedPods.values().next().value; // Assuming only one node can be selected at a time
     if (!id) {
       console.log("No node selected");
