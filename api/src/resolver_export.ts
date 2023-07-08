@@ -1,7 +1,6 @@
-import Prisma from "@prisma/client";
-
 import AWS from "aws-sdk";
 import { writeFile, readFile, unlink } from "fs/promises";
+import prisma from './client'
 
 console.log("REGION", process.env.EXPORT_AWS_S3_REGION);
 
@@ -36,10 +35,6 @@ async function uploadToS3WithExpiration(filename, content) {
     console.log("Error uploading file:", error);
   }
 }
-
-const { PrismaClient } = Prisma;
-
-const prisma = new PrismaClient();
 
 /**
  * Export to a JSON file for the pods' raw data.

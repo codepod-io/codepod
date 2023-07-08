@@ -1,4 +1,3 @@
-import Prisma from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
@@ -7,11 +6,9 @@ import { OAuth2Client } from "google-auth-library";
 import { customAlphabet } from "nanoid/async";
 import { lowercase, numbers } from "nanoid-dictionary";
 
+import prisma from './client'
+
 const nanoid = customAlphabet(lowercase + numbers, 20);
-
-const { PrismaClient } = Prisma;
-
-const prisma = new PrismaClient();
 
 async function me(_, __, { userId }) {
   if (!userId) throw Error("Unauthenticated");
