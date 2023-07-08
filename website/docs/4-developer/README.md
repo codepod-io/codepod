@@ -77,28 +77,42 @@ To initialize or update the database schema, open a shell into the API container
 docker exec -it dev-api-1 /bin/bash
 ```
 
+:::note
+You can also use docker desktop or VSCode's docker plugin to attach a shell to the container.
+
+<img src={require("./open-shell-vscode.png").default} alt="attach shell to container" width="300" />
+
+:::
+
 and then **from the shell of the API container** run:
 
-> Known issues: if you get the error below during the migration,
->
-> ```bash
-> EACCES: permission denied, unlink '/app/node_modules/.prisma/client/index.js'
-> EACCES: permission denied, unlink '/app/node_modules/.prisma/client/index.js'
-> ```
->
-> then please change the ownership of the folder `node_modules` (**from the shell of the API container**):
->
-> ```bash
-> chown node:node node_modules/ -R
-> ```
->
-> Afterwards, re-run
->
-> ```bash
-> npx prisma migrate dev
-> ```
+```bash
+npx prisma migrate dev
+```
 
-### Preparing for database migration
+:::note
+Known issues: if you get the error below during the migration,
+
+```bash
+EACCES: permission denied, unlink '/app/node_modules/.prisma/client/index.js'
+EACCES: permission denied, unlink '/app/node_modules/.prisma/client/index.js'
+```
+
+then please change the ownership of the folder `node_modules` (**from the shell of the API container**):
+
+```bash
+chown node:node node_modules/ -R
+```
+
+Afterwards, re-run
+
+```bash
+npx prisma migrate dev
+```
+
+:::
+
+### Database Schema Migration
 
 If you are a developer who wants to change the database schema for adding a feature, you can update the schema file `CODEPOD_ROOT/api/prisma/schema.prisma` and then run
 
@@ -108,6 +122,15 @@ npx prisma migrate dev --name add_a_new_field
 
 to generate a migration, like [this](https://github.com/codepod-io/codepod/blob/main/api/prisma/migrations/20230223102734_add_updated_at/migration.sql).
 The schema change along with this migration need to be checked in (add, commit, and push) to git.
+
+Once the DB schema is changed, other developers need to pull the changes, and
+apply the migration by running the following command in the `api` container:
+
+```
+npx prisma migrate dev
+```
+
+and then restart the `api` container to take effect of the new DB schema.
 
 ## Auto-completion & Linting
 
