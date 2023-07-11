@@ -1,5 +1,0 @@
-hostname: "alpha.codepod.io"
-
-tls:
-  enabled: true
-  secretName: alpha-codepod-io-tls
