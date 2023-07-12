@@ -49,7 +49,7 @@ import { YMap } from "yjs/dist/src/types/YMap";
 import FloatingEdge from "./nodes/FloatingEdge";
 import CustomConnectionLine from "./nodes/CustomConnectionLine";
 import HelperLines from "./HelperLines";
-import { getAbsPos } from "../lib/store/canvasSlice";
+import { getAbsPos, newNodeShapeConfig } from "../lib/store/canvasSlice";
 
 const nodeTypes = { SCOPE: ScopeNode, CODE: CodeNode, RICH: RichNode };
 const edgeTypes = {
@@ -796,9 +796,9 @@ function CanvasImpl() {
     // let reactflow calculate the height of pods, then layout them properly.
     if (
       autoLayoutOnce &&
-      nodes.filter((node) => node.height === 130).length == 0
+      nodes.filter((node) => node.height === newNodeShapeConfig.height)
+        .length == 0
     ) {
-      // console.log("----- NOT 130 ---");
       autoLayoutROOT();
       setAutoLayoutOnce(false);
     }
