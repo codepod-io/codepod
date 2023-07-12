@@ -131,7 +131,11 @@ function createNewNode(type: "SCOPE" | "CODE" | "RICH", position): Node {
           // the top-left corner (the reason is unknown). Thus, we have to
           // specify the height here. Note that this height is a dummy value;
           // the content height will still be adjusted based on content height.
-          height: 200,
+          //
+          // NOTE for import ipynb: we need to specify some reasonable height so that
+          // the imported pods can be properly laid-out. 130 is a good one.
+          // This number MUST match the number in Canvas.tsx (refer to "A BIG HACK" in Canvas.tsx).
+          height: 130,
           style: {
             width: 300,
             // It turns out that this height should not be specified to let the
@@ -319,6 +323,8 @@ export interface CanvasSlice {
   buildNode2Children: () => void;
   autoLayout: (scopeId: string) => void;
   autoLayoutROOT: () => void;
+  autoLayoutOnce: boolean;
+  setAutoLayoutOnce: (b: boolean) => void;
 }
 
 export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
@@ -520,6 +526,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     get().setNodeCharWidth(scopeNode.id, 30);
     get().updateView();
   },
+  autoLayoutOnce: false,
+  setAutoLayoutOnce: (b) => set({ autoLayoutOnce: b }),
 
   setNodeCharWidth: (id, width) => {
     let nodesMap = get().ydoc.getMap<Node>("pods");
@@ -1060,7 +1068,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   /**
    * Use d3-force to auto layout the nodes.
    */
-  autoLayout: (scopeId) => {
+  autoLayout: async (scopeId) => {
     // 1. get all the nodes and edges in the scope
     let nodesMap = get().ydoc.getMap<Node>("pods");
     const nodes = get().nodes.filter(

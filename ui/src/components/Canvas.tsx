@@ -745,6 +745,8 @@ function CanvasImpl() {
 
   const getScopeAtPos = useStore(store, (state) => state.getScopeAtPos);
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
+  const setAutoLayoutOnce = useStore(store, (state) => state.setAutoLayoutOnce);
+  const autoLayoutOnce = useStore(store, (state) => state.autoLayoutOnce);
 
   const helperLineHorizontal = useStore(
     store,
@@ -784,9 +786,23 @@ function CanvasImpl() {
         fileName.substring(0, fileName.length - 6),
         cellList
       );
+      setAutoLayoutOnce(true);
     };
     fileReader.readAsText(e.target.files[0], "UTF-8");
   };
+
+  useEffect(() => {
+    // A BIG HACK: we run autolayout once at SOME point after ImportIpynb to
+    // let reactflow calculate the height of pods, then layout them properly.
+    if (
+      autoLayoutOnce &&
+      nodes.filter((node) => node.height === 130).length == 0
+    ) {
+      // console.log("----- NOT 130 ---");
+      autoLayoutROOT();
+      setAutoLayoutOnce(false);
+    }
+  }, [autoLayoutOnce, nodes]);
 
   return (
     <Box
