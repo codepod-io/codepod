@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   memo,
+  ChangeEvent,
 } from "react";
 import * as React from "react";
 import ReactFlow, {
@@ -674,6 +675,7 @@ function CanvasImpl() {
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
 
   const addNode = useStore(store, (state) => state.addNode);
+  const importIpynb = useStore(store, (state) => state.importIpynb);
   const reactFlowInstance = useReactFlow();
 
   const project = useCallback(
@@ -754,6 +756,37 @@ function CanvasImpl() {
   );
   const toggleMoved = useStore(store, (state) => state.toggleMoved);
   const toggleClicked = useStore(store, (state) => state.toggleClicked);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleItemClick = () => {
+    fileInputRef!.current!.click();
+    fileInputRef!.current!.value = "";
+  };
+
+  const handleFileInputChange = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const fileName = e.target.files[0].name;
+    console.log("Import Jupyter Notebook: ", fileName);
+    const fileReader = new FileReader();
+    fileReader.onload = (e) => {
+      const fileContent =
+        typeof e.target!.result === "string"
+          ? e.target!.result
+          : Buffer.from(e.target!.result!).toString();
+
+      const cellList = JSON.parse(String(fileContent)).cells.map((cell) => ({
+        cellType: cell.cell_type,
+        cellSource: cell.source.join(""),
+      }));
+      importIpynb(
+        project({ x: client.x, y: client.y }),
+        fileName.substring(0, fileName.length - 6),
+        cellList
+      );
+    };
+    fileReader.readAsText(e.target.files[0], "UTF-8");
+  };
 
   return (
     <Box
@@ -876,6 +909,13 @@ function CanvasImpl() {
             />
           </Box>
         </ReactFlow>
+        <input
+          type="file"
+          accept=".ipynb"
+          ref={fileInputRef}
+          style={{ display: "none" }}
+          onChange={(e) => handleFileInputChange(e)}
+        />
         {showContextMenu && (
           <CanvasContextMenu
             x={points.x}
@@ -893,6 +933,10 @@ function CanvasImpl() {
             addRich={() =>
               addNode("RICH", project({ x: client.x, y: client.y }), parentNode)
             }
+            handleImportClick={() => {
+              // handle CanvasContextMenu "import Jupyter notebook" click
+              handleItemClick();
+            }}
             onShareClick={() => {
               setShareOpen(true);
             }}

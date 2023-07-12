@@ -28,7 +28,7 @@ import {
 } from "d3-force";
 import { YMap } from "yjs/dist/src/types/YMap";
 
-import { myNanoId } from "../utils";
+import { myNanoId, level2color } from "../utils";
 
 import {
   Connection,
@@ -54,17 +54,6 @@ import { getHelperLines } from "../../components/nodes/utils";
 // TODO add node's data typing.
 type NodeData = {
   level?: number;
-};
-
-// FIXME put this into utils
-const level2color = {
-  0: "rgba(187, 222, 251, 0.5)",
-  1: "rgba(144, 202, 249, 0.5)",
-  2: "rgba(100, 181, 246, 0.5)",
-  3: "rgba(66, 165, 245, 0.5)",
-  4: "rgba(33, 150, 243, 0.5)",
-  // default: "rgba(255, 255, 255, 0.2)",
-  default: "rgba(240,240,240,0.25)",
 };
 
 /**
@@ -288,6 +277,12 @@ export interface CanvasSlice {
     parent: string
   ) => void;
 
+  importIpynb: (
+    position: XYPosition,
+    repoName: string,
+    cellList: any[]
+  ) => void;
+
   setNodeCharWidth: (id: string, width: number) => void;
 
   pastingNodes?: Node[];
@@ -462,6 +457,68 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     if (get().autoRunLayout) {
       get().autoLayoutROOT();
     }
+  },
+
+  importIpynb: (position, repoName, cellList) => {
+    console.log("Sync imported Jupyter notebook cells.");
+    let nodesMap = get().ydoc.getMap<Node>("pods");
+    let scopeNode = createNewNode("SCOPE", position);
+    nodesMap.set(scopeNode.id, scopeNode);
+    get().addPod({
+      id: scopeNode.id,
+      name: repoName,
+      children: [],
+      parent: "ROOT",
+      type: scopeNode.type as "CODE" | "SCOPE" | "RICH",
+      lang: "python",
+      x: scopeNode.position.x,
+      y: scopeNode.position.y,
+      width: scopeNode.width!,
+      height: scopeNode.height!,
+      // For my local update, set dirty to true to push to DB.
+      dirty: true,
+      pending: true,
+    });
+    if (cellList.length > 0) {
+      for (let i = 0; i < cellList.length; i++) {
+        const cell = cellList[i];
+        let newPos = {
+          x: position.x + 50,
+          y: position.y + 100 + i * 150,
+        };
+
+        let node = createNewNode(
+          cell.cellType == "code" ? "CODE" : "RICH",
+          newPos
+        );
+        let podContent = cell.cellType == "code" ? cell.cellSource : "";
+        let podRichContent = cell.cellType == "markdown" ? cell.cellSource : "";
+
+        nodesMap.set(node.id, node);
+        get().addPod({
+          id: node.id,
+          children: [],
+          parent: scopeNode.id,
+          type: node.type as "CODE" | "SCOPE" | "RICH",
+          lang: "python",
+          x: node.position.x,
+          y: node.position.y,
+          width: node.width!,
+          height: node.height!,
+          content: podContent,
+          richContent: podRichContent,
+          // For my local update, set dirty to true to push to DB.
+          dirty: true,
+          pending: true,
+        });
+        get().moveIntoScope(node.id, scopeNode.id);
+      }
+    }
+
+    get().buildNode2Children();
+    // Set initial width as about 30 characters.
+    get().setNodeCharWidth(scopeNode.id, 30);
+    get().updateView();
   },
 
   setNodeCharWidth: (id, width) => {

@@ -572,7 +572,7 @@ const MyEditor = ({
     // content: "<p>I love <b>Remirror</b></p>",
     // content: "hello world",
     // content: initialContent,
-    content: pod.content,
+    content: pod.content == "" ? pod.richContent : pod.content,
 
     // Place the cursor at the start of the document. This can also be set to
     // `end`, `all` or a numbered position.
@@ -583,7 +583,8 @@ const MyEditor = ({
     // `markdown` is also available when the `MarkdownExtension`
     // is added to the editor.
     // stringHandler: "html",
-    stringHandler: htmlToProsemirrorNode,
+    // stringHandler: htmlToProsemirrorNode,
+    stringHandler: "markdown",
   });
 
   let index_onChange = 0;
