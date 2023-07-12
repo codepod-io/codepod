@@ -60,10 +60,12 @@ services:
       - 3000:3000
     environment:
       REACT_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      REACT_APP_CODEIUM_API_KEY: ${CODEIUM_API_KEY}
+
     volumes:
       - ../../ui:/app
       - ui-node-modules:/app/node_modules
-    command: sh -c "yarn && yarn dev"
+    command: sh -c "yarn && yarn run generate && yarn dev"
 
   proxy:
     image: node:18

@@ -1,12 +1,9 @@
-import Prisma from "@prisma/client";
 // nanoid v4 does not work with nodejs. https://github.com/ai/nanoid/issues/365
 import { customAlphabet } from "nanoid/async";
 import { lowercase, numbers } from "nanoid-dictionary";
+import prisma from './client'
 
 const nanoid = customAlphabet(lowercase + numbers, 20);
-const { PrismaClient } = Prisma;
-
-const prisma = new PrismaClient();
 
 async function ensureRepoEditAccess({ repoId, userId }) {
   let repo = await prisma.repo.findFirst({

@@ -2,6 +2,8 @@ import { createStore, StateCreator, StoreApi } from "zustand";
 import { devtools } from "zustand/middleware";
 import produce from "immer";
 import { createContext } from "react";
+import { MonacoCompletionProvider } from "../monacoCompletionProvider";
+import { monaco } from "react-monaco-editor";
 
 import {
   normalize,
@@ -12,6 +14,7 @@ import {
   doRemoteAddCollaborator,
   doRemoteDeleteCollaborator,
   doRemoteAddPods,
+  doRemoteUpdateCodeiumAPIKey,
 } from "../fetch";
 
 import { Doc } from "yjs";
@@ -21,6 +24,7 @@ import { ApolloClient } from "@apollo/client";
 import { addAwarenessStyle } from "../styles";
 import { Annotation } from "../parser";
 import { MyState, Pod } from ".";
+import { v4 as uuidv4 } from "uuid";
 
 let serverURL;
 if (window.location.protocol === "http:") {
@@ -29,6 +33,37 @@ if (window.location.protocol === "http:") {
   serverURL = `wss://${window.location.host}/socket`;
 }
 console.log("yjs server url: ", serverURL);
+
+const openTokenPage = () => {
+  const PROFILE_URL = "https://www.codeium.com/profile";
+  const params = new URLSearchParams({
+    response_type: "token",
+    redirect_uri: "chrome-show-auth-token",
+    scope: "openid profile email",
+    prompt: "login",
+    redirect_parameters_type: "query",
+    state: uuidv4(),
+  });
+  window.open(`${PROFILE_URL}?${params}`);
+};
+
+export async function registerUser(
+  token: string
+): Promise<{ api_key: string; name: string }> {
+  const url = new URL("register_user/", "https://api.codeium.com");
+  const response = await fetch(url, {
+    body: JSON.stringify({ firebase_id_token: token }),
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+  if (!response.ok) {
+    throw new Error(response.statusText);
+  }
+  const user = await response.json();
+  return user as { api_key: string; name: string };
+}
 
 export interface RepoStateSlice {
   pods: Record<string, Pod>;
@@ -50,8 +85,10 @@ export interface RepoStateSlice {
   addCollaborator: (client: ApolloClient<object>, email: string) => any;
   deleteCollaborator: (client: ApolloClient<object>, id: string) => any;
   shareOpen: boolean;
+  settingOpen: boolean;
   cutting: string | null;
   setShareOpen: (open: boolean) => void;
+  setSettingOpen: (open: boolean) => void;
   setCutting: (id: string | null) => void;
   loadError: any;
   role: "OWNER" | "COLLABORATOR" | "GUEST";
@@ -59,6 +96,10 @@ export interface RepoStateSlice {
   updateVisibility: (
     client: ApolloClient<object>,
     isPublic: boolean
+  ) => Promise<boolean>;
+  updateAPIKey: (
+    client: ApolloClient<object>,
+    apiKey: string
   ) => Promise<boolean>;
   loadVisibility: (client: ApolloClient<object>, repoId: string) => void;
   currentEditor: string | null;
@@ -75,6 +116,8 @@ export interface RepoStateSlice {
   connectYjs: () => void;
   disconnectYjs: () => void;
 }
+
+let unregister: any = null;
 
 export const createRepoStateSlice: StateCreator<
   MyState,
@@ -96,12 +139,12 @@ export const createRepoStateSlice: StateCreator<
   currentEditor: null,
   //TODO: all presence information are now saved in clients map for future usage. create a modern UI to show those information from clients (e.g., online users)
   clients: new Map(),
-
   loadError: null,
   role: "GUEST",
   collaborators: [],
   isPublic: false,
   shareOpen: false,
+  settingOpen: false,
   cutting: null,
   showLineNumbers: false,
   setSessionId: (id) => set({ sessionId: id }),
@@ -212,6 +255,7 @@ export const createRepoStateSlice: StateCreator<
     set((state) => ({ showLineNumbers: !state.showLineNumbers })),
 
   setShareOpen: (open: boolean) => set({ shareOpen: open }),
+  setSettingOpen: (open: boolean) => set({ settingOpen: open }),
   loadVisibility: async (client, repoId) => {
     if (!repoId) return;
     const { collaborators, isPublic } = await doRemoteLoadVisibility(client, {
@@ -289,6 +333,22 @@ export const createRepoStateSlice: StateCreator<
         state.ydoc.destroy();
       })
     ),
+  updateAPIKey: async (client, apiKey) => {
+    const { success } = await doRemoteUpdateCodeiumAPIKey(client, {
+      apiKey,
+    });
+    try {
+      if (success) {
+        set({ user: { ...get().user, codeiumAPIKey: apiKey } });
+        return true;
+      } else {
+        return false;
+      }
+    } catch (e) {
+      console.log(e);
+      return false;
+    }
+  },
 });
 
 function loadRepo(set, get) {

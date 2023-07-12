@@ -35,11 +35,7 @@ const ItemStyle = {
 export function CanvasContextMenu(props) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
-  const flipShowLineNumbers = useStore(
-    store,
-    (state) => state.flipShowLineNumbers
-  );
+
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   return (
     <Box sx={paneMenuStyle(props.x, props.y)}>

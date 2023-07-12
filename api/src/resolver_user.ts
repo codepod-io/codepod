@@ -1,4 +1,3 @@
-import Prisma from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
@@ -7,11 +6,9 @@ import { OAuth2Client } from "google-auth-library";
 import { customAlphabet } from "nanoid/async";
 import { lowercase, numbers } from "nanoid-dictionary";
 
+import prisma from './client'
+
 const nanoid = customAlphabet(lowercase + numbers, 20);
-
-const { PrismaClient } = Prisma;
-
-const prisma = new PrismaClient();
 
 async function me(_, __, { userId }) {
   if (!userId) throw Error("Unauthenticated");
@@ -68,12 +65,12 @@ async function signupGuest(_, {}) {
 /**
  * Login a user with a guest ID and no password.
  */
-async function loginGuest(_, {id}) {
+async function loginGuest(_, { id }) {
   const user = await prisma.user.findFirst({
     where: {
       id,
       isGuest: true,
-    }
+    },
   });
   if (!user) throw Error(`User does not exist`);
   return {
@@ -172,6 +169,29 @@ async function loginWithGoogle(_, { idToken }) {
   };
 }
 
+async function updateCodeiumAPIKey(_, { apiKey }, { userId }) {
+  if (!userId) throw Error("Unauthenticated");
+  let user = await prisma.user.findFirst({
+    where: {
+      id: userId,
+    },
+  });
+  if (!user) throw Error("User not found.");
+  if (user.id !== userId) {
+    throw new Error("You do not have access to the user.");
+  }
+  // do the udpate
+  await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      codeiumAPIKey: apiKey,
+    },
+  });
+  return true;
+}
+
 export default {
   Query: {
     me,
@@ -183,5 +203,6 @@ export default {
     updateUser,
     signupGuest,
     loginGuest,
+    updateCodeiumAPIKey,
   },
 };
