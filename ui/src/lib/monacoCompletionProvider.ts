@@ -223,7 +223,7 @@ export const openTokenPage = () => {
 
 export async function registerUser(
   token: string
-): Promise<{ api_key: string; name: string }> {
+): Promise<{ api_key: string; name: string; error?: any }> {
   const url = new URL("register_user/", "https://api.codeium.com");
   const response = await fetch(url, {
     body: JSON.stringify({ firebase_id_token: token }),
@@ -233,9 +233,10 @@ export async function registerUser(
     },
   });
   if (!response.ok) {
-    throw new Error(response.statusText);
+    return { api_key: "", name: "", error: response.status };
   }
   const user = await response.json();
+  console.log(user);
   return user as { api_key: string; name: string };
 }
 
