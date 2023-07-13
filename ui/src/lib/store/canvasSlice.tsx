@@ -482,13 +482,30 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     console.log("Sync imported Jupyter notebook cells.");
     let nodesMap = get().ydoc.getMap<Node>("pods");
     let scopeNode = createNewNode("SCOPE", position);
+    // parent could be "ROOT" or a SCOPE node
+    let parent = getScopeAt(
+      position.x,
+      position.y,
+      [scopeNode.id],
+      get().nodes,
+      nodesMap
+    );
+    let podParent = "ROOT";
+    if (parent !== undefined) {
+      // update scopeNode
+      scopeNode.parentNode = parent.id;
+      scopeNode.data.level = parent.data.level + 1;
+      podParent = parent.id;
+    }
+
     scopeNode.data.name = repoName;
     nodesMap.set(scopeNode.id, scopeNode);
+
     get().addPod({
       id: scopeNode.id,
       name: scopeNode.data.name,
       children: [],
-      parent: "ROOT",
+      parent: podParent,
       type: scopeNode.type as "CODE" | "SCOPE" | "RICH",
       lang: "python",
       x: scopeNode.position.x,
@@ -523,8 +540,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         );
         const fromLevel = node?.data.level;
         const toLevel = scopeNode.data.level + 1;
-        const fromFontSize = get().level2fontsize(fromLevel); // level 0
-        const toFontSize = get().level2fontsize(toLevel); // level 1
+        const fromFontSize = get().level2fontsize(fromLevel);
+        const toFontSize = get().level2fontsize(toLevel);
         const newWidth = node.width! * (toFontSize / fromFontSize);
 
         node.width = newWidth;
