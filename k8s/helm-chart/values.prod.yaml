@@ -1,5 +1,0 @@
-hostname: "app.codepod.io"
-
-tls:
-  enabled: true
-  secretName: app-codepod-io-tls

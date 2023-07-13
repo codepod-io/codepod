@@ -16,6 +16,10 @@ export interface SettingSlice {
   level2fontsize: (level: number) => number;
   showLineNumbers?: boolean;
   setShowLineNumbers: (b: boolean) => void;
+  autoCompletion?: boolean;
+  setAutoCompletion: (b: boolean) => void;
+  isCustomToken?: boolean;
+  setIsCustomToken: (b: boolean) => void;
 }
 
 export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
@@ -103,5 +107,23 @@ export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
       default:
         return get().contextualZoomParams.next;
     }
+  },
+  autoCompletion: localStorage.getItem("autoCompletion")
+    ? JSON.parse(localStorage.getItem("autoCompletion")!)
+    : false,
+  setAutoCompletion: (b: boolean) => {
+    // set it
+    set({ autoCompletion: b });
+    // also write to local storage
+    localStorage.setItem("autoCompletion", JSON.stringify(b));
+  },
+  isCustomToken: localStorage.getItem("isCustomToken")
+    ? JSON.parse(localStorage.getItem("isCustomToken")!)
+    : false,
+  setIsCustomToken: (b: boolean) => {
+    // set it
+    set({ isCustomToken: b });
+    // also write to local storage
+    localStorage.setItem("isCustomToken", JSON.stringify(b));
   },
 });

@@ -16,12 +16,6 @@ import {
   initRoutes as initRoutes_k8s,
 } from "./spawner-k8s";
 
-import Prisma from "@prisma/client";
-
-const { PrismaClient } = Prisma;
-
-const prisma = new PrismaClient();
-
 const apollo_client = new ApolloClient({
   cache: new InMemoryCache({}),
   uri: process.env.PROXY_API_URL,

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, gql } from "@apollo/client";
+import { useQuery, useMutation, gql, useApolloClient } from "@apollo/client";
 import React, { useState, useEffect, useCallback } from "react";
 
 import Link from "@mui/material/Link";
@@ -32,13 +32,35 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  useTheme,
 } from "@mui/material";
 import { useAuth } from "../lib/auth";
 import { GoogleSignin } from "./login";
 import { timeDifference } from "../lib/utils";
+import { useSnackbar } from "notistack";
 
-function RepoLine({ repo, deletable, sharable, runtimeInfo, onDeleteRepo }) {
+const GET_REPOS = gql`
+  query GetRepos {
+    myRepos {
+      name
+      id
+      public
+      updatedAt
+      createdAt
+    }
+  }
+`;
+
+function RepoLine({
+  repo,
+  deletable,
+  sharable,
+  runtimeInfo,
+  onDeleteRepo,
+  deleting,
+}) {
   const { me } = useMe();
+  const theme = useTheme();
   const [killRuntime] = useMutation(
     gql`
       mutation killRuntime($sessionId: String!) {
@@ -50,6 +72,7 @@ function RepoLine({ repo, deletable, sharable, runtimeInfo, onDeleteRepo }) {
     }
   );
 
+  // haochen: any reason not using Loading state from useMutation?
   const [killing, setKilling] = useState(false);
   return (
     <TableRow
@@ -57,7 +80,17 @@ function RepoLine({ repo, deletable, sharable, runtimeInfo, onDeleteRepo }) {
       sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
     >
       <TableCell align="center">
-        <Link component={ReactLink} to={`/repo/${repo.id}`}>
+        <Link
+          component={ReactLink}
+          to={`/repo/${repo.id}`}
+          sx={
+            deleting && {
+              color: theme.palette.action.disabled,
+              textDecorationColor: theme.palette.action.disabled,
+              pointerEvents: "none",
+            }
+          }
+        >
           <Box
             sx={{
               display: "flex",
@@ -94,20 +127,25 @@ function RepoLine({ repo, deletable, sharable, runtimeInfo, onDeleteRepo }) {
         {deletable && (
           <Tooltip title="Delete Repo">
             <IconButton
+              disabled={deleting}
               size="small"
               onClick={() => {
                 // FIXME ensure the runtime is killed
                 onDeleteRepo(repo);
               }}
             >
-              <DeleteIcon fontSize="inherit" />
+              {deleting ? (
+                <CircularProgress size="14px" />
+              ) : (
+                <DeleteIcon fontSize="inherit" />
+              )}
             </IconButton>
           </Tooltip>
         )}
         {runtimeInfo ? (
           <Tooltip title="Kill runtime">
             <IconButton
-              disabled={killing}
+              disabled={killing || deleting}
               size="small"
               onClick={async () => {
                 // FIXME when to set killing=false?
@@ -202,14 +240,29 @@ function RepoList({ repos }) {
   const [clickedRepo, setClickedRepo] = useState<
     { id: string; name: string } | undefined
   >();
-  const [deleteRepo] = useMutation(
+  const [isConfirmDeleteDialogOpen, setConfirmDeleteDialogOpen] =
+    useState(false);
+  const { enqueueSnackbar } = useSnackbar();
+  const client = useApolloClient();
+  const [deleteRepo, deleteRepoResult] = useMutation(
     gql`
       mutation deleteRepo($id: ID!) {
         deleteRepo(id: $id)
       }
     `,
     {
-      refetchQueries: ["GetRepos"],
+      onCompleted() {
+        client.writeQuery({
+          query: GET_REPOS,
+          data: {
+            myRepos: repos.filter((repo) => repo.id !== clickedRepo?.id),
+          },
+        });
+        enqueueSnackbar("Successfully deleted repo", { variant: "success" });
+      },
+      onError() {
+        enqueueSnackbar("Failed to delete repo", { variant: "error" });
+      },
     }
   );
   // FIXME once ttl is reached, the runtime is killed, but this query is not
@@ -224,13 +277,14 @@ function RepoList({ repos }) {
   `);
 
   const onConfirmDeleteRepo = useCallback(() => {
+    setConfirmDeleteDialogOpen(false);
     deleteRepo({
       variables: {
         id: clickedRepo?.id,
       },
-    });
-    setClickedRepo(undefined);
-  }, [clickedRepo, deleteRepo]);
+    }).then(() => setClickedRepo(undefined));
+  }, [clickedRepo?.id, deleteRepo]);
+
   return (
     <>
       <TableContainer component={Paper}>
@@ -249,6 +303,9 @@ function RepoList({ repos }) {
               <RepoLine
                 repo={repo}
                 deletable={true}
+                deleting={
+                  repo.id === clickedRepo?.id && deleteRepoResult.loading
+                }
                 sharable={true}
                 runtimeInfo={
                   loading
@@ -258,7 +315,10 @@ function RepoList({ repos }) {
                       )
                 }
                 key={repo.id}
-                onDeleteRepo={setClickedRepo}
+                onDeleteRepo={(repo) => {
+                  setClickedRepo(repo);
+                  setConfirmDeleteDialogOpen(true);
+                }}
               />
             ))}
           </TableBody>
@@ -266,8 +326,11 @@ function RepoList({ repos }) {
       </TableContainer>
       <ConfirmDeleteDialog
         repoName={clickedRepo?.name}
-        open={Boolean(clickedRepo)}
-        handleCancel={() => setClickedRepo(undefined)}
+        open={isConfirmDeleteDialogOpen}
+        handleCancel={() => {
+          setClickedRepo(undefined);
+          setConfirmDeleteDialogOpen(false);
+        }}
         handleConfirm={onConfirmDeleteRepo}
       />
     </>
@@ -275,17 +338,7 @@ function RepoList({ repos }) {
 }
 
 function MyRepos() {
-  const { loading, error, data } = useQuery(gql`
-    query GetRepos {
-      myRepos {
-        name
-        id
-        public
-        updatedAt
-        createdAt
-      }
-    }
-  `);
+  const { loading, error, data } = useQuery(GET_REPOS);
 
   if (loading) {
     return <CircularProgress />;
