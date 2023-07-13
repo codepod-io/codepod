@@ -236,7 +236,6 @@ export async function registerUser(
     return { api_key: "", name: "", error: response.status };
   }
   const user = await response.json();
-  console.log(user);
   return user as { api_key: string; name: string };
 }
 
