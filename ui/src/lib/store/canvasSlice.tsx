@@ -294,9 +294,9 @@ export interface CanvasSlice {
     parent: string
   ) => void;
 
-  importIpynb: (
+  importLocalCode: (
     position: XYPosition,
-    repoName: string,
+    importScopeName: string,
     cellList: any[]
   ) => void;
 
@@ -478,8 +478,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     }
   },
 
-  importIpynb: (position, repoName, cellList) => {
-    console.log("Sync imported Jupyter notebook cells.");
+  importLocalCode: (position, importScopeName, cellList) => {
+    console.log("Sync imported Jupyter notebook or Python scripts");
     let nodesMap = get().ydoc.getMap<Node>("pods");
     let scopeNode = createNewNode("SCOPE", position);
     // parent could be "ROOT" or a SCOPE node
@@ -498,7 +498,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       podParent = parent.id;
     }
 
-    scopeNode.data.name = repoName;
+    scopeNode.data.name = importScopeName;
     nodesMap.set(scopeNode.id, scopeNode);
 
     get().addPod({
