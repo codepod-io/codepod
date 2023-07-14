@@ -69,7 +69,7 @@ export function CanvasContextMenu(props) {
             <ListItemIcon sx={{ color: "inherit" }}>
               <FileUploadTwoToneIcon />
             </ListItemIcon>
-            <ListItemText>Import Jupyter Notebook</ListItemText>
+            <ListItemText>Import Code</ListItemText>
           </MenuItem>
         )}
       </MenuList>

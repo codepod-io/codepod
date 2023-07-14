@@ -686,7 +686,7 @@ function CanvasImpl() {
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
 
   const addNode = useStore(store, (state) => state.addNode);
-  const importIpynb = useStore(store, (state) => state.importIpynb);
+  const importLocalCode = useStore(store, (state) => state.importLocalCode);
   const reactFlowInstance = useReactFlow();
 
   const project = useCallback(
@@ -780,21 +780,33 @@ function CanvasImpl() {
   const handleFileInputChange = async (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const fileName = e.target.files[0].name;
-    console.log("Import Jupyter Notebook: ", fileName);
+    console.log("Import Jupyter Notebook or Python scripts: ", fileName);
     const fileReader = new FileReader();
     fileReader.onload = (e) => {
       const fileContent =
         typeof e.target!.result === "string"
           ? e.target!.result
           : Buffer.from(e.target!.result!).toString();
+      let cellList: any[] = [];
+      let importScopeName = "";
+      switch (fileName.split(".").pop()) {
+        case "ipynb":
+          cellList = JSON.parse(String(fileContent)).cells.map((cell) => ({
+            cellType: cell.cell_type,
+            cellSource: cell.source.join(""),
+          }));
+          importScopeName = fileName.substring(0, fileName.length - 6);
+          break;
+        case "py":
+          cellList = [{ cellType: "code", cellSource: String(fileContent) }];
+          break;
+        default:
+          return;
+      }
 
-      const cellList = JSON.parse(String(fileContent)).cells.map((cell) => ({
-        cellType: cell.cell_type,
-        cellSource: cell.source.join(""),
-      }));
-      importIpynb(
+      importLocalCode(
         project({ x: client.x, y: client.y }),
-        fileName.substring(0, fileName.length - 6),
+        importScopeName,
         cellList
       );
       setAutoLayoutOnce(true);
@@ -803,7 +815,7 @@ function CanvasImpl() {
   };
 
   useEffect(() => {
-    // A BIG HACK: we run autolayout once at SOME point after ImportIpynb to
+    // A BIG HACK: we run autolayout once at SOME point after ImportLocalCode to
     // let reactflow calculate the height of pods, then layout them properly.
     if (
       autoLayoutOnce &&
@@ -938,7 +950,7 @@ function CanvasImpl() {
         </ReactFlow>
         <input
           type="file"
-          accept=".ipynb"
+          accept=".ipynb, .py"
           ref={fileInputRef}
           style={{ display: "none" }}
           onChange={(e) => handleFileInputChange(e)}
