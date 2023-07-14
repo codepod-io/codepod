@@ -9,6 +9,7 @@ import React, { useContext } from "react";
 import CodeIcon from "@mui/icons-material/Code";
 import PostAddIcon from "@mui/icons-material/PostAdd";
 import NoteIcon from "@mui/icons-material/Note";
+import FileUploadTwoToneIcon from "@mui/icons-material/FileUploadTwoTone";
 
 const paneMenuStyle = (left, top) => {
   return {
@@ -61,6 +62,14 @@ export function CanvasContextMenu(props) {
               <PostAddIcon />
             </ListItemIcon>
             <ListItemText>New Scope</ListItemText>
+          </MenuItem>
+        )}
+        {!isGuest && (
+          <MenuItem onClick={props.handleImportClick} sx={ItemStyle}>
+            <ListItemIcon sx={{ color: "inherit" }}>
+              <FileUploadTwoToneIcon />
+            </ListItemIcon>
+            <ListItemText>Import Jupyter Notebook</ListItemText>
           </MenuItem>
         )}
       </MenuList>
