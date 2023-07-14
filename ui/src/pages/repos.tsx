@@ -84,11 +84,13 @@ function RepoLine({
           component={ReactLink}
           to={`/repo/${repo.id}`}
           sx={
-            deleting && {
-              color: theme.palette.action.disabled,
-              textDecorationColor: theme.palette.action.disabled,
-              pointerEvents: "none",
-            }
+            deleting
+              ? {
+                  color: theme.palette.action.disabled,
+                  textDecorationColor: theme.palette.action.disabled,
+                  pointerEvents: "none",
+                }
+              : {}
           }
         >
           <Box
