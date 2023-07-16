@@ -20,6 +20,8 @@ export interface SettingSlice {
   setAutoCompletion: (b: boolean) => void;
   isCustomToken?: boolean;
   setIsCustomToken: (b: boolean) => void;
+  zoomedFontSize?: number | number[] | string;
+  setZoomedFontSize: (n: number | number[] | string) => void;
 }
 
 export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
@@ -125,5 +127,13 @@ export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
     set({ isCustomToken: b });
     // also write to local storage
     localStorage.setItem("isCustomToken", JSON.stringify(b));
+  },
+  zoomedFontSize:
+    localStorage.getItem("zoomedFontSize") !== undefined
+      ? Number(JSON.parse(localStorage.getItem("zoomedFontSize")!))
+      : 16,
+  setZoomedFontSize: (n: number | number[] | string) => {
+    set({ zoomedFontSize: n });
+    localStorage.setItem("zoomedFontSize", JSON.stringify(n));
   },
 });

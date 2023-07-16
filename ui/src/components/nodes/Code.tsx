@@ -563,6 +563,9 @@ export const CodeNode = memo<NodeProps>(function ({
   const zoomLevel = useReactFlowStore((s) => s.transform[2]);
   const contextualZoom = useStore(store, (state) => state.contextualZoom);
   const level2fontsize = useStore(store, (state) => state.level2fontsize);
+  const zoomedFontSize = Number(
+    useStore(store, (state) => state.zoomedFontSize)
+  );
   const threshold = useStore(
     store,
     (state) => state.contextualZoomParams.threshold
@@ -603,7 +606,7 @@ export const CodeNode = memo<NodeProps>(function ({
     return (
       <Box
         sx={{
-          fontSize: fontSize * 2,
+          fontSize: zoomedFontSize * 2,
           background: "#eee",
           borderRadius: "5px",
           border: "5px solid red",

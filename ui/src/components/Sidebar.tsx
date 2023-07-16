@@ -25,7 +25,15 @@ import { usePrompt } from "../lib/prompt";
 import { RepoContext } from "../lib/store";
 
 import useMe from "../lib/me";
-import { FormControlLabel, FormGroup, Stack, Switch } from "@mui/material";
+import {
+  FormControlLabel,
+  FormGroup,
+  Stack,
+  Switch,
+  Slider,
+  Input,
+  Grid,
+} from "@mui/material";
 import { getUpTime } from "../lib/utils";
 import { registerCompletion } from "../lib/monacoCompletionProvider";
 import { SettingDialog } from "./SettingDialog";
@@ -76,6 +84,8 @@ function SidebarSettings() {
       : defaultAPIKey
   );
   const setSettingOpen = useStore(store, (state) => state.setSettingOpen);
+  const zoomedFontSize = useStore(store, (state) => state.zoomedFontSize);
+  const setZoomedFontSize = useStore(store, (state) => state.setZoomedFontSize);
 
   useEffect(() => {
     if (autoCompletion && apiKey) {
@@ -166,6 +176,52 @@ function SidebarSettings() {
             />
           </FormGroup>
         </Tooltip>
+        {contextualZoom && (
+          <Stack alignItems="center">
+            Pod Font Size
+            <Grid direction="row" container spacing={2} justifyContent="center">
+              <Grid item xs={8}>
+                <Slider
+                  aria-label="Font Size"
+                  value={Number(zoomedFontSize)}
+                  defaultValue={16}
+                  aria-valuetext="size"
+                  step={2}
+                  marks
+                  min={12}
+                  max={60}
+                  valueLabelDisplay="auto"
+                  onChange={(event: Event, newValue: number | number[]) => {
+                    setZoomedFontSize(newValue);
+                  }}
+                />
+              </Grid>
+              <Grid item xs={3}>
+                <Input
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setZoomedFontSize(event.target.value);
+                  }}
+                  onBlur={(event) => {
+                    if (Number(event.target.value) > 60) {
+                      setZoomedFontSize(60);
+                    } else if (Number(event.target.value) < 12) {
+                      setZoomedFontSize(12);
+                    }
+                  }}
+                  value={zoomedFontSize}
+                  size="small"
+                  inputProps={{
+                    step: 1,
+                    min: 8,
+                    max: 56,
+                    type: "number",
+                    "aria-labelledby": "input-slider",
+                  }}
+                />
+              </Grid>
+            </Grid>
+          </Stack>
+        )}
         <Tooltip title={"Enable Scoped Variables"} disableInteractive>
           <FormGroup>
             <FormControlLabel
