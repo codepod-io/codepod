@@ -225,6 +225,9 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   const zoomLevel = useReactFlowStore((s) => s.transform[2]);
   const node = nodesMap.get(id);
   const level2fontsize = useStore(store, (state) => state.level2fontsize);
+  const zoomedFontSize = Number(
+    useStore(store, (state) => state.zoomedFontSize)
+  );
   const fontSize = level2fontsize(node?.data.level);
   const parentFontSize = level2fontsize(node?.data.level - 1);
 
@@ -243,7 +246,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
     return (
       <Box
         sx={{
-          fontSize: fontSize * 2,
+          fontSize: zoomedFontSize * 2,
           background: "#eee",
           borderRadius: "5px",
           border: "5px solid red",
