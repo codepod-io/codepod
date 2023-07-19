@@ -72,6 +72,37 @@ describe("sum module", () => {
     ]);
   });
 
+  test("parse recursive funciton", async () => {
+    // Here, the recursive function's call site should be recorgnized, not to be
+    // parsed as a bound-variable. Ref:
+    // https://github.com/codepod-io/codepod/issues/366
+    let { annotations, errors } = analyzeCode(`
+def recur(x):
+  if x == 1:
+      return 0
+  else:
+      return 1 + recur(x-1)
+       `);
+    expect(annotations).toStrictEqual([
+      {
+        name: "recur",
+        type: "function",
+        startIndex: 5,
+        endIndex: 10,
+        startPosition: { row: 1, column: 4 },
+        endPosition: { row: 1, column: 9 },
+      },
+      {
+        name: "recur",
+        type: "varuse",
+        startIndex: 68,
+        endIndex: 73,
+        startPosition: { row: 5, column: 17 },
+        endPosition: { row: 5, column: 22 },
+      },
+    ]);
+  });
+
   test("parse attribute LHS", async () => {
     let { annotations } = analyzeCode(`
     a.b = 3
