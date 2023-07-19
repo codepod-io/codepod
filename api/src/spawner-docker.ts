@@ -65,14 +65,14 @@ async function removeContainer(name) {
  * @param Env additional optional env for the container
  * @returns Boolean for whether a new container is created.
  */
-async function loadOrCreateContainer(image, name, network, Env: string[] = []) {
-  console.log("loading container", name);
-  let ip = await loadContainer(name, network);
+async function loadOrCreateContainer(spec, network) {
+  console.log("loading container", spec.name);
+  let ip = await loadContainer(spec.name, network);
   if (ip) return false;
   console.log("beforing creating container, removing just in case ..");
-  await removeContainer(name);
+  await removeContainer(spec.name);
   console.log("creating container ..");
-  await createContainer(image, name, network, Env);
+  await createContainer(spec, network);
   return true;
 }
 
@@ -127,65 +127,42 @@ async function loadContainer(name, network) {
 }
 
 // return promise of IP address
-async function createContainer(image, name, network, Env) {
+async function createContainer(spec, network) {
   return new Promise((resolve, reject) => {
     var docker = new Docker();
     // spawn("docker", ["run", "-d", "jp-julia"]);
     // 1. first check if the container already there. If so, stop and delete
     // let name = "julia_kernel_X";
     console.log("spawning kernel in container ..");
-    docker.createContainer(
-      {
-        Image: image,
-        name,
-        Env,
-        HostConfig: {
-          NetworkMode: network,
-          Binds: [
-            "dotjulia:/root/.julia",
-            "pipcache:/root/.cache/pip",
-            // FIXME hard coded dev_ prefix
-            "dev_shared_vol:/mount/shared",
-          ],
-          // DeviceRequests: [
-          //   {
-          //     Count: -1,
-          //     Driver: "nvidia",
-          //     Capabilities: [["gpu"]],
-          //   },
-          // ],
-        },
-      },
-      (err, container) => {
-        if (err) {
-          console.log("ERR:", err);
-          return;
-        }
-        container?.start((err, data) => {
-          console.log("Container started!");
-          // console.log(container);
-          container.inspect((err, data) => {
-            // console.log("inspect");
-            // let ip = data.NetworkSettings.IPAddress
-            //
-            // If created using codepod network bridge, the IP is here:
-            console.log(data?.NetworkSettings.Networks);
-            let ip = data?.NetworkSettings.Networks[network].IPAddress;
-            if (!ip) {
-              console.log(
-                "ERROR: IP not available. All network",
-                data?.NetworkSettings.Networks
-              );
-              resolve(null);
-            } else {
-              console.log("IP:", ip);
-              resolve(ip);
-            }
-          });
-          // console.log("IPaddress:", container.NetworkSettings.IPAddress)
-        });
+    docker.createContainer(spec, (err, container) => {
+      if (err) {
+        console.log("ERR:", err);
+        return;
       }
-    );
+      container?.start((err, data) => {
+        console.log("Container started!");
+        // console.log(container);
+        container.inspect((err, data) => {
+          // console.log("inspect");
+          // let ip = data.NetworkSettings.IPAddress
+          //
+          // If created using codepod network bridge, the IP is here:
+          console.log(data?.NetworkSettings.Networks);
+          let ip = data?.NetworkSettings.Networks[network].IPAddress;
+          if (!ip) {
+            console.log(
+              "ERROR: IP not available. All network",
+              data?.NetworkSettings.Networks
+            );
+            resolve(null);
+          } else {
+            console.log("IP:", ip);
+            resolve(ip);
+          }
+        });
+        // console.log("IPaddress:", container.NetworkSettings.IPAddress)
+      });
+    });
   });
 }
 
@@ -214,19 +191,39 @@ export async function spawnRuntime(_, { sessionId }) {
   console.log("spawning kernel");
   let zmq_host = `cpkernel_${sessionId}`;
   await loadOrCreateContainer(
-    process.env.ZMQ_KERNEL_IMAGE,
-    zmq_host,
-    // "cpkernel1_hello_world-foo",
+    {
+      Image: process.env.ZMQ_KERNEL_IMAGE,
+      name: zmq_host,
+      HostConfig: {
+        NetworkMode: "codepod",
+        Binds: [
+          "dotjulia:/root/.julia",
+          "pipcache:/root/.cache/pip",
+          // FIXME hard coded dev_ prefix
+          "dev_shared_vol:/mount/shared",
+        ],
+      },
+    },
     "codepod"
   );
   console.log("spawning ws");
   let ws_host = `cpruntime_${sessionId}`;
   await loadOrCreateContainer(
-    process.env.WS_RUNTIME_IMAGE,
-    ws_host,
-    // "cpruntime1_hello_world-foo",
-    "codepod",
-    [`ZMQ_HOST=${zmq_host}`]
+    {
+      Image: process.env.WS_RUNTIME_IMAGE,
+      name: ws_host,
+      WorkingDir: "/app",
+      Cmd: ["sh", "-c", "yarn && yarn dev"],
+      Env: [`ZMQ_HOST=${zmq_host}`],
+      HostConfig: {
+        NetworkMode: "codepod",
+        Binds: [
+          "/Users/hebi/git/codepod/runtime:/app",
+          "runtime-node-modules:/app/node_modules",
+        ],
+      },
+    },
+    "codepod"
   );
   console.log("adding route", url, ws_host);
   // add to routing table
