@@ -102,8 +102,6 @@ export interface RepoStateSlice {
     apiKey: string
   ) => Promise<boolean>;
   loadVisibility: (client: ApolloClient<object>, repoId: string) => void;
-  currentEditor: string | null;
-  setCurrentEditor: (id: string | null) => void;
   setUser: (user: any) => void;
   addClient: (clientId: any, name, color) => void;
   deleteClient: (clientId: any) => void;
@@ -135,8 +133,6 @@ export const createRepoStateSlice: StateCreator<
   ydoc: new Doc(),
   provider: null,
   // keep different seletced info on each user themselves
-  // to fixed maco editor command bug
-  currentEditor: null,
   //TODO: all presence information are now saved in clients map for future usage. create a modern UI to show those information from clients (e.g., online users)
   clients: new Map(),
   loadError: null,
@@ -150,7 +146,6 @@ export const createRepoStateSlice: StateCreator<
   setSessionId: (id) => set({ sessionId: id }),
   addError: (error) => set({ error }),
   clearError: () => set({ error: null }),
-  setCurrentEditor: (id) => set({ currentEditor: id }),
 
   loadRepo: loadRepo(set, get),
   remoteUpdateAllPods: async (client) => {

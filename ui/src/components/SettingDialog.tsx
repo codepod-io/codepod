@@ -62,9 +62,13 @@ export function SettingDialog({ open = false }: SettingDiagProps) {
       return;
     }
     try {
-      const { api_key, name } = await registerUser(token);
-      if (api_key === "" || api_key === undefined) {
-        throw new Error("Invalid token");
+      const { api_key, name, error } = await registerUser(token);
+      if (api_key === "" || api_key === undefined || error) {
+        throw new Error(
+          error
+            ? `Error code: ${error}. Check your token or network`
+            : "Unknown error"
+        );
       }
       if (await updateAPIKey(client, api_key)) {
         setStatus("success");

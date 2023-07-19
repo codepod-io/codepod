@@ -1,5 +1,5 @@
 // import { describe, expect, test } from "@jest/globals";
-import { analyzeCode, initParser } from "../lib/parser";
+import { analyzeCode, initParserForTest } from "../lib/parser";
 import * as fs from "fs";
 
 describe("sum module", () => {
@@ -9,7 +9,7 @@ describe("sum module", () => {
 
   test("initparser", async () => {
     // await new Promise((resolve) => setTimeout(resolve, 1000));
-    let res = await initParser("./public/");
+    let res = await initParserForTest();
     expect(res).toBe(true);
   });
 

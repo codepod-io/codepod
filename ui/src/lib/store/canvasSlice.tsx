@@ -28,7 +28,7 @@ import {
 } from "d3-force";
 import { YMap } from "yjs/dist/src/types/YMap";
 
-import { myNanoId } from "../utils";
+import { myNanoId, level2color } from "../utils";
 
 import {
   Connection,
@@ -56,15 +56,17 @@ type NodeData = {
   level?: number;
 };
 
-// FIXME put this into utils
-const level2color = {
-  0: "rgba(187, 222, 251, 0.5)",
-  1: "rgba(144, 202, 249, 0.5)",
-  2: "rgba(100, 181, 246, 0.5)",
-  3: "rgba(66, 165, 245, 0.5)",
-  4: "rgba(33, 150, 243, 0.5)",
-  // default: "rgba(255, 255, 255, 0.2)",
-  default: "rgba(240,240,240,0.25)",
+const newScopeNodeShapeConfig = {
+  width: 600,
+  height: 600,
+};
+
+export const newNodeShapeConfig = {
+  width: 300,
+  // NOTE for import ipynb: we need to specify some reasonable height so that
+  // the imported pods can be properly laid-out. 130 is a good one.
+  // This number is also used in Canvas.tsx (refer to "A BIG HACK" in Canvas.tsx).
+  height: 130,
 };
 
 /**
@@ -130,21 +132,25 @@ function createNewNode(type: "SCOPE" | "CODE" | "RICH", position): Node {
     position,
     ...(type === "SCOPE"
       ? {
-          width: 600,
-          height: 600,
-          style: { backgroundColor: level2color[0], width: 600, height: 600 },
+          width: newScopeNodeShapeConfig.width,
+          height: newScopeNodeShapeConfig.height,
+          style: {
+            backgroundColor: level2color[0],
+            width: newScopeNodeShapeConfig.width,
+            height: newScopeNodeShapeConfig.height,
+          },
         }
       : {
-          width: 300,
+          width: newNodeShapeConfig.width,
           // Previously, we should not specify height, so that the pod can grow
           // when content changes. But when we add auto-layout on adding a new
           // node, unspecified height will cause  the node to be added always at
           // the top-left corner (the reason is unknown). Thus, we have to
           // specify the height here. Note that this height is a dummy value;
           // the content height will still be adjusted based on content height.
-          height: 200,
+          height: newNodeShapeConfig.height,
           style: {
-            width: 300,
+            width: newNodeShapeConfig.width,
             // It turns out that this height should not be specified to let the
             // height change automatically.
             //
@@ -288,6 +294,12 @@ export interface CanvasSlice {
     parent: string
   ) => void;
 
+  importLocalCode: (
+    position: XYPosition,
+    importScopeName: string,
+    cellList: any[]
+  ) => void;
+
   setNodeCharWidth: (id: string, width: number) => void;
 
   pastingNodes?: Node[];
@@ -324,6 +336,8 @@ export interface CanvasSlice {
   buildNode2Children: () => void;
   autoLayout: (scopeId: string) => void;
   autoLayoutROOT: () => void;
+  autoLayoutOnce: boolean;
+  setAutoLayoutOnce: (b: boolean) => void;
 }
 
 export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
@@ -463,6 +477,114 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       get().autoLayoutROOT();
     }
   },
+
+  importLocalCode: (position, importScopeName, cellList) => {
+    console.log("Sync imported Jupyter notebook or Python scripts");
+    let nodesMap = get().ydoc.getMap<Node>("pods");
+    let scopeNode = createNewNode("SCOPE", position);
+    // parent could be "ROOT" or a SCOPE node
+    let parent = getScopeAt(
+      position.x,
+      position.y,
+      [scopeNode.id],
+      get().nodes,
+      nodesMap
+    );
+    let podParent = "ROOT";
+    if (parent !== undefined) {
+      // update scopeNode
+      scopeNode.parentNode = parent.id;
+      scopeNode.data.level = parent.data.level + 1;
+      podParent = parent.id;
+    }
+
+    scopeNode.data.name = importScopeName;
+    nodesMap.set(scopeNode.id, scopeNode);
+
+    get().addPod({
+      id: scopeNode.id,
+      name: scopeNode.data.name,
+      children: [],
+      parent: podParent,
+      type: scopeNode.type as "CODE" | "SCOPE" | "RICH",
+      lang: "python",
+      x: scopeNode.position.x,
+      y: scopeNode.position.y,
+      width: scopeNode.width!,
+      height: scopeNode.height!,
+      // For my local update, set dirty to true to push to DB.
+      dirty: true,
+      pending: true,
+    });
+    if (cellList.length > 0) {
+      for (let i = 0; i < cellList.length; i++) {
+        const cell = cellList[i];
+        let newPos = {
+          x: position.x + 50,
+          y: position.y + 100 + i * 150,
+        };
+
+        let node = createNewNode(
+          cell.cellType == "code" ? "CODE" : "RICH",
+          newPos
+        );
+        let podContent = cell.cellType == "code" ? cell.cellSource : "";
+        let podRichContent = cell.cellType == "markdown" ? cell.cellSource : "";
+
+        // move the created node to scope and configure the necessary node attributes
+        const posInsideScope = getNodePositionInsideScope(
+          node,
+          scopeNode,
+          nodesMap,
+          node.height!
+        );
+        const fromLevel = node?.data.level;
+        const toLevel = scopeNode.data.level + 1;
+        const fromFontSize = get().level2fontsize(fromLevel);
+        const toFontSize = get().level2fontsize(toLevel);
+        const newWidth = node.width! * (toFontSize / fromFontSize);
+
+        node.width = newWidth;
+        node.data.level = toLevel;
+        node.position = posInsideScope;
+        node.parentNode = scopeNode.id;
+
+        // update peer
+        nodesMap.set(node.id, node);
+
+        get().addPod({
+          id: node.id,
+          children: [],
+          parent: scopeNode.id,
+          type: node.type as "CODE" | "SCOPE" | "RICH",
+          lang: "python",
+          x: node.position.x,
+          y: node.position.y,
+          width: node.width!,
+          height: node.height!,
+          content: podContent,
+          richContent: podRichContent,
+          // For my local update, set dirty to true to push to DB.
+          dirty: true,
+          pending: true,
+        });
+
+        // update zustand & db
+        get().setPodGeo(
+          node.id,
+          { parent: scopeNode.id, ...node.position },
+          true
+        );
+      }
+    }
+    get().adjustLevel();
+    get().buildNode2Children();
+    // Set initial width as about 30 characters.
+    get().setNodeCharWidth(scopeNode.id, 30);
+    get().updateView();
+  },
+  autoLayoutOnce: false,
+  setAutoLayoutOnce: (b) => set({ autoLayoutOnce: b }),
 
   setNodeCharWidth: (id, width) => {
     let nodesMap = get().ydoc.getMap<Node>("pods");
