@@ -673,7 +673,9 @@ function compileFunctionDefinition(node: Parser.SyntaxNode, st) {
   let body = bodies[bodies.length - 1];
   // parse parameters
   st = union(st, compileArgs(args, st));
-  compileBlock(body, union(st, new Set([name.text])));
+  // Function definitions should not be added to the syntax table so that the
+  // function calls can be rewritten as xxx_SCOPEID.
+  compileBlock(body, st);
   return new Set(name.text);
 }
 
