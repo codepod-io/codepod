@@ -59,7 +59,7 @@
     "stompjs": "^2.3.3",
     "ts-pattern": "^4.0.6",
     "typescript": "^4.4.2",
-    "web-tree-sitter": "0.20.7",
+    "web-tree-sitter": "^0.20.8",
     "web-vitals": "^2.1.0",
     "xterm": "^5.0.0",
     "xterm-addon-fit": "^0.6.0",
