@@ -59,8 +59,8 @@ services:
       # For react hot-reloading in development.
       - 3000:3000
     environment:
-      REACT_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      REACT_APP_CODEIUM_API_KEY: ${CODEIUM_API_KEY}
+      VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      VITE_CODEIUM_API_KEY: ${CODEIUM_API_KEY}
 
     volumes:
       - ../../ui:/app

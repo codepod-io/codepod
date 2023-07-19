@@ -1,4 +1,4 @@
-import produce from "immer";
+import { produce } from "immer";
 import { ApolloClient, gql } from "@apollo/client";
 import { createStore, StateCreator, StoreApi } from "zustand";
 

@@ -31,7 +31,7 @@ import { registerCompletion } from "../lib/monacoCompletionProvider";
 import { SettingDialog } from "./SettingDialog";
 import { toSvg } from "html-to-image";
 
-const defaultAPIKey = process.env.REACT_APP_CODEIUM_API_KEY;
+const defaultAPIKey = import.meta.env.VITE_CODEIUM_API_KEY;
 
 function Flex(props) {
   return (
