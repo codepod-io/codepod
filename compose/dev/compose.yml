@@ -29,6 +29,7 @@ services:
     volumes:
       - ../../api:/app
       - api-node-modules:/app/node_modules
+      - ../../runtime:/app/runtime
       - /var/run/docker.sock:/var/run/docker.sock
     command: sh -c "yarn && yarn dev"
     environment:
@@ -89,10 +90,18 @@ services:
       - socket-node-modules:/app/node_modules
     command: sh -c "yarn add yjs y-websocket && HOST=0.0.0.0 PORT=4233 npx y-websocket"
 
+  # This container is only used for installing node_modules into the volume, so
+  # that the docker spawner can use the image without waiting for installing.
   example-runtime:
-    # TODO Verify the latest image will be downloaded for each new release.
-    image: lihebi/codepod-runtime:latest
+    image: node:18
+    working_dir: /app
+    volumes:
+      - ../../runtime:/app
+      - runtime-node-modules:/app/node_modules
+    command: sh -c "yarn && yarn dev"
 
+  # This is only used to download the kernel image, so that the docker spawner
+  # can use the image without waiting for downloading.
   example-kernel:
     image: lihebi/codepod-kernel-python:latest
 
@@ -103,6 +112,7 @@ volumes:
   proxy-node-modules:
   prisma-node-modules:
   socket-node-modules:
+  runtime-node-modules:
 
 networks:
   default:

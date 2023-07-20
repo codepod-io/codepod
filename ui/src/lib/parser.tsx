@@ -32,6 +32,35 @@ export async function initParser(prefix = "/", callback = () => {}) {
   });
 }
 
+/**
+ * This function is used only in unit test. The difference:
+ * 1. no locateFile function.
+ * 2. use ./public/ prefix
+ * 3. no callback.
+ */
+export async function initParserForTest() {
+  if (parser_loading) return false;
+  if (parser) {
+    return true;
+  }
+  return new Promise((resolve, reject) => {
+    parser_loading = true;
+    // Diff 1: no locateFile
+    Parser.init().then(async () => {
+      /* the library is ready */
+      parser = new Parser();
+      const Python = await Parser.Language.load(
+        // Diff 2: use ./public/ prefix
+        `./public/tree-sitter-python.wasm`
+      );
+      parser.setLanguage(Python);
+      parser_loading = false;
+      // Diff 3: no callback
+      resolve(true);
+    });
+  });
+}
+
 export type Annotation = {
   name: string;
   type: "function" | "callsite" | "vardef" | "varuse" | "bridge";
@@ -644,7 +673,9 @@ function compileFunctionDefinition(node: Parser.SyntaxNode, st) {
   let body = bodies[bodies.length - 1];
   // parse parameters
   st = union(st, compileArgs(args, st));
-  compileBlock(body, union(st, new Set([name.text])));
+  // Function definitions should not be added to the syntax table so that the
+  // function calls can be rewritten as xxx_SCOPEID.
+  compileBlock(body, st);
   return new Set(name.text);
 }
 

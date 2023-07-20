@@ -311,7 +311,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
           position: "absolute",
           border: "solid 1px #d6dee6",
           right: "25px",
-          top: "-15px",
+          top: "-45px",
           background: "white",
           zIndex: 250,
           justifyContent: "center",
@@ -405,6 +405,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
                     textAlign: "center",
                     textOverflow: "ellipsis",
                     fontSize,
+                    width: pod.width
                   },
                 }}
               ></InputBase>
