@@ -8,7 +8,6 @@ import { RepoContext } from "../lib/store";
 import { MonacoBinding } from "y-monaco";
 import { useReactFlow } from "reactflow";
 import { Annotation } from "../lib/parser";
-import { MonacoCompletionProvider } from "../lib/monacoCompletionProvider";
 
 const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",
