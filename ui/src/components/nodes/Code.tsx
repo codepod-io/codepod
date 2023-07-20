@@ -562,10 +562,9 @@ export const CodeNode = memo<NodeProps>(function ({
 
   const zoomLevel = useReactFlowStore((s) => s.transform[2]);
   const contextualZoom = useStore(store, (state) => state.contextualZoom);
+  //the font size does not update unless I include the line below, even though I don't use it anywhere?
+  const contextualZoomParams = useStore(store, (state) => state.contextualZoomParams);
   const level2fontsize = useStore(store, (state) => state.level2fontsize);
-  const zoomedFontSize = Number(
-    useStore(store, (state) => state.zoomedFontSize)
-  );
   const threshold = useStore(
     store,
     (state) => state.contextualZoomParams.threshold
@@ -582,16 +581,17 @@ export const CodeNode = memo<NodeProps>(function ({
   const node = nodesMap.get(id);
 
   const fontSize = level2fontsize(node?.data.level);
+  console.log("lvl2");
   const parentFontSize = level2fontsize(node?.data.level - 1);
 
-  if (
-    contextualZoom &&
-    node?.data.level > 0 &&
-    parentFontSize * zoomLevel < threshold
-  ) {
-    // The parent scope is not shown, this node is not gonna be rendered at all.
-    return <Box></Box>;
-  }
+  // if (
+  //   contextualZoom &&
+  //   node?.data.level > 0 &&
+  //   parentFontSize * zoomLevel < threshold
+  // ) {
+  //   // The parent scope is not shown, this node is not gonna be rendered at all.
+  //   return <Box></Box>;
+  // }
 
   if (contextualZoom && fontSize * zoomLevel < threshold) {
     // Return a collapsed block.
@@ -606,7 +606,7 @@ export const CodeNode = memo<NodeProps>(function ({
     return (
       <Box
         sx={{
-          fontSize: zoomedFontSize * 2,
+          fontSize: fontSize * 2,
           background: "#eee",
           borderRadius: "5px",
           border: "5px solid red",
