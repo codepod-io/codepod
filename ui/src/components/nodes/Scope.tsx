@@ -48,7 +48,7 @@ import { RepoContext } from "../../lib/store";
 import { NodeResizer, NodeResizeControl } from "reactflow";
 import "@reactflow/node-resizer/dist/style.css";
 import { ResizableBox } from "react-resizable";
-import { ResizeIcon } from "./utils";
+import { ResizeIcon, level2fontsize } from "./utils";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 
 function MyFloatingToolbar({ id }: { id: string }) {
@@ -218,16 +218,16 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   const [showToolbar, setShowToolbar] = useState(false);
 
   const contextualZoom = useStore(store, (state) => state.contextualZoom);
+  const contextualZoomParams = useStore(store, (state) => state.contextualZoomParams);
   const threshold = useStore(
     store,
     (state) => state.contextualZoomParams.threshold
   );
   const zoomLevel = useReactFlowStore((s) => s.transform[2]);
   const node = nodesMap.get(id);
-  const level2fontsize = useStore(store, (state) => state.level2fontsize);
-  const contextualZoomParams = useStore(store, (state) => state.contextualZoomParams);
-  const fontSize = level2fontsize(node?.data.level);
-  const parentFontSize = level2fontsize(node?.data.level - 1);
+  
+  const fontSize = level2fontsize(node?.data.level, contextualZoomParams, contextualZoom);
+  // const parentFontSize = level2fontsize(node?.data.level - 1, contextualZoomParams, contextualZoom);
 
   // if (
   //   contextualZoom &&

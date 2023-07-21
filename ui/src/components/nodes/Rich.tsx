@@ -106,7 +106,7 @@ import { ProsemirrorPlugin, cx, htmlToProsemirrorNode } from "remirror";
 import { styled } from "@mui/material";
 
 import { MyYjsExtension } from "./YjsRemirror";
-import { NewPodButtons } from "./utils";
+import { NewPodButtons, level2fontsize } from "./utils";
 
 function useLinkShortcut() {
   const [linkShortcut, setLinkShortcut] = useState<
@@ -788,7 +788,6 @@ export const RichNode = memo<Props>(function ({
 
   const zoomLevel = useReactFlowStore((s) => s.transform[2]);
   const contextualZoom = useStore(store, (state) => state.contextualZoom);
-  const level2fontsize = useStore(store, (state) => state.level2fontsize);
   const contextualZoomParams = useStore(store, (state) => state.contextualZoomParams);
   const threshold = useStore(
     store,
@@ -799,8 +798,8 @@ export const RichNode = memo<Props>(function ({
 
   const node = nodesMap.get(id);
 
-  const fontSize = level2fontsize(node?.data.level);
-  const parentFontSize = level2fontsize(node?.data.level - 1);
+  const fontSize = level2fontsize(node?.data.level, contextualZoomParams, contextualZoom);
+  // const parentFontSize = level2fontsize(node?.data.level - 1, contextualZoomParams, contextualZoom);
 
   // if (
   //   contextualZoom &&

@@ -19,7 +19,6 @@ export interface SettingSlice {
   restoreParamsDefault: () => void;
   contextualZoom: boolean;
   setContextualZoom: (b: boolean) => void;
-  level2fontsize: (level: number) => number;
   showLineNumbers?: boolean;
   setShowLineNumbers: (b: boolean) => void;
   autoCompletion?: boolean;
@@ -147,25 +146,6 @@ export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
       "contextualZoomParams",
       JSON.stringify({ ...updatedParams })
     );
-  },
-  level2fontsize: (level: number) => {
-    // default font size
-    if (!get().contextualZoom) return 16;
-    // when contextual zoom is on
-    switch (level) {
-      case -1:
-        return get().contextualZoomParams.prev;
-      case 0:
-        return get().contextualZoomParams[0];
-      case 1:
-        return get().contextualZoomParams[1];
-      case 2:
-        return get().contextualZoomParams[2];
-      case 3:
-        return get().contextualZoomParams[3];
-      default:
-        return get().contextualZoomParams.next;
-    }
   },
   autoCompletion: localStorage.getItem("autoCompletion")
     ? JSON.parse(localStorage.getItem("autoCompletion")!)
