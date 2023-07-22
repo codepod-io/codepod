@@ -272,8 +272,6 @@ const LinkToolbar = () => {
     cancelHref,
   } = useFloatingLinkState();
   useUpdatePositionerOnMove();
-  const active = useActive();
-  const activeLink = active.link();
   const { empty } = useCurrentSelection();
 
   const handleClickEdit = useCallback(() => {
@@ -282,7 +280,7 @@ const LinkToolbar = () => {
 
   return (
     <>
-      {!isEditing && activeLink && empty && (
+      {!isEditing && empty && (
         // By default, MUI's Popper creates a Portal, which is a ROOT html
         // elements that prevents paning on reactflow canvas. Therefore, we
         // disable the portal behavior.
