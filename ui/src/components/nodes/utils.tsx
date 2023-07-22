@@ -9,6 +9,8 @@ import {
 import { useContext } from "react";
 
 import Button from "@mui/material/Button";
+import CodeIcon from "@mui/icons-material/Code";
+import NoteIcon from "@mui/icons-material/Note";
 
 import { useStore } from "zustand";
 
@@ -311,7 +313,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           addNode("CODE", { x: xPos, y: yPos + pod!.height! + 50 }, pod.parent);
         }}
       >
-        + Code
+        + <CodeIcon fontSize="small" />
       </Button>
 
       {/* Bottom 2 */}
@@ -334,7 +336,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           addNode("RICH", { x: xPos, y: yPos + pod!.height! + 50 }, pod.parent);
         }}
       >
-        + Note
+        + <NoteIcon fontSize="small" />
       </Button>
       {/* Left 1 */}
       <Button
@@ -357,7 +359,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           addNode("CODE", { x: xPos - pod!.width! - 50, y: yPos }, pod.parent);
         }}
       >
-        + Code
+        + <CodeIcon fontSize="small" />
       </Button>
 
       {/* Left 2 */}
@@ -381,7 +383,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           addNode("RICH", { x: xPos - pod!.width! - 50, y: yPos }, pod.parent);
         }}
       >
-        + Note
+        + <NoteIcon fontSize="small" />
       </Button>
 
       {/* Right 1 */}
@@ -405,7 +407,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           addNode("CODE", { x: xPos + pod!.width! + 50, y: yPos }, pod.parent);
         }}
       >
-        + Code
+        + <CodeIcon fontSize="small" />
       </Button>
 
       {/* Right 2 */}
@@ -429,7 +431,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           addNode("RICH", { x: xPos + pod!.width! + 50, y: yPos }, pod.parent);
         }}
       >
-        + Note
+        + <NoteIcon fontSize="small" />
       </Button>
     </>
   );
