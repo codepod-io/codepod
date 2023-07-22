@@ -288,6 +288,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const addNode = useStore(store, (state) => state.addNode);
+  const defaultOpacity = 0;
   return (
     <>
       {/* Bottom 1 */}
@@ -299,11 +300,10 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           position: "absolute",
           bottom: "0px",
           left: "25%",
-          transform: "translate(-50%, 50%)",
+          transform: "translate(-50%, 100%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          // opacity: showToolbar ? 0.5 : 0,
-          opacity: 0,
+          opacity: defaultOpacity,
           "&:hover": {
             opacity: 1,
           },
@@ -323,11 +323,10 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           position: "absolute",
           bottom: "0px",
           left: "75%",
-          transform: "translate(-50%, 50%)",
+          transform: "translate(-50%, 100%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          // opacity: showToolbar ? 0.5 : 0,
-          opacity: 0,
+          opacity: defaultOpacity,
           "&:hover": {
             opacity: 1,
           },
@@ -347,11 +346,10 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           position: "absolute",
           top: "25%",
           left: "0px",
-          transform: "translate(-50%, -50%)",
+          transform: "translate(-100%, -50%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          // opacity: showToolbar ? 0.5 : 0,
-          opacity: 0,
+          opacity: defaultOpacity,
           "&:hover": {
             opacity: 1,
           },
@@ -372,11 +370,10 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           position: "absolute",
           top: "75%",
           left: "0px",
-          transform: "translate(-50%, -50%)",
+          transform: "translate(-100%, -50%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          // opacity: showToolbar ? 0.5 : 0,
-          opacity: 0,
+          opacity: defaultOpacity,
           "&:hover": {
             opacity: 1,
           },
@@ -397,11 +394,10 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           position: "absolute",
           top: "25%",
           right: "0px",
-          transform: "translate(50%, -50%)",
+          transform: "translate(100%, -50%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          // opacity: showToolbar ? 0.5 : 0,
-          opacity: 0,
+          opacity: defaultOpacity,
           "&:hover": {
             opacity: 1,
           },
@@ -422,11 +418,10 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           position: "absolute",
           top: "75%",
           right: "0px",
-          transform: "translate(50%, -50%)",
+          transform: "translate(100%, -50%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          // opacity: showToolbar ? 0.5 : 0,
-          opacity: 0,
+          opacity: defaultOpacity,
           "&:hover": {
             opacity: 1,
           },
@@ -441,7 +436,11 @@ export function NewPodButtons({ pod, xPos, yPos }) {
   );
 }
 
-export function level2fontsize(level: number, contextualZoomParams: Record<any, number>, contextualZoom: boolean) {
+export function level2fontsize(
+  level: number,
+  contextualZoomParams: Record<any, number>,
+  contextualZoom: boolean
+) {
   // default font size
   if (!contextualZoom) return 16;
   // when contextual zoom is on
