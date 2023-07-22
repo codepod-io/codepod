@@ -56,7 +56,6 @@ import {
   SubExtension,
   SupExtension,
   TextHighlightExtension,
-  YjsExtension,
   createMarkPositioner,
   wysiwygPreset,
   MarkdownExtension,
@@ -105,7 +104,11 @@ import "./remirror-size.css";
 import { ProsemirrorPlugin, cx, htmlToProsemirrorNode } from "remirror";
 import { styled } from "@mui/material";
 
-import { MyYjsExtension } from "./YjsRemirror";
+import { MyYjsExtension } from "./extensions/YjsRemirror";
+import {
+  MathInlineExtension,
+  MathBlockExtension,
+} from "./extensions/mathExtension";
 import { NewPodButtons } from "./utils";
 
 function useLinkShortcut() {
@@ -558,6 +561,8 @@ const MyEditor = ({
       new DropCursorExtension(),
       new MarkdownExtension(),
       new MyYjsExtension({ getProvider: () => provider, id }),
+      new MathInlineExtension(),
+      new MathBlockExtension(),
       new MentionExtension({
         extraAttributes: { type: "user" },
         matchers: [
