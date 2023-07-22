@@ -256,7 +256,11 @@ function useUpdatePositionerOnMove() {
   return;
 }
 
-const EditorToolbar = () => {
+/**
+ * This is a two-buttons toolbar when user click on a link. The first button
+ * edits the link, the second button opens the link.
+ */
+const LinkToolbar = () => {
   const {
     isEditing,
     linkPositioner,
@@ -278,7 +282,7 @@ const EditorToolbar = () => {
 
   return (
     <>
-      {!isEditing && (
+      {!isEditing && activeLink && empty && (
         // By default, MUI's Popper creates a Portal, which is a ROOT html
         // elements that prevents paning on reactflow canvas. Therefore, we
         // disable the portal behavior.
@@ -297,50 +301,128 @@ const EditorToolbar = () => {
             alignItems: "center",
             backgroundColor: "white",
           }}
+          // The default positinoer will cause the toolbar only show on text
+          // selection. This linkPositioner allows the toolbar to be shown
+          // without any text selection
+          positioner={linkPositioner}
         >
-          <ToggleBoldButton />
-          <ToggleItalicButton />
-          <ToggleUnderlineButton />
-          <ToggleStrikeButton />
-          <ToggleCodeButton />
-          {activeLink && (
-            <CommandButton
-              commandName="updateLink"
-              aria-label="Edit link"
-              onSelect={handleClickEdit}
-              icon="pencilLine"
-              enabled
-            />
-          )}
-          {activeLink && (
-            <CommandButton
-              commandName="removeLink"
-              aria-label="Remove link"
-              onSelect={onRemove}
-              icon="linkUnlink"
-              enabled
-            />
-          )}
-          {!activeLink && (
-            <CommandButton
-              commandName="updateLink"
-              aria-label="Add link"
-              onSelect={handleClickEdit}
-              icon="link"
-              enabled
-            />
-          )}
-          <SetHighlightButton color="lightpink" />
-          <SetHighlightButton color="yellow" />
-          <SetHighlightButton color="lightgreen" />
-          <SetHighlightButton color="lightcyan" />
-          <SetHighlightButton />
-
-          {/* <TextAlignmentButtonGroup /> */}
-          {/* <IndentationButtonGroup /> */}
-          {/* <BaselineButtonGroup /> */}
+          <CommandButton
+            commandName="updateLink"
+            aria-label="Edit link"
+            onSelect={handleClickEdit}
+            icon="pencilLine"
+            enabled
+          />
+          <CommandButton
+            commandName="removeLink"
+            aria-label="Open link"
+            onSelect={() => {
+              window.open(href, "_blank");
+            }}
+            icon="externalLinkFill"
+            enabled
+          />
         </FloatingToolbar>
       )}
+
+      <FloatingWrapper
+        positioner="always"
+        placement="bottom"
+        enabled={isEditing}
+        renderOutsideEditor
+      >
+        <DelayAutoFocusInput
+          style={{ zIndex: 20 }}
+          autoFocus
+          placeholder="Enter link..."
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+            setHref(event.target.value)
+          }
+          value={href}
+          onKeyPress={(event: React.KeyboardEvent<HTMLInputElement>) => {
+            const { code } = event;
+
+            if (code === "Enter") {
+              submitHref();
+            }
+
+            if (code === "Escape") {
+              cancelHref();
+            }
+          }}
+        />
+      </FloatingWrapper>
+    </>
+  );
+};
+
+/**
+ * This is the toolbar when user select some text. It allows user to change the
+ * markups of the text, e.g. bold, italic, underline, highlight, etc.
+ */
+const EditorToolbar = () => {
+  useUpdatePositionerOnMove();
+  const {
+    isEditing,
+    linkPositioner,
+    clickEdit,
+    onRemove,
+    submitHref,
+    href,
+    setHref,
+    cancelHref,
+  } = useFloatingLinkState();
+  const active = useActive();
+  const activeLink = active.link();
+  const handleClickEdit = useCallback(() => {
+    clickEdit();
+  }, [clickEdit]);
+
+  return (
+    <>
+      <FloatingToolbar
+        // By default, MUI's Popper creates a Portal, which is a ROOT html
+        // elements that prevents paning on reactflow canvas. Therefore, we
+        // disable the portal behavior.
+        disablePortal
+        sx={{
+          button: {
+            padding: 0,
+            border: "none",
+            borderRadius: "5px",
+            marginLeft: "5px",
+          },
+          paddingX: "4px",
+          border: "2px solid grey",
+          borderRadius: "5px",
+          alignItems: "center",
+          backgroundColor: "white",
+        }}
+      >
+        <ToggleBoldButton />
+        <ToggleItalicButton />
+        <ToggleUnderlineButton />
+        <ToggleStrikeButton />
+        <ToggleCodeButton />
+        {!activeLink && (
+          <CommandButton
+            commandName="updateLink"
+            aria-label="Add link"
+            onSelect={handleClickEdit}
+            icon="link"
+            enabled
+          />
+        )}
+        <SetHighlightButton color="lightpink" />
+        <SetHighlightButton color="yellow" />
+        <SetHighlightButton color="lightgreen" />
+        <SetHighlightButton color="lightcyan" />
+        <SetHighlightButton />
+
+        {/* <TextAlignmentButtonGroup /> */}
+        {/* <IndentationButtonGroup /> */}
+        {/* <BaselineButtonGroup /> */}
+      </FloatingToolbar>
 
       <FloatingWrapper
         positioner="always"
@@ -558,6 +640,7 @@ const MyEditor = ({
             <TableComponents />
 
             {!isGuest && <EditorToolbar />}
+            <LinkToolbar />
 
             {/* <Menu /> */}
           </Remirror>
