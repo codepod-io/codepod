@@ -288,7 +288,6 @@ export function NewPodButtons({ pod, xPos, yPos }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const addNode = useStore(store, (state) => state.addNode);
-  const defaultOpacity = 0;
   return (
     <>
       {/* Bottom 1 */}
@@ -303,7 +302,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           transform: "translate(-50%, 100%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          opacity: defaultOpacity,
+          opacity: 0,
           "&:hover": {
             opacity: 1,
           },
@@ -326,7 +325,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           transform: "translate(-50%, 100%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          opacity: defaultOpacity,
+          opacity: 0,
           "&:hover": {
             opacity: 1,
           },
@@ -349,7 +348,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           transform: "translate(-100%, -50%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          opacity: defaultOpacity,
+          opacity: 0,
           "&:hover": {
             opacity: 1,
           },
@@ -373,7 +372,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           transform: "translate(-100%, -50%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          opacity: defaultOpacity,
+          opacity: 0,
           "&:hover": {
             opacity: 1,
           },
@@ -397,7 +396,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           transform: "translate(100%, -50%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          opacity: defaultOpacity,
+          opacity: 0,
           "&:hover": {
             opacity: 1,
           },
@@ -421,7 +420,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           transform: "translate(100%, -50%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          opacity: defaultOpacity,
+          opacity: 0,
           "&:hover": {
             opacity: 1,
           },
