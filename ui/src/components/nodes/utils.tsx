@@ -9,6 +9,8 @@ import {
 import { useContext } from "react";
 
 import Button from "@mui/material/Button";
+import CodeIcon from "@mui/icons-material/Code";
+import NoteIcon from "@mui/icons-material/Note";
 
 import { useStore } from "zustand";
 
@@ -299,10 +301,9 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           position: "absolute",
           bottom: "0px",
           left: "25%",
-          transform: "translate(-50%, 50%)",
+          transform: "translate(-50%, 100%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          // opacity: showToolbar ? 0.5 : 0,
           opacity: 0,
           "&:hover": {
             opacity: 1,
@@ -312,7 +313,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           addNode("CODE", { x: xPos, y: yPos + pod!.height! + 50 }, pod.parent);
         }}
       >
-        + Code
+        + <CodeIcon fontSize="small" />
       </Button>
 
       {/* Bottom 2 */}
@@ -323,10 +324,9 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           position: "absolute",
           bottom: "0px",
           left: "75%",
-          transform: "translate(-50%, 50%)",
+          transform: "translate(-50%, 100%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          // opacity: showToolbar ? 0.5 : 0,
           opacity: 0,
           "&:hover": {
             opacity: 1,
@@ -336,7 +336,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           addNode("RICH", { x: xPos, y: yPos + pod!.height! + 50 }, pod.parent);
         }}
       >
-        + Note
+        + <NoteIcon fontSize="small" />
       </Button>
       {/* Left 1 */}
       <Button
@@ -347,10 +347,9 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           position: "absolute",
           top: "25%",
           left: "0px",
-          transform: "translate(-50%, -50%)",
+          transform: "translate(-100%, -50%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          // opacity: showToolbar ? 0.5 : 0,
           opacity: 0,
           "&:hover": {
             opacity: 1,
@@ -360,7 +359,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           addNode("CODE", { x: xPos - pod!.width! - 50, y: yPos }, pod.parent);
         }}
       >
-        + Code
+        + <CodeIcon fontSize="small" />
       </Button>
 
       {/* Left 2 */}
@@ -372,10 +371,9 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           position: "absolute",
           top: "75%",
           left: "0px",
-          transform: "translate(-50%, -50%)",
+          transform: "translate(-100%, -50%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          // opacity: showToolbar ? 0.5 : 0,
           opacity: 0,
           "&:hover": {
             opacity: 1,
@@ -385,7 +383,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           addNode("RICH", { x: xPos - pod!.width! - 50, y: yPos }, pod.parent);
         }}
       >
-        + Note
+        + <NoteIcon fontSize="small" />
       </Button>
 
       {/* Right 1 */}
@@ -397,10 +395,9 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           position: "absolute",
           top: "25%",
           right: "0px",
-          transform: "translate(50%, -50%)",
+          transform: "translate(100%, -50%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          // opacity: showToolbar ? 0.5 : 0,
           opacity: 0,
           "&:hover": {
             opacity: 1,
@@ -410,7 +407,7 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           addNode("CODE", { x: xPos + pod!.width! + 50, y: yPos }, pod.parent);
         }}
       >
-        + Code
+        + <CodeIcon fontSize="small" />
       </Button>
 
       {/* Right 2 */}
@@ -422,10 +419,9 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           position: "absolute",
           top: "75%",
           right: "0px",
-          transform: "translate(50%, -50%)",
+          transform: "translate(100%, -50%)",
           zIndex: 100,
           whiteSpace: "nowrap",
-          // opacity: showToolbar ? 0.5 : 0,
           opacity: 0,
           "&:hover": {
             opacity: 1,
@@ -435,13 +431,17 @@ export function NewPodButtons({ pod, xPos, yPos }) {
           addNode("RICH", { x: xPos + pod!.width! + 50, y: yPos }, pod.parent);
         }}
       >
-        + Note
+        + <NoteIcon fontSize="small" />
       </Button>
     </>
   );
 }
 
-export function level2fontsize(level: number, contextualZoomParams: Record<any, number>, contextualZoom: boolean) {
+export function level2fontsize(
+  level: number,
+  contextualZoomParams: Record<any, number>,
+  contextualZoom: boolean
+) {
   // default font size
   if (!contextualZoom) return 16;
   // when contextual zoom is on
