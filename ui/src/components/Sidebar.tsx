@@ -202,14 +202,22 @@ function SidebarSettings() {
                   max={60}
                   valueLabelDisplay="auto"
                   onChange={(event: Event, newValue: number | number[]) => {
-                    setContextualZoomParams(contextualZoomParams, 0, newValue as number);
+                    setContextualZoomParams(
+                      contextualZoomParams,
+                      0,
+                      newValue as number
+                    );
                   }}
                 />
               </Grid>
               <Grid item xs={3}>
                 <Input
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setContextualZoomParams(contextualZoomParams, 0, Number(event.target.value));
+                    setContextualZoomParams(
+                      contextualZoomParams,
+                      0,
+                      Number(event.target.value)
+                    );
                   }}
                   onBlur={(event) => {
                     if (Number(event.target.value) > 60) {
@@ -244,14 +252,22 @@ function SidebarSettings() {
                   max={60}
                   valueLabelDisplay="auto"
                   onChange={(event: Event, newValue: number | number[]) => {
-                    setContextualZoomParams(contextualZoomParams, 1, newValue as number);
+                    setContextualZoomParams(
+                      contextualZoomParams,
+                      1,
+                      newValue as number
+                    );
                   }}
                 />
               </Grid>
               <Grid item xs={3}>
                 <Input
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setContextualZoomParams(contextualZoomParams, 1, Number(event.target.value));
+                    setContextualZoomParams(
+                      contextualZoomParams,
+                      1,
+                      Number(event.target.value)
+                    );
                   }}
                   onBlur={(event) => {
                     if (Number(event.target.value) > 60) {
@@ -286,14 +302,22 @@ function SidebarSettings() {
                   max={60}
                   valueLabelDisplay="auto"
                   onChange={(event: Event, newValue: number | number[]) => {
-                    setContextualZoomParams(contextualZoomParams, 2, newValue as number);
+                    setContextualZoomParams(
+                      contextualZoomParams,
+                      2,
+                      newValue as number
+                    );
                   }}
                 />
               </Grid>
               <Grid item xs={3}>
                 <Input
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setContextualZoomParams(contextualZoomParams, 2, Number(event.target.value));
+                    setContextualZoomParams(
+                      contextualZoomParams,
+                      2,
+                      Number(event.target.value)
+                    );
                   }}
                   onBlur={(event) => {
                     if (Number(event.target.value) > 60) {
@@ -328,14 +352,22 @@ function SidebarSettings() {
                   max={60}
                   valueLabelDisplay="auto"
                   onChange={(event: Event, newValue: number | number[]) => {
-                    setContextualZoomParams(contextualZoomParams, 3, newValue as number);
+                    setContextualZoomParams(
+                      contextualZoomParams,
+                      3,
+                      newValue as number
+                    );
                   }}
                 />
               </Grid>
               <Grid item xs={3}>
                 <Input
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setContextualZoomParams(contextualZoomParams, 3, Number(event.target.value));
+                    setContextualZoomParams(
+                      contextualZoomParams,
+                      3,
+                      Number(event.target.value)
+                    );
                   }}
                   onBlur={(event) => {
                     if (Number(event.target.value) > 60) {
@@ -370,14 +402,22 @@ function SidebarSettings() {
                   max={60}
                   valueLabelDisplay="auto"
                   onChange={(event: Event, newValue: number | number[]) => {
-                    setContextualZoomParams(contextualZoomParams, 4, newValue as number);
+                    setContextualZoomParams(
+                      contextualZoomParams,
+                      4,
+                      newValue as number
+                    );
                   }}
                 />
               </Grid>
               <Grid item xs={3}>
                 <Input
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setContextualZoomParams(contextualZoomParams, 4, Number(event.target.value));
+                    setContextualZoomParams(
+                      contextualZoomParams,
+                      4,
+                      Number(event.target.value)
+                    );
                   }}
                   onBlur={(event) => {
                     if (Number(event.target.value) > 60) {
