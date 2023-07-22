@@ -815,6 +815,8 @@ export const RichNode = memo<Props>(function ({
           background: "#eee",
           borderRadius: "5px",
           border: "5px solid red",
+          // Offset the border to prevent the node height from changing.
+          margin: "-5px",
           textAlign: "center",
           height: pod.height,
           width: pod.width,
