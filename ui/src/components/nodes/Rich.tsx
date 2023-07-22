@@ -49,8 +49,6 @@ import {
   ImageExtension,
   ItalicExtension,
   LinkExtension,
-  MentionExtension,
-  MentionExtensionAttributes,
   PlaceholderExtension,
   ShortcutHandlerProps,
   SubExtension,
@@ -59,6 +57,7 @@ import {
   createMarkPositioner,
   wysiwygPreset,
   MarkdownExtension,
+  TOP_50_TLDS,
 } from "remirror/extensions";
 import {
   Remirror,
@@ -100,8 +99,6 @@ import { TableExtension } from "@remirror/extension-react-tables";
 import { GenIcon, IconBase } from "@remirror/react-components";
 import "remirror/styles/all.css";
 import "./remirror-size.css";
-
-import { ProsemirrorPlugin, cx, htmlToProsemirrorNode } from "remirror";
 import { styled } from "@mui/material";
 
 import { MyYjsExtension } from "./extensions/YjsRemirror";
@@ -425,92 +422,6 @@ export const SetHighlightButton: React.FC<
   );
 };
 
-/**
- * Build a slash command using Remirror's MentionExtension.
- */
-
-function UserSuggestor({
-  allUsers,
-}: {
-  allUsers: MentionExtensionAttributes[];
-}): JSX.Element {
-  const [users, setUsers] = useState<MentionExtensionAttributes[]>([]);
-  const { createTable } = useCommands();
-  const { state, getMenuProps, getItemProps, indexIsHovered, indexIsSelected } =
-    useMention({
-      items: users,
-
-      onExit: (props, command) => {
-        console.log("props", props);
-        // console.log("command", command);
-        // get the command
-        const { query } = props;
-        const { full } = query;
-        switch (full) {
-          case "table":
-            // insert table
-            console.log("Inserting table ..");
-            createTable({
-              rowsCount: 3,
-              columnsCount: 3,
-              withHeaderRow: false,
-            });
-            break;
-          default:
-            break;
-        }
-      },
-    });
-
-  useEffect(() => {
-    if (!state) {
-      return;
-    }
-
-    const searchTerm = state.query.full.toLowerCase();
-    const filteredUsers = allUsers
-      .filter((user) => user.label.toLowerCase().includes(searchTerm))
-      .sort()
-      .slice(0, 5);
-    setUsers(filteredUsers);
-  }, [state, allUsers]);
-
-  const enabled = !!state;
-
-  return (
-    <FloatingWrapper
-      positioner="cursor"
-      enabled={enabled}
-      placement="bottom-start"
-    >
-      <div {...getMenuProps()} className="suggestions">
-        {enabled &&
-          users.map((user, index) => {
-            const isHighlighted = indexIsSelected(index);
-            const isHovered = indexIsHovered(index);
-
-            return (
-              <div
-                key={user.id}
-                className={cx(
-                  "suggestion",
-                  isHighlighted && "highlighted",
-                  isHovered && "hovered"
-                )}
-                {...getItemProps({
-                  item: user,
-                  index,
-                })}
-              >
-                {user.label}
-              </div>
-            );
-          })}
-      </div>
-    </FloatingWrapper>
-  );
-}
-
 const MyStyledWrapper = styled("div")(
   () => `
   .remirror-editor-wrapper {
@@ -556,22 +467,24 @@ const MyEditor = ({
       new TextHighlightExtension(),
       new SupExtension(),
       new SubExtension(),
-      new LinkExtension({ autoLink: true }),
+      new LinkExtension({
+        autoLink: true,
+        autoLinkAllowedTLDs: ["dev", ...TOP_50_TLDS],
+      }),
       new ImageExtension({ enableResizing: true }),
       new DropCursorExtension(),
       new MarkdownExtension(),
       new MyYjsExtension({ getProvider: () => provider, id }),
       new MathInlineExtension(),
       new MathBlockExtension(),
-      new MentionExtension({
-        extraAttributes: { type: "user" },
-        matchers: [
-          { name: "slash", char: "/", appendText: " ", matchOffset: 0 },
-        ],
-      }),
       // new CalloutExtension({ defaultType: "warn" }),
       ...wysiwygPreset(),
     ],
+    onError: ({ json, invalidContent, transformers }) => {
+      // Automatically remove all invalid nodes and marks.
+      console.log("removing invalidContent", invalidContent);
+      return transformers.remove(json, invalidContent);
+    },
 
     // Set the initial content.
     // content: "<p>I love <b>Remirror</b></p>",
@@ -643,15 +556,6 @@ const MyEditor = ({
             <EditorComponent />
 
             <TableComponents />
-            <UserSuggestor
-              allUsers={[
-                { id: "table", label: "table" },
-                // { id: "sue", label: "Sue" },
-                // { id: "pat", label: "Pat" },
-                // { id: "tom", label: "Tom" },
-                // { id: "jim", label: "Jim" },
-              ]}
-            />
 
             {!isGuest && <EditorToolbar />}
 
