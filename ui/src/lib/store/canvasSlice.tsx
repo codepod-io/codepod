@@ -49,7 +49,7 @@ import {
 } from "reactflow";
 import { node } from "prop-types";
 import { quadtree } from "d3-quadtree";
-import { getHelperLines } from "../../components/nodes/utils";
+import { getHelperLines, level2fontsize } from "../../components/nodes/utils";
 
 // TODO add node's data typing.
 type NodeData = {
@@ -540,8 +540,16 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         );
         const fromLevel = node?.data.level;
         const toLevel = scopeNode.data.level + 1;
-        const fromFontSize = get().level2fontsize(fromLevel);
-        const toFontSize = get().level2fontsize(toLevel);
+        const fromFontSize = level2fontsize(
+          fromLevel,
+          get().contextualZoomParams,
+          get().contextualZoom
+        );
+        const toFontSize = level2fontsize(
+          toLevel,
+          get().contextualZoomParams,
+          get().contextualZoom
+        );
         const newWidth = node.width! * (toFontSize / fromFontSize);
 
         node.width = newWidth;
@@ -593,7 +601,11 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     // I'll need to map this character width into the width of the node, taking into consideration of the font size.
     console.log("setNodeCharWidth", width, node.data.level);
     // calculate the actual width given the fontSzie and the character width
-    const fontsize = get().level2fontsize(node.data.level);
+    const fontsize = level2fontsize(
+      node.data.level,
+      get().contextualZoomParams,
+      get().contextualZoom
+    );
     // the fontSize is in pt, but the width is in px
     width = width * fontsize * 0.67;
     nodesMap.set(id, { ...node, width, style: { ...node.style, width } });
@@ -811,8 +823,16 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       position = getNodePositionInsideScope(node, scope, nodesMap, nodeHeight);
     }
     // need to adjust the node width according to the from and to scopes
-    const fromFontSize = get().level2fontsize(fromLevel);
-    const toFontSize = get().level2fontsize(toLevel);
+    const fromFontSize = level2fontsize(
+      fromLevel,
+      get().contextualZoomParams,
+      get().contextualZoom
+    );
+    const toFontSize = level2fontsize(
+      toLevel,
+      get().contextualZoomParams,
+      get().contextualZoom
+    );
     const newWidth = node.width! * (toFontSize / fromFontSize);
     // create the new node
     let newNode: Node = {

@@ -440,3 +440,21 @@ export function NewPodButtons({ pod, xPos, yPos }) {
     </>
   );
 }
+
+export function level2fontsize(level: number, contextualZoomParams: Record<any, number>, contextualZoom: boolean) {
+  // default font size
+  if (!contextualZoom) return 16;
+  // when contextual zoom is on
+  switch (level) {
+    case 0:
+      return contextualZoomParams[0];
+    case 1:
+      return contextualZoomParams[1];
+    case 2:
+      return contextualZoomParams[2];
+    case 3:
+      return contextualZoomParams[3];
+    default:
+      return contextualZoomParams.next;
+  }
+}

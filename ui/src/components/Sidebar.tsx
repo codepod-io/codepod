@@ -25,7 +25,15 @@ import { usePrompt } from "../lib/prompt";
 import { RepoContext } from "../lib/store";
 
 import useMe from "../lib/me";
-import { FormControlLabel, FormGroup, Stack, Switch } from "@mui/material";
+import {
+  FormControlLabel,
+  FormGroup,
+  Stack,
+  Switch,
+  Slider,
+  Input,
+  Grid,
+} from "@mui/material";
 import { getUpTime } from "../lib/utils";
 import { registerCompletion } from "../lib/monacoCompletionProvider";
 import { SettingDialog } from "./SettingDialog";
@@ -77,6 +85,18 @@ function SidebarSettings() {
   );
   const setSettingOpen = useStore(store, (state) => state.setSettingOpen);
 
+  const contextualZoomParams = useStore(
+    store,
+    (state) => state.contextualZoomParams
+  );
+  const setContextualZoomParams = useStore(
+    store,
+    (state) => state.setContextualZoomParams
+  );
+  const restoreParamsDefault = useStore(
+    store,
+    (state) => state.restoreParamsDefault
+  );
   useEffect(() => {
     if (autoCompletion && apiKey) {
       const dispose = registerCompletion(apiKey);
@@ -166,6 +186,223 @@ function SidebarSettings() {
             />
           </FormGroup>
         </Tooltip>
+        {contextualZoom && (
+          <Stack alignItems="center">
+            L0 Font Size
+            <Grid direction="row" container spacing={2} justifyContent="center">
+              <Grid item xs={8}>
+                <Slider
+                  aria-label="Font Size"
+                  value={contextualZoomParams[0]}
+                  defaultValue={16}
+                  aria-valuetext="size"
+                  step={2}
+                  marks
+                  min={8}
+                  max={60}
+                  valueLabelDisplay="auto"
+                  onChange={(event: Event, newValue: number | number[]) => {
+                    setContextualZoomParams(contextualZoomParams, 0, newValue as number);
+                  }}
+                />
+              </Grid>
+              <Grid item xs={3}>
+                <Input
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setContextualZoomParams(contextualZoomParams, 0, Number(event.target.value));
+                  }}
+                  onBlur={(event) => {
+                    if (Number(event.target.value) > 60) {
+                      setContextualZoomParams(contextualZoomParams, 0, 60);
+                    } else if (Number(event.target.value) < 8) {
+                      setContextualZoomParams(contextualZoomParams, 0, 8);
+                    }
+                  }}
+                  value={contextualZoomParams[0]}
+                  size="small"
+                  inputProps={{
+                    step: 1,
+                    min: 8,
+                    max: 56,
+                    type: "number",
+                    "aria-labelledby": "input-slider",
+                  }}
+                />
+              </Grid>
+            </Grid>
+            L1 Font Size
+            <Grid direction="row" container spacing={2} justifyContent="center">
+              <Grid item xs={8}>
+                <Slider
+                  aria-label="Font Size"
+                  value={contextualZoomParams[1]}
+                  defaultValue={16}
+                  aria-valuetext="size"
+                  step={2}
+                  marks
+                  min={8}
+                  max={60}
+                  valueLabelDisplay="auto"
+                  onChange={(event: Event, newValue: number | number[]) => {
+                    setContextualZoomParams(contextualZoomParams, 1, newValue as number);
+                  }}
+                />
+              </Grid>
+              <Grid item xs={3}>
+                <Input
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setContextualZoomParams(contextualZoomParams, 1, Number(event.target.value));
+                  }}
+                  onBlur={(event) => {
+                    if (Number(event.target.value) > 60) {
+                      setContextualZoomParams(contextualZoomParams, 1, 60);
+                    } else if (Number(event.target.value) < 8) {
+                      setContextualZoomParams(contextualZoomParams, 1, 8);
+                    }
+                  }}
+                  value={contextualZoomParams[1]}
+                  size="small"
+                  inputProps={{
+                    step: 1,
+                    min: 8,
+                    max: 56,
+                    type: "number",
+                    "aria-labelledby": "input-slider",
+                  }}
+                />
+              </Grid>
+            </Grid>
+            L2 Font Size
+            <Grid direction="row" container spacing={2} justifyContent="center">
+              <Grid item xs={8}>
+                <Slider
+                  aria-label="Font Size"
+                  value={contextualZoomParams[2]}
+                  defaultValue={16}
+                  aria-valuetext="size"
+                  step={2}
+                  marks
+                  min={8}
+                  max={60}
+                  valueLabelDisplay="auto"
+                  onChange={(event: Event, newValue: number | number[]) => {
+                    setContextualZoomParams(contextualZoomParams, 2, newValue as number);
+                  }}
+                />
+              </Grid>
+              <Grid item xs={3}>
+                <Input
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setContextualZoomParams(contextualZoomParams, 2, Number(event.target.value));
+                  }}
+                  onBlur={(event) => {
+                    if (Number(event.target.value) > 60) {
+                      setContextualZoomParams(contextualZoomParams, 2, 60);
+                    } else if (Number(event.target.value) < 8) {
+                      setContextualZoomParams(contextualZoomParams, 2, 8);
+                    }
+                  }}
+                  value={contextualZoomParams[2]}
+                  size="small"
+                  inputProps={{
+                    step: 1,
+                    min: 8,
+                    max: 56,
+                    type: "number",
+                    "aria-labelledby": "input-slider",
+                  }}
+                />
+              </Grid>
+            </Grid>
+            L3 Font Size
+            <Grid direction="row" container spacing={2} justifyContent="center">
+              <Grid item xs={8}>
+                <Slider
+                  aria-label="Font Size"
+                  value={Number(contextualZoomParams[3])}
+                  defaultValue={16}
+                  aria-valuetext="size"
+                  step={2}
+                  marks
+                  min={8}
+                  max={60}
+                  valueLabelDisplay="auto"
+                  onChange={(event: Event, newValue: number | number[]) => {
+                    setContextualZoomParams(contextualZoomParams, 3, newValue as number);
+                  }}
+                />
+              </Grid>
+              <Grid item xs={3}>
+                <Input
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setContextualZoomParams(contextualZoomParams, 3, Number(event.target.value));
+                  }}
+                  onBlur={(event) => {
+                    if (Number(event.target.value) > 60) {
+                      setContextualZoomParams(contextualZoomParams, 3, 60);
+                    } else if (Number(event.target.value) < 8) {
+                      setContextualZoomParams(contextualZoomParams, 3, 8);
+                    }
+                  }}
+                  value={contextualZoomParams[3]}
+                  size="small"
+                  inputProps={{
+                    step: 1,
+                    min: 8,
+                    max: 56,
+                    type: "number",
+                    "aria-labelledby": "input-slider",
+                  }}
+                />
+              </Grid>
+            </Grid>
+            L4+ Font Size
+            <Grid direction="row" container spacing={2} justifyContent="center">
+              <Grid item xs={8}>
+                <Slider
+                  aria-label="Font Size"
+                  value={Number(contextualZoomParams.next)}
+                  defaultValue={16}
+                  aria-valuetext="size"
+                  step={2}
+                  marks
+                  min={8}
+                  max={60}
+                  valueLabelDisplay="auto"
+                  onChange={(event: Event, newValue: number | number[]) => {
+                    setContextualZoomParams(contextualZoomParams, 4, newValue as number);
+                  }}
+                />
+              </Grid>
+              <Grid item xs={3}>
+                <Input
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setContextualZoomParams(contextualZoomParams, 4, Number(event.target.value));
+                  }}
+                  onBlur={(event) => {
+                    if (Number(event.target.value) > 60) {
+                      setContextualZoomParams(contextualZoomParams, 4, 60);
+                    } else if (Number(event.target.value) < 8) {
+                      setContextualZoomParams(contextualZoomParams, 4, 8);
+                    }
+                  }}
+                  value={contextualZoomParams.next}
+                  size="small"
+                  inputProps={{
+                    step: 1,
+                    min: 8,
+                    max: 56,
+                    type: "number",
+                    "aria-labelledby": "input-slider",
+                  }}
+                />
+              </Grid>
+            </Grid>
+            <Button onClick={() => restoreParamsDefault()}>
+              Restore Default
+            </Button>
+          </Stack>
+        )}
         <Tooltip title={"Enable Scoped Variables"} disableInteractive>
           <FormGroup>
             <FormControlLabel
