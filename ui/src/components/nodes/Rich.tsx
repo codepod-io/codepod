@@ -68,13 +68,11 @@ import {
   CodeBlockExtension,
   HeadingExtension,
   IframeExtension,
-  BulletListExtension,
-  OrderedListExtension,
-  TaskListExtension,
   CodeExtension,
   StrikeExtension,
   UnderlineExtension,
 } from "remirror/extensions";
+
 import {
   Remirror,
   EditorComponent,
@@ -126,6 +124,12 @@ import {
   MathInlineExtension,
   MathBlockExtension,
 } from "./extensions/mathExtension";
+import {
+  BulletListExtension,
+  OrderedListExtension,
+  TaskListExtension,
+} from "./extensions/list";
+
 import { NewPodButtons, level2fontsize } from "./utils";
 
 class LinkExtension extends RemirrorLinkExtension {
@@ -660,7 +664,20 @@ const MyEditor = ({
       onBlur={() => {
         setPodBlur(id);
       }}
-      sx={{ userSelect: "text", cursor: "auto" }}
+      sx={{
+        userSelect: "text",
+        cursor: "auto",
+        // Display different markers for different levels in nested ordered lists.
+        ol: {
+          "list-style-type": "decimal",
+        },
+        "ol li ol": {
+          "list-style-type": "lower-alpha",
+        },
+        "ol li ol li ol": {
+          "list-style-type": "lower-roman",
+        },
+      }}
       ref={ref}
       overflow="auto"
     >
