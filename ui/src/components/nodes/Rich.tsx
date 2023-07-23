@@ -120,7 +120,6 @@ class LinkExtension extends RemirrorLinkExtension {
         type: this.type,
         getAttributes: (matches: string[]) => {
           const [_, text, href] = matches;
-          console.log("===", text, href);
           return { text: text, href: href };
         },
       }),
