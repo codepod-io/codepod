@@ -48,7 +48,7 @@ import {
   DropCursorExtension,
   ImageExtension,
   ItalicExtension,
-  LinkExtension,
+  LinkExtension as RemirrorLinkExtension,
   PlaceholderExtension,
   ShortcutHandlerProps,
   SubExtension,
@@ -95,6 +95,10 @@ import {
   ToggleStrikeButton,
 } from "@remirror/react";
 import { FloatingToolbar, useExtensionEvent } from "@remirror/react";
+
+import { InputRule } from "@remirror/pm";
+import { markInputRule } from "@remirror/core-utils";
+
 import { TableExtension } from "@remirror/extension-react-tables";
 import { GenIcon, IconBase } from "@remirror/react-components";
 import "remirror/styles/all.css";
@@ -107,6 +111,27 @@ import {
   MathBlockExtension,
 } from "./extensions/mathExtension";
 import { NewPodButtons, level2fontsize } from "./utils";
+
+class LinkExtension extends RemirrorLinkExtension {
+  createInputRules(): InputRule[] {
+    return [
+      markInputRule({
+        regexp: /\[([^\]]+)\]\(([^)]+)\)/,
+        type: this.type,
+        getAttributes: (matches: string[]) => {
+          const [_, text, href] = matches;
+          console.log("===", text, href);
+          return { text: text, href: href };
+        },
+      }),
+      markInputRule({
+        regexp: /(?:==|__)([^*_]+)(?:==|__)$/,
+        type: this.type,
+        ignoreWhitespace: true,
+      }),
+    ];
+  }
+}
 
 function useLinkShortcut() {
   const [linkShortcut, setLinkShortcut] = useState<
