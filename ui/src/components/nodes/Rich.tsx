@@ -346,13 +346,13 @@ const MyEditor = ({
         cursor: "auto",
         // Display different markers for different levels in nested ordered lists.
         ol: {
-          "list-style-type": "decimal",
+          listStylType: "decimal",
         },
         "ol li ol": {
-          "list-style-type": "lower-alpha",
+          listStyleType: "lower-alpha",
         },
         "ol li ol li ol": {
-          "list-style-type": "lower-roman",
+          listStyleType: "lower-roman",
         },
       }}
       ref={ref}
