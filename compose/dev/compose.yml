@@ -29,7 +29,6 @@ services:
     volumes:
       - ../../api:/app
       - api-node-modules:/app/node_modules
-      - ../../runtime:/app/runtime
       - /var/run/docker.sock:/var/run/docker.sock
     command: sh -c "yarn && yarn dev"
     environment:
@@ -44,6 +43,11 @@ services:
       PROXY_API_URL: "http://proxy:4011/graphql"
       ZMQ_KERNEL_IMAGE: "lihebi/codepod-kernel-python:latest"
       WS_RUNTIME_IMAGE: "lihebi/codepod-runtime:latest"
+      # Set PROJECT_ROOT to the absolute path of your codepod local repo if you
+      # want to debug the runtime code.
+      #
+      # PROJECT_ROOT: "/path/to/codepod"
+
       # 1000 * 60 * 3: 3 minutes
       # KERNEL_TTL: "180000"
       # 1000 * 60 * 60 * 12: 12 hours
@@ -92,13 +96,16 @@ services:
 
   # This container is only used for installing node_modules into the volume, so
   # that the docker spawner can use the image without waiting for installing.
-  example-runtime:
+  example-runtime-dev:
     image: node:18
     working_dir: /app
     volumes:
       - ../../runtime:/app
       - runtime-node-modules:/app/node_modules
     command: sh -c "yarn && yarn dev"
+
+  example-runtime-prod:
+    image: lihebi/codepod-runtime:latest
 
   # This is only used to download the kernel image, so that the docker spawner
   # can use the image without waiting for downloading.
