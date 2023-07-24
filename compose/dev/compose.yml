@@ -96,13 +96,16 @@ services:
 
   # This container is only used for installing node_modules into the volume, so
   # that the docker spawner can use the image without waiting for installing.
-  example-runtime:
+  example-runtime-dev:
     image: node:18
     working_dir: /app
     volumes:
       - ../../runtime:/app
       - runtime-node-modules:/app/node_modules
     command: sh -c "yarn && yarn dev"
+
+  example-runtime-prod:
+    image: lihebi/codepod-runtime:latest
 
   # This is only used to download the kernel image, so that the docker spawner
   # can use the image without waiting for downloading.
