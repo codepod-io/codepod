@@ -208,23 +208,38 @@ export async function spawnRuntime(_, { sessionId }) {
   );
   console.log("spawning ws");
   let ws_host = `cpruntime_${sessionId}`;
-  await loadOrCreateContainer(
-    {
-      Image: process.env.WS_RUNTIME_IMAGE,
-      name: ws_host,
-      WorkingDir: "/app",
-      Cmd: ["sh", "-c", "yarn && yarn dev"],
-      Env: [`ZMQ_HOST=${zmq_host}`],
-      HostConfig: {
-        NetworkMode: "codepod",
-        Binds: [
-          "/Users/hebi/git/codepod/runtime:/app",
-          "runtime-node-modules:/app/node_modules",
-        ],
+  if (process.env.PROJECT_ROOT) {
+    await loadOrCreateContainer(
+      {
+        Image: "node:18",
+        name: ws_host,
+        WorkingDir: "/app",
+        Cmd: ["sh", "-c", "yarn && yarn dev"],
+        Env: [`ZMQ_HOST=${zmq_host}`],
+        HostConfig: {
+          NetworkMode: "codepod",
+          Binds: [
+            `${process.env.PROJECT_ROOT}/runtime:/app`,
+            "runtime-node-modules:/app/node_modules",
+          ],
+        },
       },
-    },
-    "codepod"
-  );
+      "codepod"
+    );
+  } else {
+    await loadOrCreateContainer(
+      {
+        Image: process.env.WS_RUNTIME_IMAGE,
+        name: ws_host,
+        Env: [`ZMQ_HOST=${zmq_host}`],
+        HostConfig: {
+          NetworkMode: "codepod",
+        },
+      },
+      "codepod"
+    );
+  }
+
   console.log("adding route", url, ws_host);
   // add to routing table
   await apollo_client.mutate({
