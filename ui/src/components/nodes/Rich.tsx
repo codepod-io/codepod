@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   memo,
+  useMemo,
 } from "react";
 import * as React from "react";
 
@@ -30,7 +31,6 @@ import ReactFlow, {
   Node,
   useStore as useReactFlowStore,
 } from "reactflow";
-import "reactflow/dist/style.css";
 import Ansi from "ansi-to-react";
 
 import Box from "@mui/material/Box";
@@ -114,7 +114,6 @@ import { markInputRule } from "@remirror/core-utils";
 import { TableExtension } from "@remirror/extension-react-tables";
 import { GenIcon, IconBase } from "@remirror/react-components";
 import "remirror/styles/all.css";
-import "./remirror-size.css";
 import { styled } from "@mui/material";
 
 import { MyYjsExtension } from "./extensions/YjsRemirror";
@@ -128,10 +127,14 @@ import {
   TaskListExtension,
 } from "./extensions/list";
 
+import { CodePodSyncExtension } from "./extensions/codepodSync";
+
 import { LinkExtension, LinkToolbar } from "./extensions/link";
 
 import { NewPodButtons, level2fontsize } from "./utils";
 import { RepoContext } from "../../lib/store";
+
+import "./remirror-size.css";
 
 /**
  * This is the toolbar when user select some text. It allows user to change the
@@ -303,6 +306,11 @@ const MyEditor = ({
         autoLinkAllowedTLDs: ["dev", ...TOP_50_TLDS],
       }),
       new UnderlineExtension(),
+      new CodePodSyncExtension({
+        id: id,
+        setPodContent: setPodContent,
+        setPodRichContent: setPodRichContent,
+      }),
     ],
     onError: ({ json, invalidContent, transformers }) => {
       // Automatically remove all invalid nodes and marks.
@@ -328,8 +336,6 @@ const MyEditor = ({
     // stringHandler: htmlToProsemirrorNode,
     stringHandler: "markdown",
   });
-
-  let index_onChange = 0;
 
   return (
     <Box
@@ -362,32 +368,18 @@ const MyEditor = ({
         <MyStyledWrapper>
           <Remirror
             manager={manager}
-            // initialContent={state}
-            state={state}
+            // Must set initialContent, otherwise the Reactflow will fire two
+            // dimension change events at the beginning. This should be caused
+            // by initialContent being empty, then the actual content. Setting
+            // it to the actual content at the beginning will prevent this.
+            initialContent={state}
+            // Should not set state and onChange (the controlled Remirror editor
+            // [1]), otherwise Chinsee (or CJK) input methods will not be
+            // supported [2].
+            // - [1] https://remirror.io/docs/controlled-editor
+            // - [2] demo that Chinese input method is not working:
+            //   https://remirror.vercel.app/?path=/story/editors-controlled--editable
             editable={!isGuest}
-            // FIXME: onFocus is not working
-            onChange={(parameter) => {
-              let nextState = parameter.state;
-              setState(nextState);
-              // TODO sync with DB and yjs
-              if (parameter.tr?.docChanged) {
-                setPodRichContent({
-                  id,
-                  richContent: parameter.helpers.getMarkdown(),
-                });
-                index_onChange += 1;
-                if (index_onChange == 1) {
-                  if (
-                    JSON.stringify(pod.content) ===
-                    JSON.stringify(nextState.doc.toJSON())
-                  ) {
-                    // This is the first onChange trigger, and the content is the same. Skip it.
-                    return;
-                  }
-                }
-                setPodContent({ id, content: nextState.doc.toJSON() });
-              }
-            }}
           >
             {/* <WysiwygToolbar /> */}
             <EditorComponent />
