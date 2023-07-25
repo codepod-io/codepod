@@ -19,6 +19,9 @@ interface CodePodSyncOptions {
   handlerKeys: [],
   customHandlerKeys: [],
 })
+/**
+ * This extension is used to sync the content of the editor with the pod.
+ */
 export class CodePodSyncExtension extends PlainExtension<CodePodSyncOptions> {
   firstUpdate = true;
   turndownService = new TurndownService();
@@ -32,8 +35,9 @@ export class CodePodSyncExtension extends PlainExtension<CodePodSyncOptions> {
           id: this.options.id,
           content: state.doc.toJSON(),
         },
+        // The first onChange event is triggered wehn the content is the same.
+        // Skip it.
         this.firstUpdate
-        // true
       );
       this.firstUpdate = false;
     }
