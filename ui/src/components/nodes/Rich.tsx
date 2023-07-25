@@ -100,6 +100,7 @@ import {
   useUpdateReason,
   FloatingWrapper,
   useMention,
+  useKeymap,
   ToggleBoldButton,
   ToggleItalicButton,
   ToggleUnderlineButton,
@@ -237,6 +238,18 @@ const MyStyledWrapper = styled("div")(
   }
 `
 );
+
+const hooks = [
+  () => {
+    useKeymap("Escape", () => {
+      if (document.activeElement) {
+        (document.activeElement as any).blur();
+        console.log("Remirror Esc");
+      }
+      return true;
+    });
+  },
+];
 
 // FIXME re-rendering performance
 const MyEditor = ({
@@ -379,6 +392,7 @@ const MyEditor = ({
             // - [1] https://remirror.io/docs/controlled-editor
             // - [2] demo that Chinese input method is not working:
             //   https://remirror.vercel.app/?path=/story/editors-controlled--editable
+            hooks={hooks}
             editable={!isGuest}
           >
             {/* <WysiwygToolbar /> */}

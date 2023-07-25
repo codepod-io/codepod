@@ -399,6 +399,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const wsRun = useStore(store, (state) => state.wsRun);
   const setPodFocus = useStore(store, (state) => state.setPodFocus);
   const setPodBlur = useStore(store, (state) => state.setPodBlur);
+  const selectPod = useStore(store, (state) => state.selectPod);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const annotations = useStore(store, (state) => state.pods[id]?.annotations);
   const showAnnotations = useStore(store, (state) => state.showAnnotations);
@@ -472,6 +473,18 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       run: () => {
         clearResults(id);
         wsRun(id);
+      },
+    });
+    editor.addAction({
+      id: "Leave-editor",
+      label: "Leave editor",
+      keybindings: [monaco.KeyCode.Escape],
+      run: () => {
+        if (document.activeElement) {
+          (document.activeElement as any).blur();
+          setPodBlur(id);
+          selectPod(id, true);
+        }
       },
     });
     // editor.onDidChangeModelContent(async (e) => {

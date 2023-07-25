@@ -508,6 +508,8 @@ export const CodeNode = memo<NodeProps>(function ({
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
 
   const prevLayout = useRef(layout);
+  const ref = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     if (autoRunLayout) {
       // Run auto-layout when the output box layout changes.
@@ -658,6 +660,13 @@ export const CodeNode = memo<NodeProps>(function ({
       </Box>
     );
 
+  const keyDownHandler = (event) => {
+    if (event.key === "Escape") {
+      ref?.current?.blur();
+    } else if (event.key === "Enter") {
+      ref?.current?.focus();
+    }
+  };
   return (
     <>
       <Box
@@ -814,6 +823,7 @@ export const CodeNode = memo<NodeProps>(function ({
                 height: "90%",
                 py: 1,
               }}
+              onKeyDown={(e) => keyDownHandler(e)}
             >
               <MyMonaco id={id} fontSize={fontSize} />
 
