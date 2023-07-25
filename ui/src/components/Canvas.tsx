@@ -36,8 +36,6 @@ import { lowercase, numbers } from "nanoid-dictionary";
 
 import { useStore } from "zustand";
 
-import { useHotkeys } from "react-hotkeys-hook";
-
 import { RepoContext } from "../lib/store";
 import { useEdgesYjsObserver, useYjsObserver } from "../lib/nodes";
 
@@ -610,26 +608,6 @@ function useCut(reactFlowWrapper) {
   ]);
 }
 
-// function useShortcutKey(){
-//   const store = useContext(RepoContext);
-//   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-//   const selectedPods = useStore(store, (state) => state.selectedPods);
-//   const id = selectedPods.values().next().value;
-//   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
-
-//   if (!id) {
-//     console.log("No node selected");
-//     return; // Ignore arrow key presses if there's no selected node or if the user is typing in an input field
-//   }
-//   const pod = nodesMap.get(id);
-//   if (!pod) {
-//     console.log("pod is undefined");
-//     return;
-//   }
-//   const pressEnter = useCallback(()=>{console.log("enter pressed", id);},[selectedPods]);
-//   useHotkeys('enter',pressEnter,{ preventDefault: true });
-// }
-
 /**
  * The ReactFlow instance keeps re-rendering when nodes change. Thus, we're
  * using this wrapper component to load the useXXX functions only once.
@@ -644,7 +622,6 @@ function CanvasImplWrap() {
   usePaste(reactFlowWrapper);
   useCut(reactFlowWrapper);
   useJump();
-  //useShortcutKey();
 
   const { loading } = useInitNodes();
   if (loading) return <div>Loading...</div>;
@@ -736,18 +713,6 @@ function CanvasImpl() {
   const [points, setPoints] = useState({ x: 0, y: 0 });
   const [client, setClient] = useState({ x: 0, y: 0 });
   const [parentNode, setParentNode] = useState("ROOT");
-
-  const selectedPods = useStore(store, (state) => state.selectedPods);
-  const setPodFocus = useStore(store, (state) => state.setPodFocus);
-
-  const pressEnter = useCallback(() => {
-    const id = selectedPods.values().next().value;
-    setPodFocus(id);
-    console.log("selected pods", selectedPods);
-    console.log("enter pressed", id);
-  }, [selectedPods]);
-
-  useHotkeys("enter", pressEnter, { preventDefault: true });
 
   const onPaneContextMenu = (event) => {
     event.preventDefault();
