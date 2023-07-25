@@ -40,14 +40,14 @@ export class CodePodSyncExtension extends PlainExtension<CodePodSyncOptions> {
         this.firstUpdate
       );
       this.firstUpdate = false;
-    }
 
-    var markdown = this.turndownService.turndown(
-      this.store.helpers.getHTML(state)
-    );
-    this.options.setPodRichContent({
-      id: this.options.id,
-      richContent: markdown,
-    });
+      var markdown = this.turndownService.turndown(
+        this.store.helpers.getHTML(state)
+      );
+      this.options.setPodRichContent({
+        id: this.options.id,
+        richContent: markdown,
+      });
+    }
   }
 }
