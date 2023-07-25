@@ -33,7 +33,12 @@ export interface PodSlice {
     dirty?: boolean
   ) => void;
   setPodName: ({ id, name }: { id: string; name: string }) => void;
-  setPodContent: ({ id, content }: { id: string; content: string }) => void;
+  setPodContent: (
+    { id, content }: { id: string; content: string },
+    // Whether to perform additional verification of whether content ==
+    // pod.content before setting the dirty flag..
+    verify?: boolean
+  ) => void;
   setPodRichContent: ({
     id,
     richContent,
@@ -87,10 +92,15 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
       // @ts-ignore
       "setPodName"
     ),
-  setPodContent: ({ id, content }) =>
+  setPodContent: ({ id, content }, verify = false) =>
     set(
       produce((state) => {
         let pod = state.pods[id];
+        if (verify) {
+          if (JSON.stringify(pod.content) === JSON.stringify(content)) {
+            return;
+          }
+        }
         pod.content = content;
         pod.dirty = true;
       }),

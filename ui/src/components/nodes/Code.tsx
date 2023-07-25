@@ -23,7 +23,6 @@ import ReactFlow, {
   NodeProps,
   useStore as useReactFlowStore,
 } from "reactflow";
-import "reactflow/dist/style.css";
 
 import Box from "@mui/material/Box";
 import InputBase from "@mui/material/InputBase";
