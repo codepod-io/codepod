@@ -850,6 +850,9 @@ function ExportFile() {
 function ExportJSON() {
   // an export component
   let { id: repoId } = useParams();
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const repoName = useStore(store, (state) => state.repoName);
   // the useMutation for exportJSON
   const [exportJSON, { data, loading, error }] = useMutation(
     gql`
@@ -860,7 +863,17 @@ function ExportJSON() {
   );
   useEffect(() => {
     if (data?.exportJSON) {
-      download(data.exportJSON);
+      let element = document.createElement("a");
+      element.setAttribute(
+        "href",
+        "data:text/plain;charset=utf-8," + encodeURIComponent(data.exportJSON)
+      );
+      element.setAttribute("download", `${repoName || ""}.json`);
+
+      element.style.display = "none";
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
     }
   }, [data]);
   return (
@@ -870,10 +883,10 @@ function ExportJSON() {
         size="small"
         color="secondary"
         onClick={() => {
-          // call export graphQL api to get the AWS S3 url
+          // call export graphQL api to get JSON string
           exportJSON({ variables: { repoId } });
         }}
-        disabled={true}
+        disabled={false}
       >
         Raw JSON
       </Button>
@@ -899,9 +912,10 @@ function ExportJupyterNB() {
     // Hard-code Jupyter cell format. Reference, https://nbformat.readthedocs.io/en/latest/format_description.html
     let jupyterCellList: {
       cell_type: string;
-      execution_count: number;
+      execution_count?: number;
       metadata: object;
       source: string[];
+      outputs?: object[];
     }[] = [];
 
     // Queue to sort the pods geographically
@@ -941,19 +955,36 @@ function ExportJupyterNB() {
         if (pod.type == "SCOPE") {
           q.push([pod, geoScore.substring(0, 2) + "0" + geoScore.substring(2)]);
         } else if (pod.type == "CODE") {
+          let podOutput: any[] = [];
+          if (pod.stdout) {
+            podOutput.push({
+              output_type: "stream",
+              name: "stdout",
+              text: pod.stdout.split(/\r?\n/).map((line) => line + "\n"),
+            });
+          }
+          if (pod.result) {
+            podOutput.push({
+              output_type: "display_data",
+              data: {
+                "text/plain": (pod.result.text || "")
+                  .split(/\r?\n/)
+                  .map((line) => line + "\n") || [""],
+                "image/png": pod.result.image,
+              },
+            });
+          }
           jupyterCellList.push({
             cell_type: "code",
-            // hard-code execution_count
-            execution_count: 1,
+            execution_count: pod.result?.count || 0,
             // TODO: expand other Codepod related-metadata fields, or run a real-time search in database when importing.
             metadata: { id: pod.id, geoScore: Number(geoScore) },
             source: [pod.content || ""],
+            outputs: podOutput,
           });
         } else if (pod.type == "RICH") {
           jupyterCellList.push({
             cell_type: "markdown",
-            // hard-code execution_count
-            execution_count: 1,
             // TODO: expand other Codepod related-metadata fields, or run a real-time search in database when importing.
             metadata: { id: pod.id, geoScore: Number(geoScore) },
             source: [pod.richContent || ""],
@@ -1029,6 +1060,7 @@ function ExportJupyterNB() {
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
+    setLoading(false);
   };
 
   return (

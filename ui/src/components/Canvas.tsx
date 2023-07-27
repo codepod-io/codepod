@@ -794,6 +794,8 @@ function CanvasImpl() {
           cellList = JSON.parse(String(fileContent)).cells.map((cell) => ({
             cellType: cell.cell_type,
             cellSource: cell.source.join(""),
+            cellOutputs: cell.outputs || [],
+            execution_count: cell.execution_count || 0,
           }));
           importScopeName = fileName.substring(0, fileName.length - 6);
           break;
