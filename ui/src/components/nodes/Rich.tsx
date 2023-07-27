@@ -239,17 +239,32 @@ const MyStyledWrapper = styled("div")(
 `
 );
 
-const hooks = [
-  () => {
-    useKeymap("Escape", () => {
-      if (document.activeElement) {
-        (document.activeElement as any).blur();
-        console.log("Remirror Esc");
-      }
-      return true;
-    });
-  },
-];
+function HotkeyControl({ id }) {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const selectPod = useStore(store, (state) => state.selectPod);
+  const setPodBlur = useStore(store, (state) => state.setPodBlur);
+  const focusedEditor = useStore(store, (state) => state.focusedEditor);
+  const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
+
+  useKeymap("Escape", () => {
+    if (document.activeElement) {
+      (document.activeElement as any).blur();
+      setPodBlur(id);
+      selectPod(id, true);
+      // FIXME Which node should be focused after leaving "Edit" mode?
+      setFocusedEditor("ROOT");
+    }
+    return true;
+  });
+  const commands = useCommands();
+  useEffect(() => {
+    if (focusedEditor === id) {
+      commands.focus();
+    }
+  }, [focusedEditor]);
+  return <></>;
+}
 
 // FIXME re-rendering performance
 const MyEditor = ({
@@ -392,9 +407,9 @@ const MyEditor = ({
             // - [1] https://remirror.io/docs/controlled-editor
             // - [2] demo that Chinese input method is not working:
             //   https://remirror.vercel.app/?path=/story/editors-controlled--editable
-            hooks={hooks}
             editable={!isGuest}
           >
+            <HotkeyControl id={id} />
             {/* <WysiwygToolbar /> */}
             <EditorComponent />
 

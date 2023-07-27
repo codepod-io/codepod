@@ -660,13 +660,6 @@ export const CodeNode = memo<NodeProps>(function ({
       </Box>
     );
 
-  const keyDownHandler = (event) => {
-    if (event.key === "Escape") {
-      ref?.current?.blur();
-    } else if (event.key === "Enter") {
-      ref?.current?.focus();
-    }
-  };
   return (
     <>
       <Box
@@ -823,7 +816,6 @@ export const CodeNode = memo<NodeProps>(function ({
                 height: "90%",
                 py: 1,
               }}
-              onKeyDown={(e) => keyDownHandler(e)}
             >
               <MyMonaco id={id} fontSize={fontSize} />
 
