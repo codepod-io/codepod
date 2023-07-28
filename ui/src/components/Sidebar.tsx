@@ -868,7 +868,10 @@ function ExportJSON() {
         "href",
         "data:text/plain;charset=utf-8," + encodeURIComponent(data.exportJSON)
       );
-      element.setAttribute("download", `${repoName || ""}.json`);
+      const filename = `${
+        repoName || "Untitled"
+      }-${new Date().toISOString()}.json`;
+      element.setAttribute("download", filename);
 
       element.style.display = "none";
       document.body.appendChild(element);
