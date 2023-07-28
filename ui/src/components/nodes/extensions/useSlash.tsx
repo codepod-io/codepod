@@ -1,5 +1,6 @@
+// Adapted from https://github.com/remirror/remirror/blob/main/packages/remirror__react-hooks/src/use-mention.ts
+
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Replace } from "@remirror/core";
 import type {
   MentionChangeHandler,
   MentionChangeHandlerCommand,
@@ -7,24 +8,18 @@ import type {
 } from "@remirror/extension-mention";
 // import { MentionExtension } from "@remirror/extension-mention";
 import { SlashExtension } from "./slash";
-import {
-  ChangeReason,
-  ExitReason,
-  SuggestChangeHandlerProps,
-} from "@remirror/pm/suggest";
+import { ChangeReason } from "@remirror/pm/suggest";
 import { useExtensionEvent, useHelpers } from "@remirror/react-core";
 
 import {
   FloatingWrapper,
   MentionState,
-  MenuNavigationOptions,
   useCommands,
   UseMentionProps,
   UseMentionReturn,
   useMenuNavigation,
-  UseMenuNavigationReturn,
 } from "@remirror/react";
-import { cx, replaceText } from "remirror";
+import { cx } from "remirror";
 
 function useSlash<
   Data extends MentionExtensionAttributes = MentionExtensionAttributes
