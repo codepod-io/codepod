@@ -274,8 +274,8 @@ export interface CanvasSlice {
   selectPod: (id: string, selected: boolean) => void;
   resetSelection: () => boolean;
 
-  focusedEditor: string;
-  setFocusedEditor: (id: string) => void;
+  focusedEditor: string | undefined;
+  setFocusedEditor: (id?: string) => void;
 
   updateView: () => void;
   updateEdgeView: () => void;
@@ -401,7 +401,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   },
 
   focusedEditor: "ROOT",
-  setFocusedEditor: (id: string) =>
+  setFocusedEditor: (id?: string) =>
     set(
       produce((state: MyState) => {
         state.focusedEditor = id;

@@ -252,8 +252,7 @@ function HotkeyControl({ id }) {
       (document.activeElement as any).blur();
       setPodBlur(id);
       selectPod(id, true);
-      // FIXME Which node should be focused after leaving "Edit" mode?
-      setFocusedEditor("ROOT");
+      setFocusedEditor(undefined);
     }
     return true;
   });

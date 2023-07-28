@@ -350,7 +350,13 @@ function getBestNode(
   }
   return bestNode;
 }
-
+function isInputDOMNode(event: KeyboardEvent): boolean {
+  const target = (event.composedPath?.()?.[0] || event.target) as HTMLElement;
+  const isInput =
+    ["INPUT", "SELECT", "TEXTAREA"].includes(target?.nodeName) ||
+    target?.hasAttribute("contenteditable");
+  return isInput;
+}
 function useJump() {
   const store = useContext(RepoContext)!;
 
@@ -367,6 +373,8 @@ function useJump() {
 
   const selectedPods = useStore(store, (state) => state.selectedPods);
   const handleKeyDown = (event) => {
+    // This is a hack to address the extra propagation of "Esc" pressed in Rich node, https://github.com/codepod-io/codepod/pull/398#issuecomment-1655153696
+    if (isInputDOMNode(event)) return false;
     // Only handle the arrow keys.
     switch (event.key) {
       case "ArrowUp":
