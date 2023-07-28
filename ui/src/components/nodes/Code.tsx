@@ -508,8 +508,6 @@ export const CodeNode = memo<NodeProps>(function ({
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
 
   const prevLayout = useRef(layout);
-  const ref = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     if (autoRunLayout) {
       // Run auto-layout when the output box layout changes.
