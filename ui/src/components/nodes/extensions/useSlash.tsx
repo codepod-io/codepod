@@ -94,7 +94,7 @@ function useSlash<
   });
   const { setIndex } = menu;
 
-  const { createTable } = useCommands();
+  const { createTable, toggleHeading } = useCommands();
 
   /**
    * The is the callback for when a suggestion is changed.
@@ -121,6 +121,7 @@ function useSlash<
           // Ignore the next exit since this exit is artificially being
           // generated.
           ignoreNextExit();
+          if (!attrs) return;
 
           const regex = /^\s+/;
 
@@ -135,11 +136,27 @@ function useSlash<
 
           // create the table here.
           // TODO different commands for different mentions.
-          createTable({
-            rowsCount: 3,
-            columnsCount: 3,
-            withHeaderRow: false,
-          });
+          const { id } = attrs;
+          switch (id) {
+            case "table":
+              createTable({
+                rowsCount: 3,
+                columnsCount: 3,
+                withHeaderRow: false,
+              });
+              break;
+            case "heading1":
+              toggleHeading({ level: 1 });
+              break;
+            case "heading2":
+              toggleHeading({ level: 2 });
+              break;
+            case "heading3":
+              toggleHeading({ level: 3 });
+              break;
+            default:
+              break;
+          }
 
           // Reset the state, since the query has been exited.
           setState(null);
@@ -188,7 +205,12 @@ export function SlashSuggestor(): JSX.Element {
       items: users,
     });
 
-  const allUsers = [{ id: "table", label: "Insert Table" }];
+  const allUsers = [
+    { id: "table", label: "Insert Table" },
+    { id: "heading1", label: "Heading 1" },
+    { id: "heading2", label: "Heading 2" },
+    { id: "heading3", label: "Heading 3" },
+  ];
 
   useEffect(() => {
     if (!state) {
