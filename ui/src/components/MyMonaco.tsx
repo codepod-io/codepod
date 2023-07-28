@@ -398,7 +398,10 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const clearResults = useStore(store, (s) => s.clearResults);
   const wsRun = useStore(store, (state) => state.wsRun);
   const setPodFocus = useStore(store, (state) => state.setPodFocus);
+  const focusedEditor = useStore(store, (state) => state.focusedEditor);
+  const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const setPodBlur = useStore(store, (state) => state.setPodBlur);
+  const selectPod = useStore(store, (state) => state.selectPod);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const annotations = useStore(store, (state) => state.pods[id]?.annotations);
   const showAnnotations = useStore(store, (state) => state.showAnnotations);
@@ -410,6 +413,12 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const onChange = (value) => setPodContent({ id, content: value });
   let [editor, setEditor] =
     useState<monaco.editor.IStandaloneCodeEditor | null>(null);
+
+  useEffect(() => {
+    if (focusedEditor === id) {
+      editor?.focus();
+    }
+  }, [focusedEditor]);
 
   useEffect(() => {
     if (!editor) return;
@@ -472,6 +481,19 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       run: () => {
         clearResults(id);
         wsRun(id);
+      },
+    });
+    editor.addAction({
+      id: "Leave-editor",
+      label: "Leave editor",
+      keybindings: [monaco.KeyCode.Escape],
+      run: () => {
+        if (document.activeElement) {
+          (document.activeElement as any).blur();
+          setPodBlur(id);
+          selectPod(id, true);
+          setFocusedEditor(undefined);
+        }
       },
     });
     // editor.onDidChangeModelContent(async (e) => {

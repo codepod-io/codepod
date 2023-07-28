@@ -274,6 +274,9 @@ export interface CanvasSlice {
   selectPod: (id: string, selected: boolean) => void;
   resetSelection: () => boolean;
 
+  focusedEditor: string | undefined;
+  setFocusedEditor: (id?: string) => void;
+
   updateView: () => void;
   updateEdgeView: () => void;
 
@@ -397,6 +400,13 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     return true;
   },
 
+  focusedEditor: undefined,
+  setFocusedEditor: (id?: string) =>
+    set(
+      produce((state: MyState) => {
+        state.focusedEditor = id;
+      })
+    ),
   /**
    * This function handles the real updates to the reactflow nodes to render.
    */

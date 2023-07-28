@@ -350,24 +350,39 @@ function getBestNode(
   }
   return bestNode;
 }
-
+function isInputDOMNode(event: KeyboardEvent): boolean {
+  const target = (event.composedPath?.()?.[0] || event.target) as HTMLElement;
+  const isInput =
+    ["INPUT", "SELECT", "TEXTAREA"].includes(target?.nodeName) ||
+    target?.hasAttribute("contenteditable");
+  return isInput;
+}
 function useJump() {
   const store = useContext(RepoContext)!;
 
   const selectPod = useStore(store, (state) => state.selectPod);
   const resetSelection = useStore(store, (state) => state.resetSelection);
+
+  const focusedEditor = useStore(store, (state) => state.focusedEditor);
+  const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
+
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+  const pods = useStore(store, (state) => state.pods);
 
   const reactflow = useReactFlow();
 
   const selectedPods = useStore(store, (state) => state.selectedPods);
   const handleKeyDown = (event) => {
+    // This is a hack to address the extra propagation of "Esc" pressed in Rich node, https://github.com/codepod-io/codepod/pull/398#issuecomment-1655153696
+    if (isInputDOMNode(event)) return false;
     // Only handle the arrow keys.
     switch (event.key) {
       case "ArrowUp":
       case "ArrowDown":
       case "ArrowLeft":
       case "ArrowRight":
+      case "Enter":
+      case "Escape":
         break;
       default:
         return;
@@ -403,6 +418,37 @@ function useJump() {
         break;
       case "ArrowRight":
         to = getBestNode(nodes, pod, "right");
+        break;
+      case "Enter":
+        // Hitting "Enter" on a Scope will go to its upper-left most child.
+        // Hitting "Enter" on a Code/Rich pod will go to "Edit" mode.
+        if (pod.type === "SCOPE") {
+          to = pod;
+          let minDist = Math.sqrt(
+            (pod.height || 1) ** 2 + (pod.width || 1) ** 2
+          );
+          let childDist = 0;
+          for (const child of pods[id].children) {
+            childDist = Math.sqrt(
+              nodesMap.get(child.id)!.position.x ** 2 +
+                nodesMap.get(child.id)!.position.y ** 2
+            );
+            if (minDist > childDist) {
+              minDist = childDist;
+              to = nodesMap.get(child.id)!;
+            }
+          }
+        } else {
+          setFocusedEditor(id);
+        }
+        break;
+      case "Escape":
+        // Hitting "Esc" in command mode will go to its parent
+        if (pod.parentNode !== "ROOT") {
+          to = nodesMap.get(pod.parentNode!)!;
+        } else {
+          to = pod;
+        }
         break;
       default:
         return;
