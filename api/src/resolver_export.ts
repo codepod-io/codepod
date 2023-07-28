@@ -60,16 +60,9 @@ async function exportJSON(_, { repoId }, { userId }) {
       },
     },
   });
-  // now export repo to a file
   if (!repo) throw Error("Repo not exists.");
-  const filename = `${
-    repo.name || "Untitled"
-  }-${new Date().toISOString()}.json`;
-  const aws_url = await uploadToS3WithExpiration(
-    filename,
-    JSON.stringify({ name: repo.name, version: "v0.0.1", pods: repo.pods })
-  );
-  return aws_url;
+  // return the JSON string
+  return JSON.stringify({ name: repo.name, format: "codepod", version: "v0.0.1", pods: repo.pods });
 }
 
 interface Pod {

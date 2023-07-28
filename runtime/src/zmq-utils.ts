@@ -133,7 +133,7 @@ export function constructExecuteRequest({ code, msg_id, cp = {} }) {
       cp,
       // FIXME if this is true, no result is returned!
       silent: false,
-      store_history: false,
+      store_history: true,
       // XXX this does not seem to be used
       user_expressions: {
         x: "3+4",

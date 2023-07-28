@@ -516,6 +516,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       dirty: true,
       pending: true,
     });
+    let maxLineLength = 0;
     if (cellList.length > 0) {
       for (let i = 0; i < cellList.length; i++) {
         const cell = cellList[i];
@@ -529,8 +530,29 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           newPos
         );
         let podContent = cell.cellType == "code" ? cell.cellSource : "";
+
+        maxLineLength = Math.max(
+          maxLineLength,
+          Math.max(...podContent.split(/\r?\n/).map((line) => line.length))
+        );
+
         let podRichContent = cell.cellType == "markdown" ? cell.cellSource : "";
 
+        let podResult = { count: cell.execution_count, text: "", image: "" };
+        let podStdOut = "";
+
+        for (const cellOutput of cell.cellOutputs) {
+          if (
+            cellOutput["output_type"] === "stream" &&
+            cellOutput["name"] === "stdout"
+          ) {
+            podStdOut = cellOutput["text"].join("");
+          }
+          if (cellOutput["output_type"] === "display_data") {
+            podResult.text = cellOutput["data"]["text/plain"].join("");
+            podResult.image = cellOutput["data"]["image/png"];
+          }
+        }
         // move the created node to scope and configure the necessary node attributes
         const posInsideScope = getNodePositionInsideScope(
           node,
@@ -572,6 +594,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           height: node.height!,
           content: podContent,
           richContent: podRichContent,
+          stdout: podStdOut === "" ? undefined : podStdOut,
+          result: podResult.text === "" ? undefined : podResult,
           // For my local update, set dirty to true to push to DB.
           dirty: true,
           pending: true,
@@ -587,7 +611,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     }
     get().adjustLevel();
     get().buildNode2Children();
-    // Set initial width as about 30 characters.
+    // Set initial width as a scale of max line length.
+    //get().setNodeCharWidth(scopeNode.id, Math.ceil(maxLineLength * 0.8));
     get().setNodeCharWidth(scopeNode.id, 30);
     get().updateView();
   },
