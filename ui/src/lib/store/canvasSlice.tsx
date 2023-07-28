@@ -400,7 +400,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     return true;
   },
 
-  focusedEditor: "ROOT",
+  focusedEditor: undefined,
   setFocusedEditor: (id?: string) =>
     set(
       produce((state: MyState) => {
