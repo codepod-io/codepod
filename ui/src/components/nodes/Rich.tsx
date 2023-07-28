@@ -69,7 +69,9 @@ import {
   CodeExtension,
   StrikeExtension,
   UnderlineExtension,
+  EmojiExtension,
 } from "remirror/extensions";
+import emojiData from "svgmoji/emoji.json";
 
 import {
   Remirror,
@@ -116,6 +118,8 @@ import { GenIcon, IconBase } from "@remirror/react-components";
 import "remirror/styles/all.css";
 import { styled } from "@mui/material";
 
+// Local Imports
+
 import { MyYjsExtension } from "./extensions/YjsRemirror";
 import {
   MathInlineExtension,
@@ -130,6 +134,8 @@ import {
 import { CodePodSyncExtension } from "./extensions/codepodSync";
 
 import { LinkExtension, LinkToolbar } from "./extensions/link";
+import { SlashExtension } from "./extensions/slash";
+import { SlashSuggestor } from "./extensions/useSlash";
 
 import { NewPodButtons, level2fontsize } from "./utils";
 import { RepoContext } from "../../lib/store";
@@ -311,6 +317,13 @@ const MyEditor = ({
         setPodContent: setPodContent,
         setPodRichContent: setPodRichContent,
       }),
+      new EmojiExtension({ data: emojiData, plainText: true }),
+      new SlashExtension({
+        extraAttributes: { type: "user" },
+        matchers: [
+          { name: "slash", char: "/", appendText: " ", matchOffset: 0 },
+        ],
+      }),
     ],
     onError: ({ json, invalidContent, transformers }) => {
       // Automatically remove all invalid nodes and marks.
@@ -385,6 +398,7 @@ const MyEditor = ({
             <EditorComponent />
 
             <TableComponents />
+            <SlashSuggestor />
 
             {!isGuest && <EditorToolbar />}
             <LinkToolbar />
