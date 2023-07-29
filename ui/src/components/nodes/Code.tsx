@@ -55,7 +55,6 @@ import { RepoContext } from "../../lib/store";
 
 import { MyMonaco } from "../MyMonaco";
 import { useApolloClient } from "@apollo/client";
-import styles from "../canvas.style.js";
 import { NodeResizeControl, NodeResizer } from "reactflow";
 
 import "@reactflow/node-resizer/dist/style.css";
@@ -791,7 +790,16 @@ export const CodeNode = memo<NodeProps>(function ({
                   }}
                 ></InputBase>
               </Box>
-              <Box sx={styles["pod-index"]}>[{exec_count}]</Box>
+              <Box
+                sx={{
+                  color: "#8b8282",
+                  textAlign: "left",
+                  paddingLeft: "5px",
+                  fontSize: "12px",
+                }}
+              >
+                [{exec_count}]
+              </Box>
               <Box
                 sx={{
                   opacity: showToolbar ? 1 : 0,
