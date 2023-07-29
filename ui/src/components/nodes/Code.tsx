@@ -55,7 +55,7 @@ import { RepoContext } from "../../lib/store";
 
 import { MyMonaco } from "../MyMonaco";
 import { useApolloClient } from "@apollo/client";
-
+import styles from "../canvas.style.js";
 import { NodeResizeControl, NodeResizer } from "reactflow";
 
 import "@reactflow/node-resizer/dist/style.css";
@@ -501,6 +501,10 @@ export const CodeNode = memo<NodeProps>(function ({
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const inputRef = useRef<HTMLInputElement>(null);
   const updateView = useStore(store, (state) => state.updateView);
+  const exec_count = useStore(
+    store,
+    (state) => state.pods[id]?.result?.count || " "
+  );
   const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
 
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
@@ -787,6 +791,7 @@ export const CodeNode = memo<NodeProps>(function ({
                   }}
                 ></InputBase>
               </Box>
+              <Box sx={styles["pod-index"]}>[{exec_count}]</Box>
               <Box
                 sx={{
                   opacity: showToolbar ? 1 : 0,
