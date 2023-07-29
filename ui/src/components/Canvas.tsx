@@ -490,7 +490,6 @@ function usePaste(reactFlowWrapper) {
   const pasteEnd = useStore(store, (state) => state.pasteEnd);
   const cancelPaste = useStore(store, (state) => state.cancelPaste);
   const isPasting = useStore(store, (state) => state.isPasting);
-  const isCutting = useStore(store, (state) => state.isCutting);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const isPaneFocused = useStore(store, (state) => state.isPaneFocused);
   const resetSelection = useStore(store, (state) => state.resetSelection);
@@ -545,7 +544,7 @@ function usePaste(reactFlowWrapper) {
     (event) => {
       // avoid duplicated pastes
       // check if the pane is focused
-      if (isPasting || isCutting || isGuest || !isPaneFocused) return;
+      if (isPasting || isGuest || !isPaneFocused) return;
 
       try {
         // the user clipboard data is unpreditable, may have application/json
@@ -591,69 +590,6 @@ function usePaste(reactFlowWrapper) {
   }, [handlePaste]);
 }
 
-function useCut(reactFlowWrapper) {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-
-  const reactFlowInstance = useReactFlow();
-
-  const cutEnd = useStore(store, (state) => state.cutEnd);
-  const onCutMove = useStore(store, (state) => state.onCutMove);
-  const cancelCut = useStore(store, (state) => state.cancelCut);
-  const isCutting = useStore(store, (state) => state.isCutting);
-  const isPasting = useStore(store, (state) => state.isPasting);
-  const isGuest = useStore(store, (state) => state.role === "GUEST");
-  const apolloClient = useApolloClient();
-
-  useEffect(() => {
-    if (!reactFlowWrapper.current) return;
-    if (!isCutting) return;
-
-    const mouseMove = (event) => {
-      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-      const position = reactFlowInstance.project({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-      });
-      onCutMove(position);
-    };
-    const mouseClick = (event) => {
-      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-      const position = reactFlowInstance.project({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-      });
-      cutEnd(position, reactFlowInstance);
-    };
-    const keyDown = (event) => {
-      if (event.key !== "Escape") return;
-      // delete the temporary node
-      cancelCut();
-      //clear the pasting state
-      event.preventDefault();
-    };
-    reactFlowWrapper.current.addEventListener("mousemove", mouseMove);
-    reactFlowWrapper.current.addEventListener("click", mouseClick);
-    document.addEventListener("keydown", keyDown);
-    return () => {
-      if (reactFlowWrapper.current) {
-        reactFlowWrapper.current.removeEventListener("mousemove", mouseMove);
-        reactFlowWrapper.current.removeEventListener("click", mouseClick);
-      }
-      document.removeEventListener("keydown", keyDown);
-    };
-  }, [
-    cancelCut,
-    cutEnd,
-    isCutting,
-    isPasting,
-    apolloClient,
-    onCutMove,
-    reactFlowInstance,
-    reactFlowWrapper,
-  ]);
-}
-
 /**
  * The ReactFlow instance keeps re-rendering when nodes change. Thus, we're
  * using this wrapper component to load the useXXX functions only once.
@@ -666,7 +602,6 @@ function CanvasImplWrap() {
   useYjsObserver();
   useEdgesYjsObserver();
   usePaste(reactFlowWrapper);
-  useCut(reactFlowWrapper);
   useJump();
 
   const { loading } = useInitNodes();

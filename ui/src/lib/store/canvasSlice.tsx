@@ -314,13 +314,6 @@ export interface CanvasSlice {
   cancelPaste: (cutting: boolean) => void;
   onPasteMove: (mousePos: XYPosition) => void;
 
-  isCutting: boolean;
-  cuttingIds: Set<string>;
-  cutBegin: (id: string) => void;
-  cutEnd: (position: XYPosition, reactFlowInstance: ReactFlowInstance) => void;
-  onCutMove: (mousePos: XYPosition) => void;
-  cancelCut: () => void;
-
   adjustLevel: () => void;
   getScopeAtPos: ({ x, y }: XYPosition, exclude: string) => Node | undefined;
   moveIntoScope: (nodeId: string, scopeId: string) => void;
@@ -656,7 +649,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   },
 
   isPasting: false,
-  isCutting: false,
 
   pasteBegin: (position, pod, cutting = false) => {
     // 1. create temporary nodes and pods
@@ -675,7 +667,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       headPastingNodes: new Set([nodes[0][0].id]),
       // Distinguish the state of cutting or pasting
       isPasting: !cutting,
-      isCutting: cutting,
       // But we need to keep all the temporary nodes in the pastingNodes list to render them.
       pastingNodes: nodes.map(([node, pod]) => node),
     });
@@ -760,40 +751,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       })
     );
     get().updateView();
-  },
-
-  //   checkDropIntoScope: (event, nodes: Node[], project: XYPosition=>XYPosition) => {},
-  // cut will:
-  // 1. hide the original node
-  // 2. create a dummy node that move with cursor
-  cutBegin: (id) => {
-    const pod = get().clonePod(id);
-    if (!pod) return;
-
-    // Store only the top-level cut nodes, for now, it contains only one element. But we will support multi-select cut-paste in the future.
-    set({ cuttingIds: new Set([id]) });
-    get().pasteBegin({ x: pod.x, y: pod.y }, pod, true);
-  },
-  onCutMove: (mousePos) => {
-    get().onPasteMove(mousePos);
-  },
-  // 3. on drop, delete the original node and create a new node
-  cutEnd: (position, reactFlowInstance) => {
-    const cuttingIds = get().cuttingIds;
-
-    if (!cuttingIds) return;
-
-    reactFlowInstance.deleteElements({
-      nodes: Array.from(cuttingIds).map((id) => ({ id })),
-    });
-
-    set({ cuttingIds: new Set() });
-
-    get().pasteEnd(position, true);
-  },
-  cancelCut: () => {
-    set({ cuttingIds: new Set() });
-    get().cancelPaste(true);
   },
 
   // NOTE: this does not mutate.

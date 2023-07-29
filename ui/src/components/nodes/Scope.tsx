@@ -31,7 +31,6 @@ import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import Grid from "@mui/material/Grid";
 import DeleteIcon from "@mui/icons-material/Delete";
-import ContentCutIcon from "@mui/icons-material/ContentCut";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import ViewTimelineOutlinedIcon from "@mui/icons-material/ViewTimelineOutlined";
@@ -76,15 +75,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
     [clonePod, id]
   );
 
-  const cutBegin = useStore(store, (state) => state.cutBegin);
-
-  const onCut = useCallback(
-    (clipboardData: any) => {
-      onCopy(clipboardData);
-      cutBegin(id);
-    },
-    [onCopy, cutBegin, id]
-  );
   const autoLayout = useStore(store, (state) => state.autoLayout);
   return (
     <Box
@@ -138,19 +128,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
           </IconButton>
         </Tooltip>
       </CopyToClipboard>
-
-      {!isGuest && (
-        <CopyToClipboard
-          text="dummy"
-          options={{ debug: true, format: "text/plain", onCopy: onCut } as any}
-        >
-          <Tooltip title="Cut">
-            <IconButton>
-              <ContentCutIcon fontSize="inherit" />
-            </IconButton>
-          </Tooltip>
-        </CopyToClipboard>
-      )}
       {!isGuest && (
         <Tooltip title="Delete" className="nodrag">
           <IconButton
@@ -204,7 +181,6 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   const pod = getPod(id);
 
   const devMode = useStore(store, (state) => state.devMode);
-  const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
 
   useEffect(() => {
     if (!data.name) return;
@@ -271,7 +247,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
       sx={{
         width: "100%",
         height: "100%",
-        border: isCutting ? "dashed 2px red" : "solid 1px #d6dee6",
+        border: "solid 1px #d6dee6",
         borderRadius: "4px",
         cursor: "auto",
         fontSize,

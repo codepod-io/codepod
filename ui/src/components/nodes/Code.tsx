@@ -35,7 +35,6 @@ import Button from "@mui/material/Button";
 import CircleIcon from "@mui/icons-material/Circle";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
-import ContentCutIcon from "@mui/icons-material/ContentCut";
 import Grid from "@mui/material/Grid";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight";
@@ -372,16 +371,6 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
     [clonePod, id]
   );
 
-  const cutBegin = useStore(store, (state) => state.cutBegin);
-
-  const onCut = useCallback(
-    (clipboardData: any) => {
-      onCopy(clipboardData);
-      cutBegin(id);
-    },
-    [onCopy, cutBegin, id]
-  );
-
   return (
     <Box
       sx={{ display: "flex", alignItems: "center", justifyContent: "center" }}
@@ -429,18 +418,6 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
           </IconButton>
         </Tooltip>
       </CopyToClipboard>
-      {!isGuest && (
-        <CopyToClipboard
-          text="dummy"
-          options={{ debug: true, format: "text/plain", onCopy: onCut } as any}
-        >
-          <Tooltip title="Cut">
-            <IconButton>
-              <ContentCutIcon fontSize="inherit" />
-            </IconButton>
-          </Tooltip>
-        </CopyToClipboard>
-      )}
       {!isGuest && (
         <Tooltip title="Delete">
           <IconButton
@@ -501,13 +478,13 @@ export const CodeNode = memo<NodeProps>(function ({
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const inputRef = useRef<HTMLInputElement>(null);
   const updateView = useStore(store, (state) => state.updateView);
-  const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
 
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
 
   const prevLayout = useRef(layout);
+
   useEffect(() => {
     if (autoRunLayout) {
       // Run auto-layout when the output box layout changes.
@@ -679,13 +656,11 @@ export const CodeNode = memo<NodeProps>(function ({
               border: "1px #d6dee6",
               borderWidth: pod.ispublic ? "4px" : "2px",
               borderRadius: "4px",
-              borderStyle: isCutting ? "dashed" : "solid",
+              borderStyle: "solid",
               width: "100%",
               height: "100%",
               backgroundColor: "rgb(244, 246, 248)",
-              borderColor: isCutting
-                ? "red"
-                : pod.ispublic
+              borderColor: pod.ispublic
                 ? "green"
                 : selected
                 ? "#003c8f"
