@@ -296,8 +296,6 @@ const MyEditor = ({
   const setPodBlur = useStore(store, (state) => state.setPodBlur);
   const resetSelection = useStore(store, (state) => state.resetSelection);
   const updateView = useStore(store, (state) => state.updateView);
-  const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
-  const ref = useRef<HTMLDivElement>(null);
   const { manager, state, setState } = useRemirror({
     extensions: () => [
       new PlaceholderExtension({ placeholder }),
@@ -401,7 +399,6 @@ const MyEditor = ({
           listStyleType: "lower-roman",
         },
       }}
-      ref={ref}
       overflow="auto"
     >
       <ThemeProvider>
