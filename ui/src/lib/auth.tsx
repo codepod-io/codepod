@@ -48,10 +48,10 @@ function useProvideAuth() {
     };
   };
 
-  function createApolloClient() {
+  function createApolloClient(auth = true) {
     const link = new HttpLink({
       uri: "/graphql",
-      headers: getAuthHeaders(),
+      headers: auth ? getAuthHeaders() : undefined,
     });
 
     return new ApolloClient({
@@ -70,7 +70,7 @@ function useProvideAuth() {
 
   const handleGoogle = async (response) => {
     console.log("Google Encoded JWT ID token: " + response.credential);
-    const client = createApolloClient();
+    const client = createApolloClient(false);
     const LoginMutation = gql`
       mutation LoginWithGoogleMutation($idToken: String!) {
         loginWithGoogle(idToken: $idToken) {
@@ -154,7 +154,7 @@ function useProvideAuth() {
   };
 
   const signIn = async ({ email, password }) => {
-    const client = createApolloClient();
+    const client = createApolloClient(false);
     const LoginMutation = gql`
       mutation LoginMutation($email: String!, $password: String!) {
         login(email: $email, password: $password) {
@@ -177,7 +177,7 @@ function useProvideAuth() {
   };
 
   const signUp = async ({ firstname, lastname, email, password }) => {
-    const client = createApolloClient();
+    const client = createApolloClient(false);
     const LoginMutation = gql`
       mutation SignupMutation(
         $firstname: String!
