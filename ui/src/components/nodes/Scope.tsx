@@ -30,7 +30,6 @@ import CircularProgress from "@mui/material/CircularProgress";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import Grid from "@mui/material/Grid";
-import DeleteIcon from "@mui/icons-material/Delete";
 import ContentCutIcon from "@mui/icons-material/ContentCut";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
@@ -47,7 +46,7 @@ import { RepoContext } from "../../lib/store";
 import { NodeResizer, NodeResizeControl } from "reactflow";
 import "@reactflow/node-resizer/dist/style.css";
 import { ResizableBox } from "react-resizable";
-import { ResizeIcon, level2fontsize } from "./utils";
+import { ConfirmDeleteButton, ResizeIcon, level2fontsize } from "./utils";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 
 function MyFloatingToolbar({ id }: { id: string }) {
@@ -153,8 +152,8 @@ function MyFloatingToolbar({ id }: { id: string }) {
       )}
       {!isGuest && (
         <Tooltip title="Delete" className="nodrag">
-          <IconButton
-            onClick={(e: any) => {
+          <ConfirmDeleteButton
+            handleConfirm={(e: any) => {
               // This does not work, will throw "Parent node
               // jqgdsz2ns6k57vich0bf not found" when deleting a scope.
               //
@@ -163,9 +162,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
               // But this works:
               reactFlowInstance.deleteElements({ nodes: [{ id }] });
             }}
-          >
-            <DeleteIcon fontSize="inherit" />
-          </IconButton>
+          />
         </Tooltip>
       )}
       <Box

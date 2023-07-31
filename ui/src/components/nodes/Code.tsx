@@ -40,7 +40,6 @@ import Grid from "@mui/material/Grid";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
 import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight";
 import PlayDisabledIcon from "@mui/icons-material/PlayDisabled";
-import DeleteIcon from "@mui/icons-material/Delete";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 
@@ -61,6 +60,8 @@ import "@reactflow/node-resizer/dist/style.css";
 import { NewPodButtons, ResizeIcon, level2fontsize } from "./utils";
 import { timeDifference } from "../../lib/utils";
 import { ButtonGroup } from "@mui/material";
+
+import { ConfirmDeleteButton } from "./utils";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);
@@ -442,14 +443,12 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
       )}
       {!isGuest && (
         <Tooltip title="Delete">
-          <IconButton
-            onClick={() => {
+          <ConfirmDeleteButton
+            handleConfirm={() => {
               // Delete all edges connected to the node.
               reactFlowInstance.deleteElements({ nodes: [{ id }] });
             }}
-          >
-            <DeleteIcon fontSize="inherit" />
-          </IconButton>
+          />
         </Tooltip>
       )}
       <Tooltip title="Change layout">
