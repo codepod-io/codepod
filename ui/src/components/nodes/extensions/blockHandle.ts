@@ -1,25 +1,10 @@
 // Code developed based on https://github.com/ueberdosis/tiptap/issues/323#issuecomment-506637799
 
-import { Node } from "@remirror/pm/model";
 import { NodeSelection } from "@remirror/pm/state";
-// import { __serializeForClipboard as serializeForClipboard } from "@remirror/pm/view";
-// import { serializeForClipboard } from "prosemirror-view/src/clipboard";
-// import {serializeForClipboard} from "@remirror/pm/view/dist/src/clipboard"
 // @ts-ignore
 import { __serializeForClipboard as serializeForClipboard } from "prosemirror-view";
 
-import {
-  ApplySchemaAttributes,
-  EditorView,
-  NodeExtension,
-  NodeExtensionSpec,
-  NodeSpecOverride,
-  NodeViewMethod,
-  PlainExtension,
-  ProsemirrorNode,
-  extension,
-  setStyle,
-} from "remirror";
+import { PlainExtension, extension } from "remirror";
 
 function removeNode(node) {
   node.parentNode.removeChild(node);
@@ -146,17 +131,6 @@ export class BlockHandleExtension extends PlainExtension {
                 while (node.tagName === "MARK") {
                   node = node.parentNode;
                 }
-                // if (!(node instanceof Element)) return;
-                // Use the y-pos of the first node.
-                // const rect0 = absoluteRect(node);
-
-                // while (node && node.parentNode) {
-                //   if (node.parentNode?.classList?.contains("ProseMirror")) {
-                //     // todo
-                //     break;
-                //   }
-                //   node = node.parentNode;
-                // }
 
                 if (node instanceof Element) {
                   const cstyle = window.getComputedStyle(node);
@@ -166,7 +140,6 @@ export class BlockHandleExtension extends PlainExtension {
                   const rect = absoluteRect(node);
                   const win = node.ownerDocument.defaultView;
 
-                  // rect0.top += win!.pageYOffset + (lineHeight - 24) / 2 + top;
                   rect.top += win!.pageYOffset + (lineHeight - 24) / 2 + top;
                   rect.left += win!.pageXOffset;
                   rect.width = `${WIDTH}px`;
