@@ -93,7 +93,11 @@ const HeaderItem = memo<any>(({ id }) => {
             }),
       }}
       sx={{
-        maxWidth: "100%",
+        // Try to compute a correct width so that the textfield size changes
+        // according to content size.
+        width: `${((repoName?.length || 0) + 6) * 6}px`,
+        minWidth: "100px",
+        maxWidth: "500px",
         border: "none",
       }}
       disabled={!isOwner}
