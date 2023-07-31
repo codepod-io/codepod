@@ -892,6 +892,11 @@ function CanvasImpl() {
           onConnect={onConnect}
           onMove={() => {
             toggleMoved();
+            // Hide the Rich node drag handle when moving.
+            const elems = document.getElementsByClassName("global-drag-handle");
+            Array.from(elems).forEach((elem) => {
+              (elem as HTMLElement).style.display = "none";
+            });
           }}
           onPaneClick={() => {
             toggleClicked();

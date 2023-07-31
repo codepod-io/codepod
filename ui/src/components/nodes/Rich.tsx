@@ -137,6 +137,7 @@ import { CodePodSyncExtension } from "./extensions/codepodSync";
 import { LinkExtension, LinkToolbar } from "./extensions/link";
 import { SlashExtension } from "./extensions/slash";
 import { SlashSuggestor } from "./extensions/useSlash";
+import { BlockHandleExtension } from "./extensions/blockHandle";
 
 import { NewPodButtons, level2fontsize } from "./utils";
 import { RepoContext } from "../../lib/store";
@@ -241,6 +242,11 @@ const MyStyledWrapper = styled("div")(
   () => `
   .remirror-editor-wrapper {
     padding: 0;
+  }
+
+  /* leave some space for the block handle */
+  .remirror-editor-wrapper .ProseMirror {
+    padding-left: 24px;
   }
 `
 );
@@ -349,6 +355,7 @@ const MyEditor = ({
           { name: "slash", char: "/", appendText: " ", matchOffset: 0 },
         ],
       }),
+      new BlockHandleExtension(),
     ],
     onError: ({ json, invalidContent, transformers }) => {
       // Automatically remove all invalid nodes and marks.
