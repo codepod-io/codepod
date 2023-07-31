@@ -485,7 +485,13 @@ export const ConfirmDeleteButton = React.forwardRef(
         >
           <DeleteIcon fontSize="inherit" />
         </IconButton>
-        <Dialog open={open} fullWidth>
+        <Dialog
+          open={open}
+          onClose={() => {
+            setOpen(false);
+          }}
+          fullWidth
+        >
           <DialogTitle>{`Please confirm deletion`}</DialogTitle>
           <DialogContent>Are you sure?</DialogContent>
           <DialogActions>
@@ -502,6 +508,7 @@ export const ConfirmDeleteButton = React.forwardRef(
                 setOpen(false);
               }}
               autoFocus
+              color="error"
             >
               Confirm
             </Button>
