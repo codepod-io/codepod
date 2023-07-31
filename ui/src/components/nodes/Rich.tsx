@@ -37,7 +37,6 @@ import Box from "@mui/material/Box";
 import InputBase from "@mui/material/InputBase";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
-import DeleteIcon from "@mui/icons-material/Delete";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import FormatColorResetIcon from "@mui/icons-material/FormatColorReset";
 
@@ -139,7 +138,7 @@ import { SlashExtension } from "./extensions/slash";
 import { SlashSuggestor } from "./extensions/useSlash";
 import { BlockHandleExtension } from "./extensions/blockHandle";
 
-import { NewPodButtons, level2fontsize } from "./utils";
+import { ConfirmDeleteButton, NewPodButtons, level2fontsize } from "./utils";
 import { RepoContext } from "../../lib/store";
 
 import "./remirror-size.css";
@@ -464,14 +463,12 @@ function MyFloatingToolbar({ id }: { id: string }) {
       </Box>
       {!isGuest && (
         <Tooltip title="Delete">
-          <IconButton
+          <ConfirmDeleteButton
             size="small"
-            onClick={() => {
+            handleConfirm={() => {
               reactFlowInstance.deleteElements({ nodes: [{ id }] });
             }}
-          >
-            <DeleteIcon fontSize="inherit" />
-          </IconButton>
+          />
         </Tooltip>
       )}
       <Box

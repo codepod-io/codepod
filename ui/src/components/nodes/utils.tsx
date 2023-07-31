@@ -6,7 +6,7 @@ import {
   XYPosition,
 } from "reactflow";
 
-import { useContext } from "react";
+import { useContext, useState } from "react";
 
 import Button from "@mui/material/Button";
 import CodeIcon from "@mui/icons-material/Code";
@@ -15,6 +15,16 @@ import NoteIcon from "@mui/icons-material/Note";
 import { useStore } from "zustand";
 
 import { RepoContext } from "../../lib/store";
+import {
+  Box,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
+} from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import React from "react";
 
 export function ResizeIcon() {
   return (
@@ -458,3 +468,53 @@ export function level2fontsize(
       return contextualZoomParams.next;
   }
 }
+
+// A delete button that requires confirmation.
+// Have to use React.forwardRef to allows <Tooltip> over this component. Ref:
+// https://mui.com/material-ui/guides/composition/#caveat-with-refs
+export const ConfirmDeleteButton = React.forwardRef(
+  ({ handleConfirm, ...props }: any) => {
+    const [open, setOpen] = useState(false);
+    return (
+      <Box>
+        <IconButton
+          onClick={() => {
+            setOpen(true);
+          }}
+          {...props}
+        >
+          <DeleteIcon fontSize="inherit" />
+        </IconButton>
+        <Dialog
+          open={open}
+          onClose={() => {
+            setOpen(false);
+          }}
+          fullWidth
+        >
+          <DialogTitle>{`Please confirm deletion`}</DialogTitle>
+          <DialogContent>Are you sure?</DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => {
+                setOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                handleConfirm();
+                setOpen(false);
+              }}
+              autoFocus
+              color="error"
+            >
+              Confirm
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Box>
+    );
+  }
+);
