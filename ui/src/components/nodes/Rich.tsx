@@ -668,6 +668,11 @@ export const RichNode = memo<Props>(function ({
         }}
         onMouseLeave={() => {
           setShowToolbar(false);
+          // hide drag handle
+          const elems = document.getElementsByClassName("global-drag-handle");
+          Array.from(elems).forEach((elem) => {
+            (elem as HTMLElement).style.display = "none";
+          });
         }}
         sx={{
           cursor: "auto",
