@@ -1,7 +1,7 @@
 // nanoid v4 does not work with nodejs. https://github.com/ai/nanoid/issues/365
 import { customAlphabet } from "nanoid/async";
 import { lowercase, numbers } from "nanoid-dictionary";
-import prisma from './client'
+import prisma from "./client";
 
 const nanoid = customAlphabet(lowercase + numbers, 20);
 
@@ -55,6 +55,7 @@ async function myRepos(_, __, { userId }) {
           userId: userId,
         },
       },
+      stargazers: true,
     },
   });
   // Sort by last access time.
@@ -89,6 +90,9 @@ async function myCollabRepos(_, __, { userId }) {
       collaborators: {
         some: { id: userId },
       },
+    },
+    include: {
+      stargazers: true,
     },
   });
   return repos;
@@ -383,6 +387,53 @@ async function deleteCollaborator(_, { repoId, collaboratorId }, { userId }) {
   return true;
 }
 
+async function star(_, { repoId }, { userId }) {
+  // make sure the repo is visible by this user
+  if (!userId) throw new Error("Not authenticated.");
+  let repo = await prisma.repo.findFirst({
+    where: {
+      id: repoId,
+      OR: [
+        { owner: { id: userId || "undefined" } },
+        { collaborators: { some: { id: userId || "undefined" } } },
+        { public: true },
+      ],
+    },
+  });
+  if (!repo) throw new Error("Repo not found.");
+  // 3. add the user to the repo
+  await prisma.repo.update({
+    where: {
+      id: repoId,
+    },
+    data: {
+      stargazers: { connect: { id: userId } },
+    },
+  });
+  return true;
+}
+
+async function unstar(_, { repoId }, { userId }) {
+  if (!userId) throw new Error("Not authenticated.");
+  // 1. find the repo
+  const repo = await prisma.repo.findFirst({
+    where: {
+      id: repoId,
+    },
+  });
+  // 2. delete the user from the repo
+  if (!repo) throw new Error("Repo not found.");
+  await prisma.repo.update({
+    where: {
+      id: repoId,
+    },
+    data: {
+      stargazers: { disconnect: { id: userId } },
+    },
+  });
+  return true;
+}
+
 async function updatePod(_, { id, repoId, input }, { userId }) {
   if (!userId) throw new Error("Not authenticated.");
   await ensureRepoEditAccess({ repoId, userId });
@@ -576,5 +627,7 @@ export default {
     addCollaborator,
     updateVisibility,
     deleteCollaborator,
+    star,
+    unstar,
   },
 };

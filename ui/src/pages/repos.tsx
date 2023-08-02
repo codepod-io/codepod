@@ -19,6 +19,8 @@ import StopCircleIcon from "@mui/icons-material/StopCircle";
 import CircularProgress from "@mui/material/CircularProgress";
 import SourceIcon from "@mui/icons-material/Source";
 import DescriptionOutlinedIcon from "@mui/icons-material/DescriptionOutlined";
+import StarIcon from "@mui/icons-material/Star";
+import StarBorderIcon from "@mui/icons-material/StarBorder";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import ShareIcon from "@mui/icons-material/Share";
@@ -32,6 +34,7 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  Stack,
   useTheme,
 } from "@mui/material";
 import { useAuth } from "../lib/auth";
@@ -45,6 +48,9 @@ const GET_REPOS = gql`
       name
       id
       public
+      stargazers {
+        id
+      }
       updatedAt
       createdAt
     }
@@ -74,39 +80,91 @@ function RepoLine({
 
   // haochen: any reason not using Loading state from useMutation?
   const [killing, setKilling] = useState(false);
+
+  const [star, { loading: starLoading }] = useMutation(
+    gql`
+      mutation star($repoId: ID!) {
+        star(repoId: $repoId)
+      }
+    `,
+    {
+      refetchQueries: ["GetRepos"],
+    }
+  );
+  const [unstar, { loading: unstarLoading }] = useMutation(
+    gql`
+      mutation unstar($repoId: ID!) {
+        unstar(repoId: $repoId)
+      }
+    `,
+    {
+      refetchQueries: ["GetRepos"],
+    }
+  );
+
   return (
     <TableRow
       key={repo.id}
       sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
     >
-      <TableCell align="center">
-        <Link
-          component={ReactLink}
-          to={`/repo/${repo.id}`}
-          sx={
-            deleting
-              ? {
-                  color: theme.palette.action.disabled,
-                  textDecorationColor: theme.palette.action.disabled,
-                  pointerEvents: "none",
-                }
-              : {}
-          }
-        >
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-            }}
+      <TableCell align="left">
+        <Stack direction="row">
+          {repo.stargazers?.map((_) => _.id).includes(me.id) ? (
+            <Tooltip title="unstar">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  unstar({ variables: { repoId: repo.id } });
+                }}
+                disabled={unstarLoading}
+              >
+                <StarIcon
+                  fontSize="inherit"
+                  sx={{
+                    color: "orange",
+                  }}
+                />
+                {repo.stargazers.length}
+              </IconButton>
+            </Tooltip>
+          ) : (
+            <Tooltip title="star">
+              <IconButton
+                size="small"
+                onClick={() => {
+                  star({ variables: { repoId: repo.id } });
+                }}
+                disabled={starLoading}
+              >
+                <StarBorderIcon fontSize="inherit" />
+                {repo.stargazers.length}
+              </IconButton>
+            </Tooltip>
+          )}
+
+          <Link
+            component={ReactLink}
+            to={`/repo/${repo.id}`}
+            sx={
+              deleting
+                ? {
+                    color: theme.palette.action.disabled,
+                    textDecorationColor: theme.palette.action.disabled,
+                    pointerEvents: "none",
+                  }
+                : {}
+            }
           >
-            <DescriptionOutlinedIcon
-              sx={{
-                marginRight: "5px",
-              }}
-            />
-            {repo.name || "Untitled"}
-          </Box>
-        </Link>
+            <Stack direction="row">
+              <DescriptionOutlinedIcon
+                sx={{
+                  marginRight: "5px",
+                }}
+              />
+              {repo.name || "Untitled"}
+            </Stack>
+          </Link>
+        </Stack>
       </TableCell>
       <TableCell align="left">
         <Chip
@@ -388,6 +446,9 @@ function SharedWithMe() {
         name
         id
         public
+        stargazers {
+          id
+        }
         updatedAt
         createdAt
       }
@@ -522,7 +583,7 @@ export default function Page() {
     return <Box>Loading user ..</Box>;
   }
   return (
-    <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
+    <Box sx={{ maxWidth: "md", alignItems: "center", m: "auto" }}>
       {/* TODO some meta information about the user */}
       {/* <CurrentUser /> */}
       {/* TODO the repos of this user */}
@@ -538,7 +599,7 @@ export default function Page() {
         started.
       </Box>
       {!isSignedIn() && (
-        <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
+        <Box sx={{ alignItems: "center", m: "auto" }}>
           <Alert severity="warning">
             Please note that you are a{" "}
             <Box component="span" color="red">

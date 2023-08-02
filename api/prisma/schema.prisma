@@ -50,6 +50,7 @@ model User {
     profile      Profile?
     Repo         Repo[]         @relation("OWNER")
     sharedRepos  Repo[]         @relation("COLLABORATOR")
+    stars        Repo[]         @relation("STAR")
     UserRepoData UserRepoData[]
 
     codeiumAPIKey String? @default("")
@@ -81,6 +82,7 @@ model Repo {
     // Edit pod content likely won't update this updatedAt field.
     updatedAt     DateTime       @default(now()) @updatedAt
     UserRepoData  UserRepoData[]
+    stargazers    User[]         @relation("STAR")
 }
 
 enum PodType {
