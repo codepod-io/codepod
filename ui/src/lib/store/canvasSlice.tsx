@@ -550,6 +550,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
 
         let podResult = { count: cell.execution_count, text: "", image: "" };
         let podStdOut = "";
+        let podError = { ename: "", evalue: "", stacktrace: [] };
 
         for (const cellOutput of cell.cellOutputs) {
           if (
@@ -561,6 +562,14 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           if (cellOutput["output_type"] === "display_data") {
             podResult.text = cellOutput["data"]["text/plain"].join("");
             podResult.image = cellOutput["data"]["image/png"];
+          }
+          if (cellOutput["output_type"] === "execute_result") {
+            podResult.text = cellOutput["data"]["text/plain"].join("");
+          }
+          if (cellOutput["output_type"] === "error") {
+            podError.ename = cellOutput["ename"];
+            podError.evalue = cellOutput["evalue"];
+            podError.stacktrace = cellOutput["traceback"];
           }
         }
         // move the created node to scope and configure the necessary node attributes
@@ -606,6 +615,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           richContent: podRichContent,
           stdout: podStdOut === "" ? undefined : podStdOut,
           result: podResult.text === "" ? undefined : podResult,
+          error: podError.ename === "" ? undefined : podError,
           // For my local update, set dirty to true to push to DB.
           dirty: true,
           pending: true,
@@ -621,9 +631,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     }
     get().adjustLevel();
     get().buildNode2Children();
-    // Set initial width as a scale of max line length.
-    //get().setNodeCharWidth(scopeNode.id, Math.ceil(maxLineLength * 0.8));
-    get().setNodeCharWidth(scopeNode.id, 30);
+    // FIXME updateView() reset the pod width to 300, scope width to 400.
     get().updateView();
   },
   autoLayoutOnce: false,
