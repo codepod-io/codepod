@@ -959,6 +959,7 @@ function ExportJupyterNB() {
           q.push([pod, geoScore.substring(0, 2) + "0" + geoScore.substring(2)]);
         } else if (pod.type == "CODE") {
           let podOutput: any[] = [];
+          // FIXME, the pod result needs to support an array of execution result as well as the execution order
           if (pod.stdout) {
             podOutput.push({
               output_type: "stream",
@@ -966,7 +967,7 @@ function ExportJupyterNB() {
               text: pod.stdout.split(/\r?\n/).map((line) => line + "\n"),
             });
           }
-          if (pod.result) {
+          if (pod.result?.image) {
             podOutput.push({
               output_type: "display_data",
               data: {
@@ -975,6 +976,29 @@ function ExportJupyterNB() {
                   .map((line) => line + "\n") || [""],
                 "image/png": pod.result.image,
               },
+            });
+          }
+          if (
+            pod.result?.text &&
+            !pod.result?.text.startsWith("ok") &&
+            !pod.result?.text.startsWith("error")
+          ) {
+            podOutput.push({
+              output_type: "execute_result",
+              data: {
+                "text/plain": (pod.result.text || "")
+                  .split(/\r?\n/)
+                  .map((line) => line + "\n") || [""],
+              },
+              execution_count: pod.result?.count,
+            });
+          }
+          if (pod.error) {
+            podOutput.push({
+              output_type: "error",
+              ename: pod.error?.ename,
+              evalue: pod.error?.evalue,
+              traceback: pod.error?.stacktrace,
             });
           }
           jupyterCellList.push({
@@ -1019,6 +1043,7 @@ function ExportJupyterNB() {
       }
 
       // Add scope structure as a block comment at the head of each cell
+      // FIXME, RICH pod should have a different format
       let scopeStructureAsComment =
         scopes.length > 0
           ? [
@@ -1035,21 +1060,26 @@ function ExportJupyterNB() {
       cell.source = [...scopeStructureAsComment, ...sourceArray];
     }
 
-    const fileContent = JSON.stringify({
-      // hard-code Jupyter Notebook top-level metadata
-      metadata: {
-        name: repoName,
-        kernelspec: {
-          name: "python3",
-          display_name: "Python 3",
+    const fileContent = JSON.stringify(
+      {
+        // hard-code Jupyter Notebook top-level metadata
+        metadata: {
+          name: repoName,
+          kernelspec: {
+            name: "python3",
+            display_name: "Python 3",
+          },
+          language_info: { name: "python" },
+          Codepod_version: "v0.0.1",
+          Codepod_repo_id: `${repoId}`,
         },
-        language_info: { name: "python" },
-        Codepod_version: "v0.0.1",
+        nbformat: 4.0,
+        nbformat_minor: 0,
+        cells: jupyterCellList,
       },
-      nbformat: 4,
-      nbformat_minor: 0,
-      cells: jupyterCellList,
-    });
+      null,
+      4
+    );
 
     // Generate the download link on the fly
     let element = document.createElement("a");

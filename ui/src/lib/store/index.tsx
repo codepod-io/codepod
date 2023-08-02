@@ -31,7 +31,7 @@ export type Pod = {
   status?: string;
   stdout?: string;
   stderr?: string;
-  error?: { evalue: string; stacktrace: string[] } | null;
+  error?: { ename: string; evalue: string; stacktrace: string[] } | null;
   lastExecutedAt?: Date;
   lang: string;
   column?: number;
