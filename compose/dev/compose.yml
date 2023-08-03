@@ -57,6 +57,19 @@ services:
       # 1000 * 60 * 1: 1 minute 
       LOOP_INTERVAL: "60000"
 
+  yjs-server:
+    image: node:18
+    working_dir: /app
+    volumes:
+      - ../../api:/app
+      - api-node-modules:/app/node_modules
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: sh -c "yarn && yarn dev:yjs"
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
+      JWT_SECRET: ${JWT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+
   ui:
     image: node:18
     working_dir: /app
@@ -86,13 +99,6 @@ services:
       - 8080:8080
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
-  
-  socket:
-    image: node:18
-    working_dir: /app
-    volumes:
-      - socket-node-modules:/app/node_modules
-    command: sh -c "yarn add yjs y-websocket && HOST=0.0.0.0 PORT=4233 npx y-websocket"
 
   # This container is only used for installing node_modules into the volume, so
   # that the docker spawner can use the image without waiting for installing.

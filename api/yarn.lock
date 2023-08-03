@@ -2693,6 +2693,11 @@ isomorphic-ws@^4.0.1:
   resolved "https://registry.yarnpkg.com/isomorphic-ws/-/isomorphic-ws-4.0.1.tgz#55fd4cd6c5e6491e76dc125938dd863f5cd4f2dc"
   integrity sha512-BhBvN2MBpWTaSHdWRb/bwdZJ1WaehQ2L1KngkCkfLUGF0mAWAT1sQUQacEmQ0jXkFw/czDXPNQSL5u2/Krsz1w==
 
+isomorphic.js@^0.2.4:
+  version "0.2.5"
+  resolved "https://registry.yarnpkg.com/isomorphic.js/-/isomorphic.js-0.2.5.tgz#13eecf36f2dba53e85d355e11bf9d4208c6f7f88"
+  integrity sha512-PIeMbHqMt4DnUP3MA/Flc0HElYjMXArsw1qwJZcm9sqR8mq3l8NYizFMty0pWwE/tzIGH3EKK5+jes5mAr85yw==
+
 isstream@~0.1.2:
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/isstream/-/isstream-0.1.2.tgz#47e63f7af55afa6f92e1500e690eb8b8529c099a"
@@ -3245,6 +3250,13 @@ leven@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/leven/-/leven-3.1.0.tgz#77891de834064cccba82ae7842bb6b14a13ed7f2"
   integrity sha512-qsda+H8jTaUaN/x5vzW2rzc+8Rw4TAQ/4KjB46IwK5VH+IlVeeeje/EoZRpiXvIqjFgK84QffqPztGI3VBLG1A==
+
+lib0@^0.2.42, lib0@^0.2.74:
+  version "0.2.78"
+  resolved "https://registry.yarnpkg.com/lib0/-/lib0-0.2.78.tgz#9aa34733075caafb3edf228da6e609d15ada0088"
+  integrity sha512-SV2nU43/6eaYnGH3l0lg2wg1ziB/TH3sAd2E8quXPGwrqo+aX98SNT2ZKucpUr5B8A52jD7ZMjAl+r87Fa/bLQ==
+  dependencies:
+    isomorphic.js "^0.2.4"
 
 lines-and-columns@^1.1.6:
   version "1.2.4"
@@ -4790,6 +4802,13 @@ xtend@^4.0.0, xtend@~4.0.1:
   resolved "https://registry.yarnpkg.com/xtend/-/xtend-4.0.2.tgz#bb72779f5fa465186b1f438f674fa347fdb5db54"
   integrity sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==
 
+y-protocols@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/y-protocols/-/y-protocols-1.0.5.tgz#91d574250060b29fcac8f8eb5e276fbad594245e"
+  integrity sha512-Wil92b7cGk712lRHDqS4T90IczF6RkcvCwAD0A2OPg+adKmOe+nOiT/N2hvpQIWS3zfjmtL4CPaH5sIW1Hkm/A==
+  dependencies:
+    lib0 "^0.2.42"
+
 y18n@^5.0.5:
   version "5.0.8"
   resolved "https://registry.yarnpkg.com/y18n/-/y18n-5.0.8.tgz#7f4934d0f7ca8c56f95314939ddcd2dd91ce1d55"
@@ -4840,6 +4859,13 @@ yargs@^17.3.1:
     string-width "^4.2.3"
     y18n "^5.0.5"
     yargs-parser "^21.0.0"
+
+yjs@^13.6.7:
+  version "13.6.7"
+  resolved "https://registry.yarnpkg.com/yjs/-/yjs-13.6.7.tgz#f1176c37f65eb566cf390bd813e2099d598795f4"
+  integrity sha512-mCZTh4kjvUS2DnaktsYN6wLH3WZCJBLqrTdkWh1bIDpA/sB/GNFaLA/dyVJj2Hc7KwONuuoC/vWe9bwBBosZLQ==
+  dependencies:
+    lib0 "^0.2.74"
 
 yn@3.1.1:
   version "3.1.1"
