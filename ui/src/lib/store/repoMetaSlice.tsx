@@ -62,7 +62,7 @@ export const createRepoMetaSlice: StateCreator<
         id: repoId,
         name: repoName,
       },
-      refetchQueries: ["GetRepos", "GetCollabRepos"],
+      refetchQueries: ["GetDashboardRepos"],
     });
     set((state) =>
       produce(state, (state) => {

@@ -165,32 +165,32 @@ const KillRuntimeButton = ({ repo }) => {
     <Box>
       {/* last active: {getUpTime(info.lastActive)} */}
       <Tooltip title={getUpTime(info.lastActive)} placement="top">
-        {/* <Box> */}
-        <Tooltip title="Kill runtime">
-          <IconButton
-            disabled={killing}
-            size="small"
-            sx={{
-              "&:hover": {
-                color: theme.palette.error.main,
-              },
-            }}
-            onClick={async () => {
-              killRuntime({
-                variables: {
-                  sessionId: `${me.id}_${repo.id}`,
+        <Box>
+          <Tooltip title="Kill runtime">
+            <IconButton
+              disabled={killing}
+              size="small"
+              sx={{
+                "&:hover": {
+                  color: theme.palette.error.main,
                 },
-              });
-            }}
-          >
-            {killing ? (
-              <CircularProgress size="14px" />
-            ) : (
-              <StopCircleIcon fontSize="inherit" />
-            )}
-          </IconButton>
-        </Tooltip>
-        {/* </Box> */}
+              }}
+              onClick={async () => {
+                killRuntime({
+                  variables: {
+                    sessionId: `${me.id}_${repo.id}`,
+                  },
+                });
+              }}
+            >
+              {killing ? (
+                <CircularProgress size="14px" />
+              ) : (
+                <StopCircleIcon fontSize="inherit" />
+              )}
+            </IconButton>
+          </Tooltip>
+        </Box>
       </Tooltip>
     </Box>
   );
@@ -276,29 +276,27 @@ const RepoCard = ({ repo }) => {
   return (
     <Card sx={{ minWidth: 275, maxWidth: 275 }}>
       <CardContent>
-        <Typography variant="body1" gutterBottom>
-          <Stack direction="row" display="flex">
-            <Link
-              component={ReactLink}
-              to={`/repo/${repo.id}`}
-              sx={{
-                alignItems: "center",
-              }}
-            >
-              <Stack direction="row" display="inline-flex">
-                <DescriptionOutlinedIcon
-                  sx={{
-                    marginRight: "5px",
-                  }}
-                />
-                <Box component="span">{repo.name || "Untitled"}</Box>
-              </Stack>
-            </Link>
-            <Box ml="auto">
-              <StarButton repo={repo} />
-            </Box>
-          </Stack>
-        </Typography>
+        <Stack direction="row" display="flex">
+          <Link
+            component={ReactLink}
+            to={`/repo/${repo.id}`}
+            sx={{
+              alignItems: "center",
+            }}
+          >
+            <Stack direction="row" display="inline-flex">
+              <DescriptionOutlinedIcon
+                sx={{
+                  marginRight: "5px",
+                }}
+              />
+              <Box component="span">{repo.name || "Untitled"}</Box>
+            </Stack>
+          </Link>
+          <Box ml="auto">
+            <StarButton repo={repo} />
+          </Box>
+        </Stack>
         <Typography variant="subtitle2" color="gray">
           <Stack direction="row">
             Viewed{" "}
@@ -410,7 +408,7 @@ const RepoLists = () => {
       )}
       <Box display="flex" flexWrap="wrap">
         {repos.map((repo) => (
-          <Box sx={{ m: 1 }}>
+          <Box sx={{ m: 1 }} key={repo.id}>
             <RepoCard repo={repo} />
           </Box>
         ))}
