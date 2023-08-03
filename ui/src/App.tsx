@@ -10,7 +10,7 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
 import Home from "./pages/index";
-import Repos from "./pages/repos";
+import Dashboard from "./pages/dashboard";
 import Repo from "./pages/repo";
 import Test from "./pages/test";
 import Login from "./pages/login";
@@ -61,10 +61,10 @@ const router = createBrowserRouter([
     ),
   },
   {
-    path: "repos",
+    path: "dashboard",
     element: (
       <NormalLayout currentPage="Dashboard">
-        <Repos />
+        <Dashboard />
       </NormalLayout>
     ),
   },
@@ -113,7 +113,7 @@ const router = createBrowserRouter([
     element: (
       <NormalLayout>
         {/* <Home /> */}
-        <Repos />
+        <Dashboard />
       </NormalLayout>
     ),
   },

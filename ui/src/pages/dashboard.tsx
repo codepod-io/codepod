@@ -419,7 +419,7 @@ const RepoLists = () => {
   );
 };
 
-export default function Page() {
+export default function Dashboard() {
   const { me } = useMe();
   const { hasToken, loginGuest, isSignedIn } = useAuth();
 
