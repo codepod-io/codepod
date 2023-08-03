@@ -25,17 +25,20 @@ import {
   Button,
   Card,
   CardActions,
+  CardContent,
   CardHeader,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   Stack,
+  Typography,
 } from "@mui/material";
 import { useAuth } from "../lib/auth";
 import { GoogleSignin } from "./login";
 import { timeDifference } from "../lib/utils";
 import { useSnackbar } from "notistack";
+import { useTheme } from "@mui/material/styles";
 
 function CreateRepoForm(props) {
   const [createRepo] = useMutation(
@@ -68,7 +71,7 @@ function CreateRepoForm(props) {
   );
 }
 
-const Star = ({ repo }) => {
+const StarButton = ({ repo }) => {
   const { me } = useMe();
   const [star, { loading: starLoading }] = useMutation(
     gql`
@@ -95,55 +98,34 @@ const Star = ({ repo }) => {
     <>
       {isStarred ? (
         <Tooltip title="unstar">
-          <Button
+          <IconButton
             size="small"
-            variant="text"
-            color="inherit"
-            sx={{
-              borderRadius: "10px",
-              borderColor: "lightgray",
-            }}
             onClick={() => {
               unstar({ variables: { repoId: repo.id } });
             }}
             disabled={unstarLoading}
           >
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <StarIcon
-                fontSize="inherit"
-                sx={{
-                  color: "orange",
-                }}
-              />
-              <Box>{repo.stargazers.length}</Box>
-            </Stack>
-          </Button>
+            <StarIcon
+              fontSize="inherit"
+              sx={{
+                color: "orange",
+              }}
+            />
+            {repo.stargazers.length}
+          </IconButton>
         </Tooltip>
       ) : (
         <Tooltip title="star">
-          <Button
+          <IconButton
             size="small"
-            color="inherit"
-            variant="text"
-            sx={{
-              borderRadius: "10px",
-              borderColor: "lightgray",
-            }}
             onClick={() => {
               star({ variables: { repoId: repo.id } });
             }}
             disabled={starLoading}
           >
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <StarBorderIcon
-                fontSize="inherit"
-                sx={{
-                  color: "black",
-                }}
-              />
-              <Box>{repo.stargazers.length}</Box>
-            </Stack>
-          </Button>
+            <StarBorderIcon fontSize="inherit" />
+            {repo.stargazers.length}
+          </IconButton>
         </Tooltip>
       )}
     </>
@@ -170,6 +152,7 @@ const KillRuntimeButton = ({ repo }) => {
       refetchQueries: ["ListAllRuntimes"],
     }
   );
+  const theme = useTheme();
 
   if (loading) return null;
   const info = data.listAllRuntimes.find(
@@ -177,6 +160,7 @@ const KillRuntimeButton = ({ repo }) => {
   );
   if (!info) return null;
   if (!info.lastActive) return null;
+
   return (
     <Box>
       {/* last active: {getUpTime(info.lastActive)} */}
@@ -186,6 +170,11 @@ const KillRuntimeButton = ({ repo }) => {
           <IconButton
             disabled={killing}
             size="small"
+            sx={{
+              "&:hover": {
+                color: theme.palette.error.main,
+              },
+            }}
             onClick={async () => {
               killRuntime({
                 variables: {
@@ -226,12 +215,18 @@ const DeleteRepoButton = ({ repo }) => {
       },
     }
   );
+  const theme = useTheme();
   return (
     <Box>
       <Tooltip title="Delete Repo">
         <IconButton
           disabled={loading}
           size="small"
+          sx={{
+            "&:hover": {
+              color: theme.palette.error.main,
+            },
+          }}
           onClick={() => {
             setOpen(true);
           }}
@@ -280,58 +275,50 @@ const RepoCard = ({ repo }) => {
   }, [counter]);
   return (
     <Card sx={{ minWidth: 275, maxWidth: 275 }}>
-      <CardHeader
-        avatar={
-          <Box>
-            {repo.userId !== me.id ? (
-              <Tooltip title="Shared with me">
-                <GroupsIcon fontSize="small" color="primary" />
-              </Tooltip>
-            ) : repo.public ? (
-              <Tooltip title="public">
-                <PublicIcon fontSize="small" color="success" />
-              </Tooltip>
-            ) : (
-              <Tooltip title="private">
-                <PublicOffIcon fontSize="small" color="error" />
-              </Tooltip>
-            )}
-          </Box>
-        }
-        action={
-          // TODO replace with a drop-down menu.
-          <IconButton aria-label="settings" disabled={true}>
-            <MoreVertIcon />
-          </IconButton>
-        }
-        title={
-          <Box>
+      <CardContent>
+        <Typography variant="body1" gutterBottom>
+          <Stack direction="row" display="flex">
             <Link
               component={ReactLink}
               to={`/repo/${repo.id}`}
-              sx={{ display: "inline" }}
+              sx={{
+                alignItems: "center",
+              }}
             >
-              <Stack direction="row">
+              <Stack direction="row" display="inline-flex">
                 <DescriptionOutlinedIcon
                   sx={{
                     marginRight: "5px",
                   }}
                 />
-                {repo.name || "Untitled"}
+                <Box component="span">{repo.name || "Untitled"}</Box>
               </Stack>
             </Link>
-          </Box>
-        }
-        subheader={
+            <Box ml="auto">
+              <StarButton repo={repo} />
+            </Box>
+          </Stack>
+        </Typography>
+        <Typography variant="subtitle2" color="gray">
           <Stack direction="row">
             Viewed{" "}
             {timeDifference(new Date(), new Date(parseInt(repo.accessedAt)))}
           </Stack>
-        }
-      />
-      {/* <CardContent></CardContent> */}
+        </Typography>
+      </CardContent>
       <CardActions disableSpacing>
-        <Star repo={repo} />
+        <Box>
+          {repo.userId !== me.id && (
+            <Tooltip title="Shared with me">
+              <GroupsIcon fontSize="small" color="primary" />
+            </Tooltip>
+          )}
+          {repo.public && (
+            <Tooltip title="public">
+              <PublicIcon fontSize="small" color="success" />
+            </Tooltip>
+          )}
+        </Box>
         <Box
           sx={{
             marginLeft: "auto",
