@@ -46,7 +46,12 @@ import { RepoContext } from "../../lib/store";
 import { NodeResizer, NodeResizeControl } from "reactflow";
 import "@reactflow/node-resizer/dist/style.css";
 import { ResizableBox } from "react-resizable";
-import { ConfirmDeleteButton, ResizeIcon, level2fontsize } from "./utils";
+import {
+  ConfirmDeleteButton,
+  Handles,
+  ResizeIcon,
+  level2fontsize,
+} from "./utils";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 
 function MyFloatingToolbar({ id }: { id: string }) {
@@ -315,30 +320,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
           opacity: showToolbar ? 1 : 0,
         }}
       >
-        <Handle
-          type="source"
-          position={Position.Top}
-          id="top"
-          isConnectable={isConnectable}
-        />
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          id="bottom"
-          isConnectable={isConnectable}
-        />
-        <Handle
-          type="source"
-          position={Position.Left}
-          id="left"
-          isConnectable={isConnectable}
-        />
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="right"
-          isConnectable={isConnectable}
-        />
+        <Handles pod={pod} xPos={xPos} yPos={yPos} />
       </Box>
       {/* The header of scope nodes. */}
       <Box

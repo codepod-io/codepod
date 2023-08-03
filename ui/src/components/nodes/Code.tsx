@@ -57,7 +57,7 @@ import { useApolloClient } from "@apollo/client";
 import { NodeResizeControl, NodeResizer } from "reactflow";
 
 import "@reactflow/node-resizer/dist/style.css";
-import { NewPodButtons, ResizeIcon, level2fontsize } from "./utils";
+import { Handles, level2fontsize } from "./utils";
 import { timeDifference } from "../../lib/utils";
 import { ButtonGroup } from "@mui/material";
 
@@ -478,7 +478,6 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
 export const CodeNode = memo<NodeProps>(function ({
   data,
   id,
-  isConnectable,
   selected,
   // note that xPos and yPos are the absolute position of the node
   xPos,
@@ -701,33 +700,8 @@ export const CodeNode = memo<NodeProps>(function ({
                 opacity: showToolbar ? 1 : 0,
               }}
             >
-              <Handle
-                type="source"
-                position={Position.Top}
-                id="top"
-                isConnectable={isConnectable}
-              />
-              <Handle
-                type="source"
-                position={Position.Bottom}
-                id="bottom"
-                isConnectable={isConnectable}
-              />
-              <Handle
-                type="source"
-                position={Position.Left}
-                id="left"
-                isConnectable={isConnectable}
-              />
-              <Handle
-                type="source"
-                position={Position.Right}
-                id="right"
-                isConnectable={isConnectable}
-              />
+              <Handles pod={pod} xPos={xPos} yPos={yPos} />
             </Box>
-
-            <NewPodButtons pod={pod} xPos={xPos} yPos={yPos} />
 
             {/* The header of code pods. */}
             <Box>

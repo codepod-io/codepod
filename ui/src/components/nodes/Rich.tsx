@@ -138,7 +138,7 @@ import { SlashExtension } from "./extensions/slash";
 import { SlashSuggestor } from "./extensions/useSlash";
 import { BlockHandleExtension } from "./extensions/blockHandle";
 
-import { ConfirmDeleteButton, NewPodButtons, level2fontsize } from "./utils";
+import { ConfirmDeleteButton, Handles, level2fontsize } from "./utils";
 import { RepoContext } from "../../lib/store";
 
 import "./remirror-size.css";
@@ -703,32 +703,9 @@ export const RichNode = memo<Props>(function ({
                 opacity: showToolbar ? 1 : 0,
               }}
             >
-              <Handle
-                type="source"
-                position={Position.Top}
-                id="top"
-                isConnectable={isConnectable}
-              />
-              <Handle
-                type="source"
-                position={Position.Bottom}
-                id="bottom"
-                isConnectable={isConnectable}
-              />
-              <Handle
-                type="source"
-                position={Position.Left}
-                id="left"
-                isConnectable={isConnectable}
-              />
-              <Handle
-                type="source"
-                position={Position.Right}
-                id="right"
-                isConnectable={isConnectable}
-              />
+              <Handles pod={pod} xPos={xPos} yPos={yPos} />
             </Box>
-            <NewPodButtons pod={pod} xPos={xPos} yPos={yPos} />
+
             <Box>
               {devMode && (
                 <Box
