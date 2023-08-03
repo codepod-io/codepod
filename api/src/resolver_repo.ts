@@ -41,13 +41,22 @@ async function ensurePodEditAccess({ id, userId }) {
   }
 }
 
-async function myRepos(_, __, { userId }) {
+async function getDashboardRepos(_, __, { userId }) {
   if (!userId) throw Error("Unauthenticated");
   const repos = await prisma.repo.findMany({
     where: {
-      owner: {
-        id: userId,
-      },
+      OR: [
+        {
+          owner: {
+            id: userId,
+          },
+        },
+        {
+          collaborators: {
+            some: { id: userId },
+          },
+        },
+      ],
     },
     include: {
       UserRepoData: {
@@ -58,44 +67,15 @@ async function myRepos(_, __, { userId }) {
       stargazers: true,
     },
   });
-  // Sort by last access time.
-  repos.sort((a, b) => {
-    if (a.UserRepoData.length > 0) {
-      if (b.UserRepoData.length > 0) {
-        return (
-          b.UserRepoData[0].accessedAt.valueOf() -
-          a.UserRepoData[0].accessedAt.valueOf()
-        );
-      }
-      return -1;
-    }
-    return a.updatedAt.valueOf() - b.updatedAt.valueOf();
-  });
-  // Re-use updatedAt field (this is actually the lastviewed field).
   return repos.map((repo) => {
     return {
       ...repo,
-      updatedAt:
+      accessedAt:
         repo.UserRepoData.length > 0
           ? repo.UserRepoData[0].accessedAt
           : repo.updatedAt,
     };
   });
-}
-
-async function myCollabRepos(_, __, { userId }) {
-  if (!userId) throw Error("Unauthenticated");
-  const repos = await prisma.repo.findMany({
-    where: {
-      collaborators: {
-        some: { id: userId },
-      },
-    },
-    include: {
-      stargazers: true,
-    },
-  });
-  return repos;
 }
 
 async function updateUserRepoData({ userId, repoId }) {
@@ -609,9 +589,8 @@ async function copyRepo(_, { repoId }, { userId }) {
 
 export default {
   Query: {
-    myRepos,
     repo,
-    myCollabRepos,
+    getDashboardRepos,
     getVisibility,
   },
   Mutation: {

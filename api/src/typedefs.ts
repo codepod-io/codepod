@@ -31,6 +31,7 @@ export const typeDefs = gql`
     public: Boolean
     createdAt: String
     updatedAt: String
+    accessedAt: String
   }
 
   type Edge {
@@ -105,11 +106,10 @@ export const typeDefs = gql`
     repos: [Repo]
     repo(id: String!): Repo
     pod(id: ID!): Pod
-    myRepos: [Repo]
+    getDashboardRepos: [Repo]
     activeSessions: [String]
     getVisibility(repoId: String!): Visibility
     listAllRuntimes: [RuntimeInfo]
-    myCollabRepos: [Repo]
     infoRuntime(sessionId: String!): RuntimeInfo
   }
 
