@@ -71,7 +71,7 @@ export async function doRemoteLoadRepo(client: ApolloClient<any>, id: string) {
       fetchPolicy: "no-cache",
     });
     // refetch queries
-    await client.refetchQueries({ include: ["GetRepos", "GetCollabRepos"] });
+    await client.refetchQueries({ include: ["GetDashboardRepos"] });
     // We need to do a deep copy here, because apollo client returned immutable objects.
     let pods = res.data.repo.pods.map((pod) => ({ ...pod }));
     let edges = res.data.repo.edges;
