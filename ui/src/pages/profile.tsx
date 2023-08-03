@@ -3,9 +3,16 @@ import Divider from "@mui/material/Divider";
 import Typography from "@mui/material/Typography";
 
 import Paper from "@mui/material/Paper";
-import { Container, Stack } from "@mui/material";
+import {
+  Button,
+  ClickAwayListener,
+  Container,
+  Popper,
+  Stack,
+} from "@mui/material";
 
 import useMe from "../lib/me";
+import React from "react";
 
 export default function Profile() {
   const { loading, me } = useMe();
@@ -35,6 +42,7 @@ export default function Profile() {
               </Box>
               <Box> Email: {me.email}</Box>
               <Box>CodePod version 0.4.6</Box>
+              <HandleButton />
             </Stack>
           </Paper>
           <Divider />
@@ -43,3 +51,48 @@ export default function Profile() {
     </Container>
   );
 }
+
+const HandleButton = ({}) => {
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(anchorEl ? null : event.currentTarget);
+  };
+  const open = Boolean(anchorEl);
+
+  const handler = React.useCallback((e) => {
+    console.log("keydown", e.key);
+    if (e.key === "Escape") {
+      setAnchorEl(null);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    document.addEventListener("keydown", handler);
+
+    return () => {
+      document.removeEventListener("keydown", handler);
+    };
+  }, []);
+  return (
+    <>
+      <Button onClick={handleClick}>Hello</Button>
+
+      <Popper open={open} anchorEl={anchorEl} placement={"right"}>
+        <ClickAwayListener
+          onClickAway={() => {
+            console.log("click away!");
+            setAnchorEl(null);
+          }}
+        >
+          <Stack
+            sx={{ border: 1, p: 1, bgcolor: "background.paper" }}
+            spacing={1}
+          >
+            <Button variant="contained">Code</Button>
+            <Button variant="contained">Rich</Button>
+          </Stack>
+        </ClickAwayListener>
+      </Popper>
+    </>
+  );
+};

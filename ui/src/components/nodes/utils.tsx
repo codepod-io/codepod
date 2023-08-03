@@ -4,6 +4,7 @@ import {
   Node,
   NodePositionChange,
   XYPosition,
+  Handle,
 } from "reactflow";
 
 import { useContext, useState } from "react";
@@ -17,11 +18,14 @@ import { useStore } from "zustand";
 import { RepoContext } from "../../lib/store";
 import {
   Box,
+  ClickAwayListener,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   IconButton,
+  Popper,
+  Stack,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import React from "react";
@@ -296,156 +300,126 @@ export function getHelperLines(
     }, defaultResult);
 }
 
-export function NewPodButtons({ pod, xPos, yPos }) {
+/**
+ * The 4 handles for connecting reactflow nodes, with pop-up buttons for adding
+ * new nodes.
+ */
+export const Handles = ({ xPos, yPos, pod }) => {
+  return (
+    <>
+      <MyHandle position={Position.Top} pod={pod} xPos={xPos} yPos={yPos} />
+      <MyHandle position={Position.Bottom} pod={pod} xPos={xPos} yPos={yPos} />
+      <MyHandle position={Position.Left} pod={pod} xPos={xPos} yPos={yPos} />
+      <MyHandle position={Position.Right} pod={pod} xPos={xPos} yPos={yPos} />
+    </>
+  );
+};
+
+/**
+ * The Wrapped Hanlde with pop-up buttons.
+ */
+const MyHandle = ({ position, pod, xPos, yPos }) => {
+  return (
+    <WrappedHandle position={position}>
+      <HandleButton position={position} pod={pod} xPos={xPos} yPos={yPos} />
+    </WrappedHandle>
+  );
+};
+
+const ClickAwayContext = React.createContext<() => void>(() => {});
+
+/**
+ * A react Handle wrapped with a popper and click away listener.
+ */
+const WrappedHandle = ({ position, children }) => {
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const handleClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAnchorEl(anchorEl ? null : event.currentTarget);
+  };
+  const open = Boolean(anchorEl);
+  const handler = React.useCallback((e) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setAnchorEl(null);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    document.addEventListener("keydown", handler);
+
+    return () => {
+      document.removeEventListener("keydown", handler);
+    };
+  }, []);
+  return (
+    <>
+      <Handle
+        id={position}
+        type="source"
+        position={position}
+        onClick={handleClick}
+      />
+
+      <Popper open={open} anchorEl={anchorEl} placement={position}>
+        <ClickAwayListener
+          onClickAway={() => {
+            setAnchorEl(null);
+          }}
+        >
+          <ClickAwayContext.Provider value={() => setAnchorEl(null)}>
+            {children}
+          </ClickAwayContext.Provider>
+        </ClickAwayListener>
+      </Popper>
+    </>
+  );
+};
+
+/**
+ * The two buttons.
+ */
+const HandleButton = ({ position, pod, xPos, yPos }) => {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const addNode = useStore(store, (state) => state.addNode);
+  const clickAway = useContext(ClickAwayContext);
+  switch (position) {
+    case Position.Top:
+      yPos = yPos - pod!.height! - 50;
+      break;
+    case Position.Bottom:
+      yPos = yPos + pod!.height! + 50;
+      break;
+    case Position.Left:
+      xPos = xPos - pod!.width! - 50;
+      break;
+    case Position.Right:
+      xPos = xPos + pod!.width! + 50;
+      break;
+  }
   return (
-    <>
-      {/* Bottom 1 */}
+    <Stack sx={{ border: 1, p: 1, bgcolor: "background.paper" }} spacing={1}>
       <Button
-        variant="outlined"
-        size="small"
-        sx={{
-          // place it at the BOTTOM of the pod, centered
-          position: "absolute",
-          bottom: "0px",
-          left: "25%",
-          transform: "translate(-50%, 100%)",
-          zIndex: 100,
-          whiteSpace: "nowrap",
-          opacity: 0,
-          "&:hover": {
-            opacity: 1,
-          },
-        }}
+        variant="contained"
         onClick={() => {
-          addNode("CODE", { x: xPos, y: yPos + pod!.height! + 50 }, pod.parent);
+          addNode("CODE", { x: xPos, y: yPos }, pod.parent);
+          clickAway();
         }}
       >
-        + <CodeIcon fontSize="small" />
+        Code
       </Button>
-
-      {/* Bottom 2 */}
       <Button
-        variant="outlined"
-        size="small"
-        sx={{
-          position: "absolute",
-          bottom: "0px",
-          left: "75%",
-          transform: "translate(-50%, 100%)",
-          zIndex: 100,
-          whiteSpace: "nowrap",
-          opacity: 0,
-          "&:hover": {
-            opacity: 1,
-          },
-        }}
+        variant="contained"
         onClick={() => {
-          addNode("RICH", { x: xPos, y: yPos + pod!.height! + 50 }, pod.parent);
+          addNode("RICH", { x: xPos, y: yPos }, pod.parent);
+          clickAway();
         }}
       >
-        + <NoteIcon fontSize="small" />
+        Rich
       </Button>
-      {/* Left 1 */}
-      <Button
-        variant="outlined"
-        size="small"
-        sx={{
-          // place it at the LEFT of the pod, centered
-          position: "absolute",
-          top: "25%",
-          left: "0px",
-          transform: "translate(-100%, -50%)",
-          zIndex: 100,
-          whiteSpace: "nowrap",
-          opacity: 0,
-          "&:hover": {
-            opacity: 1,
-          },
-        }}
-        onClick={() => {
-          addNode("CODE", { x: xPos - pod!.width! - 50, y: yPos }, pod.parent);
-        }}
-      >
-        + <CodeIcon fontSize="small" />
-      </Button>
-
-      {/* Left 2 */}
-      <Button
-        variant="outlined"
-        size="small"
-        sx={{
-          // place it at the LEFT of the pod, centered
-          position: "absolute",
-          top: "75%",
-          left: "0px",
-          transform: "translate(-100%, -50%)",
-          zIndex: 100,
-          whiteSpace: "nowrap",
-          opacity: 0,
-          "&:hover": {
-            opacity: 1,
-          },
-        }}
-        onClick={() => {
-          addNode("RICH", { x: xPos - pod!.width! - 50, y: yPos }, pod.parent);
-        }}
-      >
-        + <NoteIcon fontSize="small" />
-      </Button>
-
-      {/* Right 1 */}
-      <Button
-        variant="outlined"
-        size="small"
-        sx={{
-          // place at the RIGHT of the pod, centered
-          position: "absolute",
-          top: "25%",
-          right: "0px",
-          transform: "translate(100%, -50%)",
-          zIndex: 100,
-          whiteSpace: "nowrap",
-          opacity: 0,
-          "&:hover": {
-            opacity: 1,
-          },
-        }}
-        onClick={() => {
-          addNode("CODE", { x: xPos + pod!.width! + 50, y: yPos }, pod.parent);
-        }}
-      >
-        + <CodeIcon fontSize="small" />
-      </Button>
-
-      {/* Right 2 */}
-      <Button
-        variant="outlined"
-        size="small"
-        sx={{
-          // place at the RIGHT of the pod, centered
-          position: "absolute",
-          top: "75%",
-          right: "0px",
-          transform: "translate(100%, -50%)",
-          zIndex: 100,
-          whiteSpace: "nowrap",
-          opacity: 0,
-          "&:hover": {
-            opacity: 1,
-          },
-        }}
-        onClick={() => {
-          addNode("RICH", { x: xPos + pod!.width! + 50, y: yPos }, pod.parent);
-        }}
-      >
-        + <NoteIcon fontSize="small" />
-      </Button>
-    </>
+    </Stack>
   );
-}
+};
 
 export function level2fontsize(
   level: number,
