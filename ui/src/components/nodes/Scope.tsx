@@ -207,6 +207,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
 
   const devMode = useStore(store, (state) => state.devMode);
   const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
+  const cursorNode = useStore(store, (state) => state.cursorNode);
 
   useEffect(() => {
     if (!data.name) return;
@@ -218,6 +219,13 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
 
   const [showToolbar, setShowToolbar] = useState(false);
 
+  useEffect(() => {
+    if (cursorNode === id) {
+      setShowToolbar(true);
+    } else {
+      setShowToolbar(false);
+    }
+  }, [cursorNode]);
   const contextualZoom = useStore(store, (state) => state.contextualZoom);
   const contextualZoomParams = useStore(
     store,

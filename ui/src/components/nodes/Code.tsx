@@ -495,6 +495,7 @@ export const CodeNode = memo<NodeProps>(function ({
 
   const pod = getPod(id);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const cursorNode = useStore(store, (state) => state.cursorNode);
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const inputRef = useRef<HTMLInputElement>(null);
   const updateView = useStore(store, (state) => state.updateView);
@@ -509,6 +510,8 @@ export const CodeNode = memo<NodeProps>(function ({
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
 
   const prevLayout = useRef(layout);
+  const [showToolbar, setShowToolbar] = useState(false);
+
   useEffect(() => {
     if (autoRunLayout) {
       // Run auto-layout when the output box layout changes.
@@ -518,6 +521,14 @@ export const CodeNode = memo<NodeProps>(function ({
       }
     }
   }, [layout]);
+
+  useEffect(() => {
+    if (cursorNode === id) {
+      setShowToolbar(true);
+    } else {
+      setShowToolbar(false);
+    }
+  }, [cursorNode]);
 
   const onResizeStop = useCallback(
     (e, data) => {
@@ -551,7 +562,6 @@ export const CodeNode = memo<NodeProps>(function ({
     [id, nodesMap, setPodGeo, updateView, autoLayoutROOT]
   );
 
-  const [showToolbar, setShowToolbar] = useState(false);
   useEffect(() => {
     if (!data.name) return;
     setPodName({ id, name: data.name });

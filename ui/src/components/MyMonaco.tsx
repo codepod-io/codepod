@@ -401,8 +401,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const setPodBlur = useStore(store, (state) => state.setPodBlur);
-  const selectPod = useStore(store, (state) => state.selectPod);
-  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+  const setCursorNode = useStore(store, (state) => state.setCursorNode);
   const annotations = useStore(store, (state) => state.pods[id]?.annotations);
   const showAnnotations = useStore(store, (state) => state.showAnnotations);
   const scopedVars = useStore(store, (state) => state.scopedVars);
@@ -491,7 +490,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
         if (document.activeElement) {
           (document.activeElement as any).blur();
           setPodBlur(id);
-          selectPod(id, true);
+          setCursorNode(id);
           setFocusedEditor(undefined);
         }
       },

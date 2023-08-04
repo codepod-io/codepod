@@ -50,6 +50,7 @@ import FloatingEdge from "./nodes/FloatingEdge";
 import CustomConnectionLine from "./nodes/CustomConnectionLine";
 import HelperLines from "./HelperLines";
 import { getAbsPos, newNodeShapeConfig } from "../lib/store/canvasSlice";
+import { htmlToProsemirrorNode } from "remirror";
 
 const nodeTypes = { SCOPE: ScopeNode, CODE: CodeNode, RICH: RichNode };
 const edgeTypes = {
@@ -360,10 +361,9 @@ function isInputDOMNode(event: KeyboardEvent): boolean {
 function useJump() {
   const store = useContext(RepoContext)!;
 
-  const selectPod = useStore(store, (state) => state.selectPod);
-  const resetSelection = useStore(store, (state) => state.resetSelection);
+  const cursorNode = useStore(store, (state) => state.cursorNode);
+  const setCursorNode = useStore(store, (state) => state.setCursorNode);
 
-  const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
 
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
@@ -371,7 +371,9 @@ function useJump() {
 
   const reactflow = useReactFlow();
 
-  const selectedPods = useStore(store, (state) => state.selectedPods);
+  const wsRun = useStore(store, (state) => state.wsRun);
+  const wsRunScope = useStore(store, (state) => state.wsRunScope);
+
   const handleKeyDown = (event) => {
     // This is a hack to address the extra propagation of "Esc" pressed in Rich node, https://github.com/codepod-io/codepod/pull/398#issuecomment-1655153696
     if (isInputDOMNode(event)) return false;
@@ -382,13 +384,12 @@ function useJump() {
       case "ArrowLeft":
       case "ArrowRight":
       case "Enter":
-      case "Escape":
         break;
       default:
         return;
     }
-    // Get the selected node.
-    const id = selectedPods.values().next().value; // Assuming only one node can be selected at a time
+    // Get the current cursor node.
+    const id = cursorNode;
     if (!id) {
       console.log("No node selected");
       return; // Ignore arrow key presses if there's no selected node or if the user is typing in an input field
@@ -408,10 +409,40 @@ function useJump() {
 
     switch (event.key) {
       case "ArrowUp":
-        to = getBestNode(nodes, pod, "up");
+        if (event.shiftKey) {
+          if (pod.parentNode !== "ROOT") {
+            to = nodesMap.get(pod.parentNode!)!;
+          } else {
+            to = pod;
+          }
+        } else {
+          to = getBestNode(nodes, pod, "up");
+        }
         break;
       case "ArrowDown":
-        to = getBestNode(nodes, pod, "down");
+        if (event.shiftKey) {
+          if (pod.type === "SCOPE") {
+            to = pod;
+            let minDist = Math.sqrt(
+              (pod.height || 1) ** 2 + (pod.width || 1) ** 2
+            );
+            let childDist = 0;
+            for (const child of pods[id].children) {
+              childDist = Math.sqrt(
+                nodesMap.get(child.id)!.position.x ** 2 +
+                  nodesMap.get(child.id)!.position.y ** 2
+              );
+              if (minDist > childDist) {
+                minDist = childDist;
+                to = nodesMap.get(child.id)!;
+              }
+            }
+          } else {
+            to = pod;
+          }
+        } else {
+          to = getBestNode(nodes, pod, "down");
+        }
         break;
       case "ArrowLeft":
         to = getBestNode(nodes, pod, "left");
@@ -420,34 +451,22 @@ function useJump() {
         to = getBestNode(nodes, pod, "right");
         break;
       case "Enter":
-        // Hitting "Enter" on a Scope will go to its upper-left most child.
-        // Hitting "Enter" on a Code/Rich pod will go to "Edit" mode.
-        if (pod.type === "SCOPE") {
-          to = pod;
-          let minDist = Math.sqrt(
-            (pod.height || 1) ** 2 + (pod.width || 1) ** 2
-          );
-          let childDist = 0;
-          for (const child of pods[id].children) {
-            childDist = Math.sqrt(
-              nodesMap.get(child.id)!.position.x ** 2 +
-                nodesMap.get(child.id)!.position.y ** 2
-            );
-            if (minDist > childDist) {
-              minDist = childDist;
-              to = nodesMap.get(child.id)!;
-            }
+        if (pod.type == "CODE") {
+          if (event.shiftKey) {
+            // Hitting "SHIFT"+"Enter" will run the code pod
+            wsRun(id);
+          } else {
+            // Hitting "Enter" on a Code pod will go to "Edit" mode.
+            setFocusedEditor(id);
           }
-        } else {
+        } else if (pod.type === "SCOPE") {
+          if (event.shiftKey) {
+            // Hitting "SHIFT"+"Enter" on a Scope will run the scope.
+            wsRunScope(id);
+          }
+        } else if (pod.type === "RICH") {
+          // Hitting "Enter" on a Rich pod will go to "Edit" mode.
           setFocusedEditor(id);
-        }
-        break;
-      case "Escape":
-        // Hitting "Esc" in command mode will go to its parent
-        if (pod.parentNode !== "ROOT") {
-          to = nodesMap.get(pod.parentNode!)!;
-        } else {
-          to = pod;
         }
         break;
       default:
@@ -455,9 +474,8 @@ function useJump() {
     }
 
     if (to) {
-      // set the to node as selected
-      resetSelection();
-      selectPod(to.id, true);
+      setCursorNode(to.id);
+
       // move the viewport to the to node
       // get the absolute position of the to node
       const pos = getAbsPos(to, nodesMap);
@@ -476,7 +494,7 @@ function useJump() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [selectedPods]);
+  }, [cursorNode]);
 }
 
 function usePaste(reactFlowWrapper) {

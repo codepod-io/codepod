@@ -277,6 +277,9 @@ export interface CanvasSlice {
   focusedEditor: string | undefined;
   setFocusedEditor: (id?: string) => void;
 
+  cursorNode: string | undefined;
+  setCursorNode: (id?: string) => void;
+
   updateView: () => void;
   updateEdgeView: () => void;
 
@@ -405,6 +408,14 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     set(
       produce((state: MyState) => {
         state.focusedEditor = id;
+      })
+    ),
+
+  cursorNode: undefined,
+  setCursorNode: (id?: string) =>
+    set(
+      produce((state: MyState) => {
+        state.cursorNode = id;
       })
     ),
   /**
@@ -975,6 +986,9 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           throw new Error("Add node should not be handled here");
         case "select":
           get().selectPod(change.id, change.selected);
+          if (change.selected) {
+            get().setCursorNode(change.id);
+          }
           break;
         case "dimensions":
           {

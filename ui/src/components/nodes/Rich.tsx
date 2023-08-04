@@ -253,7 +253,7 @@ const MyStyledWrapper = styled("div")(
 function HotkeyControl({ id }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const selectPod = useStore(store, (state) => state.selectPod);
+  const setCursorNode = useStore(store, (state) => state.setCursorNode);
   const setPodBlur = useStore(store, (state) => state.setPodBlur);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
@@ -262,7 +262,7 @@ function HotkeyControl({ id }) {
     if (document.activeElement) {
       (document.activeElement as any).blur();
       setPodBlur(id);
-      selectPod(id, true);
+      setCursorNode(id);
       setFocusedEditor(undefined);
     }
     return true;
@@ -446,7 +446,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const reactFlowInstance = useReactFlow();
-  // const selected = useStore(store, (state) => state.pods[id]?.selected);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   return (
     <>
@@ -517,6 +516,7 @@ export const RichNode = memo<Props>(function ({
   const pod = getPod(id);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const width = useStore(store, (state) => state.pods[id]?.width);
+  const cursorNode = useStore(store, (state) => state.cursorNode);
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const devMode = useStore(store, (state) => state.devMode);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -578,6 +578,14 @@ export const RichNode = memo<Props>(function ({
     store,
     (state) => state.contextualZoomParams.threshold
   );
+
+  useEffect(() => {
+    if (cursorNode === id) {
+      setShowToolbar(true);
+    } else {
+      setShowToolbar(false);
+    }
+  }, [cursorNode]);
 
   if (!pod) return null;
 
