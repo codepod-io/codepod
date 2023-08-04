@@ -6,7 +6,7 @@ import { OAuth2Client } from "google-auth-library";
 import { customAlphabet } from "nanoid/async";
 import { lowercase, numbers } from "nanoid-dictionary";
 
-import prisma from './client'
+import prisma from "./client";
 
 const nanoid = customAlphabet(lowercase + numbers, 20);
 
@@ -34,48 +34,6 @@ async function signup(_, { email, password, firstname, lastname }) {
     },
   });
   return {
-    token: jwt.sign({ id: user.id }, process.env.JWT_SECRET as string, {
-      expiresIn: "30d",
-    }),
-  };
-}
-
-/**
- * Create a guest user and return a token. The guest user doesn't have a password or email.
- */
-async function signupGuest(_, {}) {
-  const id = await nanoid();
-  const user = await prisma.user.create({
-    data: {
-      id: id,
-      email: id + "@example.com",
-      firstname: "Guest",
-      lastname: "Guest",
-      isGuest: true,
-    },
-  });
-  return {
-    // CAUTION the front-end should save the user ID so that we can login again after expiration.
-    token: jwt.sign({ id: user.id }, process.env.JWT_SECRET as string, {
-      expiresIn: "30d",
-    }),
-  };
-}
-
-/**
- * Login a user with a guest ID and no password.
- */
-async function loginGuest(_, { id }) {
-  const user = await prisma.user.findFirst({
-    where: {
-      id,
-      isGuest: true,
-    },
-  });
-  if (!user) throw Error(`User does not exist`);
-  return {
-    id: user.id,
-    email: user.email,
     token: jwt.sign({ id: user.id }, process.env.JWT_SECRET as string, {
       expiresIn: "30d",
     }),
@@ -201,8 +159,6 @@ export default {
     loginWithGoogle,
     signup,
     updateUser,
-    signupGuest,
-    loginGuest,
     updateCodeiumAPIKey,
   },
 };

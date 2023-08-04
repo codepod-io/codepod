@@ -33,11 +33,7 @@ function useProvideAuth() {
 
   useEffect(() => {
     // load initial state from local storage
-    setAuthToken(
-      localStorage.getItem("token") ||
-        localStorage.getItem("guestToken") ||
-        null
-    );
+    setAuthToken(localStorage.getItem("token") || null);
   }, []);
 
   const getAuthHeaders = (): Record<string, string> => {
@@ -65,7 +61,7 @@ function useProvideAuth() {
     // HEBI CAUTION this must be removed. Otherwise, when getItem back, it is not null, but "null"
     // localStorage.setItem("token", null);
     localStorage.removeItem("token");
-    setAuthToken(localStorage.getItem("guestToken") || null);
+    setAuthToken(null);
   };
 
   const handleGoogle = async (response) => {
@@ -88,68 +84,6 @@ function useProvideAuth() {
       const token = result.data.loginWithGoogle.token;
       setAuthToken(token);
       localStorage.setItem("token", token);
-    }
-  };
-
-  let guestSigningUp = false;
-
-  const loginGuest = async () => {
-    console.log("Loginning as guest.");
-    // If there is a guest token, decode the guest ID from it, and login with the guest ID
-    let token = localStorage.getItem("guestToken");
-    if (token) {
-      console.log("Guest token found, logining in ..");
-      const { id } = jwt_decode(token) as { id: string };
-      // login a guest user with the guest ID
-      const client = createApolloClient();
-      const LoginGuestMutation = gql`
-        mutation LoginGuestMutation($id: String!) {
-          loginGuest(id: $id) {
-            token
-          }
-        }
-      `;
-      const result = await client.mutate({
-        mutation: LoginGuestMutation,
-        variables: { id },
-      });
-      if (result?.data?.loginGuest?.token) {
-        const token = result.data.loginGuest.token;
-        setAuthToken(token);
-        localStorage.setItem("guestToken", token);
-      }
-    } else {
-      // Signup a guest user
-      console.log("Guest token not found, signing up ..");
-      // set a 5 seconds timeout so that no duplicate guest users are created
-      if (guestSigningUp) {
-        console.log("Guest signing up, waiting ..");
-        return;
-      }
-      guestSigningUp = true;
-      setTimeout(() => {
-        guestSigningUp = false;
-      }, 5000);
-
-      // actually signup the user
-      const client = createApolloClient();
-      const SignupGuestMutation = gql`
-        mutation SignupGuestMutation {
-          signupGuest {
-            token
-          }
-        }
-      `;
-
-      const result = await client.mutate({
-        mutation: SignupGuestMutation,
-      });
-
-      if (result?.data?.signupGuest?.token) {
-        const token = result.data.signupGuest.token;
-        setAuthToken(token);
-        localStorage.setItem("guestToken", token);
-      }
     }
   };
 
@@ -231,17 +165,13 @@ function useProvideAuth() {
    * This is set immediately on refresh.
    */
   function hasToken() {
-    return (
-      localStorage.getItem("token") !== null ||
-      localStorage.getItem("guestToken") !== null
-    );
+    return localStorage.getItem("token") !== null;
   }
 
   return {
     createApolloClient,
     signIn,
     signOut,
-    loginGuest,
     handleGoogle,
     signUp,
     isSignedIn,

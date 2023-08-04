@@ -417,18 +417,48 @@ const RepoLists = () => {
   );
 };
 
-export default function Dashboard() {
-  const { me } = useMe();
-  const { hasToken, loginGuest, isSignedIn } = useAuth();
+function NoLogginErrorAlert() {
+  const nevigate = useNavigate();
+  const [seconds, setSeconds] = useState<number | null>(3);
 
   useEffect(() => {
-    if (!hasToken()) {
-      loginGuest();
+    if (seconds === 0) {
+      setSeconds(null);
+      nevigate("/login");
+      return;
     }
-  }, [hasToken]);
+    if (seconds === null) return;
 
+    const timer = setTimeout(() => {
+      setSeconds((prev) => prev! - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [nevigate, seconds]);
+
+  return (
+    <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
+      <Alert severity="error">
+        Please login first! Automatically jump to{" "}
+        <Link component={ReactLink} to="/login">
+          login
+        </Link>{" "}
+        page in {seconds} seconds.
+      </Alert>
+    </Box>
+  );
+}
+
+export default function Dashboard() {
+  const { loading, me } = useMe();
+  if (loading)
+    return (
+      <Box sx={{ maxWidth: "md", alignItems: "center", m: "auto" }}>
+        Loading ..
+      </Box>
+    );
   if (!me) {
-    return <Box>Loading user ..</Box>;
+    return <NoLogginErrorAlert />;
   }
   return (
     <Box sx={{ maxWidth: "md", alignItems: "center", m: "auto" }}>
@@ -443,26 +473,6 @@ export default function Dashboard() {
         Welcome, {me?.firstname}! Please open or create a repository to get
         started.
       </Box>
-      {!isSignedIn() && (
-        <Box sx={{ alignItems: "center", m: "auto" }}>
-          <Alert severity="warning">
-            Please note that you are a{" "}
-            <Box component="span" color="red">
-              Guest
-            </Box>{" "}
-            user. Please{" "}
-            <Link component={ReactLink} to="/login">
-              Login
-            </Link>{" "}
-            or
-            <Link component={ReactLink} to="/signup">
-              Signup
-            </Link>{" "}
-            to save your work.
-            <GoogleSignin />
-          </Alert>
-        </Box>
-      )}
       <RepoLists />
     </Box>
   );
