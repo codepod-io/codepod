@@ -336,6 +336,8 @@ const WrappedHandle = ({ position, children }) => {
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(anchorEl ? null : event.currentTarget);
   };
+  const store = useContext(RepoContext)!;
+  const moved = useStore(store, (state) => state.moved);
   const open = Boolean(anchorEl);
   const handler = React.useCallback((e) => {
     if (e.key === "Escape") {
@@ -351,6 +353,10 @@ const WrappedHandle = ({ position, children }) => {
       document.removeEventListener("keydown", handler);
     };
   }, []);
+  // Remove the popper when the Canvas is moved.
+  React.useEffect(() => {
+    setAnchorEl(null);
+  }, [moved]);
   return (
     <>
       <Handle
@@ -366,9 +372,12 @@ const WrappedHandle = ({ position, children }) => {
             setAnchorEl(null);
           }}
         >
-          <ClickAwayContext.Provider value={() => setAnchorEl(null)}>
-            {children}
-          </ClickAwayContext.Provider>
+          <Box>
+            {/* Must wrap the ClickAwayContext.Provider in this <Box> elem for the click away functionality to work. */}
+            <ClickAwayContext.Provider value={() => setAnchorEl(null)}>
+              {children}
+            </ClickAwayContext.Provider>
+          </Box>
         </ClickAwayListener>
       </Popper>
     </>
