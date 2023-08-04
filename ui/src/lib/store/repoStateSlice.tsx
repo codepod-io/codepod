@@ -305,7 +305,12 @@ export const createRepoStateSlice: StateCreator<
         state.provider = new WebsocketProvider(
           serverURL,
           state.repoId,
-          state.ydoc
+          state.ydoc,
+          {
+            params: {
+              token: localStorage.getItem("token") || "",
+            },
+          }
         );
         // max retry time: 10s
         state.provider.connect();
