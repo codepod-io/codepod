@@ -326,7 +326,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
           position: "absolute",
           border: "solid 1px #d6dee6",
           right: "25px",
-          top: "-45px",
+          top: "-60px",
           background: "white",
           zIndex: 250,
           justifyContent: "center",
