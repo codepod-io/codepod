@@ -447,13 +447,16 @@ function MyFloatingToolbar({ id }: { id: string }) {
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const reactFlowInstance = useReactFlow();
   const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const zoomLevel = useReactFlowStore((s) => s.transform[2]);
+  const iconFontSize = zoomLevel < 1 ? `${1.5 * (1 / zoomLevel)}rem` : `1.5rem`;
+
   return (
     <>
       <Box
         className="custom-drag-handle"
         sx={{
           cursor: "grab",
-          fontSize: "1.5rem",
+          fontSize: iconFontSize,
           padding: "8px",
           display: "inline-flex",
         }}
@@ -474,7 +477,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
         className="custom-drag-handle"
         sx={{
           cursor: "grab",
-          fontSize: "1.5rem",
+          fontSize: iconFontSize,
           padding: "8px",
           display: "inline-flex",
         }}

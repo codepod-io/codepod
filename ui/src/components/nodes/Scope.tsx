@@ -90,6 +90,10 @@ function MyFloatingToolbar({ id }: { id: string }) {
     [onCopy, cutBegin, id]
   );
   const autoLayout = useStore(store, (state) => state.autoLayout);
+
+  const zoomLevel = useReactFlowStore((s) => s.transform[2]);
+  const iconFontSize = zoomLevel < 1 ? `${1.5 * (1 / zoomLevel)}rem` : `1.5rem`;
+
   return (
     <Box
       sx={{
@@ -101,7 +105,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
         className="custom-drag-handle"
         sx={{
           cursor: "grab",
-          fontSize: "1.5rem",
+          fontSize: iconFontSize,
           padding: "8px",
           display: "inline-flex",
         }}
@@ -115,7 +119,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
               wsRunScope(id);
             }}
           >
-            <PlayCircleOutlineIcon fontSize="inherit" />
+            <PlayCircleOutlineIcon style={{ fontSize: iconFontSize }} />
           </IconButton>
         </Tooltip>
       )}
@@ -127,7 +131,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
               autoLayout(id);
             }}
           >
-            <ViewTimelineOutlinedIcon fontSize="inherit" />
+            <ViewTimelineOutlinedIcon style={{ fontSize: iconFontSize }} />
           </IconButton>
         </Tooltip>
       )}
@@ -138,7 +142,10 @@ function MyFloatingToolbar({ id }: { id: string }) {
       >
         <Tooltip title="Copy">
           <IconButton className="copy-button">
-            <ContentCopyIcon fontSize="inherit" className="copy-button" />
+            <ContentCopyIcon
+              style={{ fontSize: iconFontSize }}
+              className="copy-button"
+            />
           </IconButton>
         </Tooltip>
       </CopyToClipboard>
@@ -150,13 +157,17 @@ function MyFloatingToolbar({ id }: { id: string }) {
         >
           <Tooltip title="Cut">
             <IconButton>
-              <ContentCutIcon fontSize="inherit" />
+              <ContentCutIcon style={{ fontSize: iconFontSize }} />
             </IconButton>
           </Tooltip>
         </CopyToClipboard>
       )}
       {!isGuest && (
-        <Tooltip title="Delete" className="nodrag">
+        <Tooltip
+          style={{ fontSize: iconFontSize }}
+          title="Delete"
+          className="nodrag"
+        >
           <ConfirmDeleteButton
             handleConfirm={(e: any) => {
               // This does not work, will throw "Parent node
@@ -174,7 +185,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
         className="custom-drag-handle"
         sx={{
           cursor: "grab",
-          fontSize: "1.5rem",
+          fontSize: iconFontSize,
           padding: "8px",
           display: "inline-flex",
         }}
@@ -315,7 +326,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
           position: "absolute",
           border: "solid 1px #d6dee6",
           right: "25px",
-          top: "-45px",
+          top: "-60px",
           background: "white",
           zIndex: 250,
           justifyContent: "center",
