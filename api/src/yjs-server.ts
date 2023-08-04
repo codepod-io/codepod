@@ -91,7 +91,6 @@ async function startServer() {
         return;
       }
     }
-    // var token = url.parse(request.url, true).query.token;
     socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
     socket.destroy();
     return;
