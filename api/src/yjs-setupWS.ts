@@ -105,11 +105,39 @@ export const getYDoc = (docname, gc = true) =>
   });
 
 /**
+ * Support Read-only mode. Ref: https://discuss.yjs.dev/t/read-only-or-one-way-only-sync/135/4
+ */
+const readSyncMessage = (
+  decoder,
+  encoder,
+  doc,
+  transactionOrigin,
+  readOnly = false
+) => {
+  const messageType = decoding.readVarUint(decoder);
+  switch (messageType) {
+    case syncProtocol.messageYjsSyncStep1:
+      syncProtocol.readSyncStep1(decoder, encoder, doc);
+      break;
+    case syncProtocol.messageYjsSyncStep2:
+      if (!readOnly)
+        syncProtocol.readSyncStep2(decoder, doc, transactionOrigin);
+      break;
+    case syncProtocol.messageYjsUpdate:
+      if (!readOnly) syncProtocol.readUpdate(decoder, doc, transactionOrigin);
+      break;
+    default:
+      throw new Error("Unknown message type");
+  }
+  return messageType;
+};
+
+/**
  * @param {any} conn
  * @param {WSSharedDoc} doc
  * @param {Uint8Array} message
  */
-const messageListener = (conn, doc, message) => {
+const messageListener = (conn, doc, message, readOnly) => {
   try {
     const encoder = encoding.createEncoder();
     const decoder = decoding.createDecoder(message);
@@ -117,7 +145,7 @@ const messageListener = (conn, doc, message) => {
     switch (messageType) {
       case messageSync:
         encoding.writeVarUint(encoder, messageSync);
-        syncProtocol.readSyncMessage(decoder, encoder, doc, conn);
+        readSyncMessage(decoder, encoder, doc, conn, readOnly);
 
         // If the `encoder` only contains the type of reply message and no
         // message, there is no need to send the message. When `encoder` only
@@ -204,9 +232,10 @@ const pingTimeout = 30000;
 export const setupWSConnection = (
   conn,
   req,
-  { docName = req.url.slice(1).split("?")[0], gc = true } = {}
+  { docName = req.url.slice(1).split("?")[0], gc = true, readOnly = false } = {}
 ) => {
   conn.binaryType = "arraybuffer";
+  console.log(`setupWSConnection ${docName}, read-only=${readOnly}`);
   // get doc, initialize if it does not exist yet
   const doc = getYDoc(docName, gc);
   doc.conns.set(conn, new Set());
@@ -214,7 +243,7 @@ export const setupWSConnection = (
   conn.on(
     "message",
     /** @param {ArrayBuffer} message */ (message) =>
-      messageListener(conn, doc, new Uint8Array(message))
+      messageListener(conn, doc, new Uint8Array(message), readOnly)
   );
 
   // Check if connection is still alive
