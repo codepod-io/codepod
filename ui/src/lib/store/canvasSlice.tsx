@@ -558,31 +558,50 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         );
 
         let podRichContent = cell.cellType == "markdown" ? cell.cellSource : "";
-
-        let podResult = { count: cell.execution_count, text: "", image: "" };
-        let podStdOut = "";
+        let execution_count = cell.execution_count || 0;
+        let podResults: {
+          type?: string;
+          html?: string;
+          text?: string;
+          count: number;
+          image?: string;
+        }[] = [];
         let podError = { ename: "", evalue: "", stacktrace: [] };
-
         for (const cellOutput of cell.cellOutputs) {
-          if (
-            cellOutput["output_type"] === "stream" &&
-            cellOutput["name"] === "stdout"
-          ) {
-            podStdOut = cellOutput["text"].join("");
-          }
-          if (cellOutput["output_type"] === "display_data") {
-            podResult.text = cellOutput["data"]["text/plain"].join("");
-            podResult.image = cellOutput["data"]["image/png"];
-          }
-          if (cellOutput["output_type"] === "execute_result") {
-            podResult.text = cellOutput["data"]["text/plain"].join("");
-          }
-          if (cellOutput["output_type"] === "error") {
-            podError.ename = cellOutput["ename"];
-            podError.evalue = cellOutput["evalue"];
-            podError.stacktrace = cellOutput["traceback"];
+          switch (cellOutput["output_type"]) {
+            case "stream":
+              podResults.push({
+                // "stream_stdout" or "stream_stderr"
+                type: `${cellOutput["output_type"]}_${cellOutput["name"]}`,
+                count: execution_count,
+                text: cellOutput["text"].join(""),
+              });
+              break;
+            case "execute_result":
+              podResults.push({
+                type: cellOutput["output_type"],
+                count: execution_count,
+                text: cellOutput["data"]["text/plain"].join(""),
+              });
+              break;
+            case "display_data":
+              podResults.push({
+                type: cellOutput["output_type"],
+                count: execution_count,
+                text: cellOutput["data"]["text/plain"].join(""),
+                image: cellOutput["data"]["image/png"],
+              });
+              break;
+            case "error":
+              podError.ename = cellOutput["ename"];
+              podError.evalue = cellOutput["evalue"];
+              podError.stacktrace = cellOutput["traceback"];
+              break;
+            default:
+              break;
           }
         }
+        console.log(podResults);
         // move the created node to scope and configure the necessary node attributes
         const posInsideScope = getNodePositionInsideScope(
           node,
@@ -624,8 +643,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           height: node.height!,
           content: podContent,
           richContent: podRichContent,
-          stdout: podStdOut === "" ? undefined : podStdOut,
-          result: podResult.text === "" ? undefined : podResult,
+          exec_count: execution_count,
+          result: podResults ? podResults : undefined,
           error: podError.ename === "" ? undefined : podError,
           // For my local update, set dirty to true to push to DB.
           dirty: true,
