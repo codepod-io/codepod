@@ -366,7 +366,12 @@ const WrappedHandle = ({ position, children }) => {
         onClick={handleClick}
       />
 
-      <Popper open={open} anchorEl={anchorEl} placement={position}>
+      <Popper
+        open={open}
+        anchorEl={anchorEl}
+        placement={position}
+        disablePortal={true}
+      >
         <ClickAwayListener
           onClickAway={() => {
             setAnchorEl(null);
