@@ -477,7 +477,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
   clearResults: (id) => {
     set(
       produce((state) => {
-        state.pods[id].result = null;
+        state.pods[id].result = [];
         state.pods[id].stdout = "";
         state.pods[id].error = null;
         state.pods[id].dirty = true;
@@ -488,7 +488,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
     set(
       produce((state) => {
         Object.keys(state.pods).forEach((id) => {
-          state.pods[id].result = null;
+          state.pods[id].result = [];
           state.pods[id].stdout = "";
           state.pods[id].error = null;
           state.pods[id].dirty = true;
@@ -617,22 +617,48 @@ function onMessage(set, get: () => MyState) {
           get().setPodStdout({ id: podId, stdout });
         }
         break;
+      case "stream":
+        {
+          let { podId, content, count } = payload;
+          get().setPodResult({
+            id: podId,
+            type,
+            content,
+            count,
+          });
+        }
+        break;
       case "execute_result":
         {
           let { podId, content, count } = payload;
-          get().setPodResult({ id: podId, content, count });
+          get().setPodResult({
+            id: podId,
+            type,
+            content,
+            count,
+          });
         }
         break;
       case "display_data":
         {
           let { podId, content, count } = payload;
-          get().setPodDisplayData({ id: podId, content, count });
+          get().setPodResult({
+            id: podId,
+            type,
+            content,
+            count,
+          });
         }
         break;
       case "execute_reply":
         {
           let { podId, result, count } = payload;
-          get().setPodExecuteReply({ id: podId, result, count });
+          get().setPodResult({
+            id: podId,
+            type,
+            content: result,
+            count,
+          });
           set({ runningId: null });
           // Continue to run the chain if there is any.
           get().wsRunNext();
@@ -644,18 +670,11 @@ function onMessage(set, get: () => MyState) {
           get().setPodError({ id: podId, ename, evalue, stacktrace });
         }
         break;
-      case "stream":
-        {
-          let { podId, content } = payload;
-          get().setPodStream({ id: podId, content });
-        }
-        break;
       case "status":
         {
           const { lang, status, id } = payload;
           get().setPodStatus({ id, lang, status });
         }
-
         break;
       case "interrupt_reply":
         // console.log("got interrupt_reply", payload);

@@ -19,6 +19,9 @@ let wire: ZmqWire;
 
 let socket;
 
+// FIXME Aussming setSocket() called per kernel session
+let session_exec_count = 0;
+
 function ensureZmqConnected() {
   if (!wire) {
     // estabilish a ZMQ connection
@@ -52,7 +55,11 @@ function setSocket(_socket) {
         handleIOPub_status({ msgs, socket, lang: "python" });
         break;
       case "execute_result":
-        handleIOPub_execute_result({ msgs, socket });
+        handleIOPub_execute_result({
+          msgs,
+          socket,
+          exec_count: session_exec_count + 1,
+        });
         break;
       case "stdout":
         handleIOPub_stdout({ msgs, socket });
@@ -61,10 +68,18 @@ function setSocket(_socket) {
         handleIOPub_error({ msgs, socket });
         break;
       case "stream":
-        handleIOPub_stream({ msgs, socket });
+        handleIOPub_stream({
+          msgs,
+          socket,
+          exec_count: session_exec_count + 1,
+        });
         break;
       case "display_data":
-        handleIOPub_display_data({ msgs, socket });
+        handleIOPub_display_data({
+          msgs,
+          socket,
+          exec_count: session_exec_count + 1,
+        });
         break;
       default:
         console.log(
@@ -86,6 +101,7 @@ function setSocket(_socket) {
       case "execute_reply":
         {
           let [podId, name] = msgs.parent_header.msg_id.split("#");
+          session_exec_count = msgs.content.execution_count;
           let payload = {
             podId,
             name,
