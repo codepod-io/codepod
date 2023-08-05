@@ -601,7 +601,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
               break;
           }
         }
-        console.log(podResults);
         // move the created node to scope and configure the necessary node attributes
         const posInsideScope = getNodePositionInsideScope(
           node,

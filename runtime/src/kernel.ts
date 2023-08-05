@@ -19,7 +19,7 @@ let wire: ZmqWire;
 
 let socket;
 
-// FIXME Aussming setSocket() called per kernel session
+// FIXME Assuming setSocket() called per kernel session
 let session_exec_count = 0;
 
 function ensureZmqConnected() {
