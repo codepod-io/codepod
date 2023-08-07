@@ -332,6 +332,8 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                         key={combinedKey}
                         sx={{
                           fontSize: "0.8em",
+                          margin: 0,
+                          padding: 0,
                           borderTop: "1px solid rgb(214, 222, 230)",
                         }}
                       >
@@ -345,7 +347,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                           component="pre"
                           whiteSpace="pre-wrap"
                           key={combinedKey}
-                          sx={{ fontSize: "0.8em" }}
+                          sx={{ fontSize: "0.8em", margin: 0, padding: 0 }}
                         >
                           {res.text}
                         </Box>
