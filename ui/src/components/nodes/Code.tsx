@@ -84,10 +84,11 @@ function Timer({ lastExecutedAt }) {
 
 export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
   const store = useContext(RepoContext)!;
-  const result = useStore(store, (state) => state.pods[id]?.result);
+  const results = useStore(store, (state) => state.pods[id]?.result);
   const error = useStore(store, (state) => state.pods[id]?.error);
   const stdout = useStore(store, (state) => state.pods[id]?.stdout);
   const running = useStore(store, (state) => state.pods[id]?.running || false);
+  const exec_count = useStore(store, (state) => state.pods[id]?.exec_count);
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
 
@@ -118,6 +119,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
   const [resultScroll, setResultScroll] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const clearResults = useStore(store, (state) => state.clearResults);
+  const result = results ? results[0] : undefined;
   if (!hasResult) return <></>;
   return (
     <Box
@@ -197,9 +199,6 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
               )}
             </>
           )}
-          {result.image && (
-            <img src={`data:image/png;base64,${result.image}`} alt="output" />
-          )}
         </Box>
       )}
 
@@ -211,64 +210,62 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
           maxHeight="1000px"
           border="1px"
         >
-          {/* FIXME result?.count is not correct, always 0 or 1. */}
-          {(stdout || (result?.text && result?.count > 0) || error) &&
-            showMenu && (
-              <ButtonGroup
+          {(stdout || exec_count || error) && showMenu && (
+            <ButtonGroup
+              sx={{
+                // border: '1px solid #757ce8',
+                fontSize: "0.8em",
+                backgroundColor: "white",
+                zIndex: 201,
+                position: "absolute",
+                top: "10px",
+                right: "25px",
+                // "& .MuiButton-root": {
+                //   fontSize: ".9em",
+                //   paddingTop: 0,
+                //   paddingBottom: 0,
+                // },
+              }}
+              variant="contained"
+              size="small"
+              aria-label="outlined primary button group"
+              // orientation="vertical"
+            >
+              <Box
                 sx={{
-                  // border: '1px solid #757ce8',
-                  fontSize: "0.8em",
-                  backgroundColor: "white",
-                  zIndex: 201,
-                  position: "absolute",
-                  top: "10px",
-                  right: "25px",
-                  // "& .MuiButton-root": {
-                  //   fontSize: ".9em",
-                  //   paddingTop: 0,
-                  //   paddingBottom: 0,
-                  // },
+                  color: "primary.main",
+                  fontWeight: "bold",
+                  display: "flex",
+                  padding: "5px 5px",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
-                variant="contained"
-                size="small"
-                aria-label="outlined primary button group"
-                // orientation="vertical"
               >
-                <Box
-                  sx={{
-                    color: "primary.main",
-                    fontWeight: "bold",
-                    display: "flex",
-                    padding: "5px 5px",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  Output options:
-                </Box>
-                <Button
-                  onClick={() => {
-                    setResultScroll(!resultScroll);
-                  }}
-                >
-                  {resultScroll ? "Unfocus" : "Focus"}
-                </Button>
-                <Button
-                  onClick={() => {
-                    setShowOutput(!showOutput);
-                  }}
-                >
-                  Hide
-                </Button>
-                <Button
-                  onClick={() => {
-                    clearResults(id);
-                  }}
-                >
-                  Clear
-                </Button>
-              </ButtonGroup>
-            )}
+                Output options:
+              </Box>
+              <Button
+                onClick={() => {
+                  setResultScroll(!resultScroll);
+                }}
+              >
+                {resultScroll ? "Unfocus" : "Focus"}
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowOutput(!showOutput);
+                }}
+              >
+                Hide
+              </Button>
+              <Button
+                onClick={() => {
+                  clearResults(id);
+                }}
+              >
+                Clear
+              </Button>
+            </ButtonGroup>
+          )}
 
           {stdout && (
             <Box
@@ -278,19 +275,86 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
               <Ansi>{stdout}</Ansi>
             </Box>
           )}
-          {result?.text && result?.count > 0 && (
+          {results && results.length > 0 && (
             <Box
               sx={{
                 display: "flex",
                 fontSize: "0.8em",
-                flexDirection: "row",
-                alignItems: "center",
+                flexDirection: "column",
+                alignItems: "left",
                 borderTop: "1px solid rgb(214, 222, 230)",
               }}
             >
-              <Box component="pre" whiteSpace="pre-wrap">
-                {result.text}
-              </Box>
+              {results.map((res, i) => {
+                const combinedKey = `${res.type}-${i}`;
+                switch (res.type) {
+                  case "stream_stdout":
+                    return (
+                      <Box
+                        component="pre"
+                        whiteSpace="pre-wrap"
+                        key={combinedKey}
+                        sx={{ fontSize: "0.8em", margin: 0, padding: 0 }}
+                      >
+                        <Ansi>{res.text}</Ansi>
+                      </Box>
+                    );
+                  case "stream_stderr":
+                    return (
+                      <Box
+                        component="pre"
+                        whiteSpace="pre-wrap"
+                        key={combinedKey}
+                        sx={{ fontSize: "0.8em", margin: 0, padding: 0 }}
+                      >
+                        <Ansi>{res.text}</Ansi>
+                      </Box>
+                    );
+                  case "display_data":
+                    return (
+                      <Box
+                        component="pre"
+                        whiteSpace="pre-wrap"
+                        key={combinedKey}
+                      >
+                        {res.text}
+                        <img
+                          src={`data:image/png;base64,${res.image}`}
+                          alt="output"
+                        />
+                      </Box>
+                    );
+                  case "execute_result":
+                    return (
+                      <Box
+                        component="pre"
+                        whiteSpace="pre-wrap"
+                        key={combinedKey}
+                        sx={{
+                          fontSize: "0.8em",
+                          margin: 0,
+                          padding: 0,
+                          borderTop: "1px solid rgb(214, 222, 230)",
+                        }}
+                      >
+                        {res.text}
+                      </Box>
+                    );
+                  case "execute_reply":
+                    if (i == 0) {
+                      return (
+                        <Box
+                          component="pre"
+                          whiteSpace="pre-wrap"
+                          key={combinedKey}
+                          sx={{ fontSize: "0.8em", margin: 0, padding: 0 }}
+                        >
+                          {res.text}
+                        </Box>
+                      );
+                    }
+                }
+              })}
             </Box>
           )}
           {error && <Box color="red">{error?.evalue}</Box>}
@@ -507,7 +571,7 @@ export const CodeNode = memo<NodeProps>(function ({
   const updateView = useStore(store, (state) => state.updateView);
   const exec_count = useStore(
     store,
-    (state) => state.pods[id]?.result?.count || " "
+    (state) => state.pods[id]?.exec_count || " "
   );
   const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
 

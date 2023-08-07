@@ -52,7 +52,10 @@ function setSocket(_socket) {
         handleIOPub_status({ msgs, socket, lang: "python" });
         break;
       case "execute_result":
-        handleIOPub_execute_result({ msgs, socket });
+        handleIOPub_execute_result({
+          msgs,
+          socket,
+        });
         break;
       case "stdout":
         handleIOPub_stdout({ msgs, socket });
@@ -61,10 +64,16 @@ function setSocket(_socket) {
         handleIOPub_error({ msgs, socket });
         break;
       case "stream":
-        handleIOPub_stream({ msgs, socket });
+        handleIOPub_stream({
+          msgs,
+          socket,
+        });
         break;
       case "display_data":
-        handleIOPub_display_data({ msgs, socket });
+        handleIOPub_display_data({
+          msgs,
+          socket,
+        });
         break;
       default:
         console.log(
