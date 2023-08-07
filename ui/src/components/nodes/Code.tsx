@@ -286,13 +286,25 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
               }}
             >
               {results.map((res, i) => {
+                const combinedKey = `${res.type}-${i}`;
                 switch (res.type) {
                   case "stream_stdout":
                     return (
                       <Box
                         component="pre"
                         whiteSpace="pre-wrap"
-                        key={i + 1}
+                        key={combinedKey}
+                        sx={{ fontSize: "0.8em" }}
+                      >
+                        <Ansi>{res.text}</Ansi>
+                      </Box>
+                    );
+                  case "stream_stderr":
+                    return (
+                      <Box
+                        component="pre"
+                        whiteSpace="pre-wrap"
+                        key={combinedKey}
                         sx={{ fontSize: "0.8em" }}
                       >
                         <Ansi>{res.text}</Ansi>
@@ -300,7 +312,11 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                     );
                   case "display_data":
                     return (
-                      <Box component="pre" whiteSpace="pre-wrap" key={i + 1}>
+                      <Box
+                        component="pre"
+                        whiteSpace="pre-wrap"
+                        key={combinedKey}
+                      >
                         {res.text}
                         <img
                           src={`data:image/png;base64,${res.image}`}
@@ -313,8 +329,11 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                       <Box
                         component="pre"
                         whiteSpace="pre-wrap"
-                        key={i + 1}
-                        sx={{ fontSize: "0.8em" }}
+                        key={combinedKey}
+                        sx={{
+                          fontSize: "0.8em",
+                          borderTop: "1px solid rgb(214, 222, 230)",
+                        }}
                       >
                         {res.text}
                       </Box>
@@ -325,7 +344,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                         <Box
                           component="pre"
                           whiteSpace="pre-wrap"
-                          key={i + 1}
+                          key={combinedKey}
                           sx={{ fontSize: "0.8em" }}
                         >
                           {res.text}

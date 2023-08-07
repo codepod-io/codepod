@@ -619,12 +619,12 @@ function onMessage(set, get: () => MyState) {
         break;
       case "stream":
         {
-          let { podId, content, count } = payload;
+          let { podId, content } = payload;
           get().setPodResult({
             id: podId,
             type,
             content,
-            count,
+            count: null,
           });
         }
         break;
@@ -641,12 +641,12 @@ function onMessage(set, get: () => MyState) {
         break;
       case "display_data":
         {
-          let { podId, content, count } = payload;
+          let { podId, content } = payload;
           get().setPodResult({
             id: podId,
             type,
             content,
-            count,
+            count: null,
           });
         }
         break;

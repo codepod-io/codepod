@@ -31,10 +31,10 @@ export type Pod = {
     type?: string;
     html?: string;
     text?: string;
-    count: number;
     image?: string;
   }[];
   exec_count?: number;
+  last_exec_end?: boolean;
   status?: string;
   stdout?: string;
   stderr?: string;

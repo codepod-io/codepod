@@ -558,12 +558,11 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         );
 
         let podRichContent = cell.cellType == "markdown" ? cell.cellSource : "";
-        let execution_count = cell.execution_count || 0;
+        let execution_count = cell.execution_count || null;
         let podResults: {
           type?: string;
           html?: string;
           text?: string;
-          count: number;
           image?: string;
         }[] = [];
         let podError = { ename: "", evalue: "", stacktrace: [] };
@@ -573,21 +572,18 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
               podResults.push({
                 // "stream_stdout" or "stream_stderr"
                 type: `${cellOutput["output_type"]}_${cellOutput["name"]}`,
-                count: execution_count,
                 text: cellOutput["text"].join(""),
               });
               break;
             case "execute_result":
               podResults.push({
                 type: cellOutput["output_type"],
-                count: execution_count,
                 text: cellOutput["data"]["text/plain"].join(""),
               });
               break;
             case "display_data":
               podResults.push({
                 type: cellOutput["output_type"],
-                count: execution_count,
                 text: cellOutput["data"]["text/plain"].join(""),
                 image: cellOutput["data"]["image/png"],
               });

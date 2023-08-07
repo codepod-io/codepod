@@ -281,7 +281,7 @@ export function handleIOPub_status({ msgs, socket, lang }) {
   );
 }
 
-export function handleIOPub_display_data({ msgs, socket, exec_count }) {
+export function handleIOPub_display_data({ msgs, socket }) {
   console.log("emitting display data ..");
   let [podId, name] = msgs.parent_header.msg_id.split("#");
   let payload = {
@@ -294,13 +294,11 @@ export function handleIOPub_display_data({ msgs, socket, exec_count }) {
     //   transient: ...
     // }
     content: msgs.content,
-    // There's no exec_count in display_data, thus we pass in the session exec_count
-    count: exec_count,
   };
   socket.send(JSON.stringify({ type: "display_data", payload }));
 }
 
-export function handleIOPub_execute_result({ msgs, socket, exec_count }) {
+export function handleIOPub_execute_result({ msgs, socket }) {
   console.log("emitting execute_result ..");
   let [podId, name] = msgs.parent_header.msg_id.split("#");
   let payload = {
@@ -309,7 +307,7 @@ export function handleIOPub_execute_result({ msgs, socket, exec_count }) {
     // result: msgs.content.data["text/plain"],
     // This might contain text/plain, or text/html that contains image
     content: msgs.content,
-    count: exec_count,
+    count: msgs.content.execution_count,
   };
   if (name) {
     console.log("emitting IO result");
@@ -356,7 +354,7 @@ export function handleIOPub_error({ msgs, socket }) {
   }
 }
 
-export function handleIOPub_stream({ msgs, socket, exec_count }) {
+export function handleIOPub_stream({ msgs, socket }) {
   if (!msgs.parent_header.msg_id) {
     console.log("No msg_id, skipped");
     console.log(msgs.parent_header);
@@ -376,7 +374,6 @@ export function handleIOPub_stream({ msgs, socket, exec_count }) {
           // name: stdout or stderr
           // text:
           content: msgs.content,
-          count: exec_count,
         },
       })
     );
@@ -389,7 +386,6 @@ export function handleIOPub_stream({ msgs, socket, exec_count }) {
           payload: {
             podId,
             content: msgs.content,
-            count: exec_count,
           },
         })
       );
@@ -402,7 +398,6 @@ export function handleIOPub_stream({ msgs, socket, exec_count }) {
           payload: {
             podId,
             content: msgs.content,
-            count: exec_count,
           },
         })
       );

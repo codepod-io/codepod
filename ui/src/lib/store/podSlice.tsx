@@ -222,9 +222,9 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
     if (get().pods[id]) {
       set(
         produce((state) => {
-          if (state.pods[id].exec_count != count) {
+          if (state.pods[id].last_exec_end) {
             state.pods[id].result = [];
-            state.pods[id].exec_count = count;
+            state.pods[id].last_exec_end = false;
           }
           switch (type) {
             case "display_data":
@@ -233,7 +233,6 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
                 type,
                 text: content.data["text/plain"],
                 image: content.data["image/png"],
-                count: count,
               });
               break;
             case "execute_result":
@@ -250,7 +249,6 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
                 // content.name : "stdout" or "stderr"
                 type: `${type}_${content.name}`,
                 text: content.text,
-                count: count,
               });
               break;
             case "execute_reply":
@@ -262,6 +260,7 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
                 count: count,
               });
               state.pods[id].exec_count = count;
+              state.pods[id].last_exec_end = true;
               break;
             default:
               break;

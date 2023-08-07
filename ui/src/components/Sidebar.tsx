@@ -969,7 +969,7 @@ function ExportJupyterNB() {
                       .split(/\r?\n/)
                       .map((line) => line + "\n") || [""],
                   },
-                  execution_count: result.count,
+                  execution_count: pod.exec_count,
                 });
                 break;
               case "display_data":
