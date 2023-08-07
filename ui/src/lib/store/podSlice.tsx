@@ -240,7 +240,6 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
               state.pods[id].result.push({
                 type,
                 text: content.data["text/plain"],
-                count: count,
               });
               break;
             case "stream":
@@ -257,7 +256,6 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
               state.pods[id].result.push({
                 type,
                 text: content,
-                count: count,
               });
               state.pods[id].exec_count = count;
               state.pods[id].last_exec_end = true;
