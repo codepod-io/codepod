@@ -929,12 +929,12 @@ function CanvasImpl() {
             const parentScope = node.parentNode ? node.parentNode : "ROOT";
             if (selectedPods.size > 0) {
               moveIntoScope(Array.from(selectedPods), toScope);
-            }
-            // update view manually to remove the drag highlight.
-            updateView();
-            // run auto layout on drag stop
-            if (autoRunLayout) {
-              autoLayoutROOT();
+              // update view manually to remove the drag highlight.
+              updateView();
+              // run auto layout on drag stop
+              if (autoRunLayout) {
+                autoLayoutROOT();
+              }
             }
           }}
           onNodeDrag={(event, node) => {
