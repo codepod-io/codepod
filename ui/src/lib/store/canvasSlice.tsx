@@ -326,7 +326,7 @@ export interface CanvasSlice {
 
   adjustLevel: () => void;
   getScopeAtPos: ({ x, y }: XYPosition, exclude: string) => Node | undefined;
-  moveIntoScope: (nodeId: string, scopeId: string) => void;
+  moveIntoScope: (nodeIds: string[], scopeId: string) => void;
   tempUpdateView: ({ x, y }: XYPosition) => void;
 
   helperLineHorizontal: number | undefined;
@@ -485,7 +485,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     });
     if (parent !== "ROOT") {
       // we don't assign its parent when created, because we have to adjust its position to make it inside its parent.
-      get().moveIntoScope(node.id, parent);
+      get().moveIntoScope([node.id], parent);
     } else {
       // moveIntoScope will build the node2children map, but we need to build it here for the ROOT nodes.
       get().buildNode2Children();
@@ -771,7 +771,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         nodesMap
       );
       if (scope && scope.id !== id) {
-        get().moveIntoScope(id, scope.id);
+        get().moveIntoScope([id], scope.id);
       }
     });
   },
@@ -856,67 +856,74 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       }
     });
   },
-  moveIntoScope: (nodeId: string, scopeId: string) => {
+  moveIntoScope: (nodeIds: string[], scopeId: string) => {
     // move a node into a scope.
     // 1. update the node's parentNode & position
     let nodesMap = get().ydoc.getMap<Node>("pods");
-    let node = nodesMap.get(nodeId);
-    if (!node) {
-      console.warn("Node not found", node);
-      return;
-    }
-    if (
-      node.parentNode === scopeId ||
-      (scopeId === "ROOT" && node.parentNode === undefined)
-    ) {
-      console.warn("Node already in scope", node);
-      return;
-    }
-    console.log(`Moving ${nodeId} into scope ${scopeId}`);
-    let fromLevel = node?.data.level;
-    let toLevel: number;
-    let position: XYPosition;
-    if (scopeId === "ROOT") {
-      toLevel = 0;
-      position = getAbsPos(node, nodesMap);
-    } else {
-      let scope = nodesMap.get(scopeId);
-      if (!node || !scope) {
-        console.warn("Scope not found", scope);
+    for (const nodeId of nodeIds) {
+      let node = nodesMap.get(nodeId);
+      if (!node) {
+        console.warn("Node not found", node);
         return;
       }
-      toLevel = scope.data.level + 1;
-      // FIXME: since richNode and codeNode doesn't have height when it's created, we have to pass its height manually in case crash.
-      const nodeHeight = get().getPod(nodeId)?.height || 0;
-      position = getNodePositionInsideScope(node, scope, nodesMap, nodeHeight);
+      if (
+        node.parentNode === scopeId ||
+        (scopeId === "ROOT" && node.parentNode === undefined)
+      ) {
+        console.warn("Node already in scope", node);
+        return;
+      }
+      console.log(`Moving ${nodeId} into scope ${scopeId}`);
+      let fromLevel = node?.data.level;
+      let toLevel: number;
+      let position: XYPosition;
+      if (scopeId === "ROOT") {
+        toLevel = 0;
+        position = getAbsPos(node, nodesMap);
+      } else {
+        let scope = nodesMap.get(scopeId);
+        if (!node || !scope) {
+          console.warn("Scope not found", scope);
+          return;
+        }
+        toLevel = scope.data.level + 1;
+        // FIXME: since richNode and codeNode doesn't have height when it's created, we have to pass its height manually in case crash.
+        const nodeHeight = get().getPod(nodeId)?.height || 0;
+        position = getNodePositionInsideScope(
+          node,
+          scope,
+          nodesMap,
+          nodeHeight
+        );
+      }
+      // need to adjust the node width according to the from and to scopes
+      const fromFontSize = level2fontsize(
+        fromLevel,
+        get().contextualZoomParams,
+        get().contextualZoom
+      );
+      const toFontSize = level2fontsize(
+        toLevel,
+        get().contextualZoomParams,
+        get().contextualZoom
+      );
+      const newWidth = node.width! * (toFontSize / fromFontSize);
+      // create the new node
+      let newNode: Node = {
+        ...node,
+        position,
+        parentNode: scopeId === "ROOT" ? undefined : scopeId,
+        width: newWidth,
+        data: {
+          ...node.data,
+          level: toLevel,
+        },
+      };
+      // update peer
+      nodesMap.set(node.id, newNode);
+      // update zustand & db
+      get().setPodGeo(node.id, { parent: scopeId, ...position }, true);
     }
-    // need to adjust the node width according to the from and to scopes
-    const fromFontSize = level2fontsize(
-      fromLevel,
-      get().contextualZoomParams,
-      get().contextualZoom
-    );
-    const toFontSize = level2fontsize(
-      toLevel,
-      get().contextualZoomParams,
-      get().contextualZoom
-    );
-    const newWidth = node.width! * (toFontSize / fromFontSize);
-    // create the new node
-    let newNode: Node = {
-      ...node,
-      position,
-      parentNode: scopeId === "ROOT" ? undefined : scopeId,
-      width: newWidth,
-      data: {
-        ...node.data,
-        level: toLevel,
-      },
-    };
-    // update peer
-    nodesMap.set(node.id, newNode);
-    // update zustand & db
-    get().setPodGeo(node.id, { parent: scopeId, ...position }, true);
     get().adjustLevel();
     // update view
     get().updateView();
