@@ -566,6 +566,8 @@ export const CodeNode = memo<NodeProps>(function ({
   const pod = getPod(id);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const cursorNode = useStore(store, (state) => state.cursorNode);
+  const focusedEditor = useStore(store, (state) => state.focusedEditor);
+  const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const inputRef = useRef<HTMLInputElement>(null);
   const updateView = useStore(store, (state) => state.updateView);
@@ -748,10 +750,18 @@ export const CodeNode = memo<NodeProps>(function ({
         onMouseLeave={() => {
           setShowToolbar(false);
         }}
+        onClick={(e) => {
+          switch (e.detail) {
+            case 2:
+              setFocusedEditor(id);
+              break;
+          }
+        }}
         sx={{
           cursor: "auto",
           fontSize,
         }}
+        className="custom-drag-handle"
       >
         {Wrap(
           <Box
@@ -768,11 +778,9 @@ export const CodeNode = memo<NodeProps>(function ({
                 ? "red"
                 : pod.ispublic
                 ? "green"
-                : selected
-                ? "#003c8f"
-                : !isPodFocused
+                : focusedEditor !== id
                 ? "#d6dee6"
-                : "#5e92f3",
+                : "#003c8f",
             }}
           >
             <Box
@@ -882,7 +890,6 @@ export const CodeNode = memo<NodeProps>(function ({
               }}
             >
               <MyMonaco id={id} fontSize={fontSize} />
-
               <ResultBlock id={id} layout={layout} />
             </Box>
           </Box>

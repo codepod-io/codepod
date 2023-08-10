@@ -416,6 +416,15 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   useEffect(() => {
     if (focusedEditor === id) {
       editor?.focus();
+      editor?.updateOptions({
+        readOnly: false,
+      });
+    } else {
+      // FIXME needs to hide the cursor in CMD node
+      editor?.updateOptions({
+        readOnly: true,
+        //cursorWidth: 0,
+      });
     }
   }, [focusedEditor]);
 
@@ -464,6 +473,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     };
     editor.onDidBlurEditorText(() => {
       setPodBlur(id);
+      setFocusedEditor(undefined);
     });
     editor.onDidFocusEditorText(() => {
       setPodFocus(id);
@@ -495,6 +505,18 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
         }
       },
     });
+
+    // solution from https://github.com/microsoft/monaco-editor/issues/1742
+    const messageContribution = editor.getContribution(
+      "editor.contrib.messageController"
+    );
+    editor.onDidAttemptReadOnlyEdit(() => {
+      (messageContribution as any)?.showMessage(
+        "Please 'double click' first to edit the pod.",
+        editor.getPosition()
+      );
+    });
+
     // editor.onDidChangeModelContent(async (e) => {
     //   // content is value?
     //   updateGitGutter(editor);
@@ -539,7 +561,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       theme="codepod"
       options={{
         selectOnLineNumbers: true,
-        readOnly: readOnly,
+        readOnly: focusedEditor !== id,
         // This scrollBeyondLastLine is super important. Without this, it will
         // try to adjust height infinitely.
         scrollBeyondLastLine: false,

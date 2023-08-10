@@ -58,7 +58,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const reactFlowInstance = useReactFlow();
-  // const selected = useStore(store, (state) => state.pods[id]?.selected);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const wsRunScope = useStore(store, (state) => state.wsRunScope);
   const clonePod = useStore(store, (state) => state.clonePod);
@@ -210,7 +209,6 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const setPodName = useStore(store, (state) => state.setPodName);
   const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
-  // const selected = useStore(store, (state) => state.pods[id]?.selected);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const inputRef = useRef<HTMLInputElement>(null);
   const getPod = useStore(store, (state) => state.getPod);
@@ -303,6 +301,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
       onMouseLeave={() => {
         setShowToolbar(false);
       }}
+      className="custom-drag-handle"
     >
       {/* <NodeResizer color="#ff0071" minWidth={100} minHeight={30} /> */}
       <Box sx={{ opacity: showToolbar ? 1 : 0 }}>
