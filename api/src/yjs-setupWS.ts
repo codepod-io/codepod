@@ -6,6 +6,9 @@ import * as syncProtocol from "y-protocols/sync";
 
 import { encoding, decoding, map } from "lib0";
 
+import { bindState, writeState } from "./yjs-plain";
+// import { bindState, writeState } from "./yjs-blob";
+
 const wsReadyStateConnecting = 0;
 const wsReadyStateOpen = 1;
 
@@ -95,14 +98,17 @@ class WSSharedDoc extends Y.Doc {
  * @param {boolean} gc - whether to allow gc on the doc (applies only when created)
  * @return {WSSharedDoc}
  */
-export const getYDoc = (docname, gc = true) =>
-  map.setIfUndefined(docs, docname, () => {
-    const doc = new WSSharedDoc(docname);
+export const getYDoc = async (docname, gc = true) => {
+  let doc = docs.get(docname);
+  if (doc === undefined) {
+    const repoId = docname.split("/")[1];
+    doc = new WSSharedDoc(docname);
     doc.gc = gc;
-    //   TODO load from DB?
+    await bindState(doc, repoId);
     docs.set(docname, doc);
-    return doc;
-  });
+  }
+  return doc;
+};
 
 /**
  * Support Read-only mode. Ref: https://discuss.yjs.dev/t/read-only-or-one-way-only-sync/135/4
@@ -186,13 +192,12 @@ const closeConn = (doc, conn) => {
       Array.from(controlledIds),
       null
     );
+    console.log("=== closeConn, renaming conn size", doc.conns.size);
     if (doc.conns.size === 0) {
-      // TODO save to DB?
-      // if persisted, we store state and destroy ydocument
-      //   persistence.writeState(doc.name, doc).then(() => {
-      //     doc.destroy();
-      //   });
-      //   docs.delete(doc.name);
+      writeState();
+      console.log("=== Destroying ydoc", doc.name);
+      doc.destroy();
+      docs.delete(doc.name);
     }
   }
   conn.close();
@@ -229,7 +234,7 @@ const pingTimeout = 30000;
  * @param {any} req
  * @param {any} opts
  */
-export const setupWSConnection = (
+export const setupWSConnection = async (
   conn,
   req,
   { docName = req.url.slice(1).split("?")[0], gc = true, readOnly = false } = {}
@@ -237,7 +242,7 @@ export const setupWSConnection = (
   conn.binaryType = "arraybuffer";
   console.log(`setupWSConnection ${docName}, read-only=${readOnly}`);
   // get doc, initialize if it does not exist yet
-  const doc = getYDoc(docName, gc);
+  const doc = await getYDoc(docName, gc);
   doc.conns.set(conn, new Set());
   // listen and reply to events
   conn.on(

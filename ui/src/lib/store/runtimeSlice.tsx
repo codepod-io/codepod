@@ -248,10 +248,11 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
    */
   parsePod: (id) => {
     set(
-      produce((state) => {
+      produce((state: MyState) => {
         let analyze = get().scopedVars ? analyzeCode : analyzeCodeViaQuery;
         let { ispublic, isbridge, annotations } = analyze(
-          state.pods[id].content
+          // FIXME Use pod content from Yjs instead.
+          state.pods[id].content || ""
         );
         state.pods[id].ispublic = ispublic;
         state.pods[id].isbridge = isbridge;
@@ -377,7 +378,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       let children = get().node2children.get(id);
       if (!children) return;
       // The reactflow nodesMap stored in Yjs
-      let nodesMap = get().ydoc.getMap<Node>("pods");
+      let nodesMap = get().ydoc.getMap<Node>("nodesMap");
       // Sort by x and y positions, with the leftmost and topmost first.
       children = [...children].sort((a, b) => {
         let nodeA = nodesMap.get(a);
@@ -416,7 +417,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       return;
     }
     // Get the chain: get the edges, and then get the pods
-    const edgesMap = get().ydoc.getMap<Edge>("edges");
+    const edgesMap = get().ydoc.getMap<Edge>("edgesMap");
     let edges = Array.from(edgesMap.values());
     // build a node2target map
     let node2target = {};

@@ -4,6 +4,8 @@ import MonacoEditor, { MonacoDiffEditor } from "react-monaco-editor";
 import { monaco } from "react-monaco-editor";
 import { Node } from "reactflow";
 import { useStore } from "zustand";
+import * as Y from "yjs";
+
 import { RepoContext } from "../lib/store";
 import { MonacoBinding } from "y-monaco";
 import { useReactFlow } from "reactflow";
@@ -392,8 +394,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const readOnly = useStore(store, (state) => state.role === "GUEST");
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
-  const getPod = useStore(store, (state) => state.getPod);
-  const setPodContent = useStore(store, (state) => state.setPodContent);
   const initPodContent = useStore(store, (state) => state.initPodContent);
   const clearResults = useStore(store, (s) => s.clearResults);
   const wsRun = useStore(store, (state) => state.wsRun);
@@ -407,9 +407,8 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const scopedVars = useStore(store, (state) => state.scopedVars);
   const updateView = useStore(store, (state) => state.updateView);
 
-  const value = getPod(id)?.content || "";
-  let lang = getPod(id)?.lang || "javascript";
-  const onChange = (value) => setPodContent({ id, content: value });
+  // TODO support other languages.
+  let lang = "python";
   let [editor, setEditor] =
     useState<monaco.editor.IStandaloneCodeEditor | null>(null);
 
@@ -502,32 +501,12 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
 
     // bind it to the ytext with pod id
     // if (monaco.languages.registerInlineCompletionsProvider)
-    const ytext = ydoc.getText("monaco-" + id);
-    const monacoBinding = new MonacoBinding(
-      ytext,
-      editor.getModel()!,
-      new Set([editor]),
-      awareness
-    );
-
-    const init = () => {
-      if (!ytext._start && ytext.length === 0) {
-        ytext.insert(0, value);
-      } else {
-        // init the pasted pod content by the code on the yjs server
-        initPodContent({ id, content: ytext.toString() });
-      }
-    };
-
-    if (!provider || !provider.wsconnected) {
-      // TODO: consider offline situation later
-      // editor.getModel().setValue(value);
-      return;
-    } else if (provider.synced) {
-      init();
-    } else {
-      provider.once("synced", init);
+    const codeMap = ydoc.getMap<Y.Text>("codeMap");
+    if (!codeMap.has(id)) {
+      codeMap.set(id, new Y.Text());
     }
+    const ytext = codeMap.get(id)!;
+    new MonacoBinding(ytext, editor.getModel()!, new Set([editor]), awareness);
 
     // FIXME: make sure the provider.wsconnected is true or it won't display any content.
   }
@@ -535,7 +514,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   return (
     <MonacoEditor
       language={lang}
-      // value={value}
       theme="codepod"
       options={{
         selectOnLineNumbers: true,
@@ -563,7 +541,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
         },
         fontSize,
       }}
-      onChange={onChange}
       editorDidMount={onEditorDidMount}
     />
   );

@@ -40,6 +40,7 @@ import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import Moveable from "react-moveable";
 
 import { useStore } from "zustand";
+import { shallow } from "zustand/shallow";
 
 import { RepoContext } from "../../lib/store";
 
@@ -209,12 +210,12 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const setPodName = useStore(store, (state) => state.setPodName);
-  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+  const nodesMap = useStore(store, (state) =>
+    state.ydoc.getMap<Node>("nodesMap")
+  );
   // const selected = useStore(store, (state) => state.pods[id]?.selected);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const inputRef = useRef<HTMLInputElement>(null);
-  const getPod = useStore(store, (state) => state.getPod);
-  const pod = getPod(id);
 
   const devMode = useStore(store, (state) => state.devMode);
   const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
@@ -237,6 +238,17 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
       setShowToolbar(false);
     }
   }, [cursorNode]);
+
+  const { width, height, parent } = useReactFlowStore((s) => {
+    const node = s.nodeInternals.get(id)!;
+
+    return {
+      width: node.width,
+      height: node.height,
+      parent: node.parentNode,
+    };
+  }, shallow);
+
   const contextualZoom = useStore(store, (state) => state.contextualZoom);
   const contextualZoomParams = useStore(
     store,
@@ -266,8 +278,8 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
           borderRadius: "5px",
           border: "5px solid red",
           textAlign: "center",
-          height: pod.height,
-          width: pod.width,
+          height: height,
+          width: width,
           color: "deeppink",
         }}
         className="custom-drag-handle scope-block"
@@ -339,7 +351,13 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
           opacity: showToolbar ? 1 : 0,
         }}
       >
-        <Handles pod={pod} xPos={xPos} yPos={yPos} />
+        <Handles
+          width={width}
+          height={height}
+          parent={parent}
+          xPos={xPos}
+          yPos={yPos}
+        />
       </Box>
       {/* The header of scope nodes. */}
       <Box
@@ -355,8 +373,8 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
               cursor: "auto",
             }}
           >
-            {id} at ({xPos}, {yPos}), w: {pod.width}, h: {pod.height} parent:{" "}
-            {pod.parent} level: {data.level} fontSize: {fontSize}
+            {id} at ({xPos}, {yPos}), w: {width}, h: {height} parent: {parent}{" "}
+            level: {data.level} fontSize: {fontSize}
           </Box>
         )}
         <Grid container spacing={2} sx={{ alignItems: "center" }}>
@@ -397,7 +415,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
                     textAlign: "center",
                     textOverflow: "ellipsis",
                     fontSize,
-                    width: pod.width,
+                    width: width ? width : undefined,
                   },
                 }}
               ></InputBase>

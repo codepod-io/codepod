@@ -82,6 +82,7 @@ model Repo {
     updatedAt     DateTime       @default(now()) @updatedAt
     UserRepoData  UserRepoData[]
     stargazers    User[]         @relation("STAR")
+    yDocBlob      Bytes?
 }
 
 enum PodType {

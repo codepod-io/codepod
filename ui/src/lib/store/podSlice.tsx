@@ -1,8 +1,6 @@
 import { createStore, StateCreator, StoreApi } from "zustand";
 import produce from "immer";
 
-import { doRemoteDeletePod } from "../fetch";
-
 import { ApolloClient } from "@apollo/client";
 
 import { Pod, MyState } from ".";
@@ -13,25 +11,6 @@ export interface PodSlice {
   getId2children: (id: string) => string[];
   setPodFocus: (id: string) => void;
   setPodBlur: (id: string) => void;
-  setPodGeo: (
-    id: string,
-    {
-      x,
-      y,
-      width,
-      height,
-      parent,
-    }: {
-      x?: number;
-      y?: number;
-
-      width?: number;
-
-      height?: number;
-      parent?: string;
-    },
-    dirty?: boolean
-  ) => void;
   setPodName: ({ id, name }: { id: string; name: string }) => void;
   setPodContent: (
     { id, content }: { id: string; content: string },
@@ -47,11 +26,6 @@ export interface PodSlice {
     richContent: string;
   }) => void;
   initPodContent: ({ id, content }: { id: string; content: string }) => void;
-  addPod: (pod: Pod) => void;
-  deletePod: (
-    client: ApolloClient<object> | null,
-    { id }: { id: string }
-  ) => Promise<void>;
   setPodResult: ({
     id,
     content,
@@ -77,8 +51,6 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
   getPod: (id: string) => get().pods[id],
   getPods: () => get().pods,
   getId2children: (id: string) => get().id2children[id],
-  addPod: addPod(set, get),
-  deletePod: deletePod(set, get),
   setPodName: ({ id, name }) =>
     set(
       produce((state: MyState) => {
@@ -136,45 +108,6 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
       produce((state) => {
         state.pods[id].render = value;
       })
-    ),
-  setPodGeo: (id, { x, y, width, height, parent }, dirty = true) =>
-    set(
-      produce((state) => {
-        let pod = state.pods[id];
-
-        // 0. check if the update is necessary. This is used to prevent dirty
-        //    status from being reset at the beginning of canvas loading.
-        if (
-          (!x || pod.x === x) &&
-          (!y || pod.y === y) &&
-          (!width || pod.width === width) &&
-          (!height || pod.height === height) &&
-          (!parent || pod.parent === parent)
-        ) {
-          return;
-        }
-        // 1. check if parent is updated. If so, update the children list.
-        if (parent && parent !== pod.parent) {
-          if (!state.pods[parent]) {
-            throw new Error(`parent pod ${parent} not found`);
-          }
-          const oldparent = state.pods[state.pods[id].parent];
-          pod.parent = parent;
-          state.pods[parent].children.push(state.pods[id]);
-          let idx = oldparent.children.findIndex(({ id: _id }) => _id === id);
-          oldparent.children.splice(idx, 1);
-        }
-        // 2. update x,y,width,height
-        pod.x = x ?? pod.x;
-        pod.y = y ?? pod.y;
-        pod.width = width ?? pod.width;
-        pod.height = height ?? pod.height;
-        // Update the dirty flag.
-        pod.dirty ||= dirty;
-      }),
-      false,
-      // @ts-ignore
-      "setPodGeo"
     ),
   setPodStdout: ({ id, stdout }) =>
     set(
@@ -312,71 +245,6 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
     };
   },
 });
-
-/**
- * This action won't set the dirty field. The "pod.dirty" field must be set
- * manually to indicate a DB syncing is necessary.
- */
-function addPod(set, get: () => MyState) {
-  return async (pod) => {
-    set(
-      produce((state: MyState) => {
-        // 1. do local update
-        if (!state.pods.hasOwnProperty(pod.id)) {
-          state.pods[pod.id] = pod;
-          // push this node
-          // TODO the children no longer need to be ordered
-          // TODO the frontend should handle differently for the children
-          // state.pods[parent].children.splice(index, 0, id);
-          state.pods[pod.parent].children.push({ id: pod.id, type: pod.type });
-        }
-      })
-    );
-  };
-}
-
-function deletePod(set, get) {
-  return async (
-    client: ApolloClient<object> | null,
-    { id }: { id: string }
-  ) => {
-    const pods = get().pods;
-    const ids: string[] = [];
-
-    // get all ids to delete. Gathering them here is easier than on the server
-
-    if (!pods[id]) return;
-
-    const dfs = (id) => {
-      const pod = pods[id];
-      if (pod) {
-        ids.push(id);
-        pod.children.forEach(dfs);
-      }
-    };
-
-    dfs(id);
-    // pop in ids
-    set(
-      produce((state: MyState) => {
-        // delete the link to parent
-        const parent = state.pods[state.pods[id]?.parent!];
-        if (parent) {
-          const index = parent.children.map(({ id }) => id).indexOf(id);
-          // update all other siblings' index
-          // remove all
-          parent.children.splice(index, 1);
-        }
-        ids.forEach((id) => {
-          delete state.pods[id];
-        });
-      })
-    );
-    if (client) {
-      await doRemoteDeletePod(client, ids);
-    }
-  };
-}
 
 function setPodResult(set, get) {
   return ({ id, content, count }) =>
