@@ -701,7 +701,7 @@ export const RichNode = memo<Props>(function ({
           cursor: "auto",
           fontSize,
         }}
-        className="custom-drag-handle"
+        className={focusedEditor === id ? "nodrag" : "custom-drag-handle"}
       >
         {" "}
         {Wrap(

@@ -761,7 +761,7 @@ export const CodeNode = memo<NodeProps>(function ({
           cursor: "auto",
           fontSize,
         }}
-        className="custom-drag-handle"
+        className={focusedEditor === id ? "nodrag" : "custom-drag-handle"}
       >
         {Wrap(
           <Box
