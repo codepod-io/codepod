@@ -693,7 +693,6 @@ export const RichNode = memo<Props>(function ({
         onClick={(e) => {
           switch (e.detail) {
             case 2:
-              console.log("Rich node double click");
               setFocusedEditor(id);
               break;
           }
