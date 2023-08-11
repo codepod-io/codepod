@@ -328,7 +328,7 @@ export interface CanvasSlice {
 
   adjustLevel: () => void;
   getScopeAtPos: ({ x, y }: XYPosition, exclude: string) => Node | undefined;
-  moveIntoScope: (nodeId: string, scopeId?: string) => void;
+  moveIntoScope: (nodeIds: string[], scopeId?: string) => void;
   tempUpdateView: ({ x, y }: XYPosition) => void;
 
   helperLineHorizontal: number | undefined;
@@ -470,7 +470,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     nodesMap.set(node.id, node);
     if (parent) {
       // we don't assign its parent when created, because we have to adjust its position to make it inside its parent.
-      get().moveIntoScope(node.id, parent);
+      get().moveIntoScope([node.id], parent);
     }
     // Set initial width as about 30 characters.
     get().updateView();
@@ -524,29 +524,43 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         );
 
         let podRichContent = cell.cellType == "markdown" ? cell.cellSource : "";
-
-        let podResult = { count: cell.execution_count, text: "", image: "" };
-        let podStdOut = "";
+        let execution_count = cell.execution_count || null;
+        let podResults: {
+          type?: string;
+          html?: string;
+          text?: string;
+          image?: string;
+        }[] = [];
         let podError = { ename: "", evalue: "", stacktrace: [] };
-
         for (const cellOutput of cell.cellOutputs) {
-          if (
-            cellOutput["output_type"] === "stream" &&
-            cellOutput["name"] === "stdout"
-          ) {
-            podStdOut = cellOutput["text"].join("");
-          }
-          if (cellOutput["output_type"] === "display_data") {
-            podResult.text = cellOutput["data"]["text/plain"].join("");
-            podResult.image = cellOutput["data"]["image/png"];
-          }
-          if (cellOutput["output_type"] === "execute_result") {
-            podResult.text = cellOutput["data"]["text/plain"].join("");
-          }
-          if (cellOutput["output_type"] === "error") {
-            podError.ename = cellOutput["ename"];
-            podError.evalue = cellOutput["evalue"];
-            podError.stacktrace = cellOutput["traceback"];
+          switch (cellOutput["output_type"]) {
+            case "stream":
+              podResults.push({
+                // "stream_stdout" or "stream_stderr"
+                type: `${cellOutput["output_type"]}_${cellOutput["name"]}`,
+                text: cellOutput["text"].join(""),
+              });
+              break;
+            case "execute_result":
+              podResults.push({
+                type: cellOutput["output_type"],
+                text: cellOutput["data"]["text/plain"].join(""),
+              });
+              break;
+            case "display_data":
+              podResults.push({
+                type: cellOutput["output_type"],
+                text: cellOutput["data"]["text/plain"].join(""),
+                image: cellOutput["data"]["image/png"],
+              });
+              break;
+            case "error":
+              podError.ename = cellOutput["ename"];
+              podError.evalue = cellOutput["evalue"];
+              podError.stacktrace = cellOutput["traceback"];
+              break;
+            default:
+              break;
           }
         }
         // move the created node to scope and configure the necessary node attributes
@@ -662,7 +676,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         nodesMap
       );
       if (scope && scope.id !== id) {
-        get().moveIntoScope(id, scope.id);
+        get().moveIntoScope([id], scope.id);
       }
     });
   },
@@ -747,62 +761,69 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       }
     });
   },
-  moveIntoScope: (nodeId: string, scopeId?: string) => {
+  moveIntoScope: (nodeIds: string[], scopeId?: string) => {
     // move a node into a scope.
     // 1. update the node's parentNode & position
     let nodesMap = get().ydoc.getMap<Node>("nodesMap");
-    let node = nodesMap.get(nodeId);
-    if (!node) {
-      console.warn("Node not found", node);
-      return;
-    }
-    if (node.parentNode === scopeId) {
-      console.warn("Node already in scope", node);
-      return;
-    }
-    console.log(`Moving ${nodeId} into scope ${scopeId}`);
-    let fromLevel = node?.data.level;
-    let toLevel: number;
-    let position: XYPosition;
-    if (!scopeId) {
-      toLevel = 0;
-      position = getAbsPos(node, nodesMap);
-    } else {
-      let scope = nodesMap.get(scopeId);
-      if (!node || !scope) {
-        console.warn("Scope not found", scope);
+    for (const nodeId of nodeIds) {
+      let node = nodesMap.get(nodeId);
+      if (!node) {
+        console.warn("Node not found", node);
         return;
       }
-      toLevel = scope.data.level + 1;
-      // FIXME: since richNode and codeNode doesn't have height when it's created, we have to pass its height manually in case crash.
-      const nodeHeight = get().getPod(nodeId)?.height || 0;
-      position = getNodePositionInsideScope(node, scope, nodesMap, nodeHeight);
+      if (node.parentNode === scopeId) {
+        console.warn("Node already in scope", node);
+        return;
+      }
+      console.log(`Moving ${nodeId} into scope ${scopeId}`);
+      let fromLevel = node?.data.level;
+      let toLevel: number;
+      let position: XYPosition;
+      if (!scopeId) {
+        toLevel = 0;
+        position = getAbsPos(node, nodesMap);
+      } else {
+        let scope = nodesMap.get(scopeId);
+        if (!node || !scope) {
+          console.warn("Scope not found", scope);
+          return;
+        }
+        toLevel = scope.data.level + 1;
+        // FIXME: since richNode and codeNode doesn't have height when it's created, we have to pass its height manually in case crash.
+        const nodeHeight = get().getPod(nodeId)?.height || 0;
+        position = getNodePositionInsideScope(
+          node,
+          scope,
+          nodesMap,
+          nodeHeight
+        );
+      }
+      // need to adjust the node width according to the from and to scopes
+      const fromFontSize = level2fontsize(
+        fromLevel,
+        get().contextualZoomParams,
+        get().contextualZoom
+      );
+      const toFontSize = level2fontsize(
+        toLevel,
+        get().contextualZoomParams,
+        get().contextualZoom
+      );
+      const newWidth = node.width! * (toFontSize / fromFontSize);
+      // create the new node
+      let newNode: Node = {
+        ...node,
+        position,
+        parentNode: scopeId,
+        width: newWidth,
+        data: {
+          ...node.data,
+          level: toLevel,
+        },
+      };
+      // update peer
+      nodesMap.set(node.id, newNode);
     }
-    // need to adjust the node width according to the from and to scopes
-    const fromFontSize = level2fontsize(
-      fromLevel,
-      get().contextualZoomParams,
-      get().contextualZoom
-    );
-    const toFontSize = level2fontsize(
-      toLevel,
-      get().contextualZoomParams,
-      get().contextualZoom
-    );
-    const newWidth = node.width! * (toFontSize / fromFontSize);
-    // create the new node
-    let newNode: Node = {
-      ...node,
-      position,
-      parentNode: scopeId,
-      width: newWidth,
-      data: {
-        ...node.data,
-        level: toLevel,
-      },
-    };
-    // update peer
-    nodesMap.set(node.id, newNode);
     get().adjustLevel();
     // update view
     get().updateView();

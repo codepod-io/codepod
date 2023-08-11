@@ -985,39 +985,51 @@ function ExportJupyterNB() {
           q.push([pod, geoScore.substring(0, 2) + "0" + geoScore.substring(2)]);
         } else if (pod.type == "CODE") {
           let podOutput: any[] = [];
-          // FIXME, the pod result needs to support an array of execution result as well as the execution order
-          if (pod.stdout) {
-            podOutput.push({
-              output_type: "stream",
-              name: "stdout",
-              text: pod.stdout.split(/\r?\n/).map((line) => line + "\n"),
-            });
-          }
-          if (pod.result?.image) {
-            podOutput.push({
-              output_type: "display_data",
-              data: {
-                "text/plain": (pod.result.text || "")
-                  .split(/\r?\n/)
-                  .map((line) => line + "\n") || [""],
-                "image/png": pod.result.image,
-              },
-            });
-          }
-          if (
-            pod.result?.text &&
-            !pod.result?.text.startsWith("ok") &&
-            !pod.result?.text.startsWith("error")
-          ) {
-            podOutput.push({
-              output_type: "execute_result",
-              data: {
-                "text/plain": (pod.result.text || "")
-                  .split(/\r?\n/)
-                  .map((line) => line + "\n") || [""],
-              },
-              execution_count: pod.result?.count,
-            });
+          for (const result of pod.result!) {
+            switch (result.type) {
+              case "execute_result":
+                podOutput.push({
+                  output_type: result.type,
+                  data: {
+                    "text/plain": (result.text || "")
+                      .split(/\r?\n/)
+                      .map((line) => line + "\n") || [""],
+                  },
+                  execution_count: pod.exec_count,
+                });
+                break;
+              case "display_data":
+                podOutput.push({
+                  output_type: result.type,
+                  data: {
+                    "text/plain": (result.text || "")
+                      .split(/\r?\n/)
+                      .map((line) => line + "\n") || [""],
+                    "image/png": result.image,
+                  },
+                });
+                break;
+              case "stream_stdout":
+                podOutput.push({
+                  output_type: "stream",
+                  name: "stdout",
+                  text: (result.text || "")
+                    .split(/\r?\n/)
+                    .map((line) => line + "\n"),
+                });
+                break;
+              case "stream_stderr":
+                podOutput.push({
+                  output_type: "stream",
+                  name: "stderr",
+                  text: (result.text || "")
+                    .split(/\r?\n/)
+                    .map((line) => line + "\n"),
+                });
+                break;
+              default:
+                break;
+            }
           }
           if (pod.error) {
             podOutput.push({
@@ -1029,7 +1041,7 @@ function ExportJupyterNB() {
           }
           jupyterCellList.push({
             cell_type: "code",
-            execution_count: pod.result?.count || 0,
+            execution_count: pod.exec_count,
             // TODO: expand other Codepod related-metadata fields, or run a real-time search in database when importing.
             metadata: { id: pod.id, geoScore: Number(geoScore) },
             source: [pod.content || ""],

@@ -551,6 +551,9 @@ function CanvasImpl() {
 
   const addNode = useStore(store, (state) => state.addNode);
   const importLocalCode = useStore(store, (state) => state.importLocalCode);
+
+  const selectedPods = useStore(store, (state) => state.selectedPods);
+
   const reactFlowInstance = useReactFlow();
 
   const project = useCallback(
@@ -725,11 +728,11 @@ function CanvasImpl() {
             let scope = getScopeAtPos(mousePos, node.id);
             let toScope = scope?.id;
             const parentScope = node.parentNode;
-            if (toScope !== parentScope) {
-              moveIntoScope(node.id, toScope);
+            if (selectedPods.size > 0 && parentScope !== toScope) {
+              moveIntoScope(Array.from(selectedPods), toScope);
+              // update view manually to remove the drag highlight.
+              updateView();
             }
-            // update view manually to remove the drag highlight.
-            updateView();
             // run auto layout on drag stop
             if (autoRunLayout) {
               autoLayoutROOT();

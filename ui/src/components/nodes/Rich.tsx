@@ -262,18 +262,17 @@ function HotkeyControl({ id }) {
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
 
   useKeymap("Escape", () => {
-    if (document.activeElement) {
-      (document.activeElement as any).blur();
-      setPodBlur(id);
-      setCursorNode(id);
-      setFocusedEditor(undefined);
-    }
+    setPodBlur(id);
+    setCursorNode(id);
+    setFocusedEditor(undefined);
     return true;
   });
   const commands = useCommands();
   useEffect(() => {
     if (focusedEditor === id) {
       commands.focus();
+    } else {
+      commands.blur();
     }
   }, [focusedEditor]);
   return <></>;
@@ -296,6 +295,8 @@ const MyEditor = ({
   const provider = useStore(store, (state) => state.provider)!;
 
   const setPodBlur = useStore(store, (state) => state.setPodBlur);
+  const focusedEditor = useStore(store, (state) => state.focusedEditor);
+  const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const resetSelection = useStore(store, (state) => state.resetSelection);
   const updateView = useStore(store, (state) => state.updateView);
   const richMap = provider.doc.getMap<Y.XmlFragment>("richMap");
@@ -304,6 +305,7 @@ const MyEditor = ({
   }
   const yXml = richMap.get(id) as Y.XmlFragment;
 
+  const editable = !isGuest && focusedEditor === id;
   const { manager, state, setState } = useRemirror({
     extensions: () => [
       new PlaceholderExtension({ placeholder }),
@@ -313,7 +315,10 @@ const MyEditor = ({
       new SupExtension(),
       new SubExtension(),
       new MarkdownExtension(),
-      new MyYjsExtension({ yXml, awareness: provider.awareness }),
+      // YjsExtension seems to be incompatible with editable=false, throwing console errors.
+      ...(editable
+        ? [new MyYjsExtension({ yXml, awareness: provider.awareness })]
+        : []),
       new MathInlineExtension(),
       new MathBlockExtension(),
       // new CalloutExtension({ defaultType: "warn" }),
@@ -400,10 +405,12 @@ const MyEditor = ({
       className="remirror-theme"
       onFocus={() => {
         setPodFocus(id);
+        setFocusedEditor(id);
         if (resetSelection()) updateView();
       }}
       onBlur={() => {
         setPodBlur(id);
+        setFocusedEditor(undefined);
       }}
       sx={{
         userSelect: "text",
@@ -436,7 +443,7 @@ const MyEditor = ({
             // - [1] https://remirror.io/docs/controlled-editor
             // - [2] demo that Chinese input method is not working:
             //   https://remirror.vercel.app/?path=/story/editors-controlled--editable
-            editable={!isGuest}
+            editable={editable}
           >
             <HotkeyControl id={id} />
             {/* <WysiwygToolbar /> */}
@@ -530,6 +537,8 @@ export const RichNode = memo<Props>(function ({
   const setPodName = useStore(store, (state) => state.setPodName);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const cursorNode = useStore(store, (state) => state.cursorNode);
+  const focusedEditor = useStore(store, (state) => state.focusedEditor);
+  const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const devMode = useStore(store, (state) => state.devMode);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -697,10 +706,18 @@ export const RichNode = memo<Props>(function ({
             (elem as HTMLElement).style.display = "none";
           });
         }}
+        onClick={(e) => {
+          switch (e.detail) {
+            case 2:
+              setFocusedEditor(id);
+              break;
+          }
+        }}
         sx={{
           cursor: "auto",
           fontSize,
         }}
+        className={focusedEditor === id ? "nodrag" : "custom-drag-handle"}
       >
         {" "}
         {Wrap(
@@ -716,9 +733,9 @@ export const RichNode = memo<Props>(function ({
                 ? "green"
                 : selected
                 ? "#003c8f"
-                : !isPodFocused
+                : focusedEditor !== id
                 ? "#d6dee6"
-                : "#5e92f3",
+                : "#003c8f",
             }}
           >
             <Box
