@@ -927,14 +927,14 @@ function CanvasImpl() {
             let scope = getScopeAtPos(mousePos, node.id);
             let toScope = scope ? scope.id : "ROOT";
             const parentScope = node.parentNode ? node.parentNode : "ROOT";
-            if (selectedPods.size > 0) {
+            if (selectedPods.size > 0 && parentScope !== toScope) {
               moveIntoScope(Array.from(selectedPods), toScope);
               // update view manually to remove the drag highlight.
               updateView();
-              // run auto layout on drag stop
-              if (autoRunLayout) {
-                autoLayoutROOT();
-              }
+            }
+            // run auto layout on drag stop
+            if (autoRunLayout) {
+              autoLayoutROOT();
             }
           }}
           onNodeDrag={(event, node) => {
