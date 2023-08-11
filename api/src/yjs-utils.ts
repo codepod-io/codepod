@@ -1,10 +1,9 @@
 import { JSDOM } from "jsdom";
 
-import { htmlToProsemirrorNode } from "remirror";
 import Y from "yjs";
 
 import myspec from "./rich-schema";
-import { Schema, Node as PMNode } from "@remirror/pm/model";
+import { Schema, Node as PMNode } from "prosemirror-model";
 import {
   prosemirrorToYDoc,
   prosemirrorToYXmlFragment,
