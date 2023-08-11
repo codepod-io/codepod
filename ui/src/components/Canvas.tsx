@@ -62,17 +62,12 @@ function useInitNodes() {
   const [loading, setLoading] = useState(true);
   const updateView = useStore(store, (state) => state.updateView);
   const adjustLevel = useStore(store, (state) => state.adjustLevel);
-  const buildNode2Children = useStore(
-    store,
-    (state) => state.buildNode2Children
-  );
   useEffect(() => {
     const init = () => {
       // adjust level and update view
       adjustLevel();
       updateView();
       setLoading(false);
-      buildNode2Children();
     };
 
     if (!provider) return;

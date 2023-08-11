@@ -22,8 +22,9 @@ function collectSymbolTables(
   let parentId = pod.parent;
   let allSymbolTables: Record<string, string>[] = [];
   // do this for all ancestor scopes.
+  const nodes = Array.from(get().ydoc.getMap<Node>("nodesMap"));
   while (parentId) {
-    let siblings = get().node2children.get(parentId) || [];
+    const siblings = nodes.filter((node) => node.parentNode === parentId);
     const tables = siblings.map((_id) => {
       // FIXME make this consistent, CODE, POD, DECK, SCOPE; use enums
       if (pods[_id].type === "CODE") {
@@ -359,6 +360,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
    * Add a pod to the chain and run it.
    */
   wsRun: async (id) => {
+    const nodes = Array.from(get().ydoc.getMap<Node>("nodesMap"));
     if (!get().socket) {
       get().addError({
         type: "error",
@@ -375,12 +377,12 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
     } else if (get().pods[id].type === "SCOPE") {
       // If this pod is a scope, run all pods inside a scope by geographical order.
       // get the pods in the scope
-      let children = get().node2children.get(id);
+      const children = nodes.filter((n) => n.parentNode === id);
       if (!children) return;
       // The reactflow nodesMap stored in Yjs
       let nodesMap = get().ydoc.getMap<Node>("nodesMap");
       // Sort by x and y positions, with the leftmost and topmost first.
-      children = [...children].sort((a, b) => {
+      children.sort((a, b) => {
         let nodeA = nodesMap.get(a);
         let nodeB = nodesMap.get(b);
         if (nodeA && nodeB) {
@@ -401,6 +403,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
   },
   wsRunScope: async (id) => {
     // This is a separate function only because we need to build the node2children map first.
+    // DEPRECATED. node2children is removed.
     get().wsRun(id);
   },
   /**

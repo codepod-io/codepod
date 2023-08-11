@@ -340,8 +340,6 @@ export interface CanvasSlice {
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
 
-  node2children: Map<string, string[]>;
-  buildNode2Children: () => void;
   autoLayout: (scopeId?: string) => void;
   autoLayoutROOT: () => void;
   autoLayoutOnce: boolean;
@@ -473,9 +471,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     if (parent) {
       // we don't assign its parent when created, because we have to adjust its position to make it inside its parent.
       get().moveIntoScope(node.id, parent);
-    } else {
-      // moveIntoScope will build the node2children map, but we need to build it here for the ROOT nodes.
-      get().buildNode2Children();
     }
     // Set initial width as about 30 characters.
     get().updateView();
@@ -585,7 +580,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       }
     }
     get().adjustLevel();
-    get().buildNode2Children();
     // FIXME updateView() reset the pod width to 300, scope width to 400.
     get().updateView();
   },
@@ -812,7 +806,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     get().adjustLevel();
     // update view
     get().updateView();
-    get().buildNode2Children();
   },
 
   tempUpdateView: (position) => {
@@ -921,8 +914,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           //
           // TODO remove from codeMap and richMap?
           nodesMap.delete(change.id);
-          // remove from store
-          get().buildNode2Children();
           // run auto-layout
           if (get().autoRunLayout) {
             get().autoLayoutROOT();
@@ -985,37 +976,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   clicked: false,
   toggleClicked: () => set({ clicked: !get().clicked }),
 
-  /**
-   * This node2children is maintained with the canvas reactflow states, not with
-   * the pods. This mapping may be used by other components, e.g. the runtime.
-   *
-   * TODO we should optimize the performance of this function, maybe only update
-   * the mapping when the structure is changed.
-   */
-  node2children: new Map<string, string[]>(),
-  buildNode2Children: () => {
-    console.debug("Building node2children..");
-    // build a map from node to its children
-    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
-    let nodes: Node[] = Array.from(nodesMap.values());
-    let node2children = new Map<string, string[]>();
-    // FIXME node2children's key cannot be undefined.
-    node2children.set("ROOT", []);
-    nodes.forEach((node) => {
-      if (!node2children.has(node.id)) {
-        node2children.set(node.id, []);
-      }
-      if (node.parentNode) {
-        if (!node2children.has(node.parentNode)) {
-          node2children.set(node.parentNode, []);
-        }
-        node2children.get(node.parentNode)?.push(node.id);
-      } else {
-        node2children.get("ROOT")?.push(node.id);
-      }
-    });
-    set({ node2children });
-  },
   autoLayoutROOT: () => {
     // get all scopes,
     console.debug("autoLayoutROOT");
