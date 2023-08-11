@@ -416,6 +416,14 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   useEffect(() => {
     if (focusedEditor === id) {
       editor?.focus();
+      editor?.updateOptions({
+        readOnly: false,
+      });
+    } else {
+      editor?.updateOptions({
+        readOnly: true,
+        //cursorWidth: 0,
+      });
     }
   }, [focusedEditor]);
 
@@ -464,6 +472,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     };
     editor.onDidBlurEditorText(() => {
       setPodBlur(id);
+      setFocusedEditor(undefined);
     });
     editor.onDidFocusEditorText(() => {
       setPodFocus(id);
@@ -495,6 +504,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
         }
       },
     });
+
     // editor.onDidChangeModelContent(async (e) => {
     //   // content is value?
     //   updateGitGutter(editor);
@@ -539,7 +549,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       theme="codepod"
       options={{
         selectOnLineNumbers: true,
-        readOnly: readOnly,
+        readOnly: focusedEditor !== id,
         // This scrollBeyondLastLine is super important. Without this, it will
         // try to adjust height infinitely.
         scrollBeyondLastLine: false,
