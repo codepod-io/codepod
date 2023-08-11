@@ -778,6 +778,8 @@ export const CodeNode = memo<NodeProps>(function ({
                 ? "red"
                 : pod.ispublic
                 ? "green"
+                : selected
+                ? "#003c8f"
                 : focusedEditor !== id
                 ? "#d6dee6"
                 : "#003c8f",

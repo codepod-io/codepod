@@ -715,6 +715,8 @@ export const RichNode = memo<Props>(function ({
               backgroundColor: "white",
               borderColor: pod.ispublic
                 ? "green"
+                : selected
+                ? "#003c8f"
                 : focusedEditor !== id
                 ? "#d6dee6"
                 : "#003c8f",

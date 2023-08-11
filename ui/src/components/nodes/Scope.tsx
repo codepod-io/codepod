@@ -291,6 +291,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
         width: "100%",
         height: "100%",
         border: isCutting ? "dashed 2px red" : "solid 1px #d6dee6",
+        borderColor: selected ? "#003c8f" : undefined,
         borderRadius: "4px",
         cursor: "auto",
         fontSize,
