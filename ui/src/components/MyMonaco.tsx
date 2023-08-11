@@ -420,7 +420,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
         readOnly: false,
       });
     } else {
-      // FIXME needs to hide the cursor in CMD node
       editor?.updateOptions({
         readOnly: true,
         //cursorWidth: 0,
@@ -504,17 +503,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
           setFocusedEditor(undefined);
         }
       },
-    });
-
-    // solution from https://github.com/microsoft/monaco-editor/issues/1742
-    const messageContribution = editor.getContribution(
-      "editor.contrib.messageController"
-    );
-    editor.onDidAttemptReadOnlyEdit(() => {
-      (messageContribution as any)?.showMessage(
-        "Please 'double click' first to edit the pod.",
-        editor.getPosition()
-      );
     });
 
     // editor.onDidChangeModelContent(async (e) => {

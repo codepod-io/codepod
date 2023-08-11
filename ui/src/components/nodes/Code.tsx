@@ -891,6 +891,19 @@ export const CodeNode = memo<NodeProps>(function ({
                 py: 1,
               }}
             >
+              <Box
+                sx={{
+                  // Put it 100% the width and height, above the following components.
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+                  zIndex: focusedEditor === id ? -1 : 10,
+                }}
+              >
+                {/* Overlay */}
+              </Box>
               <MyMonaco id={id} fontSize={fontSize} />
               <ResultBlock id={id} layout={layout} />
             </Box>
