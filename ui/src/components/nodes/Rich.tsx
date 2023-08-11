@@ -302,6 +302,7 @@ const MyEditor = ({
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const resetSelection = useStore(store, (state) => state.resetSelection);
   const updateView = useStore(store, (state) => state.updateView);
+  const editable = !isGuest && focusedEditor === id;
   const { manager, state, setState } = useRemirror({
     extensions: () => [
       new PlaceholderExtension({ placeholder }),
@@ -311,7 +312,10 @@ const MyEditor = ({
       new SupExtension(),
       new SubExtension(),
       new MarkdownExtension(),
-      new MyYjsExtension({ getProvider: () => provider, id }),
+      // YjsExtension seems to be incompatible with editable=false, throwing console errors.
+      ...(editable
+        ? [new MyYjsExtension({ getProvider: () => provider, id })]
+        : []),
       new MathInlineExtension(),
       new MathBlockExtension(),
       // new CalloutExtension({ defaultType: "warn" }),
@@ -425,7 +429,7 @@ const MyEditor = ({
             // - [1] https://remirror.io/docs/controlled-editor
             // - [2] demo that Chinese input method is not working:
             //   https://remirror.vercel.app/?path=/story/editors-controlled--editable
-            editable={!isGuest && focusedEditor === id}
+            editable={editable}
           >
             <HotkeyControl id={id} />
             {/* <WysiwygToolbar /> */}
