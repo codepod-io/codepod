@@ -47,7 +47,7 @@ function collectSymbolTables(
       }
     });
     allSymbolTables.push(Object.assign({}, ...tables));
-    if (parentId === "ROOT") break;
+    if (!parentId) break;
     let parentPod = pods[parentId];
     parentId = parentPod.parent;
   }

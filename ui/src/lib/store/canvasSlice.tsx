@@ -78,7 +78,7 @@ export const newNodeShapeConfig = {
  * @param level
  * @returns
  */
-function createTemporaryNode(pod, position, parent = "ROOT", level = 0): any {
+function createTemporaryNode(pod, position, parent?, level = 0): any {
   const id = myNanoId();
   let style = {
     // create a temporary half-transparent pod
@@ -100,6 +100,7 @@ function createTemporaryNode(pod, position, parent = "ROOT", level = 0): any {
       parent,
       level,
     },
+    parentNode: parent,
     dragHandle: ".custom-drag-handle",
     width: pod.width,
     height: pod.height!,
@@ -110,10 +111,6 @@ function createTemporaryNode(pod, position, parent = "ROOT", level = 0): any {
     draggable: false,
     style,
   };
-
-  if (parent !== "ROOT") {
-    newNode["parentNode"] = parent;
-  }
 
   const newPod = { ...pod, parent, id, position, children: [] };
   const nodes = [[newNode, newPod]];
@@ -167,6 +164,7 @@ function createNewNode(
     data: {
       label: id,
       name: "",
+      // FIXME the key "ROOT" is deprecated.
       parent: "ROOT",
       level: 0,
     },
@@ -499,7 +497,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       get().nodes,
       nodesMap
     );
-    let podParent = "ROOT";
+    let podParent: any = undefined;
     if (parent !== undefined) {
       // update scopeNode
       scopeNode.parentNode = parent.id;
@@ -802,7 +800,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     let newNode: Node = {
       ...node,
       position,
-      parentNode: scopeId === "ROOT" ? undefined : scopeId,
+      parentNode: scopeId,
       width: newWidth,
       data: {
         ...node.data,
@@ -899,7 +897,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           }
           break;
         case "dimensions":
-          console.log("=== dimension", change);
           {
             // Since CodeNode doesn't have a height, this dimension change will
             // be filed for CodeNode at the beginning or anytime the node height
@@ -1002,6 +999,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     let nodesMap = get().ydoc.getMap<Node>("nodesMap");
     let nodes: Node[] = Array.from(nodesMap.values());
     let node2children = new Map<string, string[]>();
+    // FIXME node2children's key cannot be undefined.
     node2children.set("ROOT", []);
     nodes.forEach((node) => {
       if (!node2children.has(node.id)) {

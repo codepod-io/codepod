@@ -17,7 +17,7 @@ import {
 } from "../fetch";
 
 import { Doc, Transaction } from "yjs";
-import { WebsocketProvider } from "y-websocket";
+import { WebsocketProvider } from "./y-websocket";
 import { createRuntimeSlice, RuntimeSlice } from "./runtimeSlice";
 import { ApolloClient } from "@apollo/client";
 import { addAwarenessStyle } from "../styles";
@@ -106,10 +106,15 @@ export interface RepoStateSlice {
   deleteClient: (clientId: any) => void;
   showLineNumbers: boolean;
   flipShowLineNumbers: () => void;
+  // A variable to avoid duplicate connection requests.
   yjsConnecting: boolean;
+  // The status of yjs connection.
   yjsStatus?: string;
   connectYjs: () => void;
   disconnectYjs: () => void;
+  // The status of the uploading and syncing of actual Y.Doc.
+  yjsSyncStatus?: string;
+  setYjsSyncStatus: (status: string) => void;
 }
 
 let unregister: any = null;
@@ -220,6 +225,8 @@ export const createRepoStateSlice: StateCreator<
   setCutting: (id: string | null) => set({ cutting: id }),
   yjsConnecting: false,
   yjsStatus: undefined,
+  yjsSyncStatus: undefined,
+  setYjsSyncStatus: (status) => set({ yjsSyncStatus: status }),
   connectYjs: () => {
     if (get().yjsConnecting) return;
     if (get().provider) return;
@@ -236,6 +243,9 @@ export const createRepoStateSlice: StateCreator<
     // connect to primary database
     const provider = new WebsocketProvider(serverURL, get().repoId!, ydoc, {
       // resyncInterval: 2000,
+      //
+      // BC is more complex to track our custom Uploading status and SyncDone events.
+      disableBc: true,
       params: {
         token: localStorage.getItem("token") || "",
       },
@@ -251,6 +261,9 @@ export const createRepoStateSlice: StateCreator<
       // if (status === "disconnected") { // get().disconnectYjs(); //
       //   get().connectYjs();
       // }
+    });
+    provider.on("mySync", (status: "uploading" | "synced") => {
+      set({ yjsSyncStatus: status });
     });
     // provider.on("connection-close", () => {
     //   console.log("connection-close");

@@ -221,8 +221,8 @@ function useJump() {
     switch (event.key) {
       case "ArrowUp":
         if (event.shiftKey) {
-          if (pod.parentNode !== "ROOT") {
-            to = nodesMap.get(pod.parentNode!)!;
+          if (pod.parentNode) {
+            to = nodesMap.get(pod.parentNode)!;
           } else {
             to = pod;
           }
@@ -581,12 +581,12 @@ function CanvasImpl() {
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [points, setPoints] = useState({ x: 0, y: 0 });
   const [client, setClient] = useState({ x: 0, y: 0 });
-  const [parentNode, setParentNode] = useState("ROOT");
+  const [parentNode, setParentNode] = useState(undefined);
 
   const onPaneContextMenu = (event) => {
     event.preventDefault();
     setShowContextMenu(true);
-    setParentNode("ROOT");
+    setParentNode(undefined);
     setPoints({ x: event.pageX, y: event.pageY });
     setClient({ x: event.clientX, y: event.clientY });
   };

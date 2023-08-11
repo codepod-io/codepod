@@ -719,10 +719,7 @@ function YjsSyncStatus() {
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   // FIXME performance issue
   const yjsStatus = useStore(store, (state) => state.yjsStatus);
-  match(yjsStatus).with("connected", () => "connected");
-  match(yjsStatus)
-    .with("connected", () => "connected")
-    .otherwise(() => "Unknown");
+  const yjsSyncStatus = useStore(store, (state) => state.yjsSyncStatus);
   return (
     <Box>
       <Stack
@@ -734,12 +731,20 @@ function YjsSyncStatus() {
       >
         {/* Synced? <Box>{provider?.synced}</Box> */}
         {/* {yjsStatus} */}
+        Sync Server:
         {match(yjsStatus)
           .with("connected", () => <Box color="green">connected</Box>)
           .with("disconnected", () => <Box color="red">disconnected</Box>)
           .with("connecting", () => <Box color="yellow">connecting</Box>)
           // .with("syncing", () => <Box color="green">online</Box>)
-          .otherwise(() => `Unknown: ${yjsStatus}`)}
+          .otherwise(() => `${yjsStatus}`)}
+      </Stack>
+      <Stack direction="row" spacing={2}>
+        Sync Status:
+        {match(yjsSyncStatus)
+          .with("uploading", () => <Box color="yellow">uploading</Box>)
+          .with("synced", () => <Box color="green">synced</Box>)
+          .otherwise(() => `Unknown: ${yjsSyncStatus}`)}
       </Stack>
     </Box>
   );

@@ -6,11 +6,13 @@
  * - This requires DB schame change and manual DB migration.
  *
  * Pros:
- * - Support history. Or, can it? I used encodeStateAsUpdate, which might
- *   discarded all history. But potentially it can retain history, by storing
- *   all updates, like the logic implemented in y-leveldb.
+ * - Support history.
  * - The logic is simpler than yjs-plain, no need to save each entries to the
  *   DB, just the single entire Y.Doc blob.
+ * - The plain version seems to have trouble syncing with reconnected clients.
+ *   I.e., if a client disconnects, make some offline edits, and connect back,
+ *   those offline edits are not synced. THIS is the reason why I'm using this
+ *   binary blob version.
  */
 
 // throw new Error("Experimental not implemented.");
@@ -21,7 +23,7 @@ import { Node as ReactflowNode, Edge as ReactflowEdge } from "reactflow";
 import debounce from "lodash/debounce";
 
 import prisma from "./client";
-import { dbtype2nodetype } from "./yjs-utils";
+import { dbtype2nodetype, json2yxml } from "./yjs-utils";
 
 const debounceRegistry = new Map<string, any>();
 /**
@@ -119,9 +121,15 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
   if (!repo) {
     throw new Error("repo not found");
   }
-  // TODO make sure the ydoc is empty.
-  repo.yDocBlob && Y.applyUpdate(ydoc, repo.yDocBlob);
-  // migrate(ydoc, repoId);
+
+  if (repo.yDocBlob) {
+    Y.applyUpdate(ydoc, repo.yDocBlob);
+  } else {
+    if (repo.pods.length > 0) {
+      migrate_v_0_0_1(ydoc, repoId);
+    }
+    ydoc.getMap("meta").set("version", "v0.0.1");
+  }
 }
 
 export async function bindState(doc: Y.Doc, repoId: string) {
@@ -138,37 +146,8 @@ export function writeState() {
 }
 
 /**
- * Migrations. These are not used yet.
+ * Load content from the DB and migrate to the new Y.Doc format.
  */
-
-/**
- * Check if we need to do data migration.
- *
- * Current version: v0.0.1
- */
-function migrate(ydoc: Y.Doc, repoId) {
-  // setup a version number for future migration
-  const meta = ydoc.getMap("meta");
-  //   meta.delete("version");
-  if (!meta.has("version")) {
-    console.log("No version info, performing initial migration from database.");
-    // TODO migrate from the database
-    // ydoc.getMap("meta").set("version", "v0.0.1");
-    migrate_v_0_0_1(ydoc, repoId);
-    // throw new Error("Migration not implemented.");
-  } else {
-    const version = meta.get("version");
-    console.log("YDoc version:", version);
-    switch (version) {
-      case "v0.0.1":
-        // TODO migrate from the database
-        break;
-      default:
-        throw new Error(`unknown version ${version}`);
-    }
-  }
-}
-
 async function migrate_v_0_0_1(ydoc: Y.Doc, repoId: string) {
   console.log("=== initialMigrate");
   // 1. query DB for repo.pods
@@ -237,9 +216,10 @@ async function migrate_v_0_0_1(ydoc: Y.Doc, repoId: string) {
       const content = new Y.Text(pod.content || undefined);
       codeMap.set(pod.id, content);
     } else if (pod.type === "WYSIWYG") {
-      // TODO
-      // throw new Error("WYSIWYG migration not implemented");
-      console.log("WARNING WYSIWYG migration not implemented");
+      if (pod.content) {
+        const yxml = json2yxml(JSON.parse(pod.content));
+        richMap.set(pod.id, yxml);
+      }
     }
   });
 }

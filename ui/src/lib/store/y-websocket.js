@@ -27,6 +27,33 @@ export const messageAuth = 2;
  */
 const messageHandlers = [];
 
+const messageYjsSyncDone = 3;
+
+const readSyncMessage = (decoder, encoder, doc, transactionOrigin) => {
+  const messageType = decoding.readVarUint(decoder);
+  switch (messageType) {
+    case syncProtocol.messageYjsSyncStep1:
+      syncProtocol.readSyncStep1(decoder, encoder, doc);
+      break;
+    case syncProtocol.messageYjsSyncStep2:
+      syncProtocol.readSyncStep2(decoder, doc, transactionOrigin);
+      // there will be a sync step 1 after the step 2
+      // syncProtocol.readSyncStep1(decoder, encoder, doc);
+      break;
+    case syncProtocol.messageYjsUpdate:
+      syncProtocol.readUpdate(decoder, doc, transactionOrigin);
+      break;
+    case messageYjsSyncDone:
+      // But do I know which sync is done? That doesn't matter. I just set
+      // sync-status to dirty when we send out step2 or update, and mark it
+      // clean when we receive sync-done.
+      break;
+    default:
+      throw new Error("Unknown message type");
+  }
+  return messageType;
+};
+
 messageHandlers[messageSync] = (
   encoder,
   decoder,
@@ -35,7 +62,7 @@ messageHandlers[messageSync] = (
   _messageType
 ) => {
   encoding.writeVarUint(encoder, messageSync);
-  const syncMessageType = syncProtocol.readSyncMessage(
+  const syncMessageType = readSyncMessage(
     decoder,
     encoder,
     provider.doc,
@@ -47,6 +74,18 @@ messageHandlers[messageSync] = (
     !provider.synced
   ) {
     provider.synced = true;
+  }
+  if (
+    syncMessageType === syncProtocol.messageYjsSyncStep1 &&
+    encoding.length(encoder) > 1
+  ) {
+    // This is a non-empty reply to upload data to the server, so we set
+    // dirty/pending field.
+    provider.emit("mySync", ["uploading"]);
+  }
+  if (syncMessageType === messageYjsSyncDone) {
+    // provider.step = "synced";
+    provider.emit("mySync", ["synced"]);
   }
 };
 
@@ -344,6 +383,8 @@ export class WebsocketProvider extends Observable {
       if (origin !== this) {
         const encoder = encoding.createEncoder();
         encoding.writeVarUint(encoder, messageSync);
+        // this is actually where we upload local changes to the server.
+        this.emit("mySync", ["uploading"]);
         syncProtocol.writeUpdate(encoder, update);
         broadcastMessage(this, encoding.toUint8Array(encoder));
       }

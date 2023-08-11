@@ -12,10 +12,6 @@ export function useYjsObserver() {
   const nodesMap = ydoc.getMap<Node>("nodesMap");
   const updateView = useStore(store, (state) => state.updateView);
   const resetSelection = useStore(store, (state) => state.resetSelection);
-  const buildNode2Children = useStore(
-    store,
-    (state) => state.buildNode2Children
-  );
 
   useEffect(() => {
     const observer = (YMapEvent: YEvent<any>, transaction: Transaction) => {
