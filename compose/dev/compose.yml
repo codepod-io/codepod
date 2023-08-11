@@ -93,6 +93,9 @@ services:
 
   nginx:
     image: nginx:alpine
+    depends_on:
+      - ui
+      - api
     ports:
       - 8080:8080
     volumes:
