@@ -15,6 +15,9 @@ import { ResizableBox } from "react-resizable";
 import { useApolloClient } from "@apollo/client";
 
 import { useStore } from "zustand";
+import { shallow } from "zustand/shallow";
+
+import * as Y from "yjs";
 
 import ReactFlow, {
   addEdge,
@@ -286,12 +289,6 @@ const MyEditor = ({
   // FIXME this is re-rendered all the time.
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const setPodContent = useStore(store, (state) => state.setPodContent);
-  const setPodRichContent = useStore(store, (state) => state.setPodRichContent);
-  // initial content
-  const getPod = useStore(store, (state) => state.getPod);
-  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
-  const pod = getPod(id);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const setPodFocus = useStore(store, (state) => state.setPodFocus);
   // the Yjs extension for Remirror
@@ -302,7 +299,12 @@ const MyEditor = ({
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const resetSelection = useStore(store, (state) => state.resetSelection);
   const updateView = useStore(store, (state) => state.updateView);
-  const editable = !isGuest && focusedEditor === id;
+  const richMap = provider.doc.getMap<Y.XmlFragment>("richMap");
+  if (!richMap.has(id)) {
+    richMap.set(id, new Y.XmlFragment());
+  }
+  const yXml = richMap.get(id) as Y.XmlFragment;
+
   const { manager, state, setState } = useRemirror({
     extensions: () => [
       new PlaceholderExtension({ placeholder }),
@@ -312,10 +314,7 @@ const MyEditor = ({
       new SupExtension(),
       new SubExtension(),
       new MarkdownExtension(),
-      // YjsExtension seems to be incompatible with editable=false, throwing console errors.
-      ...(editable
-        ? [new MyYjsExtension({ getProvider: () => provider, id })]
-        : []),
+      new MyYjsExtension({ yXml, awareness: provider.awareness }),
       new MathInlineExtension(),
       new MathBlockExtension(),
       // new CalloutExtension({ defaultType: "warn" }),
@@ -347,11 +346,6 @@ const MyEditor = ({
         autoLinkAllowedTLDs: ["dev", ...TOP_50_TLDS],
       }),
       new UnderlineExtension(),
-      new CodePodSyncExtension({
-        id: id,
-        setPodContent: setPodContent,
-        setPodRichContent: setPodRichContent,
-      }),
       new EmojiExtension({ data: emojiData, plainText: true }),
       new SlashExtension({
         extraAttributes: { type: "user" },
@@ -371,7 +365,8 @@ const MyEditor = ({
     // content: "<p>I love <b>Remirror</b></p>",
     // content: "hello world",
     // content: initialContent,
-    content: pod.content == "" ? pod.richContent : pod.content,
+    // FIXME initial content should not be set.
+    // content: pod.content == "" ? pod.richContent : pod.content,
 
     // Place the cursor at the start of the document. This can also be set to
     // `end`, `all` or a numbered position.
@@ -383,8 +378,23 @@ const MyEditor = ({
     // is added to the editor.
     // stringHandler: "html",
     // stringHandler: htmlToProsemirrorNode,
+    // FIXME handle markdown import/export when we migrate to Yjs for everything.
     stringHandler: "markdown",
   });
+
+  // Printing the schema for backend JSON2YXML conversion. This is useful for
+  // parsing the prosemirror JSON doc format in the backend (search `json2yxml`
+  // funciton).
+  //
+  // const obj = { nodes: {}, marks: {},
+  // };
+  // manager.schema.spec.nodes.forEach((k, v) => { console.log("k", k, "v", v);
+  //   obj["nodes"][k] = v;
+  // });
+  // manager.schema.spec.marks.forEach((k, v) => { console.log("k", k, "v", v);
+  //   obj["marks"][k] = v;
+  // });
+  // console.log("obj", JSON.stringify(obj));
 
   return (
     <Box
@@ -416,6 +426,19 @@ const MyEditor = ({
     >
       <ThemeProvider>
         <MyStyledWrapper>
+          <Box
+            sx={{
+              // Put it 100% the width and height, above the following components.
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              zIndex: focusedEditor === id ? -1 : 10,
+            }}
+          >
+            {/* Overlay */}
+          </Box>
           <Remirror
             manager={manager}
             // Must set initialContent, otherwise the Reactflow will fire two
@@ -429,7 +452,6 @@ const MyEditor = ({
             // - [1] https://remirror.io/docs/controlled-editor
             // - [2] demo that Chinese input method is not working:
             //   https://remirror.vercel.app/?path=/story/editors-controlled--editable
-            editable={editable}
           >
             <HotkeyControl id={id} />
             {/* <WysiwygToolbar /> */}
@@ -521,18 +543,16 @@ export const RichNode = memo<Props>(function ({
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   // const pod = useStore(store, (state) => state.pods[id]);
   const setPodName = useStore(store, (state) => state.setPodName);
-  const getPod = useStore(store, (state) => state.getPod);
-  const setPodGeo = useStore(store, (state) => state.setPodGeo);
-  const pod = getPod(id);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
-  const width = useStore(store, (state) => state.pods[id]?.width);
   const cursorNode = useStore(store, (state) => state.cursorNode);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const devMode = useStore(store, (state) => state.devMode);
   const inputRef = useRef<HTMLInputElement>(null);
-  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+  const nodesMap = useStore(store, (state) =>
+    state.ydoc.getMap<Node>("nodesMap")
+  );
   const updateView = useStore(store, (state) => state.updateView);
   const reactFlowInstance = useReactFlow();
 
@@ -551,25 +571,27 @@ export const RichNode = memo<Props>(function ({
           width: size.width,
           style: { ...node.style, width: size.width },
         });
-        setPodGeo(
-          id,
-          {
-            parent: node.parentNode ? node.parentNode : "ROOT",
-            x: node.position.x,
-            y: node.position.y,
-            // new width
-            width: size.width!,
-            height: node.height!,
-          },
-          true
-        );
         updateView();
         if (autoRunLayout) {
           autoLayoutROOT();
         }
       }
     },
-    [id, nodesMap, setPodGeo, updateView, autoLayoutROOT]
+    [id, nodesMap, updateView, autoLayoutROOT]
+  );
+
+  const { width, height, parent } = useReactFlowStore(
+    (s) => {
+      const node = s.nodeInternals.get(id)!;
+
+      return {
+        width: node.width,
+        height: node.height,
+        parent: node.parentNode,
+      };
+    },
+    // Need to use shallow here. Otherwise, the node will keep re-rendering.
+    shallow
   );
 
   useEffect(() => {
@@ -599,8 +621,6 @@ export const RichNode = memo<Props>(function ({
     }
   }, [cursorNode]);
 
-  if (!pod) return null;
-
   const node = nodesMap.get(id);
 
   const fontSize = level2fontsize(
@@ -611,12 +631,12 @@ export const RichNode = memo<Props>(function ({
 
   if (contextualZoom && fontSize * zoomLevel < threshold) {
     // Return a collapsed block.
-    let text = "";
-    if (pod.content) {
-      // let json = JSON.parse(pod.content);
-      const plain = prosemirrorToPlainText(pod.content);
-      text = plain.split("\n")[0];
-    }
+    let text = "<some rich text>";
+    // if (pod.content) {
+    //   // let json = JSON.parse(pod.content);
+    //   const plain = prosemirrorToPlainText(pod.content);
+    //   text = plain.split("\n")[0];
+    // }
     text = text || "Empty";
     return (
       <Box
@@ -628,8 +648,8 @@ export const RichNode = memo<Props>(function ({
           // Offset the border to prevent the node height from changing.
           margin: "-5px",
           textAlign: "center",
-          height: pod.height,
-          width: pod.width,
+          height: height,
+          width: width,
           color: "darkorchid",
         }}
         className="custom-drag-handle"
@@ -662,8 +682,8 @@ export const RichNode = memo<Props>(function ({
       >
         <ResizableBox
           onResizeStop={onResizeStop}
-          height={pod.height || 100}
-          width={pod.width || 0}
+          height={height || 100}
+          width={width || 0}
           axis={"x"}
           minConstraints={[200, 200]}
         >
@@ -717,7 +737,7 @@ export const RichNode = memo<Props>(function ({
               width: "100%",
               height: "100%",
               backgroundColor: "white",
-              borderColor: pod.ispublic
+              borderColor: false // FIXME pod.ispublic
                 ? "green"
                 : selected
                 ? "#003c8f"
@@ -731,7 +751,13 @@ export const RichNode = memo<Props>(function ({
                 opacity: showToolbar ? 1 : 0,
               }}
             >
-              <Handles pod={pod} xPos={xPos} yPos={yPos} />
+              <Handles
+                width={width}
+                height={height}
+                parent={parent}
+                xPos={xPos}
+                yPos={yPos}
+              />
             </Box>
 
             <Box>
@@ -746,8 +772,8 @@ export const RichNode = memo<Props>(function ({
                   }}
                   className="nodrag"
                 >
-                  {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w:{" "}
-                  {pod.width}, h: {pod.height})
+                  {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w: {width},
+                  h: {height})
                 </Box>
               )}
               <Box
@@ -800,9 +826,7 @@ export const RichNode = memo<Props>(function ({
                 <MyFloatingToolbar id={id} />
               </Box>
             </Box>
-            <Box>
-              <MyEditor id={id} />
-            </Box>
+            <MyEditor id={id} />
           </Box>
         )}
       </Box>

@@ -49,6 +49,7 @@ import { ResizableBox } from "react-resizable";
 import Ansi from "ansi-to-react";
 
 import { useStore } from "zustand";
+import { shallow } from "zustand/shallow";
 
 import { RepoContext } from "../../lib/store";
 
@@ -560,10 +561,15 @@ export const CodeNode = memo<NodeProps>(function ({
   // right, bottom
   const [layout, setLayout] = useState("bottom");
   const setPodName = useStore(store, (state) => state.setPodName);
-  const setPodGeo = useStore(store, (state) => state.setPodGeo);
-  const getPod = useStore(store, (state) => state.getPod);
+  const { width, height, parent } = useReactFlowStore((s) => {
+    const node = s.nodeInternals.get(id)!;
 
-  const pod = getPod(id);
+    return {
+      width: node.width,
+      height: node.height,
+      parent: node.parentNode,
+    };
+  }, shallow);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const cursorNode = useStore(store, (state) => state.cursorNode);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
@@ -577,7 +583,9 @@ export const CodeNode = memo<NodeProps>(function ({
   );
   const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
 
-  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+  const nodesMap = useStore(store, (state) =>
+    state.ydoc.getMap<Node>("nodesMap")
+  );
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
 
@@ -613,25 +621,13 @@ export const CodeNode = memo<NodeProps>(function ({
           width: size.width,
           style: { ...node.style, width: size.width },
         });
-        setPodGeo(
-          id,
-          {
-            parent: node.parentNode ? node.parentNode : "ROOT",
-            x: node.position.x,
-            y: node.position.y,
-            // new width
-            width: size.width!,
-            height: node.height!,
-          },
-          true
-        );
         updateView();
         if (autoRunLayout) {
           autoLayoutROOT();
         }
       }
     },
-    [id, nodesMap, setPodGeo, updateView, autoLayoutROOT]
+    [id, nodesMap, updateView, autoLayoutROOT]
   );
 
   useEffect(() => {
@@ -653,14 +649,6 @@ export const CodeNode = memo<NodeProps>(function ({
     (state) => state.contextualZoomParams.threshold
   );
 
-  // if (!pod) throw new Error(`Pod not found: ${id}`);
-
-  if (!pod) {
-    // FIXME this will be fired when removing a node. Why?
-    console.log("[WARN] CodePod rendering pod not found", id);
-    return null;
-  }
-
   const node = nodesMap.get(id);
 
   const fontSize = level2fontsize(
@@ -671,7 +659,8 @@ export const CodeNode = memo<NodeProps>(function ({
 
   if (contextualZoom && fontSize * zoomLevel < threshold) {
     // Return a collapsed block.
-    let text = pod.content;
+    let text = "<some code>";
+    // let text = pod.content;
     if (text) {
       const index = text.indexOf("\n");
       if (index !== -1) {
@@ -689,8 +678,8 @@ export const CodeNode = memo<NodeProps>(function ({
           // Offset the border to prevent the node height from changing.
           margin: "-5px",
           textAlign: "center",
-          height: pod.height,
-          width: pod.width,
+          height: height,
+          width: width,
           color: "green",
         }}
         className="custom-drag-handle"
@@ -723,8 +712,8 @@ export const CodeNode = memo<NodeProps>(function ({
       >
         <ResizableBox
           onResizeStop={onResizeStop}
-          height={pod.height || 100}
-          width={pod.width || 0}
+          height={height || 100}
+          width={width || 0}
           axis={"x"}
           minConstraints={[200, 200]}
         >
@@ -768,7 +757,9 @@ export const CodeNode = memo<NodeProps>(function ({
             id={"reactflow_node_code_" + id}
             sx={{
               border: "1px #d6dee6",
-              borderWidth: pod.ispublic ? "4px" : "2px",
+              borderWidth: false // FIXME pod.ispublic
+                ? "4px"
+                : "2px",
               borderRadius: "4px",
               borderStyle: isCutting ? "dashed" : "solid",
               width: "100%",
@@ -776,7 +767,7 @@ export const CodeNode = memo<NodeProps>(function ({
               backgroundColor: "rgb(244, 246, 248)",
               borderColor: isCutting
                 ? "red"
-                : pod.ispublic
+                : false // FIXME pod.ispublic
                 ? "green"
                 : selected
                 ? "#003c8f"
@@ -790,7 +781,13 @@ export const CodeNode = memo<NodeProps>(function ({
                 opacity: showToolbar ? 1 : 0,
               }}
             >
-              <Handles pod={pod} xPos={xPos} yPos={yPos} />
+              <Handles
+                width={width}
+                height={height}
+                parent={parent}
+                xPos={xPos}
+                yPos={yPos}
+              />
             </Box>
 
             {/* The header of code pods. */}
@@ -812,9 +809,9 @@ export const CodeNode = memo<NodeProps>(function ({
                   }}
                   className="nodrag"
                 >
-                  {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w:{" "}
-                  {pod.width}, h: {pod.height}), parent: {pod.parent} level:{" "}
-                  {node?.data.level} fontSize: {fontSize}
+                  {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w: {width},
+                  h: {height}), parent: {parent} level: {node?.data.level}{" "}
+                  fontSize: {fontSize}
                 </Box>
               )}
               {/* We actually don't need the name for a pod. Users can just write comments. */}

@@ -37,7 +37,7 @@ import { lowercase, numbers } from "nanoid-dictionary";
 import { useStore } from "zustand";
 
 import { RepoContext } from "../lib/store";
-import { useEdgesYjsObserver, useYjsObserver } from "../lib/nodes";
+import { useYjsObserver } from "../lib/nodes";
 
 import { useApolloClient } from "@apollo/client";
 import { CanvasContextMenu } from "./CanvasContextMenu";
@@ -56,213 +56,18 @@ const edgeTypes = {
   floating: FloatingEdge,
 };
 
-/**
- * This hook will load nodes from zustand store into Yjs nodesMap using setNodes.
- * @returns None
- */
-function store2nodes(id: string, { getId2children, getPod }) {
-  let res: any[] = [];
-  let children = getId2children(id) || [];
-  const pod = getPod(id);
-  if (id !== "ROOT") {
-    res.push({
-      id: id,
-      type: pod.type,
-      data: {
-        // label: `ID: ${id}, parent: ${pods[id].parent}, pos: ${pods[id].x}, ${pods[id].y}`,
-        label: id,
-        name: pod.name,
-        parent: pod.parent,
-      },
-      // position: { x: 100, y: 100 },
-      position: { x: pod.x, y: pod.y },
-      parentNode: pod.parent !== "ROOT" ? pod.parent : undefined,
-      style: {
-        width: pod.width || undefined,
-        height: pod.height || undefined,
-      },
-      width: pod.width || undefined,
-      // for code node, don't set height, let it be auto
-      height: pod.height || undefined,
-      dragHandle: ".custom-drag-handle",
-    });
-  }
-  for (const child of children) {
-    res = res.concat(store2nodes(child, { getId2children, getPod }));
-  }
-  return res;
-}
-
-function verifyConsistency(nodes: Node[], nodesMap: YMap<Node>) {
-  let keys = new Set(nodesMap.keys());
-  let nodesMap2 = new Map<string, Node>();
-  nodes.forEach((node) => nodesMap2.set(node.id, node));
-  let keys2 = new Set(nodesMap2.keys());
-  if (keys.size !== keys2.size) {
-    console.error("key sizes are not the same", keys, keys2);
-    return false;
-  }
-  for (let i = 0; i < keys.size; i++) {
-    if (keys[i] !== keys2[i]) {
-      console.error("keys are not the same", keys, keys2);
-      return false;
-    }
-  }
-  // verify the values
-  for (let key of Array.from(keys)) {
-    let node1 = nodesMap.get(key);
-    let node2 = nodesMap2.get(key);
-    if (!node1) {
-      console.error("node1 is undefined");
-      return false;
-    }
-    if (!node2) {
-      console.error("node2 is undefined");
-      return false;
-    }
-    if (node1.id !== node2.id) {
-      console.error("node id are not the same", node1.id, node2.id, "key", key);
-      return false;
-    }
-    if (node1.parentNode !== node2.parentNode) {
-      console.error(
-        "node parent are not the same",
-        node1.parentNode,
-        node2.parentNode
-      );
-      return false;
-    }
-
-    // FIXME: Number.EPSILON is still too huge to compare two floats
-    if (Math.abs(node1.position.x - node2.position.x) > 0.01) {
-      console.error(
-        "node x are not the same",
-        node1.position.x,
-        node2.position.x
-      );
-      return false;
-    }
-    if (Math.abs(node1.position.y - node2.position.y) > 0.01) {
-      console.error(
-        "node y are not the same",
-        node1.position.y,
-        node2.position.y
-      );
-      return false;
-    }
-  }
-  return true;
-}
-
-function verifyEdgeConsistency(edges: Edge[], edgesMap: YMap<Edge>) {
-  let keys = new Set(edgesMap.keys());
-  let edgesMap2 = new Map<string, Edge>();
-  edges.forEach((edge) => edgesMap2.set(edge.id, edge));
-  let keys2 = new Set(edgesMap2.keys());
-  if (keys.size !== keys2.size) {
-    console.error("key sizes are not the same", keys, keys2);
-    return false;
-  }
-  for (let i = 0; i < keys.size; i++) {
-    if (keys[i] !== keys2[i]) {
-      console.error("keys are not the same", keys, keys2);
-      return false;
-    }
-  }
-  // verify the values
-  for (let key of Array.from(keys)) {
-    let edge1 = edgesMap.get(key);
-    let edge2 = edgesMap2.get(key);
-    if (!edge1) {
-      console.error("edge1 is undefined");
-      return false;
-    }
-    if (!edge2) {
-      console.error("edge2 is undefined");
-      return false;
-    }
-    if (edge1.id !== edge2.id) {
-      console.error("edge id are not the same", edge1.id, edge2.id, "key", key);
-      return false;
-    }
-    if (edge1.source !== edge2.source) {
-      console.error("edge source are not the same", edge1.source, edge2.source);
-      return false;
-    }
-    if (edge1.target !== edge2.target) {
-      console.error("edge target are not the same", edge1.target, edge2.target);
-      return false;
-    }
-  }
-  return true;
-}
-
 function useInitNodes() {
   const store = useContext(RepoContext)!;
-  const getPod = useStore(store, (state) => state.getPod);
-  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
-  const edgesMap = useStore(store, (state) => state.ydoc.getMap<Edge>("edges"));
-  const arrows = useStore(store, (state) => state.arrows);
-  const getId2children = useStore(store, (state) => state.getId2children);
   const provider = useStore(store, (state) => state.provider);
   const [loading, setLoading] = useState(true);
   const updateView = useStore(store, (state) => state.updateView);
-  const updateEdgeView = useStore(store, (state) => state.updateEdgeView);
   const adjustLevel = useStore(store, (state) => state.adjustLevel);
-  const buildNode2Children = useStore(
-    store,
-    (state) => state.buildNode2Children
-  );
   useEffect(() => {
     const init = () => {
-      let nodes = store2nodes("ROOT", { getId2children, getPod });
-      let isConsistent = verifyConsistency(nodes, nodesMap);
-      if (!isConsistent) {
-        console.warn(
-          "The yjs server is not consistent with the database. Resetting the yjs server"
-        );
-        // Not only should we set nodes, but also delete.
-        nodesMap.clear();
-        // add the nodes, so that the nodesMap is consistent with the database.
-        nodes.forEach((node) => {
-          nodesMap.set(node.id, node);
-        });
-      }
-      // NOTE we have to trigger an update here, otherwise the nodes are not
-      // rendered.
-      // triggerUpdate();
       // adjust level and update view
       adjustLevel();
       updateView();
-      // handling the arrows
-      isConsistent = verifyEdgeConsistency(
-        arrows.map(({ source, target }) => ({
-          source,
-          target,
-          id: `${source}_${target}`,
-        })),
-        edgesMap
-      );
-      if (!isConsistent) {
-        console.warn("The yjs server is not consistent with the database.");
-        // delete the old keys
-        edgesMap.clear();
-        arrows.forEach(({ target, source }) => {
-          const edge: Edge = {
-            id: `${source}_${target}`,
-            source,
-            sourceHandle: "top",
-            target,
-            targetHandle: "top",
-          };
-          edgesMap.set(edge.id, edge);
-          // This isn't working. I need to set {edges} manually (from edgesMap)
-          // reactFlowInstance.addEdges(edge);
-        });
-      }
-      updateEdgeView();
       setLoading(false);
-      buildNode2Children();
     };
 
     if (!provider) return;
@@ -365,7 +170,9 @@ function useJump() {
 
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
 
-  const nodesMap = useStore(store, (state) => state.ydoc.getMap<Node>("pods"));
+  const nodesMap = useStore(store, (state) =>
+    state.ydoc.getMap<Node>("nodesMap")
+  );
   const pods = useStore(store, (state) => state.pods);
 
   const reactflow = useReactFlow();
@@ -409,8 +216,8 @@ function useJump() {
     switch (event.key) {
       case "ArrowUp":
         if (event.shiftKey) {
-          if (pod.parentNode !== "ROOT") {
-            to = nodesMap.get(pod.parentNode!)!;
+          if (pod.parentNode) {
+            to = nodesMap.get(pod.parentNode)!;
           } else {
             to = pod;
           }
@@ -681,7 +488,6 @@ function CanvasImplWrap() {
   const reactFlowWrapper = useRef<any>(null);
 
   useYjsObserver();
-  useEdgesYjsObserver();
   usePaste(reactFlowWrapper);
   useCut(reactFlowWrapper);
   useJump();
@@ -731,14 +537,9 @@ function CanvasImpl() {
 
   const nodes = useStore(store, (state) => state.nodes);
   const edges = useStore(store, (state) => state.edges);
-  const apolloClient = useApolloClient();
-  const onNodesChange = useStore(store, (state) =>
-    state.onNodesChange(apolloClient)
-  );
-  const onEdgesChange = useStore(store, (state) =>
-    state.onEdgesChange(apolloClient)
-  );
-  const onConnect = useStore(store, (state) => state.onConnect(apolloClient));
+  const onNodesChange = useStore(store, (state) => state.onNodesChange);
+  const onEdgesChange = useStore(store, (state) => state.onEdgesChange);
+  const onConnect = useStore(store, (state) => state.onConnect);
   const moveIntoScope = useStore(store, (state) => state.moveIntoScope);
   const setDragHighlight = useStore(store, (state) => state.setDragHighlight);
   const removeDragHighlight = useStore(
@@ -778,12 +579,12 @@ function CanvasImpl() {
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [points, setPoints] = useState({ x: 0, y: 0 });
   const [client, setClient] = useState({ x: 0, y: 0 });
-  const [parentNode, setParentNode] = useState("ROOT");
+  const [parentNode, setParentNode] = useState(undefined);
 
   const onPaneContextMenu = (event) => {
     event.preventDefault();
     setShowContextMenu(true);
-    setParentNode("ROOT");
+    setParentNode(undefined);
     setPoints({ x: event.pageX, y: event.pageY });
     setClient({ x: event.clientX, y: event.clientY });
   };
@@ -925,8 +726,8 @@ function CanvasImpl() {
             removeDragHighlight();
             let mousePos = project({ x: event.clientX, y: event.clientY });
             let scope = getScopeAtPos(mousePos, node.id);
-            let toScope = scope ? scope.id : "ROOT";
-            const parentScope = node.parentNode ? node.parentNode : "ROOT";
+            let toScope = scope?.id;
+            const parentScope = node.parentNode;
             if (selectedPods.size > 0 && parentScope !== toScope) {
               moveIntoScope(Array.from(selectedPods), toScope);
               // update view manually to remove the drag highlight.

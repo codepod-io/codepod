@@ -13,7 +13,8 @@ import {
   yUndoPlugin,
   yUndoPluginKey,
 } from "y-prosemirror";
-import type { Doc } from "yjs";
+import type { Doc, XmlFragment } from "yjs";
+import { Awareness } from "y-protocols/awareness";
 import { UndoManager } from "yjs";
 import {
   AcceptUndefined,
@@ -52,32 +53,9 @@ export interface YSyncOpts {
   permanentUserData?: any | null;
 }
 
-/**
- * yjs typings are very rough; so we define here the interface that we require
- * (y-webrtc and y-websocket providers are both compatible with this interface;
- * no other providers have been checked).
- */
-interface YjsRealtimeProvider {
-  doc: Doc;
-  awareness: any;
-  destroy: () => void;
-  disconnect: () => void;
-}
-
-export interface YjsOptions<
-  Provider extends YjsRealtimeProvider = YjsRealtimeProvider
-> {
-  id: string;
-  /**
-   * Get the provider for this extension.
-   */
-  getProvider: Provider | (() => Provider);
-
-  /**
-   * Remove the active provider. This should only be set at initial construction
-   * of the editor.
-   */
-  destroyProvider?: (provider: Provider) => void;
+export interface YjsOptions {
+  yXml?: AcceptUndefined<XmlFragment>;
+  awareness?: AcceptUndefined<Awareness>;
 
   /**
    * The options which are passed through to the Yjs sync plugin.
@@ -129,14 +107,8 @@ export interface YjsOptions<
  */
 @extension<YjsOptions>({
   defaultOptions: {
-    id: "defaultId",
-    getProvider: (): never => {
-      invariant(false, {
-        code: ErrorConstant.EXTENSION,
-        message: "You must provide a YJS Provider to the `YjsExtension`.",
-      });
-    },
-    destroyProvider: defaultDestroyProvider,
+    yXml: undefined,
+    awareness: undefined,
     syncPluginOptions: undefined,
     cursorBuilder: defaultCursorBuilder,
     selectionBuilder: defaultSelectionBuilder,
@@ -152,17 +124,6 @@ export interface YjsOptions<
 export class MyYjsExtension extends PlainExtension<YjsOptions> {
   get name() {
     return "yjs" as const;
-  }
-
-  private _provider?: YjsRealtimeProvider;
-
-  /**
-   * The provider that is being used for the editor.
-   */
-  get provider(): YjsRealtimeProvider {
-    const { getProvider } = this.options;
-
-    return (this._provider ??= getLazyValue(getProvider));
   }
 
   getBinding(): { mapping: Map<any, any> } | undefined {
@@ -186,14 +147,12 @@ export class MyYjsExtension extends PlainExtension<YjsOptions> {
       selectionBuilder,
     } = this.options;
 
-    const yDoc = this.provider.doc;
-    const id = this.options.id;
-    const type = yDoc.getXmlFragment("rich-" + id);
+    const type = this.options.yXml;
 
     const plugins = [
       ySyncPlugin(type, syncPluginOptions),
       yCursorPlugin(
-        this.provider.awareness,
+        this.options.awareness,
         { cursorBuilder, getSelection, selectionBuilder },
         cursorStateField
       ),
@@ -208,48 +167,6 @@ export class MyYjsExtension extends PlainExtension<YjsOptions> {
     }
 
     return plugins;
-  }
-
-  /**
-   * This managers the updates of the collaboration provider.
-   */
-  onSetOptions(props: OnSetOptionsProps<YjsOptions>): void {
-    const { changes, pickChanged } = props;
-    const changedPluginOptions = pickChanged([
-      "cursorBuilder",
-      "cursorStateField",
-      "getProvider",
-      "getSelection",
-      "syncPluginOptions",
-    ]);
-
-    if (changes.getProvider.changed) {
-      this._provider = undefined;
-      const previousProvider = getLazyValue(changes.getProvider.previousValue);
-
-      // Check whether the values have changed.
-      if (changes.destroyProvider.changed) {
-        changes.destroyProvider.previousValue?.(previousProvider);
-      } else {
-        this.options.destroyProvider(previousProvider);
-      }
-    }
-
-    if (!isEmptyObject(changedPluginOptions)) {
-      this.store.updateExtensionPlugins(this);
-    }
-  }
-
-  /**
-   * Remove the provider from the manager.
-   */
-  onDestroy(): void {
-    if (!this._provider) {
-      return;
-    }
-
-    this.options.destroyProvider(this._provider);
-    this._provider = undefined;
   }
 
   /**
@@ -335,18 +252,4 @@ export class MyYjsExtension extends PlainExtension<YjsOptions> {
   redoShortcut(props: KeyBindingProps): boolean {
     return this.yRedo()(props);
   }
-}
-
-/**
- * The default destroy provider method.
- */
-export function defaultDestroyProvider(provider: YjsRealtimeProvider): void {
-  const { doc } = provider;
-  provider.disconnect();
-  provider.destroy();
-  doc.destroy();
-}
-
-function getLazyValue<Type>(lazyValue: Type | (() => Type)): Type {
-  return isFunction(lazyValue) ? lazyValue() : lazyValue;
 }

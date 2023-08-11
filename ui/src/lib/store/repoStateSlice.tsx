@@ -5,20 +5,19 @@ import { createContext } from "react";
 import { MonacoCompletionProvider } from "../monacoCompletionProvider";
 import { monaco } from "react-monaco-editor";
 
+import { IndexeddbPersistence } from "y-indexeddb";
+
 import {
-  normalize,
   doRemoteLoadRepo,
-  doRemoteUpdatePod,
   doRemoteLoadVisibility,
   doRemoteUpdateVisibility,
   doRemoteAddCollaborator,
   doRemoteDeleteCollaborator,
-  doRemoteAddPods,
   doRemoteUpdateCodeiumAPIKey,
 } from "../fetch";
 
-import { Doc } from "yjs";
-import { WebsocketProvider } from "y-websocket";
+import { Doc, Transaction } from "yjs";
+import { WebsocketProvider } from "./y-websocket";
 import { createRuntimeSlice, RuntimeSlice } from "./runtimeSlice";
 import { ApolloClient } from "@apollo/client";
 import { addAwarenessStyle } from "../styles";
@@ -105,14 +104,17 @@ export interface RepoStateSlice {
   setUser: (user: any) => void;
   addClient: (clientId: any, name, color) => void;
   deleteClient: (clientId: any) => void;
-  // TODO: this belongs to podSlice
-  remoteUpdateAllPods: (client) => void;
-  addPods: (client, repoId: string, pods: Pod[]) => void;
   showLineNumbers: boolean;
   flipShowLineNumbers: () => void;
+  // A variable to avoid duplicate connection requests.
   yjsConnecting: boolean;
+  // The status of yjs connection.
+  yjsStatus?: string;
   connectYjs: () => void;
   disconnectYjs: () => void;
+  // The status of the uploading and syncing of actual Y.Doc.
+  yjsSyncStatus?: string;
+  setYjsSyncStatus: (status: string) => void;
 }
 
 let unregister: any = null;
@@ -148,78 +150,6 @@ export const createRepoStateSlice: StateCreator<
   clearError: () => set({ error: null }),
 
   loadRepo: loadRepo(set, get),
-  remoteUpdateAllPods: async (client) => {
-    // The pods that haven't been inserted to the database yet
-    const pendingPods = Object.values(get().pods).filter(
-      (pod) => (pod.dirty || pod.dirtyPending) && pod.pending
-    );
-
-    // First insert all pending pods and ignore their relationship for now
-    if (pendingPods.length > 0) {
-      try {
-        await get().addPods(client, get().repoId || "", pendingPods);
-
-        pendingPods.forEach((pod) => {
-          set(
-            produce((state) => {
-              state.pods[pod.id].pending = false;
-            })
-          );
-        });
-      } catch (e) {
-        console.log("add pods error", e);
-      }
-    }
-
-    // update all dirty pods
-    async function helper(id) {
-      let pod = get().pods[id];
-      if (!pod) return;
-      pod.children?.map(({ id }) => helper(id));
-      if (id !== "ROOT") {
-        if ((pod.dirty || pod.dirtyPending) && !pod.isSyncing) {
-          set(
-            produce((state) => {
-              // FIXME when doRemoteUpdatePod fails, this will be stuck.
-              state.pods[id].isSyncing = true;
-              // Transfer the dirty status from dirty to dirtyPending. This is
-              // because pod may be updated during remote syncing, and the flag
-              // might be cleared by a successful return, causing unsaved
-              // content.
-              state.pods[id].dirty = false;
-              state.pods[id].dirtyPending = true;
-            })
-          );
-          try {
-            const res = await doRemoteUpdatePod(client, {
-              pod,
-              repoId: get().repoId,
-            });
-            set(
-              produce((state) => {
-                state.pods[id].isSyncing = false;
-                // pod may be updated during remote syncing
-                // clear dirty flag only when remote update is successful
-                if (res) state.pods[id].dirtyPending = false;
-              })
-            );
-          } catch (e) {
-            set(
-              produce((state) => {
-                state.pods[id].isSyncing = false;
-              })
-            );
-            console.log("remote update pod error", e, pod);
-          }
-        }
-      }
-    }
-    await helper("ROOT");
-  },
-  addPods: async (client, repoId: string, pods: Pod[]) => {
-    // const newPods = pods.map((id) => get().pods[id]);
-    await doRemoteAddPods(client, { repoId, pods });
-  },
   addClient: (clientID, name, color) =>
     set((state) => {
       if (!state.clients.has(clientID)) {
@@ -294,28 +224,70 @@ export const createRepoStateSlice: StateCreator<
   },
   setCutting: (id: string | null) => set({ cutting: id }),
   yjsConnecting: false,
+  yjsStatus: undefined,
+  yjsSyncStatus: undefined,
+  setYjsSyncStatus: (status) => set({ yjsSyncStatus: status }),
   connectYjs: () => {
     if (get().yjsConnecting) return;
     if (get().provider) return;
     set({ yjsConnecting: true });
     console.log("connecting yjs socket ..");
-    set(
-      produce((state) => {
-        state.ydoc = new Doc();
-        state.provider = new WebsocketProvider(
-          serverURL,
-          state.repoId,
-          state.ydoc,
-          {
-            params: {
-              token: localStorage.getItem("token") || "",
-            },
-          }
-        );
-        // max retry time: 10s
-        state.provider.connect();
-        state.provider.maxBackoffTime = 10000;
+    const ydoc = new Doc();
 
+    // TODO offline support
+    // const persistence = new IndexeddbPersistence(get().repoId!, ydoc);
+    // persistence.once("synced", () => {
+    //   console.log("=== initial content loaded from indexedDB");
+    // });
+
+    // connect to primary database
+    const provider = new WebsocketProvider(serverURL, get().repoId!, ydoc, {
+      // resyncInterval: 2000,
+      //
+      // BC is more complex to track our custom Uploading status and SyncDone events.
+      disableBc: true,
+      params: {
+        token: localStorage.getItem("token") || "",
+      },
+    });
+    provider.on("status", ({ status }) => {
+      set({ yjsStatus: status });
+      // FIXME need to show an visual indicator about this, e.g., prevent user
+      // from editing if WS is not connected.
+      //
+      // FIXME do I need a hard disconnect to ensure the doc is always reloaded
+      // from server when WS is re-connected?
+      //
+      // if (status === "disconnected") { // get().disconnectYjs(); //
+      //   get().connectYjs();
+      // }
+    });
+    provider.on("mySync", (status: "uploading" | "synced") => {
+      set({ yjsSyncStatus: status });
+    });
+    // provider.on("connection-close", () => {
+    //   console.log("connection-close");
+    //   // set({ yjsStatus: "connection-close" });
+    // });
+    // provider.on("connection-error", () => {
+    //   console.log("connection-error");
+    //   set({ yjsStatus: "connection-error" });
+    // });
+    // provider.on("sync", (isSynced) => {
+    //   console.log("=== syncing", isSynced);
+    //   // set({ yjsStatus: "syncing" });
+    // });
+    // provider.on("synced", () => {
+    //   console.log("=== synced");
+    //   // set({ yjsStatus: "synced" });
+    // });
+    // max retry time: 10s
+    provider.maxBackoffTime = 10000;
+    provider.connect();
+    set(
+      produce((state: MyState) => {
+        state.ydoc = ydoc;
+        state.provider = provider;
         state.yjsConnecting = false;
       })
     );
@@ -353,7 +325,7 @@ export const createRepoStateSlice: StateCreator<
 
 function loadRepo(set, get) {
   return async (client, id) => {
-    const { pods, edges, name, error, userId, collaborators, isPublic } =
+    const { name, error, userId, collaborators, isPublic } =
       await doRemoteLoadRepo(client, id);
     set(
       produce((state: MyState) => {
@@ -364,8 +336,6 @@ function loadRepo(set, get) {
           state.loadError = error;
           return;
         }
-        state.pods = normalize(pods);
-        state.arrows = edges;
         state.repoName = name;
         state.isPublic = isPublic;
         state.collaborators = collaborators;

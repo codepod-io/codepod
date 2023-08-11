@@ -52,8 +52,9 @@ import { quadtree } from "d3-quadtree";
 import { getHelperLines, level2fontsize } from "../../components/nodes/utils";
 
 // TODO add node's data typing.
-type NodeData = {
-  level?: number;
+export type NodeData = {
+  level: number;
+  name?: string;
 };
 
 const newScopeNodeShapeConfig = {
@@ -66,7 +67,7 @@ export const newNodeShapeConfig = {
   // NOTE for import ipynb: we need to specify some reasonable height so that
   // the imported pods can be properly laid-out. 130 is a good one.
   // This number is also used in Canvas.tsx (refer to "A BIG HACK" in Canvas.tsx).
-  height: 130,
+  height: 100,
 };
 
 /**
@@ -77,7 +78,7 @@ export const newNodeShapeConfig = {
  * @param level
  * @returns
  */
-function createTemporaryNode(pod, position, parent = "ROOT", level = 0): any {
+function createTemporaryNode(pod, position, parent?, level = 0): any {
   const id = myNanoId();
   let style = {
     // create a temporary half-transparent pod
@@ -99,17 +100,17 @@ function createTemporaryNode(pod, position, parent = "ROOT", level = 0): any {
       parent,
       level,
     },
+    parentNode: parent,
     dragHandle: ".custom-drag-handle",
     width: pod.width,
     height: pod.height!,
-    // Note: when the temporary node is finally sticked to the canvas, the click event will trigger drag event/position change of this node once and cause a bug because the node is not ready in the store and DB. just make it undraggable during moving to avoid this bug.
+    // Note: when the temporary node is finally sticked to the canvas, the click
+    // event will trigger drag event/position change of this node once and cause
+    // a bug because the node is not ready in the store and DB. just make it
+    // undraggable during moving to avoid this bug.
     draggable: false,
     style,
   };
-
-  if (parent !== "ROOT") {
-    newNode["parentNode"] = parent;
-  }
 
   const newPod = { ...pod, parent, id, position, children: [] };
   const nodes = [[newNode, newPod]];
@@ -124,7 +125,10 @@ function createTemporaryNode(pod, position, parent = "ROOT", level = 0): any {
 /**
  * The new reactflow nodes for context-menu's addXXX items.
  */
-function createNewNode(type: "SCOPE" | "CODE" | "RICH", position): Node {
+function createNewNode(
+  type: "SCOPE" | "CODE" | "RICH",
+  position
+): Node<NodeData> {
   let id = myNanoId();
   const newNode = {
     id,
@@ -142,24 +146,25 @@ function createNewNode(type: "SCOPE" | "CODE" | "RICH", position): Node {
         }
       : {
           width: newNodeShapeConfig.width,
-          // Previously, we should not specify height, so that the pod can grow
-          // when content changes. But when we add auto-layout on adding a new
-          // node, unspecified height will cause  the node to be added always at
-          // the top-left corner (the reason is unknown). Thus, we have to
-          // specify the height here. Note that this height is a dummy value;
-          // the content height will still be adjusted based on content height.
+          // // Previously, we should not specify height, so that the pod can grow
+          // // when content changes. But when we add auto-layout on adding a new
+          // // node, unspecified height will cause  the node to be added always at
+          // // the top-left corner (the reason is unknown). Thus, we have to
+          // // specify the height here. Note that this height is a dummy value;
+          // // the content height will still be adjusted based on content height.
           height: newNodeShapeConfig.height,
-          style: {
-            width: newNodeShapeConfig.width,
-            // It turns out that this height should not be specified to let the
-            // height change automatically.
-            //
-            // height: 200
-          },
+          // style: {
+          //   width: newNodeShapeConfig.width,
+          //   // It turns out that this height should not be specified to let the
+          //   // height change automatically.
+          //   //
+          //   // height: 200
+          // },
         }),
     data: {
       label: id,
       name: "",
+      // FIXME the key "ROOT" is deprecated.
       parent: "ROOT",
       level: 0,
     },
@@ -281,7 +286,6 @@ export interface CanvasSlice {
   setCursorNode: (id?: string) => void;
 
   updateView: () => void;
-  updateEdgeView: () => void;
 
   isPaneFocused: boolean;
   setPaneFocus: () => void;
@@ -297,7 +301,7 @@ export interface CanvasSlice {
   addNode: (
     type: "CODE" | "SCOPE" | "RICH",
     position: XYPosition,
-    parent: string
+    parent?: string
   ) => void;
 
   importLocalCode: (
@@ -305,8 +309,6 @@ export interface CanvasSlice {
     importScopeName: string,
     cellList: any[]
   ) => void;
-
-  setNodeCharWidth: (id: string, width: number) => void;
 
   pastingNodes?: Node[];
   headPastingNodes?: Set<string>;
@@ -326,7 +328,7 @@ export interface CanvasSlice {
 
   adjustLevel: () => void;
   getScopeAtPos: ({ x, y }: XYPosition, exclude: string) => Node | undefined;
-  moveIntoScope: (nodeIds: string[], scopeId: string) => void;
+  moveIntoScope: (nodeIds: string[], scopeId?: string) => void;
   tempUpdateView: ({ x, y }: XYPosition) => void;
 
   helperLineHorizontal: number | undefined;
@@ -334,13 +336,11 @@ export interface CanvasSlice {
   setHelperLineHorizontal: (line: number | undefined) => void;
   setHelperLineVertical: (line: number | undefined) => void;
 
-  onNodesChange: (client: ApolloClient<any>) => OnNodesChange;
-  onEdgesChange: (client: ApolloClient<any>) => OnEdgesChange;
-  onConnect: (client: ApolloClient<any>) => OnConnect;
+  onNodesChange: OnNodesChange;
+  onEdgesChange: OnEdgesChange;
+  onConnect: OnConnect;
 
-  node2children: Map<string, string[]>;
-  buildNode2Children: () => void;
-  autoLayout: (scopeId: string) => void;
+  autoLayout: (scopeId?: string) => void;
   autoLayoutROOT: () => void;
   autoLayoutOnce: boolean;
   setAutoLayoutOnce: (b: boolean) => void;
@@ -422,7 +422,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
    * This function handles the real updates to the reactflow nodes to render.
    */
   updateView: () => {
-    let nodesMap = get().ydoc.getMap<Node>("pods");
+    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
     let selectedPods = get().selectedPods;
     // We have different sources of nodes:
     // 1. those from nodesMap, synced with other users
@@ -459,39 +459,20 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       );
     }
     set({ nodes });
-  },
-  updateEdgeView: () => {
-    const edgesMap = get().ydoc.getMap<Edge>("edges");
+    // edges view
+    const edgesMap = get().ydoc.getMap<Edge>("edgesMap");
     set({ edges: Array.from(edgesMap.values()).filter((e) => e) });
   },
 
-  addNode: (type, position, parent = "ROOT") => {
-    let nodesMap = get().ydoc.getMap<Node>("pods");
+  addNode: (type, position, parent) => {
+    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
     let node = createNewNode(type, position);
     nodesMap.set(node.id, node);
-    get().addPod({
-      id: node.id,
-      children: [],
-      parent: "ROOT",
-      type: node.type as "CODE" | "SCOPE" | "RICH",
-      lang: "python",
-      x: node.position.x,
-      y: node.position.y,
-      width: node.width!,
-      height: node.height!,
-      // For my local update, set dirty to true to push to DB.
-      dirty: true,
-      pending: true,
-    });
-    if (parent !== "ROOT") {
+    if (parent) {
       // we don't assign its parent when created, because we have to adjust its position to make it inside its parent.
       get().moveIntoScope([node.id], parent);
-    } else {
-      // moveIntoScope will build the node2children map, but we need to build it here for the ROOT nodes.
-      get().buildNode2Children();
     }
     // Set initial width as about 30 characters.
-    get().setNodeCharWidth(node.id, 30);
     get().updateView();
     // run auto-layout
     if (get().autoRunLayout) {
@@ -501,7 +482,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
 
   importLocalCode: (position, importScopeName, cellList) => {
     console.log("Sync imported Jupyter notebook or Python scripts");
-    let nodesMap = get().ydoc.getMap<Node>("pods");
+    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
     let scopeNode = createNewNode("SCOPE", position);
     // parent could be "ROOT" or a SCOPE node
     let parent = getScopeAt(
@@ -511,7 +492,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       get().nodes,
       nodesMap
     );
-    let podParent = "ROOT";
+    let podParent: any = undefined;
     if (parent !== undefined) {
       // update scopeNode
       scopeNode.parentNode = parent.id;
@@ -522,21 +503,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     scopeNode.data.name = importScopeName;
     nodesMap.set(scopeNode.id, scopeNode);
 
-    get().addPod({
-      id: scopeNode.id,
-      name: scopeNode.data.name,
-      children: [],
-      parent: podParent,
-      type: scopeNode.type as "CODE" | "SCOPE" | "RICH",
-      lang: "python",
-      x: scopeNode.position.x,
-      y: scopeNode.position.y,
-      width: scopeNode.width!,
-      height: scopeNode.height!,
-      // For my local update, set dirty to true to push to DB.
-      dirty: true,
-      pending: true,
-    });
     let maxLineLength = 0;
     if (cellList.length > 0) {
       for (let i = 0; i < cellList.length; i++) {
@@ -625,68 +591,14 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
 
         // update peer
         nodesMap.set(node.id, node);
-
-        get().addPod({
-          id: node.id,
-          children: [],
-          parent: scopeNode.id,
-          type: node.type as "CODE" | "SCOPE" | "RICH",
-          lang: "python",
-          x: node.position.x,
-          y: node.position.y,
-          width: node.width!,
-          height: node.height!,
-          content: podContent,
-          richContent: podRichContent,
-          exec_count: execution_count,
-          result: podResults ? podResults : undefined,
-          error: podError.ename === "" ? undefined : podError,
-          // For my local update, set dirty to true to push to DB.
-          dirty: true,
-          pending: true,
-        });
-
-        // update zustand & db
-        get().setPodGeo(
-          node.id,
-          { parent: scopeNode.id, ...node.position },
-          true
-        );
       }
     }
     get().adjustLevel();
-    get().buildNode2Children();
     // FIXME updateView() reset the pod width to 300, scope width to 400.
     get().updateView();
   },
   autoLayoutOnce: false,
   setAutoLayoutOnce: (b) => set({ autoLayoutOnce: b }),
-
-  setNodeCharWidth: (id, width) => {
-    let nodesMap = get().ydoc.getMap<Node>("pods");
-    let node = nodesMap.get(id);
-    if (!node) return;
-    // I'll need to map this character width into the width of the node, taking into consideration of the font size.
-    console.log("setNodeCharWidth", width, node.data.level);
-    // calculate the actual width given the fontSzie and the character width
-    const fontsize = level2fontsize(
-      node.data.level,
-      get().contextualZoomParams,
-      get().contextualZoom
-    );
-    // the fontSize is in pt, but the width is in px
-    width = width * fontsize * 0.67;
-    nodesMap.set(id, { ...node, width, style: { ...node.style, width } });
-    let geoData = {
-      parent: node.parentNode ? node.parentNode : "ROOT",
-      x: node.position.x,
-      y: node.position.y,
-      width: width,
-      height: node.height!,
-    };
-    get().setPodGeo(node.id, geoData, true);
-    get().updateView();
-  },
 
   isPasting: false,
   isCutting: false,
@@ -694,13 +606,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   pasteBegin: (position, pod, cutting = false) => {
     // 1. create temporary nodes and pods
     const nodes = createTemporaryNode(pod, position);
-    // 2. add the temporary pods to store.pods
-    nodes.forEach(([node, p]) =>
-      get().addPod({
-        ...p,
-        dirty: false,
-      })
-    );
     set({
       // Only headPastingNodes moves with the mouse, because the other temporary nodes are children of the headPastingNodes.
       // For now, we can have only one headPastingNode on the top level.
@@ -723,7 +628,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     const leadingNodes = get().headPastingNodes;
     const pastingNodes = get().pastingNodes;
     if (!pastingNodes || !leadingNodes) return;
-    let nodesMap = get().ydoc.getMap<Node>("pods");
+    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
 
     // clear the temporary nodes and the pasting/cutting state
     set(
@@ -831,13 +736,13 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
 
   // NOTE: this does not mutate.
   getScopeAtPos: ({ x, y }, exclude) => {
-    const nodesMap = get().ydoc.getMap<Node>("pods");
+    const nodesMap = get().ydoc.getMap<Node>("nodesMap");
     return getScopeAt(x, y, [exclude], get().nodes, nodesMap);
   },
 
   adjustLevel: () => {
     // adjust the levels of all nodes, using topoSort
-    let nodesMap = get().ydoc.getMap<Node>("pods");
+    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
     let nodes = Array.from(nodesMap.values());
     nodes = topologicalSort(nodes, nodesMap);
     // update nodes' level
@@ -856,20 +761,17 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       }
     });
   },
-  moveIntoScope: (nodeIds: string[], scopeId: string) => {
+  moveIntoScope: (nodeIds: string[], scopeId?: string) => {
     // move a node into a scope.
     // 1. update the node's parentNode & position
-    let nodesMap = get().ydoc.getMap<Node>("pods");
+    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
     for (const nodeId of nodeIds) {
       let node = nodesMap.get(nodeId);
       if (!node) {
         console.warn("Node not found", node);
         return;
       }
-      if (
-        node.parentNode === scopeId ||
-        (scopeId === "ROOT" && node.parentNode === undefined)
-      ) {
+      if (node.parentNode === scopeId) {
         console.warn("Node already in scope", node);
         return;
       }
@@ -877,7 +779,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       let fromLevel = node?.data.level;
       let toLevel: number;
       let position: XYPosition;
-      if (scopeId === "ROOT") {
+      if (!scopeId) {
         toLevel = 0;
         position = getAbsPos(node, nodesMap);
       } else {
@@ -912,7 +814,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       let newNode: Node = {
         ...node,
         position,
-        parentNode: scopeId === "ROOT" ? undefined : scopeId,
+        parentNode: scopeId,
         width: newWidth,
         data: {
           ...node.data,
@@ -921,13 +823,10 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       };
       // update peer
       nodesMap.set(node.id, newNode);
-      // update zustand & db
-      get().setPodGeo(node.id, { parent: scopeId, ...position }, true);
     }
     get().adjustLevel();
     // update view
     get().updateView();
-    get().buildNode2Children();
   },
 
   tempUpdateView: (position) => {
@@ -946,8 +845,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   setHelperLineVertical: (line) => set({ helperLineVertical: line }),
 
   // I should modify nodesMap here
-  onNodesChange: (client) => (changes: NodeChange[]) => {
-    let nodesMap = get().ydoc.getMap<Node>("pods");
+  onNodesChange: (changes: NodeChange[]) => {
+    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
     const nodes = get().nodes;
 
     // compute the helper lines
@@ -1017,92 +916,25 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
             // be filed for CodeNode at the beginning or anytime the node height
             // is changed due to content height changes.
             const node = nextNodes.find((n) => n.id === change.id);
-            const prevNode = nodes.find((n) => n.id === change.id);
-            if (!node || !prevNode) throw new Error("Node not found");
-            // At the beginning, a dimension change is fired for all pods for no
-            // good reason. This will cause all pods being marked dirty and get
-            // uploaded. Filter out that situation here.
-            if (
-              node.width === prevNode.width &&
-              node.height === prevNode.height
-            ) {
-              break;
-            }
-
-            let geoData = {
-              parent: node.parentNode ? node.parentNode : "ROOT",
-              x: node.position.x,
-              y: node.position.y,
-              width: node.width!,
-              height: node.height!,
-            };
-            // console.log(
-            //   `node ${change.id} dimension changed, geoData ${JSON.stringify(
-            //     geoData
-            //   )}`
-            // );
-            // If Yjs doesn't have the node, it means that it's a cutting/pasting
-            // node. We won't add it to Yjs here.
-            if (
-              get()
-                .pastingNodes?.map((n) => n.id)
-                .includes(change.id)
-            ) {
-              if (nodesMap.has(change.id)) {
-                throw new Error(
-                  "Node is cutting/pasting node but exists in Yjs"
-                );
-              }
-              // still, we need to set the node, otherwise the height is not set.
-              // update local
-              set(
-                produce((state: MyState) => {
-                  state.pastingNodes = state.pastingNodes?.map((n) =>
-                    n.id === change.id ? node : n
-                  );
-                })
-              );
-              // update local
-              get().setPodGeo(node.id, geoData, false);
-            } else {
-              if (!nodesMap.has(change.id)) {
-                throw new Error("Node not found in yjs.");
-              }
-              nodesMap.set(change.id, node);
-              // update local
-              get().setPodGeo(node.id, geoData, true);
-            }
+            if (!node) throw new Error("Node not found");
+            nodesMap.set(change.id, node);
           }
           break;
         case "position":
-          const node = nextNodes.find((n) => n.id === change.id);
-          if (!node) throw new Error("Node not found");
-          // If Yjs doesn't have the node, it means that it's a cutting/pasting
-          // node. We won't add it to Yjs here.
-          let geoData = {
-            parent: node.parentNode ? node.parentNode : "ROOT",
-            x: node.position.x,
-            y: node.position.y,
-            width: node.width!,
-            height: node.height!,
-          };
-
-          if (!nodesMap.has(change.id)) {
-            throw new Error("Node not found in yjs.");
+          {
+            const node = nextNodes.find((n) => n.id === change.id);
+            if (!node) throw new Error("Node not found");
+            nodesMap.set(change.id, node);
           }
-          nodesMap.set(change.id, node);
-          // update local
-          get().setPodGeo(node.id, geoData, true);
 
           break;
         case "remove":
           // FIXME Would reactflow fire multiple remove for all nodes? If so,
           // do they have a proper order? Seems yes.
           // remove from yjs
+          //
+          // TODO remove from codeMap and richMap?
           nodesMap.delete(change.id);
-          // remove from store
-          get().deletePod(client, { id: change.id });
-          get().buildNode2Children();
           // run auto-layout
           if (get().autoRunLayout) {
             get().autoLayoutROOT();
@@ -1115,9 +947,9 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     });
     get().updateView();
   },
-  onEdgesChange: (client) => (changes: EdgeChange[]) => {
+  onEdgesChange: (changes: EdgeChange[]) => {
     // TODO sync with remote peer
-    const edgesMap = get().ydoc.getMap<Edge>("edges");
+    const edgesMap = get().ydoc.getMap<Edge>("edgesMap");
     // apply the changes. Especially for the "select" change.
     set({
       edges: applyEdgeChanges(changes, get().edges),
@@ -1132,11 +964,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         case "remove":
           const edge = edgesMap.get(change.id);
           if (!edge) throw new Error("Edge not found");
-          remoteDeleteEdge({
-            source: edge.source,
-            target: edge.target,
-            client,
-          });
           edgesMap.delete(change.id);
           break;
         case "reset":
@@ -1148,15 +975,11 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       }
     });
   },
-  onConnect: (client) => (connection: Connection) => {
-    const edgesMap = get().ydoc.getMap<Edge>("edges");
+  onConnect: (connection: Connection) => {
+    const edgesMap = get().ydoc.getMap<Edge>("edgesMap");
     if (!connection.source || !connection.target) return null;
-    remoteAddEdge({
-      source: connection.source,
-      target: connection.target,
-      client,
-    });
     const edge = {
+      // TODO This ID doesn't support multiple types of edges between the same nodes.
       id: `${connection.source}_${connection.target}`,
       source: connection.source,
       sourceHandle: "top",
@@ -1164,7 +987,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       targetHandle: "top",
     };
     edgesMap.set(edge.id, edge);
-    get().updateEdgeView();
+    get().updateView();
   },
   setPaneFocus: () => set({ isPaneFocused: true }),
   setPaneBlur: () => set({ isPaneFocused: false }),
@@ -1174,40 +997,10 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   clicked: false,
   toggleClicked: () => set({ clicked: !get().clicked }),
 
-  /**
-   * This node2children is maintained with the canvas reactflow states, not with
-   * the pods. This mapping may be used by other components, e.g. the runtime.
-   *
-   * TODO we should optimize the performance of this function, maybe only update
-   * the mapping when the structure is changed.
-   */
-  node2children: new Map<string, string[]>(),
-  buildNode2Children: () => {
-    console.debug("Building node2children..");
-    // build a map from node to its children
-    let nodesMap = get().ydoc.getMap<Node>("pods");
-    let nodes: Node[] = Array.from(nodesMap.values());
-    let node2children = new Map<string, string[]>();
-    node2children.set("ROOT", []);
-    nodes.forEach((node) => {
-      if (!node2children.has(node.id)) {
-        node2children.set(node.id, []);
-      }
-      if (node.parentNode) {
-        if (!node2children.has(node.parentNode)) {
-          node2children.set(node.parentNode, []);
-        }
-        node2children.get(node.parentNode)?.push(node.id);
-      } else {
-        node2children.get("ROOT")?.push(node.id);
-      }
-    });
-    set({ node2children });
-  },
   autoLayoutROOT: () => {
     // get all scopes,
     console.debug("autoLayoutROOT");
-    let nodesMap = get().ydoc.getMap<Node>("pods");
+    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
     let nodes: Node[] = Array.from(nodesMap.values());
     nodes
       // sort the children so that the inner scope gets processed first.
@@ -1218,17 +1011,15 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         }
       });
     // Applying on ROOT scope is not ideal.
-    get().autoLayout("ROOT");
+    get().autoLayout();
   },
   /**
    * Use d3-force to auto layout the nodes.
    */
   autoLayout: (scopeId) => {
     // 1. get all the nodes and edges in the scope
-    let nodesMap = get().ydoc.getMap<Node>("pods");
-    const nodes = get().nodes.filter(
-      (node) => node.parentNode === (scopeId === "ROOT" ? undefined : scopeId)
-    );
+    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
+    const nodes = get().nodes.filter((node) => node.parentNode === scopeId);
     if (nodes.length == 0) return;
     const edges = get().edges;
     // consider the output box
@@ -1295,7 +1086,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       node.y -= id2height.get(node.id)! / 2;
     });
 
-    if (scopeId === "ROOT") {
+    if (!scopeId) {
       // reset the node positions
       tmpNodes.forEach(({ id, x, y }) => {
         // FIXME I should assert here.
@@ -1364,21 +1155,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       });
     }
 
-    // trigger update to the db
-    // get the most recent nodes
-    let newNodes = Array.from(nodesMap.values());
-    newNodes.forEach((node) => {
-      // trigger update to the DB
-      let geoData = {
-        parent: node.parentNode ? node.parentNode : "ROOT",
-        x: node.position.x,
-        y: node.position.y,
-        width: node.width!,
-        height: node.height!,
-      };
-      get().setPodGeo(node.id, geoData, true);
-    });
-
     get().updateView();
   },
 });
@@ -1443,80 +1219,4 @@ function forceCollideRect() {
   force.initialize = (_) => (nodes = _);
 
   return force;
-}
-
-/**
- * Compute the rectangle of that is tightly fit to the children.
- * @param node
- * @param node2children
- * @param nodesMap
- * @returns {x,y,width,height}
- */
-function fitChildren(
-  node: Node,
-  node2children,
-  nodesMap
-): null | { x: number; y: number; width: number; height: number } {
-  if (node.type !== "SCOPE") return null;
-  // This is a scope node. Get all its children and calculate the x,y,width,height to tightly fit its children.
-  let children = node2children.get(node.id);
-  // If no children, nothing is changed.
-  if (children.length === 0) return null;
-  // These positions are actually relative to the parent node.
-  let x1s = children.map((child) => nodesMap.get(child)!.position.x);
-  let minx = Math.min(...x1s);
-  let y1s = children.map((child) => nodesMap.get(child)!.position.y);
-  let miny = Math.min(...y1s);
-  let x2s = children.map((child) => {
-    let n = nodesMap.get(child)!;
-    return n.position.x + n.width!;
-  });
-  let maxx = Math.max(...x2s);
-  let y2s = children.map((child) => {
-    let n = nodesMap.get(child)!;
-    return n.position.y + n.height!;
-  });
-  let maxy = Math.max(...y2s);
-  let width = maxx - minx;
-  let height = maxy - miny;
-  const padding = 50;
-  return {
-    // leave a 50 padding for the scope.
-    x: minx - padding,
-    y: miny - padding,
-    width: width + padding * 2,
-    height: height + padding * 2,
-  };
-}
-
-async function remoteAddEdge({ client, source, target }) {
-  const mutation = gql`
-    mutation addEdge($source: ID!, $target: ID!) {
-      addEdge(source: $source, target: $target)
-    }
-  `;
-  await client.mutate({
-    mutation,
-    variables: {
-      source,
-      target,
-    },
-  });
-  return true;
-}
-
-async function remoteDeleteEdge({ client, source, target }) {
-  const mutation = gql`
-    mutation deleteEdge($source: ID!, $target: ID!) {
-      deleteEdge(source: $source, target: $target)
-    }
-  `;
-  await client.mutate({
-    mutation,
-    variables: {
-      source,
-      target,
-    },
-  });
-  return true;
 }

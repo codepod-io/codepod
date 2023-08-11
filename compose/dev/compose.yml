@@ -63,12 +63,10 @@ services:
     volumes:
       - ../../api:/app
       - api-node-modules:/app/node_modules
-      - /var/run/docker.sock:/var/run/docker.sock
     command: sh -c "yarn && yarn dev:yjs"
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
       JWT_SECRET: ${JWT_SECRET}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
 
   ui:
     image: node:18
@@ -95,6 +93,9 @@ services:
 
   nginx:
     image: nginx:alpine
+    depends_on:
+      - ui
+      - api
     ports:
       - 8080:8080
     volumes:

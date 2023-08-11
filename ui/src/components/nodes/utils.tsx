@@ -304,13 +304,41 @@ export function getHelperLines(
  * The 4 handles for connecting reactflow nodes, with pop-up buttons for adding
  * new nodes.
  */
-export const Handles = ({ xPos, yPos, pod }) => {
+export const Handles = ({ xPos, yPos, width, height, parent }) => {
   return (
     <>
-      <MyHandle position={Position.Top} pod={pod} xPos={xPos} yPos={yPos} />
-      <MyHandle position={Position.Bottom} pod={pod} xPos={xPos} yPos={yPos} />
-      <MyHandle position={Position.Left} pod={pod} xPos={xPos} yPos={yPos} />
-      <MyHandle position={Position.Right} pod={pod} xPos={xPos} yPos={yPos} />
+      <MyHandle
+        position={Position.Top}
+        width={width}
+        height={height}
+        parent={parent}
+        xPos={xPos}
+        yPos={yPos}
+      />
+      <MyHandle
+        position={Position.Bottom}
+        width={width}
+        height={height}
+        parent={parent}
+        xPos={xPos}
+        yPos={yPos}
+      />
+      <MyHandle
+        position={Position.Left}
+        width={width}
+        height={height}
+        parent={parent}
+        xPos={xPos}
+        yPos={yPos}
+      />
+      <MyHandle
+        position={Position.Right}
+        width={width}
+        height={height}
+        parent={parent}
+        xPos={xPos}
+        yPos={yPos}
+      />
     </>
   );
 };
@@ -318,10 +346,17 @@ export const Handles = ({ xPos, yPos, pod }) => {
 /**
  * The Wrapped Hanlde with pop-up buttons.
  */
-const MyHandle = ({ position, pod, xPos, yPos }) => {
+const MyHandle = ({ position, width, height, parent, xPos, yPos }) => {
   return (
     <WrappedHandle position={position}>
-      <HandleButton position={position} pod={pod} xPos={xPos} yPos={yPos} />
+      <HandleButton
+        position={position}
+        width={width}
+        height={height}
+        parent={parent}
+        xPos={xPos}
+        yPos={yPos}
+      />
     </WrappedHandle>
   );
 };
@@ -392,23 +427,23 @@ const WrappedHandle = ({ position, children }) => {
 /**
  * The two buttons.
  */
-const HandleButton = ({ position, pod, xPos, yPos }) => {
+const HandleButton = ({ position, width, height, parent, xPos, yPos }) => {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const addNode = useStore(store, (state) => state.addNode);
   const clickAway = useContext(ClickAwayContext);
   switch (position) {
     case Position.Top:
-      yPos = yPos - pod!.height! - 50;
+      yPos = yPos - height! - 50;
       break;
     case Position.Bottom:
-      yPos = yPos + pod!.height! + 50;
+      yPos = yPos + height! + 50;
       break;
     case Position.Left:
-      xPos = xPos - pod!.width! - 50;
+      xPos = xPos - width! - 50;
       break;
     case Position.Right:
-      xPos = xPos + pod!.width! + 50;
+      xPos = xPos + width! + 50;
       break;
   }
   return (
@@ -416,7 +451,7 @@ const HandleButton = ({ position, pod, xPos, yPos }) => {
       <Button
         variant="contained"
         onClick={() => {
-          addNode("CODE", { x: xPos, y: yPos }, pod.parent);
+          addNode("CODE", { x: xPos, y: yPos }, parent);
           clickAway();
         }}
       >
@@ -425,7 +460,7 @@ const HandleButton = ({ position, pod, xPos, yPos }) => {
       <Button
         variant="contained"
         onClick={() => {
-          addNode("RICH", { x: xPos, y: yPos }, pod.parent);
+          addNode("RICH", { x: xPos, y: yPos }, parent);
           clickAway();
         }}
       >

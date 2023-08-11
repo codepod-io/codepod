@@ -38,6 +38,7 @@ import { getUpTime } from "../lib/utils";
 import { registerCompletion } from "../lib/monacoCompletionProvider";
 import { SettingDialog } from "./SettingDialog";
 import { toSvg } from "html-to-image";
+import { match } from "ts-pattern";
 
 const defaultAPIKey = process.env.REACT_APP_CODEIUM_API_KEY;
 
@@ -680,23 +681,12 @@ function SyncStatus() {
     return res;
   });
   const devMode = useStore(store, (state) => state.devMode);
-  const clearAllResults = useStore(store, (s) => s.clearAllResults);
-  const remoteUpdateAllPods = useStore(store, (s) => s.remoteUpdateAllPods);
-  const client = useApolloClient();
-  usePrompt(
-    `You have unsaved ${dirtyIds.length} changes. Are you sure you want to leave?`,
-    dirtyIds.length > 0
-  );
-
-  useEffect(() => {
-    let id = setInterval(() => {
-      remoteUpdateAllPods(client);
-    }, 1000);
-    return () => {
-      clearInterval(id);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // FIXME show prompt if user has unsynced Yjs changes.
+  //
+  // usePrompt(
+  //   `You have unsaved ${dirtyIds.length} changes. Are you sure you want to leave?`,
+  //   dirtyIds.length > 0
+  // );
 
   return (
     <Box>
@@ -719,6 +709,42 @@ function SyncStatus() {
             Saved to cloud.
           </Box>
         )}
+      </Stack>
+    </Box>
+  );
+}
+
+function YjsSyncStatus() {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  // FIXME performance issue
+  const yjsStatus = useStore(store, (state) => state.yjsStatus);
+  const yjsSyncStatus = useStore(store, (state) => state.yjsSyncStatus);
+  return (
+    <Box>
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{
+          alignItems: "center",
+        }}
+      >
+        {/* Synced? <Box>{provider?.synced}</Box> */}
+        {/* {yjsStatus} */}
+        Sync Server:
+        {match(yjsStatus)
+          .with("connected", () => <Box color="green">connected</Box>)
+          .with("disconnected", () => <Box color="red">disconnected</Box>)
+          .with("connecting", () => <Box color="yellow">connecting</Box>)
+          // .with("syncing", () => <Box color="green">online</Box>)
+          .otherwise(() => `${yjsStatus}`)}
+      </Stack>
+      <Stack direction="row" spacing={2}>
+        Sync Status:
+        {match(yjsSyncStatus)
+          .with("uploading", () => <Box color="yellow">uploading</Box>)
+          .with("synced", () => <Box color="green">synced</Box>)
+          .otherwise(() => `Unknown: ${yjsSyncStatus}`)}
       </Stack>
     </Box>
   );
@@ -1250,7 +1276,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <Stack>
             {!isGuest && (
               <Box>
-                <SyncStatus />
+                {/* <SyncStatus /> */}
+                <YjsSyncStatus />
                 <Divider />
                 <Typography variant="h6">Runtime Info</Typography>
                 <SidebarRuntime />

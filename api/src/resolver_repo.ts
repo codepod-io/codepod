@@ -451,80 +451,6 @@ async function updatePod(_, { id, repoId, input }, { userId }) {
   return true;
 }
 
-async function addPods(_, { repoId, pods }, { userId }) {
-  if (!userId) throw new Error("Not authenticated.");
-  await ensureRepoEditAccess({ repoId, userId });
-  // notice: we keep the field "children", "parent", "repo" empty when first insertion the repo. Because if we insist on filling them, we must specify children, parent and repo by prisma.create.pod. Regardless of what order we insert them, we can't make sure both children and parent exist in the DB, the insertion must fail.
-  // Here, we first insert all pods and ignore their any relationship, then the relationship will be updated by updateAllPods because we don't clean the dirty tag of them next.
-  await prisma.pod.createMany({
-    data: pods.map((pod) => {
-      const res = { ...pod, id: pod.id, index: 0, parent: undefined, repoId };
-      if (res.children) delete res.children;
-      return res;
-    }),
-  });
-
-  return true;
-}
-
-async function deletePods(_, { ids }: { ids: string[] }, { userId }) {
-  if (!userId) throw new Error("Not authenticated.");
-  if (ids.length === 0) return false;
-  // find the repo
-  const pod = await prisma.pod.findFirst({
-    where: { id: ids[0] },
-    include: { repo: true },
-  });
-  if (!pod) throw new Error("Pod not found");
-  await ensureRepoEditAccess({ repoId: pod.repo.id, userId });
-  // If the pod is connected to a scope, the frontend will fire deleteEdge calls
-  // as well simultaneously. Thus, if this call is fired before the edges are
-  // deleted, an error will be thrown.
-  //
-  // Additional Notes:
-  // 1. The deleteEdge graphQL call will still be fired. This would be redundant
-  //    but should be fine.
-  // 2. We still need the deleteEdge graphQL calls when the edge is selected and
-  //    deleted.
-
-  const deletedEdges = await prisma.edge.deleteMany({
-    where: {
-      OR: [
-        {
-          source: {
-            id: {
-              in: ids,
-            },
-          },
-        },
-        {
-          target: {
-            id: {
-              in: ids,
-            },
-          },
-        },
-      ],
-      repo: {
-        id: pod.repo.id,
-      },
-    },
-  });
-
-  // delete all the nodes, but make sure they are in this exact repo.
-  const deletedPods = await prisma.pod.deleteMany({
-    where: {
-      id: {
-        in: ids,
-      },
-      repo: {
-        id: pod.repo.id,
-      },
-    },
-  });
-  return true;
-}
-
 async function copyRepo(_, { repoId }, { userId }) {
   // Find the repo
   const repo = await prisma.repo.findFirst({
@@ -574,7 +500,9 @@ async function copyRepo(_, { repoId }, { userId }) {
   });
 
   // Add all nodes without parent/child relationship to the new repo.
-  // TODO: it updates the parent/child relationship automatically somehow,maybe because the parentId? Try to figure out why, then refactor addPods method.
+  //
+  // TODO: it updates the parent/child relationship automatically somehow,maybe
+  // because the parentId? Try to figure out why, then refactor addPods method.
   await prisma.pod.createMany({
     data: targetPods.map((pod) => ({
       ...pod,
@@ -594,13 +522,11 @@ export default {
     getVisibility,
   },
   Mutation: {
-    addPods,
     createRepo,
     updateRepo,
     deleteRepo,
     copyRepo,
     updatePod,
-    deletePods,
     addEdge,
     deleteEdge,
     addCollaborator,
