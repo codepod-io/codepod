@@ -305,7 +305,6 @@ const MyEditor = ({
   }
   const yXml = richMap.get(id) as Y.XmlFragment;
 
-  const editable = !isGuest && focusedEditor === id;
   const { manager, state, setState } = useRemirror({
     extensions: () => [
       new PlaceholderExtension({ placeholder }),
@@ -315,10 +314,7 @@ const MyEditor = ({
       new SupExtension(),
       new SubExtension(),
       new MarkdownExtension(),
-      // YjsExtension seems to be incompatible with editable=false, throwing console errors.
-      ...(editable
-        ? [new MyYjsExtension({ yXml, awareness: provider.awareness })]
-        : []),
+      new MyYjsExtension({ yXml, awareness: provider.awareness }),
       new MathInlineExtension(),
       new MathBlockExtension(),
       // new CalloutExtension({ defaultType: "warn" }),
@@ -430,6 +426,19 @@ const MyEditor = ({
     >
       <ThemeProvider>
         <MyStyledWrapper>
+          <Box
+            sx={{
+              // Put it 100% the width and height, above the following components.
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              height: "100%",
+              zIndex: focusedEditor === id ? -1 : 10,
+            }}
+          >
+            {/* Overlay */}
+          </Box>
           <Remirror
             manager={manager}
             // Must set initialContent, otherwise the Reactflow will fire two
@@ -443,7 +452,6 @@ const MyEditor = ({
             // - [1] https://remirror.io/docs/controlled-editor
             // - [2] demo that Chinese input method is not working:
             //   https://remirror.vercel.app/?path=/story/editors-controlled--editable
-            editable={editable}
           >
             <HotkeyControl id={id} />
             {/* <WysiwygToolbar /> */}
