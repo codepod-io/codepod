@@ -132,7 +132,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
   } else {
     if (repo.pods.length > 0) {
       // TODO run the migration script seprately.
-      migrate_v_0_0_1(ydoc, repoId);
+      await migrate_v_0_0_1(ydoc, repoId);
     } else {
       // init the ydoc
       const rootMap = ydoc.getMap("rootMap");
@@ -151,7 +151,7 @@ export async function bindState(doc: Y.Doc, repoId: string) {
   // Load persisted document state from the database.
   await loadFromDB(doc, repoId);
   // Observe changes and write to the database.
-  await setupObserversToDB(doc, repoId);
+  setupObserversToDB(doc, repoId);
 }
 
 export function writeState() {
@@ -193,8 +193,8 @@ async function migrate_v_0_0_1(ydoc: Y.Doc, repoId: string) {
   const edgesMap = new Y.Map<ReactflowEdge>();
   const codeMap = new Y.Map<Y.Text>();
   const richMap = new Y.Map<Y.XmlFragment>();
-  rootMap.set("nodesMap", new Y.Map<ReactflowNode>());
-  rootMap.set("edgesMap", new Y.Map<ReactflowEdge>());
+  rootMap.set("nodesMap", nodesMap);
+  rootMap.set("edgesMap", edgesMap);
   rootMap.set("codeMap", codeMap);
   rootMap.set("richMap", richMap);
   const metaMap = new Y.Map();
