@@ -583,9 +583,7 @@ export const CodeNode = memo<NodeProps>(function ({
   );
   const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
 
-  const nodesMap = useStore(store, (state) =>
-    state.ydoc.getMap<Node>("nodesMap")
-  );
+  const nodesMap = useStore(store, (state) => state.getNodesMap());
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
 
@@ -650,9 +648,10 @@ export const CodeNode = memo<NodeProps>(function ({
   );
 
   const node = nodesMap.get(id);
+  if (!node) return null;
 
   const fontSize = level2fontsize(
-    node?.data.level,
+    node.data.level,
     contextualZoomParams,
     contextualZoom
   );

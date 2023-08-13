@@ -88,10 +88,15 @@ function setupObserversToDB(ydoc: Y.Doc, repoId: string) {
       handleSaveBlob({ repoId, yDocBlob: Buffer.from(update) });
     });
   }
-  ydoc.getMap("nodesMap").observe(observer);
-  ydoc.getMap("edgesMap").observe(observer);
-  ydoc.getMap("codeMap").observeDeep(observer);
-  ydoc.getMap("richMap").observeDeep(observer);
+  const rootMap = ydoc.getMap("rootMap");
+  const nodesMap = rootMap.get("nodesMap") as Y.Map<ReactflowNode<NodeData>>;
+  nodesMap.observe(observer);
+  const edgesMap = rootMap.get("edgesMap") as Y.Map<ReactflowEdge>;
+  edgesMap.observe(observer);
+  const codeMap = rootMap.get("codeMap") as Y.Map<Y.Text>;
+  codeMap.observeDeep(observer);
+  const richMap = rootMap.get("richMap") as Y.Map<Y.XmlFragment>;
+  richMap.observeDeep(observer);
 }
 
 /**
@@ -126,9 +131,19 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
     Y.applyUpdate(ydoc, repo.yDocBlob);
   } else {
     if (repo.pods.length > 0) {
+      // TODO run the migration script seprately.
       migrate_v_0_0_1(ydoc, repoId);
+    } else {
+      // init the ydoc
+      const rootMap = ydoc.getMap("rootMap");
+      rootMap.set("nodesMap", new Y.Map<ReactflowNode<NodeData>>());
+      rootMap.set("edgesMap", new Y.Map<ReactflowEdge>());
+      rootMap.set("codeMap", new Y.Map<Y.Text>());
+      rootMap.set("richMap", new Y.Map<Y.XmlFragment>());
+      const metaMap = new Y.Map();
+      metaMap.set("version", "v0.0.1");
+      rootMap.set("metaMap", metaMap);
     }
-    ydoc.getMap("meta").set("version", "v0.0.1");
   }
 }
 
@@ -173,10 +188,18 @@ async function migrate_v_0_0_1(ydoc: Y.Doc, repoId: string) {
   }
   // TODO make sure the ydoc is empty.
   // 2. construct Y doc types
-  const nodesMap = ydoc.getMap<ReactflowNode<NodeData>>("nodesMap");
-  const edgesMap = ydoc.getMap<ReactflowEdge>("edgesMap");
-  const codeMap = ydoc.getMap("codeMap");
-  const richMap = ydoc.getMap("richMap");
+  const rootMap = ydoc.getMap("rootMap");
+  const nodesMap = new Y.Map<ReactflowNode<NodeData>>();
+  const edgesMap = new Y.Map<ReactflowEdge>();
+  const codeMap = new Y.Map<Y.Text>();
+  const richMap = new Y.Map<Y.XmlFragment>();
+  rootMap.set("nodesMap", new Y.Map<ReactflowNode>());
+  rootMap.set("edgesMap", new Y.Map<ReactflowEdge>());
+  rootMap.set("codeMap", codeMap);
+  rootMap.set("richMap", richMap);
+  const metaMap = new Y.Map();
+  metaMap.set("version", "v0.0.1");
+  rootMap.set("metaMap", metaMap);
   // nodes
   repo.pods.forEach((pod) => {
     nodesMap.set(pod.id, {

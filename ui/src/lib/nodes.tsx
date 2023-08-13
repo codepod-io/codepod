@@ -9,7 +9,7 @@ export function useYjsObserver() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const ydoc = useStore(store, (state) => state.ydoc);
-  const nodesMap = ydoc.getMap<Node>("nodesMap");
+  const nodesMap = useStore(store, (state) => state.getNodesMap());
   const updateView = useStore(store, (state) => state.updateView);
   const resetSelection = useStore(store, (state) => state.resetSelection);
 

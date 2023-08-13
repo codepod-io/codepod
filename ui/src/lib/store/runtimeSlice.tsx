@@ -22,7 +22,7 @@ function collectSymbolTables(
   let parentId = pod.parent;
   let allSymbolTables: Record<string, string>[] = [];
   // do this for all ancestor scopes.
-  const nodes = Array.from(get().ydoc.getMap<Node>("nodesMap"));
+  const nodes = Array.from(get().getNodesMap());
   while (parentId) {
     const siblings = nodes.filter((node) => node.parentNode === parentId);
     const tables = siblings.map((_id) => {
@@ -360,7 +360,8 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
    * Add a pod to the chain and run it.
    */
   wsRun: async (id) => {
-    const nodes = Array.from(get().ydoc.getMap<Node>("nodesMap"));
+    const nodesMap = get().getNodesMap();
+    const nodes = Array.from(nodesMap);
     if (!get().socket) {
       get().addError({
         type: "error",
@@ -379,8 +380,6 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       // get the pods in the scope
       const children = nodes.filter((n) => n.parentNode === id);
       if (!children) return;
-      // The reactflow nodesMap stored in Yjs
-      let nodesMap = get().ydoc.getMap<Node>("nodesMap");
       // Sort by x and y positions, with the leftmost and topmost first.
       children.sort((a, b) => {
         let nodeA = nodesMap.get(a);
@@ -420,7 +419,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       return;
     }
     // Get the chain: get the edges, and then get the pods
-    const edgesMap = get().ydoc.getMap<Edge>("edgesMap");
+    const edgesMap = get().getEdgesMap();
     let edges = Array.from(edgesMap.values());
     // build a node2target map
     let node2target = {};

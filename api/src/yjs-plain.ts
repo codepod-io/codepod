@@ -115,7 +115,9 @@ function setupNodesMapObserver(ydoc: Y.Doc, repoId: string) {
   // observe changes to the ydoc and write to the database
   // The nodes: {"nodeID": ReactFlowNode}
   // TODO Maybe embed the content into the nodes?
-  const nodesMap = ydoc.getMap<ReactflowNode<NodeData>>("nodesMap");
+  const nodesMap = ydoc.getMap("rootMap").get("nodesMap") as Y.Map<
+    ReactflowNode<NodeData>
+  >;
   // FIXME IMPORTANT do I need to unobserve?
   // FIXME will there be a destroy event?
   nodesMap.observe((YMapEvent, transaction) => {
@@ -172,7 +174,7 @@ async function handleUpdatePod({
 }
 
 function setupCodeMapObserver(ydoc: Y.Doc, repoId: string) {
-  const codeMap = ydoc.getMap<Y.Text | Y.XmlFragment>("codeMap");
+  const codeMap = ydoc.getMap("rootMap").get("codeMap") as Y.Map<Y.Text>;
   // const debouncedCallback = createDebouncedCallback();
   codeMap.observeDeep((events, transaction) => {
     if (transaction.local) {
@@ -201,7 +203,7 @@ function setupCodeMapObserver(ydoc: Y.Doc, repoId: string) {
 }
 
 function setupRichMapObserver(ydoc: Y.Doc, repoId: string) {
-  const richMap = ydoc.getMap<Y.XmlFragment>("richMap");
+  const richMap = ydoc.getMap("rootMap").get("richMap") as Y.Map<Y.XmlFragment>;
   richMap.observeDeep((events, transaction) => {
     if (transaction.local) {
       return;
@@ -277,7 +279,9 @@ async function handleDeleteEdge({
 }
 
 function setupEdgesMapObserver(ydoc: Y.Doc, repoId: string) {
-  const edgesMap = ydoc.getMap<ReactflowEdge>("edgesMap");
+  const edgesMap = ydoc
+    .getMap("rootMap")
+    .get("edgesMap") as Y.Map<ReactflowEdge>;
   edgesMap.observe((YMapEvent, transaction) => {
     if (transaction.local) {
       return;
@@ -352,10 +356,19 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
   }
   // TODO make sure the ydoc is empty.
   // 2. construct Y doc types
-  const nodesMap = ydoc.getMap<ReactflowNode<NodeData>>("nodesMap");
-  const edgesMap = ydoc.getMap<ReactflowEdge>("edgesMap");
-  const codeMap = ydoc.getMap("codeMap");
-  const richMap = ydoc.getMap("richMap");
+  const rootMap = ydoc.getMap("rootMap");
+  // const nodesMap = ydoc.getMap<ReactflowNode<NodeData>>("nodesMap");
+  // const edgesMap = ydoc.getMap<ReactflowEdge>("edgesMap");
+  // const codeMap = ydoc.getMap("codeMap");
+  // const richMap = ydoc.getMap("richMap");
+  const nodesMap = new Y.Map<ReactflowNode<NodeData>>();
+  const edgesMap = new Y.Map<ReactflowEdge>();
+  const codeMap = new Y.Map<Y.Text>();
+  const richMap = new Y.Map<Y.XmlFragment>();
+  rootMap.set("nodesMap", nodesMap);
+  rootMap.set("edgesMap", edgesMap);
+  rootMap.set("codeMap", codeMap);
+  rootMap.set("richMap", richMap);
   // Load pod content.
   repo.pods.forEach((pod) => {
     // let content : Y.Text | Y.XmlFragment;

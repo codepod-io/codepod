@@ -440,11 +440,11 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   }
 
   const provider = useStore(store, (state) => state.provider);
-  const ydoc = useStore(store, (state) => state.ydoc);
-  const awareness = provider?.awareness;
+  const codeMap = useStore(store, (state) => state.getCodeMap());
 
   const resetSelection = useStore(store, (state) => state.resetSelection);
 
+  // FIXME useCallback?
   function onEditorDidMount(
     editor: monaco.editor.IStandaloneCodeEditor,
     monaco
@@ -511,12 +511,16 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
 
     // bind it to the ytext with pod id
     // if (monaco.languages.registerInlineCompletionsProvider)
-    const codeMap = ydoc.getMap<Y.Text>("codeMap");
     if (!codeMap.has(id)) {
       codeMap.set(id, new Y.Text());
     }
     const ytext = codeMap.get(id)!;
-    new MonacoBinding(ytext, editor.getModel()!, new Set([editor]), awareness);
+    new MonacoBinding(
+      ytext,
+      editor.getModel()!,
+      new Set([editor]),
+      provider?.awareness
+    );
 
     // FIXME: make sure the provider.wsconnected is true or it won't display any content.
   }
