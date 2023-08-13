@@ -101,16 +101,18 @@ class WSSharedDoc extends Y.Doc {
  * @param {boolean} gc - whether to allow gc on the doc (applies only when created)
  * @return {WSSharedDoc}
  */
-export const getYDoc = async (docname, gc = true) => {
+export const getYDoc = (docname, gc = true) => {
   let doc = docs.get(docname);
+  let docLoadedPromise: Promise<any> | null = null;
   if (doc === undefined) {
     const repoId = docname.split("/")[1];
     doc = new WSSharedDoc(docname);
     doc.gc = gc;
-    await bindState(doc, repoId);
+    // await bindState(doc, repoId);
+    docLoadedPromise = bindState(doc, repoId);
     docs.set(docname, doc);
   }
-  return doc;
+  return { doc, docLoadedPromise };
 };
 
 // 0,1,2 are used
@@ -261,13 +263,24 @@ export const setupWSConnection = async (
   conn.binaryType = "arraybuffer";
   console.log(`setupWSConnection ${docName}, read-only=${readOnly}`);
   // get doc, initialize if it does not exist yet
-  const doc = await getYDoc(docName, gc);
+  const { doc, docLoadedPromise } = await getYDoc(docName, gc);
   doc.conns.set(conn, new Set());
+
+  // It might take some time to load the doc, but before then we still need to
+  // listen for websocket events, Ref:
+  // https://github.com/yjs/y-websocket/issues/81#issuecomment-1453185788
+  let isDocLoaded = docLoadedPromise ? false : true;
+  let queuedMessages: Uint8Array[] = [];
+  let isConnectionAlive = true;
+
   // listen and reply to events
   conn.on(
     "message",
-    /** @param {ArrayBuffer} message */ (message) =>
-      messageListener(conn, doc, new Uint8Array(message), readOnly)
+    /** @param {ArrayBuffer} message */ (message) => {
+      if (isDocLoaded)
+        messageListener(conn, doc, new Uint8Array(message), readOnly);
+      else queuedMessages.push(new Uint8Array(message));
+    }
   );
 
   // Check if connection is still alive
@@ -276,6 +289,7 @@ export const setupWSConnection = async (
     if (!pongReceived) {
       if (doc.conns.has(conn)) {
         closeConn(doc, conn);
+        isConnectionAlive = false;
       }
       clearInterval(pingInterval);
     } else if (doc.conns.has(conn)) {
@@ -284,12 +298,14 @@ export const setupWSConnection = async (
         conn.ping();
       } catch (e) {
         closeConn(doc, conn);
+        isConnectionAlive = false;
         clearInterval(pingInterval);
       }
     }
   }, pingTimeout);
   conn.on("close", () => {
     closeConn(doc, conn);
+    isConnectionAlive = false;
     clearInterval(pingInterval);
   });
   conn.on("pong", () => {
@@ -297,7 +313,7 @@ export const setupWSConnection = async (
   });
   // put the following in a variables in a block so the interval handlers don't keep in in
   // scope
-  {
+  const sendSyncStep1 = () => {
     // send sync step 1
     const encoder = encoding.createEncoder();
     encoding.writeVarUint(encoder, messageSync);
@@ -316,5 +332,17 @@ export const setupWSConnection = async (
       );
       send(doc, conn, encoding.toUint8Array(encoder));
     }
+  };
+  if (docLoadedPromise) {
+    docLoadedPromise.then(() => {
+      if (!isConnectionAlive) return;
+
+      isDocLoaded = true;
+      queuedMessages.forEach((message) =>
+        messageListener(conn, doc, message, readOnly)
+      );
+      queuedMessages = [];
+      sendSyncStep1();
+    });
   }
 };
