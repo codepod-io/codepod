@@ -647,6 +647,12 @@ export const CodeNode = memo<NodeProps>(function ({
     (state) => state.contextualZoomParams.threshold
   );
 
+  // A helper state to allow single-click a selected pod and enter edit mode.
+  const [singleClickEdit, setSingleClickEdit] = useState(false);
+  useEffect(() => {
+    if (!selected) setSingleClickEdit(false);
+  }, [selected, setSingleClickEdit]);
+
   const node = nodesMap.get(id);
   if (!node) return null;
 
@@ -738,12 +744,15 @@ export const CodeNode = memo<NodeProps>(function ({
         onMouseLeave={() => {
           setShowToolbar(false);
         }}
-        onClick={(e) => {
-          switch (e.detail) {
-            case 2:
-              setFocusedEditor(id);
-              break;
+        onClick={() => {
+          if (singleClickEdit) {
+            setFocusedEditor(id);
+          } else {
+            setSingleClickEdit(true);
           }
+        }}
+        onDoubleClick={() => {
+          setFocusedEditor(id);
         }}
         sx={{
           cursor: "auto",

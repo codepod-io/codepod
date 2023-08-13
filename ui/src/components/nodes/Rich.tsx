@@ -547,7 +547,13 @@ export const RichNode = memo<Props>(function ({
   const cursorNode = useStore(store, (state) => state.cursorNode);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
-  const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
+
+  // A helper state to allow single-click a selected pod and enter edit mode.
+  const [singleClickEdit, setSingleClickEdit] = useState(false);
+  useEffect(() => {
+    if (!selected) setSingleClickEdit(false);
+  }, [selected, setSingleClickEdit]);
+
   const devMode = useStore(store, (state) => state.devMode);
   const inputRef = useRef<HTMLInputElement>(null);
   const nodesMap = useStore(store, (state) => state.getNodesMap());
@@ -713,12 +719,15 @@ export const RichNode = memo<Props>(function ({
             (elem as HTMLElement).style.display = "none";
           });
         }}
-        onClick={(e) => {
-          switch (e.detail) {
-            case 2:
-              setFocusedEditor(id);
-              break;
+        onClick={() => {
+          if (singleClickEdit) {
+            setFocusedEditor(id);
+          } else {
+            setSingleClickEdit(true);
           }
+        }}
+        onDoubleClick={() => {
+          setFocusedEditor(id);
         }}
         sx={{
           cursor: "auto",
