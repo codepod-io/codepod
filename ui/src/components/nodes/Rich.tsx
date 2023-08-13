@@ -260,11 +260,13 @@ function HotkeyControl({ id }) {
   const setPodBlur = useStore(store, (state) => state.setPodBlur);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
+  const selectPod = useStore(store, (state) => state.selectPod);
 
   useKeymap("Escape", () => {
     setPodBlur(id);
     setCursorNode(id);
     setFocusedEditor(undefined);
+    selectPod(id, true);
     return true;
   });
   const commands = useCommands();

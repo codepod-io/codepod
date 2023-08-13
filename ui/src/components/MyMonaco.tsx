@@ -442,6 +442,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const provider = useStore(store, (state) => state.provider);
   const codeMap = useStore(store, (state) => state.getCodeMap());
 
+  const selectPod = useStore(store, (state) => state.selectPod);
   const resetSelection = useStore(store, (state) => state.resetSelection);
 
   // FIXME useCallback?
@@ -500,6 +501,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
           setPodBlur(id);
           setCursorNode(id);
           setFocusedEditor(undefined);
+          selectPod(id, true);
         }
       },
     });
