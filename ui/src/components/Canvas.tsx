@@ -170,9 +170,7 @@ function useJump() {
 
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
 
-  const nodesMap = useStore(store, (state) =>
-    state.ydoc.getMap<Node>("nodesMap")
-  );
+  const nodesMap = useStore(store, (state) => state.getNodesMap());
   const pods = useStore(store, (state) => state.pods);
 
   const reactflow = useReactFlow();
@@ -491,9 +489,6 @@ function CanvasImplWrap() {
   usePaste(reactFlowWrapper);
   useCut(reactFlowWrapper);
   useJump();
-
-  const { loading } = useInitNodes();
-  if (loading) return <div>Loading...</div>;
   return (
     <Box sx={{ height: "100%" }} ref={reactFlowWrapper}>
       <CanvasImpl />
@@ -863,6 +858,8 @@ function CanvasImpl() {
 }
 
 export function Canvas() {
+  const { loading } = useInitNodes();
+  if (loading) return <div>Loading...</div>;
   return (
     <ReactFlowProvider>
       <CanvasImplWrap />

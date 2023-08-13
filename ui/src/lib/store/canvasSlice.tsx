@@ -26,7 +26,7 @@ import {
   SimulationNodeDatum,
   SimulationLinkDatum,
 } from "d3-force";
-import { YMap } from "yjs/dist/src/types/YMap";
+import * as Y from "yjs";
 
 import { myNanoId, level2color } from "../utils";
 
@@ -176,7 +176,7 @@ function createNewNode(
 /**
  * Get the absoluate position of the node.
  */
-export function getAbsPos(node: Node, nodesMap: YMap<Node>): XYPosition {
+export function getAbsPos(node: Node, nodesMap: Y.Map<Node>): XYPosition {
   let x = node.position.x;
   let y = node.position.y;
   while (node.parentNode) {
@@ -269,6 +269,11 @@ function topologicalSort(nodes: Node[], nodesMap) {
 export interface CanvasSlice {
   nodes: Node[];
   edges: Edge[];
+
+  getNodesMap: () => Y.Map<Node<NodeData>>;
+  getEdgesMap: () => Y.Map<Edge>;
+  getCodeMap: () => Y.Map<Y.Text>;
+  getRichMap: () => Y.Map<Y.XmlFragment>;
 
   dragHighlight?: string;
   setDragHighlight: (dropHighlight: string) => void;
@@ -418,11 +423,25 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         state.cursorNode = id;
       })
     ),
+  getNodesMap() {
+    return get().ydoc.getMap("rootMap").get("nodesMap") as Y.Map<
+      Node<NodeData>
+    >;
+  },
+  getEdgesMap() {
+    return get().ydoc.getMap("rootMap").get("edgesMap") as Y.Map<Edge>;
+  },
+  getCodeMap() {
+    return get().ydoc.getMap("rootMap").get("codeMap") as Y.Map<Y.Text>;
+  },
+  getRichMap() {
+    return get().ydoc.getMap("rootMap").get("richMap") as Y.Map<Y.XmlFragment>;
+  },
   /**
    * This function handles the real updates to the reactflow nodes to render.
    */
   updateView: () => {
-    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
+    const nodesMap = get().getNodesMap();
     let selectedPods = get().selectedPods;
     // We have different sources of nodes:
     // 1. those from nodesMap, synced with other users
@@ -460,12 +479,12 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     }
     set({ nodes });
     // edges view
-    const edgesMap = get().ydoc.getMap<Edge>("edgesMap");
+    const edgesMap = get().getEdgesMap();
     set({ edges: Array.from(edgesMap.values()).filter((e) => e) });
   },
 
   addNode: (type, position, parent) => {
-    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
+    let nodesMap = get().getNodesMap();
     let node = createNewNode(type, position);
     nodesMap.set(node.id, node);
     if (parent) {
@@ -482,7 +501,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
 
   importLocalCode: (position, importScopeName, cellList) => {
     console.log("Sync imported Jupyter notebook or Python scripts");
-    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
+    let nodesMap = get().getNodesMap();
     let scopeNode = createNewNode("SCOPE", position);
     // parent could be "ROOT" or a SCOPE node
     let parent = getScopeAt(
@@ -628,7 +647,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     const leadingNodes = get().headPastingNodes;
     const pastingNodes = get().pastingNodes;
     if (!pastingNodes || !leadingNodes) return;
-    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
+    let nodesMap = get().getNodesMap();
 
     // clear the temporary nodes and the pasting/cutting state
     set(
@@ -736,13 +755,13 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
 
   // NOTE: this does not mutate.
   getScopeAtPos: ({ x, y }, exclude) => {
-    const nodesMap = get().ydoc.getMap<Node>("nodesMap");
+    const nodesMap = get().getNodesMap();
     return getScopeAt(x, y, [exclude], get().nodes, nodesMap);
   },
 
   adjustLevel: () => {
     // adjust the levels of all nodes, using topoSort
-    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
+    let nodesMap = get().getNodesMap();
     let nodes = Array.from(nodesMap.values());
     nodes = topologicalSort(nodes, nodesMap);
     // update nodes' level
@@ -764,7 +783,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   moveIntoScope: (nodeIds: string[], scopeId?: string) => {
     // move a node into a scope.
     // 1. update the node's parentNode & position
-    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
+    let nodesMap = get().getNodesMap();
     for (const nodeId of nodeIds) {
       let node = nodesMap.get(nodeId);
       if (!node) {
@@ -846,7 +865,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
 
   // I should modify nodesMap here
   onNodesChange: (changes: NodeChange[]) => {
-    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
+    let nodesMap = get().getNodesMap();
     const nodes = get().nodes;
 
     // compute the helper lines
@@ -949,7 +968,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   },
   onEdgesChange: (changes: EdgeChange[]) => {
     // TODO sync with remote peer
-    const edgesMap = get().ydoc.getMap<Edge>("edgesMap");
+    const edgesMap = get().getEdgesMap();
     // apply the changes. Especially for the "select" change.
     set({
       edges: applyEdgeChanges(changes, get().edges),
@@ -976,7 +995,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     });
   },
   onConnect: (connection: Connection) => {
-    const edgesMap = get().ydoc.getMap<Edge>("edgesMap");
+    const edgesMap = get().getEdgesMap();
     if (!connection.source || !connection.target) return null;
     const edge = {
       // TODO This ID doesn't support multiple types of edges between the same nodes.
@@ -1000,7 +1019,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   autoLayoutROOT: () => {
     // get all scopes,
     console.debug("autoLayoutROOT");
-    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
+    let nodesMap = get().getNodesMap();
     let nodes: Node[] = Array.from(nodesMap.values());
     nodes
       // sort the children so that the inner scope gets processed first.
@@ -1018,7 +1037,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
    */
   autoLayout: (scopeId) => {
     // 1. get all the nodes and edges in the scope
-    let nodesMap = get().ydoc.getMap<Node>("nodesMap");
+    let nodesMap = get().getNodesMap();
     const nodes = get().nodes.filter((node) => node.parentNode === scopeId);
     if (nodes.length == 0) return;
     const edges = get().edges;

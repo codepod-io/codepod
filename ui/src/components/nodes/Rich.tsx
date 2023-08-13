@@ -299,7 +299,7 @@ const MyEditor = ({
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const resetSelection = useStore(store, (state) => state.resetSelection);
   const updateView = useStore(store, (state) => state.updateView);
-  const richMap = provider.doc.getMap<Y.XmlFragment>("richMap");
+  const richMap = useStore(store, (state) => state.getRichMap());
   if (!richMap.has(id)) {
     richMap.set(id, new Y.XmlFragment());
   }
@@ -550,9 +550,7 @@ export const RichNode = memo<Props>(function ({
   const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const devMode = useStore(store, (state) => state.devMode);
   const inputRef = useRef<HTMLInputElement>(null);
-  const nodesMap = useStore(store, (state) =>
-    state.ydoc.getMap<Node>("nodesMap")
-  );
+  const nodesMap = useStore(store, (state) => state.getNodesMap());
   const updateView = useStore(store, (state) => state.updateView);
   const reactFlowInstance = useReactFlow();
 
@@ -622,6 +620,7 @@ export const RichNode = memo<Props>(function ({
   }, [cursorNode]);
 
   const node = nodesMap.get(id);
+  if (!node) return null;
 
   const fontSize = level2fontsize(
     node?.data.level,

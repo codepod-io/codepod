@@ -209,9 +209,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const setPodName = useStore(store, (state) => state.setPodName);
-  const nodesMap = useStore(store, (state) =>
-    state.ydoc.getMap<Node>("nodesMap")
-  );
+  const nodesMap = useStore(store, (state) => state.getNodesMap());
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -258,6 +256,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   );
   const zoomLevel = useReactFlowStore((s) => s.transform[2]);
   const node = nodesMap.get(id);
+  if (!node) return null;
 
   const fontSize = level2fontsize(
     node?.data.level,
