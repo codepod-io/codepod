@@ -375,10 +375,11 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   selectedPods: new Set(),
   selectionParent: undefined,
   selectPod: (id, selected) => {
+    const nodesMap = get().getNodesMap();
     set(
       produce((state: MyState) => {
         if (selected) {
-          const p = get().getPod(id)?.parent;
+          const p = nodesMap.get(id)?.parentNode;
           // if you select a node that has a different parent, clear all previous selections
           if (
             state.selectionParent !== undefined &&
@@ -809,7 +810,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         }
         toLevel = scope.data.level + 1;
         // FIXME: since richNode and codeNode doesn't have height when it's created, we have to pass its height manually in case crash.
-        const nodeHeight = get().getPod(nodeId)?.height || 0;
+        const nodeHeight = nodesMap.get(nodeId)?.height || 0;
         position = getNodePositionInsideScope(
           node,
           scope,
