@@ -652,8 +652,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
 
     // clear the temporary nodes and the pasting/cutting state
     set(
-      produce((state) => {
-        state.pastingNode = undefined;
+      produce((state: MyState) => {
+        state.pastingNodes = undefined;
         state.headPastingNodes = new Set();
         state.pastingNodes = [];
         state.mousePos = undefined;
@@ -663,19 +663,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     );
 
     pastingNodes.forEach((node) => {
-      set(
-        produce((state) => {
-          let pod = state.pods[node!.id];
-          if (leadingNodes?.has(node.id)) {
-            pod.x = position.x;
-            pod.y = position.y;
-          }
-          pod.dirty = true;
-          // this flag triggers the addPods call when updating all dirty pods
-          pod.pending = true;
-        })
-      );
-
       // insert all nodes to the yjs map
       nodesMap.set(node.id, {
         ...(leadingNodes?.has(node.id) ? { ...node, position } : node),
@@ -703,15 +690,12 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   cancelPaste: (cutting = false) => {
     const pastingNodes = get().pastingNodes || [];
     set(
-      produce((state) => {
+      produce((state: MyState) => {
         // Remove pastingNode from store.
         state.pastingNodes = [];
         state.headPastingNodes = new Set();
-        pastingNodes.forEach((node) => {
-          delete state.pods[node!.id];
-        });
         // Clear pasting data and update view.
-        state.pastingNode = undefined;
+        state.pastingNodes = undefined;
         state.mousePos = undefined;
         if (cutting) state.isCutting = false;
         else state.isPasting = false;

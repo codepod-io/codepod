@@ -257,13 +257,11 @@ function HotkeyControl({ id }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const setCursorNode = useStore(store, (state) => state.setCursorNode);
-  const setPodBlur = useStore(store, (state) => state.setPodBlur);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const selectPod = useStore(store, (state) => state.selectPod);
 
   useKeymap("Escape", () => {
-    setPodBlur(id);
     setCursorNode(id);
     setFocusedEditor(undefined);
     selectPod(id, true);
@@ -292,11 +290,9 @@ const MyEditor = ({
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const isGuest = useStore(store, (state) => state.role === "GUEST");
-  const setPodFocus = useStore(store, (state) => state.setPodFocus);
   // the Yjs extension for Remirror
   const provider = useStore(store, (state) => state.provider)!;
 
-  const setPodBlur = useStore(store, (state) => state.setPodBlur);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const resetSelection = useStore(store, (state) => state.resetSelection);
@@ -402,12 +398,10 @@ const MyEditor = ({
     <Box
       className="remirror-theme"
       onFocus={() => {
-        setPodFocus(id);
         setFocusedEditor(id);
         if (resetSelection()) updateView();
       }}
       onBlur={() => {
-        setPodBlur(id);
         setFocusedEditor(undefined);
       }}
       sx={{

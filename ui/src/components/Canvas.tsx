@@ -56,31 +56,6 @@ const edgeTypes = {
   floating: FloatingEdge,
 };
 
-function useInitNodes() {
-  const store = useContext(RepoContext)!;
-  const provider = useStore(store, (state) => state.provider);
-  const [loading, setLoading] = useState(true);
-  const updateView = useStore(store, (state) => state.updateView);
-  const adjustLevel = useStore(store, (state) => state.adjustLevel);
-  useEffect(() => {
-    const init = () => {
-      // adjust level and update view
-      adjustLevel();
-      updateView();
-      setLoading(false);
-    };
-
-    if (!provider) return;
-    if (provider.synced) {
-      init();
-    } else {
-      provider.once("synced", init);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [provider]);
-  return { loading };
-}
-
 function getBestNode(
   nodes: Node[],
   from,
@@ -860,8 +835,6 @@ function CanvasImpl() {
 }
 
 export function Canvas() {
-  const { loading } = useInitNodes();
-  if (loading) return <div>Loading...</div>;
   return (
     <ReactFlowProvider>
       <CanvasImplWrap />

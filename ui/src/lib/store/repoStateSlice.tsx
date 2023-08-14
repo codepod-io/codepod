@@ -56,7 +56,6 @@ export async function registerUser(
 }
 
 export interface RepoStateSlice {
-  pods: Record<string, Pod>;
   // From source pod id to target pod id.
   setSessionId: (sessionId: string) => void;
   setRepoData: (repo: {
@@ -113,7 +112,6 @@ export const createRepoStateSlice: StateCreator<
   [],
   RepoStateSlice
 > = (set, get) => ({
-  pods: {},
   error: null,
   repoLoaded: false,
   user: {},
@@ -269,7 +267,7 @@ export const createRepoStateSlice: StateCreator<
   disconnectYjs: () =>
     set(
       // clean up the connected provider after exiting the page
-      produce((state) => {
+      produce((state: MyState) => {
         console.log("disconnecting yjs socket ..");
         if (state.provider) {
           state.provider.destroy();

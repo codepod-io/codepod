@@ -396,12 +396,13 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
   const clearResults = useStore(store, (s) => s.clearResults);
   const wsRun = useStore(store, (state) => state.wsRun);
-  const setPodFocus = useStore(store, (state) => state.setPodFocus);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
-  const setPodBlur = useStore(store, (state) => state.setPodBlur);
   const setCursorNode = useStore(store, (state) => state.setCursorNode);
-  const annotations = useStore(store, (state) => state.pods[id]?.annotations);
+  const annotations = useStore(
+    store,
+    (state) => state.parseResult[id]?.annotations
+  );
   const showAnnotations = useStore(store, (state) => state.showAnnotations);
   const scopedVars = useStore(store, (state) => state.scopedVars);
   const updateView = useStore(store, (state) => state.updateView);
@@ -470,11 +471,9 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       // onLayout(`${contentHeight}px`);
     };
     editor.onDidBlurEditorText(() => {
-      setPodBlur(id);
       setFocusedEditor(undefined);
     });
     editor.onDidFocusEditorText(() => {
-      setPodFocus(id);
       if (resetSelection()) updateView();
     });
     editor.onDidContentSizeChange(updateHeight);
@@ -497,7 +496,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       run: () => {
         if (document.activeElement) {
           (document.activeElement as any).blur();
-          setPodBlur(id);
           setCursorNode(id);
           setFocusedEditor(undefined);
           selectPod(id, true);

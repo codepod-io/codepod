@@ -16,6 +16,8 @@ import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import Typography from "@mui/material/Typography";
 import { useSnackbar, VariantType } from "notistack";
 
+import { Node as ReactflowNode } from "reactflow";
+
 import { gql, useQuery, useMutation, useApolloClient } from "@apollo/client";
 import { useStore } from "zustand";
 import { MyKBar } from "./MyKBar";
@@ -876,7 +878,10 @@ function ExportJupyterNB() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const repoName = useStore(store, (state) => state.repoName);
-  const pods = useStore(store, (state) => state.pods);
+  const nodesMap = useStore(store, (state) => state.getNodesMap());
+  const nodes = Array.from<ReactflowNode>(nodesMap.values());
+  const podResults = useStore(store, (state) => state.podResults);
+  const codeMap = useStore(store, (state) => state.getCodeMap());
   const filename = `${
     repoName || "Untitled"
   }-${new Date().toISOString()}.ipynb`;
@@ -895,24 +900,30 @@ function ExportJupyterNB() {
     }[] = [];
 
     // Queue to sort the pods geographically
-    let q = new Array();
+    let q = new Array<[ReactflowNode, string]>();
     // adjacency list for podId -> parentId mapping
     let adj = {};
-    q.push([pods["ROOT"], "0.0"]);
+    // get the top-level nodes
+    let toplevels = nodes.filter((x) => !x.parentNode);
+    toplevels.forEach((n) => {
+      q.push([n, "0.0"]);
+    });
+
     while (q.length > 0) {
-      let [curPod, curScore] = q.shift();
+      let [curPod, curScore] = q.shift()!;
 
       // sort the pods geographically(top-down, left-right)
-      let sortedChildren = curPod.children
+      const children = nodes.filter((n) => n.parentNode === curPod.id);
+      let sortedChildren = children
         .map((x) => x.id)
         .sort((id1, id2) => {
-          let pod1 = pods[id1];
-          let pod2 = pods[id2];
-          if (pod1 && pod2) {
-            if (pod1.y === pod2.y) {
-              return pod1.x - pod2.x;
+          let node1 = nodesMap.get(id1);
+          let node2 = nodesMap.get(id2);
+          if (node1 && node2) {
+            if (node1.position.y === node2.position.y) {
+              return node1.position.x - node2.position.x;
             } else {
-              return pod1.y - pod2.y;
+              return node1.position.y - node2.position.y;
             }
           } else {
             return 0;
@@ -920,11 +931,11 @@ function ExportJupyterNB() {
         });
 
       for (let i = 0; i < sortedChildren.length; i++) {
-        let pod = pods[sortedChildren[i]];
+        const pod = nodesMap.get(sortedChildren[i])!;
         let geoScore = curScore + `${i + 1}`;
         adj[pod.id] = {
-          name: pod.name,
-          parentId: pod.parent,
+          name: pod.data.name,
+          parentId: pod.parentNode,
           geoScore: geoScore,
         };
 
@@ -932,7 +943,7 @@ function ExportJupyterNB() {
           q.push([pod, geoScore.substring(0, 2) + "0" + geoScore.substring(2)]);
         } else if (pod.type == "CODE") {
           let podOutput: any[] = [];
-          for (const result of pod.result!) {
+          for (const result of podResults[pod.id].result!) {
             switch (result.type) {
               case "execute_result":
                 podOutput.push({
@@ -942,7 +953,7 @@ function ExportJupyterNB() {
                       .split(/\r?\n/)
                       .map((line) => line + "\n") || [""],
                   },
-                  execution_count: pod.exec_count,
+                  execution_count: podResults[pod.id].exec_count,
                 });
                 break;
               case "display_data":
@@ -978,20 +989,21 @@ function ExportJupyterNB() {
                 break;
             }
           }
-          if (pod.error) {
+          const error = podResults[pod.id].error;
+          if (error) {
             podOutput.push({
               output_type: "error",
-              ename: pod.error?.ename,
-              evalue: pod.error?.evalue,
-              traceback: pod.error?.stacktrace,
+              ename: error.ename,
+              evalue: error.evalue,
+              traceback: error.stacktrace,
             });
           }
           jupyterCellList.push({
             cell_type: "code",
-            execution_count: pod.exec_count,
+            execution_count: podResults[pod.id].exec_count,
             // TODO: expand other Codepod related-metadata fields, or run a real-time search in database when importing.
             metadata: { id: pod.id, geoScore: Number(geoScore) },
-            source: [pod.content || ""],
+            source: [codeMap.get(pod.id)?.toString() || ""],
             outputs: podOutput,
           });
         } else if (pod.type == "RICH") {
@@ -999,7 +1011,7 @@ function ExportJupyterNB() {
             cell_type: "markdown",
             // TODO: expand other Codepod related-metadata fields, or run a real-time search in database when importing.
             metadata: { id: pod.id, geoScore: Number(geoScore) },
-            source: [pod.richContent || ""],
+            source: ["TODO"], // [pod.richContent || ""],
           });
         }
       }
