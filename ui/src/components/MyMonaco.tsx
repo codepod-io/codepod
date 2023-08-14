@@ -394,7 +394,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const readOnly = useStore(store, (state) => state.role === "GUEST");
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
-  const initPodContent = useStore(store, (state) => state.initPodContent);
   const clearResults = useStore(store, (s) => s.clearResults);
   const wsRun = useStore(store, (state) => state.wsRun);
   const setPodFocus = useStore(store, (state) => state.setPodFocus);

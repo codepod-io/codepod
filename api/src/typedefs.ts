@@ -15,11 +15,6 @@ export const typeDefs = gql`
     codeiumAPIKey: String!
   }
 
-  type Visibility {
-    collaborators: [User]
-    isPublic: Boolean
-  }
-
   type Repo {
     id: ID!
     name: String
@@ -108,7 +103,6 @@ export const typeDefs = gql`
     pod(id: ID!): Pod
     getDashboardRepos: [Repo]
     activeSessions: [String]
-    getVisibility(repoId: String!): Visibility
     listAllRuntimes: [RuntimeInfo]
     infoRuntime(sessionId: String!): RuntimeInfo
   }

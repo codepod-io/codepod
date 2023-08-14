@@ -7,7 +7,7 @@ import AlertTitle from "@mui/material/AlertTitle";
 import ShareIcon from "@mui/icons-material/Share";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import Button from "@mui/material/Button";
-import { gql, useApolloClient, useMutation } from "@apollo/client";
+import { gql, useApolloClient, useMutation, useQuery } from "@apollo/client";
 
 import { useEffect, useState, useRef, useContext, memo } from "react";
 
@@ -295,18 +295,102 @@ function useRuntime() {
   }, [socket]);
 }
 
-function RepoImpl() {
-  let { id } = useParams();
+function useRepo({ id }) {
+  // load the repo
+  let query = gql`
+    query Repo($id: String!) {
+      repo(id: $id) {
+        id
+        name
+        userId
+        collaborators {
+          id
+          email
+          firstname
+          lastname
+        }
+        public
+      }
+    }
+  `;
+  // FIXME this should be a mutation as it changes the last access time.
+  const { data, loading } = useQuery(query, {
+    variables: {
+      id,
+    },
+    // CAUTION I must set this because refetechQueries does not work.
+    fetchPolicy: "no-cache",
+  });
+  const store = useContext(RepoContext)!;
+  const setRepoData = useStore(store, (state) => state.setRepoData);
+  useEffect(() => {
+    if (data && data.repo) {
+      setRepoData(data.repo);
+    }
+  }, [data, loading]);
+  return { data, loading };
+}
+
+/**
+ * This loads repo metadata.
+ */
+function RepoImpl2({ id }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   useRuntime();
-  const setRepo = useStore(store, (state) => state.setRepo);
-  const client = useApolloClient();
-  const loadRepo = useStore(store, (state) => state.loadRepo);
+  useRepo({ id });
   const parseAllPods = useStore(store, (state) => state.parseAllPods);
   const resolveAllPods = useStore(store, (state) => state.resolveAllPods);
   const [parserLoaded, setParserLoaded] = useState(false);
   const scopedVars = useStore(store, (state) => state.scopedVars);
+  const loadError = useStore(store, (state) => state.loadError);
+  const repoLoaded = useStore(store, (state) => state.repoLoaded);
+
+  useEffect(() => {
+    initParser("/", () => {
+      setParserLoaded(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (repoLoaded && parserLoaded) {
+      parseAllPods();
+      resolveAllPods();
+    }
+  }, [parseAllPods, parserLoaded, repoLoaded, resolveAllPods, scopedVars]);
+
+  // TOFIX: consider more types of error and display detailed error message in the future
+  // TOFIX: if the repo is not found, sidebar should not be rendered and runtime should not be lanuched.
+  if (!repoLoaded && loadError) {
+    return <NotFoundAlert error={loadError.message} />;
+  }
+
+  return (
+    <RepoWrapper id={id}>
+      {!repoLoaded && <Box>Repo Loading ...</Box>}
+      {repoLoaded && (
+        <Box
+          height="100%"
+          border="solid 3px black"
+          p={2}
+          boxSizing={"border-box"}
+          // m={2}
+          overflow="auto"
+        >
+          <Canvas />
+        </Box>
+      )}
+    </RepoWrapper>
+  );
+}
+
+/**
+ * This loads users.
+ */
+function RepoImpl() {
+  let { id } = useParams();
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const loadError = useStore(store, (state) => state.loadError);
   const setSessionId = useStore(store, (state) => state.setSessionId);
   const repoLoaded = useStore(store, (state) => state.repoLoaded);
@@ -343,30 +427,12 @@ function RepoImpl() {
   }, [addClient, deleteClient, provider]);
 
   useEffect(() => {
-    initParser("/", () => {
-      setParserLoaded(true);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (repoLoaded && parserLoaded) {
-      parseAllPods();
-      resolveAllPods();
-    }
-  }, [parseAllPods, parserLoaded, repoLoaded, resolveAllPods, scopedVars]);
-
-  useEffect(() => {
     if (hasToken()) {
       if (!loading && me) {
         setUser(me);
-        // load the repo. It is actually not a queue, just an async thunk
-        loadRepo(client, id!);
       }
-    } else {
-      // not signed in, just load the repo
-      loadRepo(client, id!);
     }
-  }, [client, id, loadRepo, setRepo, me, loading, setUser, hasToken]);
+  }, [loading, me]);
 
   // FIXME Removing queueL. This will cause Repo to be re-rendered a lot of
   // times, particularly the delete pod action would cause syncstatus and repo
@@ -374,29 +440,7 @@ function RepoImpl() {
 
   if (loading) return <Box>Loading</Box>;
 
-  // TOFIX: consider more types of error and display detailed error message in the future
-  // TOFIX: if the repo is not found, sidebar should not be rendered and runtime should not be lanuched.
-  if (!repoLoaded && loadError) {
-    return <NotFoundAlert error={loadError.message} />;
-  }
-
-  return (
-    <RepoWrapper id={id}>
-      {!repoLoaded && <Box>Repo Loading ...</Box>}
-      {repoLoaded && (
-        <Box
-          height="100%"
-          border="solid 3px black"
-          p={2}
-          boxSizing={"border-box"}
-          // m={2}
-          overflow="auto"
-        >
-          <Canvas />
-        </Box>
-      )}
-    </RepoWrapper>
-  );
+  return <RepoImpl2 id={id} />;
 }
 
 export default function Repo() {

@@ -8,7 +8,7 @@ import Button from "@mui/material/Button";
 import Alert from "@mui/material/Alert";
 import { AlertColor } from "@mui/material/Alert";
 import Snackbar from "@mui/material/Snackbar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ListSubheader from "@mui/material/ListSubheader";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
@@ -26,7 +26,7 @@ import React, { useContext, useReducer } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { useStore } from "zustand";
 import { RepoContext } from "../lib/store";
-import { useApolloClient } from "@apollo/client";
+import { gql, useApolloClient, useMutation } from "@apollo/client";
 
 const initialState = { showInfo: false, status: "info", message: "wait..." };
 
@@ -102,14 +102,26 @@ function reducer(state, action) {
   }
 }
 
-function CollaboratorList({ collaborators, dispatch, isOwner }) {
+function CollaboratorList({ repoId, collaborators, dispatch, isOwner }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const apolloClient = useApolloClient();
-  const deleteCollaborator = useStore(
-    store,
-    (state) => state.deleteCollaborator
+  const [deleteCollaborator, { data, loading, error }] = useMutation(
+    gql`
+      mutation deleteCollaborator($repoId: String!, $collaboratorId: String!) {
+        deleteCollaborator(repoId: $repoId, collaboratorId: $collaboratorId)
+      }
+    `
   );
+
+  useEffect(() => {
+    if (error) {
+      dispatch({ type: "delete error", message: error.message });
+    }
+    if (data) {
+      dispatch({ type: "delete success", name: data.deleteCollaborator });
+    }
+  }, [error]);
 
   if (!collaborators || collaborators?.length === 0) {
     return (
@@ -129,15 +141,6 @@ function CollaboratorList({ collaborators, dispatch, isOwner }) {
     );
   }
 
-  async function handleDeleteCollaborator(userId, name) {
-    const { success, error } = await deleteCollaborator(apolloClient, userId);
-    if (success) {
-      dispatch({ type: "delete success", name });
-    } else {
-      dispatch({ type: "delete error", message: error.message });
-    }
-  }
-
   return (
     <List
       sx={{
@@ -155,10 +158,12 @@ function CollaboratorList({ collaborators, dispatch, isOwner }) {
                 edge="end"
                 aria-label="delete"
                 onClick={() =>
-                  handleDeleteCollaborator(
-                    collab.id,
-                    collab.firstname + " " + collab.lastname
-                  )
+                  deleteCollaborator({
+                    variables: {
+                      repoId: repoId,
+                      collaboratorId: collab.id,
+                    },
+                  })
                 }
               >
                 <CloseIcon />
@@ -182,8 +187,46 @@ function CollaboratorList({ collaborators, dispatch, isOwner }) {
   );
 }
 
-const aboutVisibility =
-  "A private project is only visible to you and collaborators, while a public project is visible to everyone. For both of them, only the owner can invite collaborators by their email addresses, and only collaborators can edit the project. The owner can change the visibility of a project at any time.";
+const useUpdateVisibility = ({ dispatch }) => {
+  const [updateVisibility, { data, error }] = useMutation(gql`
+    mutation updateVisibility($repoId: String!, $isPublic: Boolean!) {
+      updateVisibility(repoId: $repoId, isPublic: $isPublic)
+    }
+  `);
+
+  useEffect(() => {
+    if (error) {
+      dispatch({ type: "change visibility error", message: error.message });
+    }
+    if (data) {
+      dispatch({ type: "change visibility success" });
+    }
+  }, [data, error]);
+  return updateVisibility;
+};
+
+const useAddCollaborator = ({ dispatch }) => {
+  const [addCollaborator, { data, error }] = useMutation(gql`
+    mutation addCollaborator($repoId: String!, $email: String!) {
+      addCollaborator(repoId: $repoId, email: $email)
+    }
+  `);
+
+  useEffect(() => {
+    if (error) {
+      dispatch({ type: "inivite error", message: error.message });
+    }
+    if (data) {
+      dispatch({ type: "inivite success", email: data.addCollaborator });
+    }
+  }, [data, error]);
+  return addCollaborator;
+};
+
+const aboutVisibility = `A private project is only visible to you and collaborators, while a public
+   project is visible to everyone. For both of them, only the owner can invite
+   collaborators by their email addresses, and only collaborators can edit the
+   project. The owner can change the visibility of a project at any time.`;
 
 export function ShareProjDialog({
   open = false,
@@ -197,34 +240,12 @@ export function ShareProjDialog({
   const isPublic = useStore(store, (state) => state.isPublic);
   const collaborators = useStore(store, (state) => state.collaborators);
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
-  const updateVisibility = useStore(store, (state) => state.updateVisibility);
-  const addCollaborator = useStore(store, (state) => state.addCollaborator);
   const isOwner = useStore(store, (state) => state.role === "OWNER");
   const title = useStore(store, (state) => state.repoName || "Untitled");
   const url = `${window.location.protocol}//${window.location.host}/repo/${id}`;
   const inputRef = React.useRef<HTMLInputElement>(null);
-
-  async function flipVisibility() {
-    if (await updateVisibility(apolloClient, !isPublic)) {
-      dispatch({ type: "change visibility success" });
-    } else {
-      dispatch({ type: "change visibility error", message: "Unknown error" });
-    }
-  }
-
-  async function onShare() {
-    const email = inputRef?.current?.value;
-    if (!email) {
-      dispatch({ type: "error", message: "Email cannot be empty" });
-      return;
-    }
-    const { success, error } = await addCollaborator(apolloClient, email);
-    if (success) {
-      dispatch({ type: "inivite success", email });
-    } else {
-      dispatch({ type: "inivite error", message: error.message });
-    }
-  }
+  const updateVisibility = useUpdateVisibility({ dispatch });
+  const addCollaborator = useAddCollaborator({ dispatch });
 
   function onCloseAlert(event: React.SyntheticEvent | Event, reason?: string) {
     if (reason === "clickaway") {
@@ -289,7 +310,14 @@ export function ShareProjDialog({
               </IconButton>
             </Tooltip>
             {isOwner && (
-              <Button sx={{ float: "right" }} onClick={flipVisibility}>
+              <Button
+                sx={{ float: "right" }}
+                onClick={() => {
+                  updateVisibility({
+                    variables: { repoId: id, isPublic: !isPublic },
+                  });
+                }}
+              >
                 Make it {isPublic ? "private" : "public"}
               </Button>
             )}
@@ -307,6 +335,7 @@ export function ShareProjDialog({
           )}
 
           <CollaboratorList
+            repoId={id}
             collaborators={collaborators}
             isOwner={isOwner}
             dispatch={dispatch}
@@ -336,7 +365,17 @@ export function ShareProjDialog({
             >
               Cancel
             </Button>
-            <Button onClick={onShare} disabled={!isOwner}>
+            <Button
+              onClick={() => {
+                const email = inputRef?.current?.value;
+                if (!email) {
+                  dispatch({ type: "error", message: "Email cannot be empty" });
+                  return;
+                }
+                addCollaborator({ variables: { repoId: id, email } });
+              }}
+              disabled={!isOwner}
+            >
               Share
             </Button>
           </DialogActions>

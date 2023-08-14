@@ -661,59 +661,6 @@ function SidebarKernel() {
   );
 }
 
-function SyncStatus() {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  // FIXME performance issue
-  const dirtyIds = useStore(store, (state) => {
-    let res: string[] = [];
-    if (state.repoLoaded) {
-      for (const id in state.pods) {
-        if (
-          state.pods[id].dirty ||
-          state.pods[id].dirtyPending ||
-          state.pods[id].isSyncing
-        ) {
-          res.push(id);
-        }
-      }
-    }
-    return res;
-  });
-  const devMode = useStore(store, (state) => state.devMode);
-  // FIXME show prompt if user has unsynced Yjs changes.
-  //
-  // usePrompt(
-  //   `You have unsaved ${dirtyIds.length} changes. Are you sure you want to leave?`,
-  //   dirtyIds.length > 0
-  // );
-
-  return (
-    <Box>
-      <Stack
-        direction="row"
-        spacing={2}
-        color={dirtyIds.length === 0 ? "gray" : "blue"}
-        sx={{
-          alignItems: "center",
-        }}
-      >
-        <CloudUploadIcon />
-        {dirtyIds.length > 0 ? (
-          <Box component="span" color="blue" mx={1}>
-            saving {dirtyIds.length} to cloud
-            {devMode && <pre>{JSON.stringify(dirtyIds)}</pre>}
-          </Box>
-        ) : (
-          <Box component="span" color="grey" mx={1}>
-            Saved to cloud.
-          </Box>
-        )}
-      </Stack>
-    </Box>
-  );
-}
-
 function YjsSyncStatus() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");

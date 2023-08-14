@@ -171,7 +171,6 @@ function useJump() {
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
 
   const nodesMap = useStore(store, (state) => state.getNodesMap());
-  const pods = useStore(store, (state) => state.pods);
 
   const reactflow = useReactFlow();
 
@@ -205,8 +204,11 @@ function useJump() {
     }
 
     // get the sibling nodes
-    const nodes = Array.from(nodesMap.values()).filter(
+    const siblings = Array.from(nodesMap.values()).filter(
       (node) => node.parentNode === pod.parentNode
+    );
+    const children = Array.from(nodesMap.values()).filter(
+      (node) => node.parentNode === id
     );
 
     let to: null | Node = null;
@@ -220,7 +222,7 @@ function useJump() {
             to = pod;
           }
         } else {
-          to = getBestNode(nodes, pod, "up");
+          to = getBestNode(siblings, pod, "up");
         }
         break;
       case "ArrowDown":
@@ -231,7 +233,7 @@ function useJump() {
               (pod.height || 1) ** 2 + (pod.width || 1) ** 2
             );
             let childDist = 0;
-            for (const child of pods[id].children) {
+            for (const child of children) {
               childDist = Math.sqrt(
                 nodesMap.get(child.id)!.position.x ** 2 +
                   nodesMap.get(child.id)!.position.y ** 2
@@ -245,14 +247,14 @@ function useJump() {
             to = pod;
           }
         } else {
-          to = getBestNode(nodes, pod, "down");
+          to = getBestNode(siblings, pod, "down");
         }
         break;
       case "ArrowLeft":
-        to = getBestNode(nodes, pod, "left");
+        to = getBestNode(siblings, pod, "left");
         break;
       case "ArrowRight":
-        to = getBestNode(nodes, pod, "right");
+        to = getBestNode(siblings, pod, "right");
         break;
       case "Enter":
         if (pod.type == "CODE") {
