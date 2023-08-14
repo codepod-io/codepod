@@ -6,7 +6,7 @@ import { Edge, Node } from "reactflow";
 
 // FIXME cyclic import
 import { MyState } from ".";
-import { analyzeCode, analyzeCodeViaQuery } from "../parser";
+import { analyzeCode, analyzeCodeViaQuery, Annotation } from "../parser";
 
 /**
  * Collect symbol tables from all the pods in scope.
@@ -15,20 +15,22 @@ function collectSymbolTables(
   id: string,
   get: () => MyState
 ): Record<string, string> {
-  let pods = get().pods;
-  let pod = pods[id];
-  const isbridge = pod.isbridge;
+  const nodesMap = get().getNodesMap();
+  const nodes = Array.from(nodesMap);
+  const parseResult = get().parseResult;
+  const node = nodesMap.get(id);
+  if (!node) return {};
+  const isbridge = parseResult[id].isbridge;
   // Collect from parent scope.
-  let parentId = pod.parent;
+  let parentId = node.parentNode;
   let allSymbolTables: Record<string, string>[] = [];
   // do this for all ancestor scopes.
-  const nodes = Array.from(get().getNodesMap());
   while (parentId) {
     const siblings = nodes.filter((node) => node.parentNode === parentId);
-    const tables = siblings.map((_id) => {
+    const tables = siblings.map((sibId) => {
       // FIXME make this consistent, CODE, POD, DECK, SCOPE; use enums
-      if (pods[_id].type === "CODE") {
-        if (isbridge && _id === id) {
+      if (nodesMap.get(sibId)?.type === "CODE") {
+        if (isbridge && sibId === id) {
           // The key to support recursive export bridge are:
           // 1. not to add the name to symbol table when resolving this bridge
           //    pod, so that we can correctly set name_thisScope =
@@ -37,32 +39,34 @@ function collectSymbolTables(
           //    that other pods can see its definition.
           return {};
         } else {
-          return pods[_id].symbolTable || {};
+          return parseResult[sibId].symbolTable || {};
         }
       } else {
         // FIXME dfs, or re-export?
-        let tables = (pods[_id].children || [])
-          .filter(({ id }) => pods[id].ispublic)
-          .map(({ id }) => pods[id].symbolTable);
+        const children = nodes.filter((n) => n.parentNode === sibId);
+        let tables = (children || [])
+          .filter(({ id }) => parseResult[id].ispublic)
+          .map(({ id }) => parseResult[id].symbolTable);
         return Object.assign({}, ...tables);
       }
     });
     allSymbolTables.push(Object.assign({}, ...tables));
     if (!parentId) break;
-    let parentPod = pods[parentId];
-    parentId = parentPod.parent;
+    // next iteration
+    parentId = nodesMap.get(parentId)?.parentNode;
   }
   // collect from all ancestor scopes.
   // Collect from scopes by Arrows.
   const edges = get().edges;
   edges.forEach(({ source, target }) => {
-    if (target === pod.parent) {
-      if (pods[source].type === "CODE") {
-        allSymbolTables.push(pods[target].symbolTable || {});
+    if (target === node.parentNode) {
+      if (nodesMap.get(source)?.type === "CODE") {
+        allSymbolTables.push(parseResult[target].symbolTable || {});
       } else {
-        let tables = (pods[source].children || [])
-          .filter(({ id }) => pods[id].ispublic)
-          .map(({ id }) => pods[id].symbolTable);
+        const children = nodes.filter((n) => n.parentNode === source);
+        let tables = (children || [])
+          .filter(({ id }) => parseResult[id].ispublic)
+          .map(({ id }) => parseResult[id].symbolTable);
         allSymbolTables.push(Object.assign({}, ...tables));
       }
     }
@@ -70,7 +74,7 @@ function collectSymbolTables(
   // Combine the tables and return.
   let res: Record<string, string> = Object.assign(
     {},
-    pods[id].symbolTable,
+    parseResult[id].symbolTable,
     ...allSymbolTables
   );
   return res;
@@ -84,11 +88,14 @@ function collectSymbolTables(
  * @param symbolTable
  * @returns
  */
-function rewriteCode(id: string, get: () => MyState) {
-  let pods = get().pods;
-  let pod = pods[id];
-  if (!pod.content) return;
-  let code = pod.content;
+function rewriteCode(id: string, get: () => MyState): string | null {
+  const nodesMap = get().getNodesMap();
+  const node = nodesMap.get(id);
+  const codeMap = get().getCodeMap();
+  const parseResult = get().parseResult;
+  if (!node) return null;
+  if (!codeMap.has(id)) return null;
+  let code = codeMap.get(id)!.toString();
   if (code.trim().startsWith("@export")) {
     code = code.replace("@export", " ".repeat("@export".length));
   }
@@ -96,14 +103,16 @@ function rewriteCode(id: string, get: () => MyState) {
   // replace with symbol table
   let newcode = "";
   let index = 0;
-  pod.annotations?.forEach((annotation) => {
+  parseResult[id].annotations?.forEach((annotation) => {
     newcode += code.slice(index, annotation.startIndex);
     switch (annotation.type) {
       case "vardef":
       case "varuse":
         // directly replace with _SCOPE if we can resolve it
         if (annotation.origin) {
-          newcode += `${annotation.name}_${pods[annotation.origin].parent}`;
+          newcode += `${annotation.name}_${
+            nodesMap.get(annotation.origin)!.parentNode
+          }`;
         } else {
           newcode += annotation.name;
         }
@@ -112,7 +121,9 @@ function rewriteCode(id: string, get: () => MyState) {
       case "callsite":
         // directly replace with _SCOPE too
         if (annotation.origin) {
-          newcode += `${annotation.name}_${pods[annotation.origin].parent}`;
+          newcode += `${annotation.name}_${
+            nodesMap.get(annotation.origin)!.parentNode
+          }`;
         } else {
           console.log("function not found", annotation.name);
           newcode += annotation.name;
@@ -121,9 +132,9 @@ function rewriteCode(id: string, get: () => MyState) {
       case "bridge":
         // replace "@export x" with "x_thisScope = x_originScope"
         if (annotation.origin) {
-          newcode += `${annotation.name}_${pods[id].parent} = ${
+          newcode += `${annotation.name}_${nodesMap.get(id)!.parentNode} = ${
             annotation.name
-          }_${pods[annotation.origin].parent}`;
+          }_${nodesMap.get(annotation.origin)!.parentNode}`;
         } else {
           console.log("bridge not found", annotation.name);
           newcode += annotation.name;
@@ -215,13 +226,24 @@ export interface RuntimeSlice {
   wsInterruptKernel: ({ lang }) => void;
   clearResults: (id) => void;
   clearAllResults: () => void;
+  ensureResult(id: string): void;
   setRunning: (id) => void;
+  parseResult: Record<
+    string,
+    {
+      ispublic: boolean;
+      isbridge: boolean;
+      symbolTable: { [key: string]: string };
+      annotations: Annotation[];
+    }
+  >;
 }
 
 export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
   set,
   get
 ) => ({
+  parseResult: {},
   sessionId: null,
   kernels: {
     python: {
@@ -248,17 +270,24 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
    * @param id paod
    */
   parsePod: (id) => {
+    const nodesMap = get().getNodesMap();
+    const codeMap = get().getCodeMap();
     set(
       produce((state: MyState) => {
         let analyze = get().scopedVars ? analyzeCode : analyzeCodeViaQuery;
         let { ispublic, isbridge, annotations } = analyze(
-          // FIXME Use pod content from Yjs instead.
-          state.pods[id].content || ""
+          codeMap.get(id)?.toString() || ""
         );
-        state.pods[id].ispublic = ispublic;
-        state.pods[id].isbridge = isbridge;
+        state.parseResult[id] = {
+          ispublic: false,
+          isbridge: false,
+          symbolTable: {},
+          annotations: [],
+        };
+        state.parseResult[id].ispublic = ispublic;
+        if (isbridge) state.parseResult[id].isbridge = isbridge;
 
-        state.pods[id].symbolTable = Object.assign(
+        state.parseResult[id].symbolTable = Object.assign(
           {},
           ...annotations
             .filter(({ type }) =>
@@ -269,15 +298,14 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
             }))
         );
 
-        state.pods[id].annotations = annotations;
+        state.parseResult[id].annotations = annotations;
       })
     );
   },
   parseAllPods: () => {
-    Object.keys(get().pods).forEach((id) => {
-      if (get().pods[id].type === "CODE") {
-        get().parsePod(id);
-      }
+    const nodesMap = get().getNodesMap();
+    nodesMap.forEach((node) => {
+      if (node.type === "CODE") get().parsePod(node.id);
     });
   },
   resolvePod: (id) => {
@@ -285,24 +313,23 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
     let st = collectSymbolTables(id, get);
     // 2. resolve symbols
     set(
-      produce((state) => {
+      produce((state: MyState) => {
         // update the origin field of the annotations
-        state.pods[id].annotations.forEach((annotation) => {
+        state.parseResult[id].annotations.forEach((annotation) => {
           let { name } = annotation;
           if (st[name]) {
             annotation.origin = st[name];
           } else {
-            annotation.origin = null;
+            annotation.origin = undefined;
           }
         });
       })
     );
   },
   resolveAllPods: () => {
-    Object.keys(get().pods).forEach((id) => {
-      if (get().pods[id].type === "CODE") {
-        get().resolvePod(id);
-      }
+    const nodesMap = get().getNodesMap();
+    nodesMap.forEach((node) => {
+      if (node.type === "CODE") get().resolvePod(node.id);
     });
   },
   // This runningId is a unique pod id indicating which pod is being run. The
@@ -340,15 +367,14 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
 
     // Run the code in remote kernel.
     get().setRunning(id);
-    let pod = get().pods[id];
     get().socket?.send(
       JSON.stringify({
         type: "runCode",
         payload: {
-          lang: pod.lang,
+          lang: "python",
           code: newcode,
           raw: true,
-          podId: pod.id,
+          podId: id,
           sessionId: get().sessionId,
         },
       })
@@ -369,13 +395,15 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       });
       return;
     }
+    const node = nodesMap.get(id);
+    if (!node) return;
     // If this pod is a code pod, add it.
-    if (get().pods[id].type === "CODE") {
+    if (node.type === "CODE") {
       // Add to the chain
       get().clearResults(id);
       get().setRunning(id);
       set({ chain: [...get().chain, id] });
-    } else if (get().pods[id].type === "SCOPE") {
+    } else if (node.type === "SCOPE") {
       // If this pod is a scope, run all pods inside a scope by geographical order.
       // get the pods in the scope
       const children = nodes.filter((n) => n.parentNode === id);
@@ -442,6 +470,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
     get().wsRunNext();
   },
   wsRunNext: async () => {
+    const codeMap = get().getCodeMap();
     // run the next pod in the chain
     if (get().runningId !== null) return;
     if (get().chain.length > 0) {
@@ -453,12 +482,13 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       set({ chain: chain.slice(1) });
       // If the pod is empty, the kernel won't reply. So, we need to skip it.
       if (
-        get().pods[id].content === undefined ||
-        get().pods[id].content === ""
+        codeMap.get(id)?.toString() === undefined ||
+        codeMap.get(id)?.toString() === ""
       ) {
+        get().ensureResult(id);
         set(
-          produce((state) => {
-            state.pods[id].running = false;
+          produce((state: MyState) => {
+            state.podResults[id].running = false;
           })
         );
       } else {
@@ -479,30 +509,27 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
   },
   clearResults: (id) => {
     set(
-      produce((state) => {
-        state.pods[id].result = [];
-        state.pods[id].stdout = "";
-        state.pods[id].error = null;
-        state.pods[id].dirty = true;
+      produce((state: MyState) => {
+        state.podResults[id] = {
+          result: [],
+        };
       })
     );
+  },
+  ensureResult(id) {
+    if (id in get().podResults) return;
+    get().clearResults(id);
   },
   clearAllResults: () => {
-    set(
-      produce((state) => {
-        Object.keys(state.pods).forEach((id) => {
-          state.pods[id].result = [];
-          state.pods[id].stdout = "";
-          state.pods[id].error = null;
-          state.pods[id].dirty = true;
-        });
-      })
-    );
+    const nodesMap = get().getNodesMap();
+    const nodes = Array.from(nodesMap);
+    nodes.forEach(({ id }) => get().clearResults(id));
   },
   setRunning: (id) => {
+    get().ensureResult(id);
     set(
-      produce((state) => {
-        state.pods[id].running = true;
+      produce((state: MyState) => {
+        state.podResults[id].running = true;
       })
     );
   },

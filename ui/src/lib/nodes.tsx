@@ -19,6 +19,8 @@ export function useYjsObserver() {
       updateView();
     };
 
+    // FIXME need to observe edgesMap as well
+    // FIXME need to observe resultMap as well
     nodesMap.observe(observer);
 
     return () => {

@@ -85,11 +85,17 @@ function Timer({ lastExecutedAt }) {
 
 export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
   const store = useContext(RepoContext)!;
-  const results = useStore(store, (state) => state.pods[id]?.result);
-  const error = useStore(store, (state) => state.pods[id]?.error);
-  const stdout = useStore(store, (state) => state.pods[id]?.stdout);
-  const running = useStore(store, (state) => state.pods[id]?.running || false);
-  const exec_count = useStore(store, (state) => state.pods[id]?.exec_count);
+  const results = useStore(store, (state) => state.podResults[id]?.result);
+  const error = useStore(store, (state) => state.podResults[id]?.error);
+  const stdout = useStore(store, (state) => state.podResults[id]?.stdout);
+  const running = useStore(
+    store,
+    (state) => state.podResults[id]?.running || false
+  );
+  const exec_count = useStore(
+    store,
+    (state) => state.podResults[id]?.exec_count
+  );
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
 
@@ -105,17 +111,17 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
 
   const lastExecutedAt = useStore(
     store,
-    (state) => state.pods[id]?.lastExecutedAt
+    (state) => state.podResults[id]?.lastExecutedAt
   );
   const [showOutput, setShowOutput] = useState(true);
   const hasResult = useStore(
     store,
     (state) =>
-      state.pods[id]?.running ||
-      state.pods[id]?.result ||
-      state.pods[id]?.error ||
-      state.pods[id]?.stdout ||
-      state.pods[id]?.stderr
+      state.podResults[id]?.running ||
+      state.podResults[id]?.result ||
+      state.podResults[id]?.error ||
+      state.podResults[id]?.stdout ||
+      state.podResults[id]?.stderr
   );
   const [resultScroll, setResultScroll] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -574,12 +580,11 @@ export const CodeNode = memo<NodeProps>(function ({
   const cursorNode = useStore(store, (state) => state.cursorNode);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
-  const isPodFocused = useStore(store, (state) => state.pods[id]?.focus);
   const inputRef = useRef<HTMLInputElement>(null);
   const updateView = useStore(store, (state) => state.updateView);
   const exec_count = useStore(
     store,
-    (state) => state.pods[id]?.exec_count || " "
+    (state) => state.podResults[id]?.exec_count || " "
   );
   const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
 

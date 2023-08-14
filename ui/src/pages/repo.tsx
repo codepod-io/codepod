@@ -331,6 +331,31 @@ function useRepo({ id }) {
   return { data, loading };
 }
 
+function useInitNodes() {
+  const store = useContext(RepoContext)!;
+  const provider = useStore(store, (state) => state.provider);
+  const [loading, setLoading] = useState(true);
+  const updateView = useStore(store, (state) => state.updateView);
+  const adjustLevel = useStore(store, (state) => state.adjustLevel);
+  useEffect(() => {
+    const init = () => {
+      // adjust level and update view
+      adjustLevel();
+      updateView();
+      setLoading(false);
+    };
+
+    if (!provider) return;
+    if (provider.synced) {
+      init();
+    } else {
+      provider.once("synced", init);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [provider]);
+  return { loading };
+}
+
 /**
  * This loads repo metadata.
  */
@@ -339,6 +364,7 @@ function RepoImpl2({ id }) {
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   useRuntime();
   useRepo({ id });
+  const { loading } = useInitNodes();
   const parseAllPods = useStore(store, (state) => state.parseAllPods);
   const resolveAllPods = useStore(store, (state) => state.resolveAllPods);
   const [parserLoaded, setParserLoaded] = useState(false);
@@ -353,11 +379,18 @@ function RepoImpl2({ id }) {
   }, []);
 
   useEffect(() => {
-    if (repoLoaded && parserLoaded) {
+    if (repoLoaded && parserLoaded && !loading) {
       parseAllPods();
       resolveAllPods();
     }
-  }, [parseAllPods, parserLoaded, repoLoaded, resolveAllPods, scopedVars]);
+  }, [
+    parseAllPods,
+    parserLoaded,
+    repoLoaded,
+    resolveAllPods,
+    scopedVars,
+    loading,
+  ]);
 
   // TOFIX: consider more types of error and display detailed error message in the future
   // TOFIX: if the repo is not found, sidebar should not be rendered and runtime should not be lanuched.
@@ -365,21 +398,20 @@ function RepoImpl2({ id }) {
     return <NotFoundAlert error={loadError.message} />;
   }
 
+  if (loading || !repoLoaded) return <Box>Loading</Box>;
+
   return (
     <RepoWrapper id={id}>
-      {!repoLoaded && <Box>Repo Loading ...</Box>}
-      {repoLoaded && (
-        <Box
-          height="100%"
-          border="solid 3px black"
-          p={2}
-          boxSizing={"border-box"}
-          // m={2}
-          overflow="auto"
-        >
-          <Canvas />
-        </Box>
-      )}
+      <Box
+        height="100%"
+        border="solid 3px black"
+        p={2}
+        boxSizing={"border-box"}
+        // m={2}
+        overflow="auto"
+      >
+        <Canvas />
+      </Box>
     </RepoWrapper>
   );
 }
