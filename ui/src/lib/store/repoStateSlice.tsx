@@ -7,15 +7,6 @@ import { monaco } from "react-monaco-editor";
 
 import { IndexeddbPersistence } from "y-indexeddb";
 
-import {
-  doRemoteLoadRepo,
-  doRemoteLoadVisibility,
-  doRemoteUpdateVisibility,
-  doRemoteAddCollaborator,
-  doRemoteDeleteCollaborator,
-  doRemoteUpdateCodeiumAPIKey,
-} from "../fetch";
-
 import { Doc, Transaction } from "yjs";
 import { WebsocketProvider } from "./y-websocket";
 import { createRuntimeSlice, RuntimeSlice } from "./runtimeSlice";
@@ -67,12 +58,22 @@ export async function registerUser(
 export interface RepoStateSlice {
   pods: Record<string, Pod>;
   // From source pod id to target pod id.
-  arrows: { source: string; target: string }[];
-  id2parent: Record<string, string>;
-  id2children: Record<string, string[]>;
   setSessionId: (sessionId: string) => void;
+  setRepoData: (repo: {
+    id: string;
+    name: string;
+    userId: string;
+    public: boolean;
+    collaborators: [
+      {
+        id: string;
+        email: string;
+        firstname: string;
+        lastname: string;
+      }
+    ];
+  }) => void;
   addError: (error: { type: string; msg: string }) => void;
-  loadRepo: (client: ApolloClient<object>, repoId: string) => void;
   clearError: () => void;
   repoLoaded: boolean;
   error: { type: string; msg: string } | null;
@@ -81,8 +82,6 @@ export interface RepoStateSlice {
   user: any;
   ydoc: Doc;
   collaborators: any[];
-  addCollaborator: (client: ApolloClient<object>, email: string) => any;
-  deleteCollaborator: (client: ApolloClient<object>, id: string) => any;
   shareOpen: boolean;
   settingOpen: boolean;
   cutting: string | null;
@@ -92,15 +91,6 @@ export interface RepoStateSlice {
   loadError: any;
   role: "OWNER" | "COLLABORATOR" | "GUEST";
   isPublic: boolean;
-  updateVisibility: (
-    client: ApolloClient<object>,
-    isPublic: boolean
-  ) => Promise<boolean>;
-  updateAPIKey: (
-    client: ApolloClient<object>,
-    apiKey: string
-  ) => Promise<boolean>;
-  loadVisibility: (client: ApolloClient<object>, repoId: string) => void;
   setUser: (user: any) => void;
   addClient: (clientId: any, name, color) => void;
   deleteClient: (clientId: any) => void;
@@ -117,8 +107,6 @@ export interface RepoStateSlice {
   setYjsSyncStatus: (status: string) => void;
 }
 
-let unregister: any = null;
-
 export const createRepoStateSlice: StateCreator<
   MyState,
   [],
@@ -126,9 +114,6 @@ export const createRepoStateSlice: StateCreator<
   RepoStateSlice
 > = (set, get) => ({
   pods: {},
-  arrows: [],
-  id2parent: {},
-  id2children: {},
   error: null,
   repoLoaded: false,
   user: {},
@@ -149,7 +134,37 @@ export const createRepoStateSlice: StateCreator<
   addError: (error) => set({ error }),
   clearError: () => set({ error: null }),
 
-  loadRepo: loadRepo(set, get),
+  setRepoData: (repo) =>
+    set(
+      produce((state: MyState) => {
+        state.repoName = repo.name;
+        state.isPublic = repo.public;
+        state.collaborators = repo.collaborators;
+        // set the user role in this repo FIXME this assumes state.user is
+        // loaded. Very prone to errors, e.g., state,.user must be loaded before
+        // repo data is loaded.
+        if (repo.userId === state.user.id) {
+          state.role = "OWNER";
+        } else if (
+          state.user &&
+          repo.collaborators.findIndex(({ id }) => state.user.id === id) >= 0
+        ) {
+          state.role = "COLLABORATOR";
+        } else {
+          state.role = "GUEST";
+        }
+        // only set the local awareness when the user is an owner or a collaborator
+        if (state.provider && state.role !== "GUEST") {
+          console.log("set awareness", state.user.firstname);
+          const awareness = state.provider.awareness;
+          awareness.setLocalStateField("user", {
+            name: state.user.firstname,
+            color: state.user.color,
+          });
+        }
+        state.repoLoaded = true;
+      })
+    ),
   addClient: (clientID, name, color) =>
     set((state) => {
       if (!state.clients.has(clientID)) {
@@ -181,47 +196,6 @@ export const createRepoStateSlice: StateCreator<
 
   setShareOpen: (open: boolean) => set({ shareOpen: open }),
   setSettingOpen: (open: boolean) => set({ settingOpen: open }),
-  loadVisibility: async (client, repoId) => {
-    if (!repoId) return;
-    const { collaborators, isPublic } = await doRemoteLoadVisibility(client, {
-      repoId: get().repoId,
-    });
-    set(
-      produce((state) => {
-        state.collaborators = collaborators;
-        state.isPublic = isPublic;
-      })
-    );
-  },
-  updateVisibility: async (client, isPublic) => {
-    const res = await doRemoteUpdateVisibility(client, {
-      repoId: get().repoId,
-      isPublic,
-    });
-    console.log(res);
-    if (res) await get().loadVisibility(client, get().repoId || "");
-    return res;
-  },
-  addCollaborator: async (client, email) => {
-    const { success, error } = await doRemoteAddCollaborator(client, {
-      repoId: get().repoId,
-      email,
-    });
-    if (success) {
-      await get().loadVisibility(client, get().repoId || "");
-    }
-    return { success, error };
-  },
-  deleteCollaborator: async (client, collaboratorId) => {
-    const { success, error } = await doRemoteDeleteCollaborator(client, {
-      repoId: get().repoId,
-      collaboratorId,
-    });
-    if (success) {
-      await get().loadVisibility(client, get().repoId || "");
-    }
-    return { success, error };
-  },
   setCutting: (id: string | null) => set({ cutting: id }),
   yjsConnecting: false,
   yjsStatus: undefined,
@@ -305,71 +279,4 @@ export const createRepoStateSlice: StateCreator<
         state.ydoc.destroy();
       })
     ),
-  updateAPIKey: async (client, apiKey) => {
-    const { success } = await doRemoteUpdateCodeiumAPIKey(client, {
-      apiKey,
-    });
-    try {
-      if (success) {
-        set({ user: { ...get().user, codeiumAPIKey: apiKey } });
-        return true;
-      } else {
-        return false;
-      }
-    } catch (e) {
-      console.log(e);
-      return false;
-    }
-  },
 });
-
-function loadRepo(set, get) {
-  return async (client, id) => {
-    const { name, error, userId, collaborators, isPublic } =
-      await doRemoteLoadRepo(client, id);
-    set(
-      produce((state: MyState) => {
-        // TODO the children ordered by index
-        if (error) {
-          // TOFIX: If you enter a repo by URL directly, it may throw a repo not found error because of your user info is not loaded in time.
-          console.log("ERROR", error, id);
-          state.loadError = error;
-          return;
-        }
-        state.repoName = name;
-        state.isPublic = isPublic;
-        state.collaborators = collaborators;
-        // set the user role in this repo
-        if (userId === state.user.id) {
-          state.role = "OWNER";
-        } else if (
-          state.user &&
-          collaborators.findIndex(({ id }) => state.user.id === id) >= 0
-        ) {
-          state.role = "COLLABORATOR";
-        } else {
-          state.role = "GUEST";
-        }
-        // only set the local awareness when the user is an owner or a collaborator
-        if (state.provider && state.role !== "GUEST") {
-          console.log("set awareness", state.user.firstname);
-          const awareness = state.provider.awareness;
-          awareness.setLocalStateField("user", {
-            name: state.user.firstname,
-            color: state.user.color,
-          });
-        }
-
-        // fill in the parent/children relationships
-        for (const id in state.pods) {
-          let pod = state.pods[id];
-          if (pod.parent) {
-            state.id2parent[pod.id] = pod.parent;
-          }
-          state.id2children[pod.id] = pod.children.map((child) => child.id);
-        }
-        state.repoLoaded = true;
-      })
-    );
-  };
-}

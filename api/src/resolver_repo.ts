@@ -519,7 +519,6 @@ export default {
   Query: {
     repo,
     getDashboardRepos,
-    getVisibility,
   },
   Mutation: {
     createRepo,

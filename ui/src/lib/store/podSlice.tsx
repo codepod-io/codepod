@@ -6,26 +6,9 @@ import { ApolloClient } from "@apollo/client";
 import { Pod, MyState } from ".";
 
 export interface PodSlice {
-  getPod: (id: string) => Pod;
-  getPods: () => Record<string, Pod>;
-  getId2children: (id: string) => string[];
   setPodFocus: (id: string) => void;
   setPodBlur: (id: string) => void;
   setPodName: ({ id, name }: { id: string; name: string }) => void;
-  setPodContent: (
-    { id, content }: { id: string; content: string },
-    // Whether to perform additional verification of whether content ==
-    // pod.content before setting the dirty flag..
-    verify?: boolean
-  ) => void;
-  setPodRichContent: ({
-    id,
-    richContent,
-  }: {
-    id: string;
-    richContent: string;
-  }) => void;
-  initPodContent: ({ id, content }: { id: string; content: string }) => void;
   setPodResult: ({ id, type, content, count }) => void;
   setPodStdout: ({ id, stdout }: { id: string; stdout: string }) => void;
   setPodError: ({ id, ename, evalue, stacktrace }) => void;
@@ -37,9 +20,6 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
   set,
   get
 ) => ({
-  getPod: (id: string) => get().pods[id],
-  getPods: () => get().pods,
-  getId2children: (id: string) => get().id2children[id],
   setPodName: ({ id, name }) =>
     set(
       produce((state: MyState) => {
@@ -53,51 +33,6 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
       // @ts-ignore
       "setPodName"
     ),
-  setPodContent: ({ id, content }, verify = false) =>
-    set(
-      produce((state) => {
-        let pod = state.pods[id];
-        if (verify) {
-          if (JSON.stringify(pod.content) === JSON.stringify(content)) {
-            return;
-          }
-        }
-        pod.content = content;
-        pod.dirty = true;
-      }),
-      false,
-      // @ts-ignore
-      "setPodContent"
-    ),
-  setPodRichContent: ({ id, richContent }) =>
-    set(
-      produce((state) => {
-        let pod = state.pods[id];
-        if (pod.type != "RICH") {
-          return;
-        }
-        pod.richContent = richContent;
-      }),
-      false,
-      // @ts-ignore
-      "setPodRichContent"
-    ),
-  initPodContent: ({ id, content }) =>
-    set(
-      produce((state) => {
-        let pod = state.pods[id];
-        pod.content = content;
-      }),
-      false,
-      // @ts-ignore
-      "initPodContent"
-    ),
-  setPodRender: ({ id, value }) =>
-    set(
-      produce((state) => {
-        state.pods[id].render = value;
-      })
-    ),
   setPodStdout: ({ id, stdout }) =>
     set(
       produce((state) => {
@@ -107,7 +42,7 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
     ),
   setPodError: ({ id, ename, evalue, stacktrace }) =>
     set(
-      produce((state) => {
+      produce((state: MyState) => {
         if (id === "CODEPOD") return;
         state.pods[id].error = {
           ename,
@@ -119,7 +54,7 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
     ),
   setPodStatus: ({ id, status, lang }) =>
     set(
-      produce((state) => {
+      produce((state: MyState) => {
         // console.log("WS_STATUS", { lang, status });
         state.kernels[lang].status = status;
         // this is for racket kernel, which does not have a execute_reply
@@ -130,7 +65,7 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
     ),
   setPodFocus: (id: string) =>
     set(
-      produce((state) => {
+      produce((state: MyState) => {
         if (state.pods[id]) {
           state.pods[id].focus = true;
         }
@@ -138,7 +73,7 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
     ),
   setPodBlur: (id: string) =>
     set(
-      produce((state) => {
+      produce((state: MyState) => {
         if (state.pods[id]) {
           state.pods[id].focus = false;
         }

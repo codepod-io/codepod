@@ -14,7 +14,7 @@ import { useStore } from "zustand";
 import { RepoContext } from "../lib/store";
 import { Link, Stack } from "@mui/material";
 import LaunchIcon from "@mui/icons-material/Launch";
-import { useApolloClient } from "@apollo/client";
+import { gql, useApolloClient, useMutation } from "@apollo/client";
 import Button from "@mui/material/Button";
 import DoneIcon from "@mui/icons-material/Done";
 import CloseIcon from "@mui/icons-material/Close";
@@ -34,7 +34,6 @@ export function SettingDialog({ open = false }: SettingDiagProps) {
   const user = useStore(store, (state) => state.user);
   const isCustomToken = useStore(store, (state) => state.isCustomToken);
   const setIsCustomToken = useStore(store, (state) => state.setIsCustomToken);
-  const updateAPIKey = useStore(store, (state) => state.updateAPIKey);
   const client = useApolloClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [infoShow, setInfoShow] = useState(false);
@@ -53,6 +52,25 @@ export function SettingDialog({ open = false }: SettingDiagProps) {
     setInfoShow(false);
   };
 
+  const [updateCodeiumAPIKey, { data, error }] = useMutation(gql`
+    mutation updateCodeiumAPIKey($apiKey: String!) {
+      updateCodeiumAPIKey(apiKey: $apiKey)
+    }
+  `);
+
+  useEffect(() => {
+    if (data?.updateCodeiumAPIKey) {
+      setStatus("success");
+      setMessage(`${user.name}, welcome. Token updated`);
+      setInfoShow(true);
+    }
+    if (error) {
+      setStatus("error");
+      setMessage(error.message || "Unknown error");
+      setInfoShow(true);
+    }
+  }, [data, error]);
+
   const updateToken = async () => {
     const token = inputRef.current?.value.trim();
     if (!token) {
@@ -70,13 +88,10 @@ export function SettingDialog({ open = false }: SettingDiagProps) {
             : "Unknown error"
         );
       }
-      if (await updateAPIKey(client, api_key)) {
-        setStatus("success");
-        setMessage(`${name}, welcome. Token updated`);
-        setInfoShow(true);
-      } else {
-        throw new Error("Update failed");
-      }
+      updateCodeiumAPIKey({
+        variables: { apiKey: api_key },
+        refetchQueries: ["Me"],
+      });
     } catch (e) {
       setStatus("error");
       setMessage((e as Error).message || "Unknown error");
@@ -131,7 +146,13 @@ export function SettingDialog({ open = false }: SettingDiagProps) {
           {apiKey && (
             <Button
               endIcon={<CloseIcon />}
-              onClick={() => updateAPIKey(client, "")}
+              // FIXME use clearToken mutation instead.
+              onClick={() =>
+                updateCodeiumAPIKey({
+                  variables: { apiKey: "" },
+                  refetchQueries: ["Me"],
+                })
+              }
             >
               Clear Stored Token
             </Button>
