@@ -583,6 +583,26 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     const nodesMap = get().getNodesMap();
     let nodes = Array.from(get().selectedPods).map((id) => nodesMap.get(id)!);
     if (nodes.length === 0) return;
+    // If a scope is selected, select all its children
+    if (nodes.some((n) => n.type === "SCOPE")) {
+      const allnodes = Array.from(nodesMap.values());
+      const dp: Record<string, boolean> = {};
+      Array.from(get().selectedPods).forEach((id) => (dp[id] = true));
+      // dp algorithm for collecting all descendants
+      const recur = (node: Node): boolean => {
+        // return true if node is a descendant of any scope in scopes
+        if (node.id in dp) return dp[node.id];
+        if (!node.parentNode) return false;
+        if (node.parentNode in dp) {
+          dp[node.id] = dp[node.parentNode];
+          return dp[node.id];
+        }
+        dp[node.id] = recur(nodesMap.get(node.parentNode)!);
+        return dp[node.id];
+      };
+      const allDescendants = allnodes.filter((n) => recur(n));
+      nodes = allDescendants;
+    }
     // edges
     const selectedEdges = getConnectedEdges(nodes, get().edges).filter(
       (edge) => {
@@ -592,8 +612,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         return !(isExternalSource || isExternalTarget);
       }
     );
-    // remove parent node
-    nodes = nodes.map((node) => ({ ...node, parentNode: undefined }));
     // content
     const codeMap = get().getCodeMap();
     const richMap = get().getRichMap();
@@ -638,20 +656,35 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     const oldedges = data.edges as Edge[];
     const contentMap = data.contentMap as Record<string, string>;
 
-    const minX = Math.min(...oldnodes.map((s) => s.position.x));
-    const minY = Math.min(...oldnodes.map((s) => s.position.y));
-
     // 3. construct new nodes
     const nodesMap = get().getNodesMap();
     const edgesMap = get().getEdgesMap();
     const codeMap = get().getCodeMap();
     const richMap = get().getRichMap();
 
+    // 1. create new ids
     const old2newIdMap = new Map<string, string>();
-
-    const newnodes = oldnodes.map((n) => {
+    oldnodes.forEach((n) => {
       const id = myNanoId();
       old2newIdMap.set(n.id, id);
+    });
+
+    // utility functions
+    const testInScope = (n: Node) =>
+      n.parentNode && old2newIdMap.has(n.parentNode);
+    const testNotInScope = (n) => !testInScope(n);
+
+    // Only calculate the min for pods that is not in a scope.
+    const minX = Math.min(
+      ...oldnodes.filter(testNotInScope).map((s) => s.position.x)
+    );
+    const minY = Math.min(
+      ...oldnodes.filter(testNotInScope).map((s) => s.position.y)
+    );
+
+    // 2. create new nodes
+    const newnodes = oldnodes.map((n) => {
+      const id = old2newIdMap.get(n.id)!;
       switch (n.type) {
         case "CODE":
           const ytext = new Y.Text(contentMap[n.id]);
@@ -666,13 +699,18 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           break;
       }
 
+      const isInScope = testInScope(n);
+
       const newNode = {
         ...n,
         id,
-        position: {
-          x: n.position.x - minX + position.x,
-          y: n.position.y - minY + position.y,
-        },
+        position: isInScope
+          ? n.position
+          : {
+              x: n.position.x - minX + position.x,
+              y: n.position.y - minY + position.y,
+            },
+        parentNode: isInScope ? old2newIdMap.get(n.parentNode!) : undefined,
       };
       return newNode;
     });
@@ -691,7 +729,10 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     get().resetSelection();
     newnodes.forEach((n) => {
       nodesMap.set(n.id, n);
-      get().selectPod(n.id, true);
+      // Don't select nodes that are in a scope.
+      if (!n.parentNode) {
+        get().selectPod(n.id, true);
+      }
     });
     newedges.forEach((e) => {
       edgesMap.set(e.id, e);
