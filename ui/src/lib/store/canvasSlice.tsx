@@ -839,6 +839,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           //
           // TODO remove from codeMap and richMap?
           nodesMap.delete(change.id);
+          // remove from selected pods
+          get().selectPod(change.id, false);
           // run auto-layout
           if (get().autoRunLayout) {
             get().autoLayoutROOT();
