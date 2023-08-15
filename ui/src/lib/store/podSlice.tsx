@@ -30,7 +30,6 @@ export interface PodSlice {
   setPodStdout: ({ id, stdout }: { id: string; stdout: string }) => void;
   setPodError: ({ id, ename, evalue, stacktrace }) => void;
   setPodStatus: ({ id, status, lang }) => void;
-  clonePod: (id: string) => any;
 }
 
 export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
@@ -78,16 +77,6 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
         // }
       })
     ),
-  clonePod: (id: string) => {
-    const nodesMap = get().getNodesMap();
-    const node = nodesMap.get(id);
-    const nodes = Array.from(nodesMap.values());
-    const children = nodes.filter((n) => n.parentNode === id);
-    return {
-      ...node,
-      children: children.map((child) => get().clonePod(child.id)),
-    };
-  },
   setPodResult({ id, type, content, count }) {
     const nodesMap = get().getNodesMap();
     const node = nodesMap.get(id);
