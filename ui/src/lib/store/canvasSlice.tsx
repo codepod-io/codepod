@@ -581,7 +581,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   handleCopy(event) {
     // TODO get selected nodes recursively
     const nodesMap = get().getNodesMap();
-    const nodes = Array.from(get().selectedPods).map((id) => nodesMap.get(id)!);
+    let nodes = Array.from(get().selectedPods).map((id) => nodesMap.get(id)!);
     if (nodes.length === 0) return;
     // edges
     const selectedEdges = getConnectedEdges(nodes, get().edges).filter(
@@ -592,6 +592,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         return !(isExternalSource || isExternalTarget);
       }
     );
+    // remove parent node
+    nodes = nodes.map((node) => ({ ...node, parentNode: undefined }));
     // content
     const codeMap = get().getCodeMap();
     const richMap = get().getRichMap();
