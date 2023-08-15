@@ -299,8 +299,10 @@ export interface CanvasSlice {
   moved: boolean;
   toggleMoved: () => void;
   // clicked-on-canvas indicator
-  clicked: boolean;
-  toggleClicked: () => void;
+  paneClicked: boolean;
+  togglePaneClicked: () => void;
+  nodeClicked: boolean;
+  toggleNodeClicked: () => void;
 
   addNode: (
     type: "CODE" | "SCOPE" | "RICH",
@@ -878,8 +880,10 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
 
   moved: false,
   toggleMoved: () => set({ moved: !get().moved }),
-  clicked: false,
-  toggleClicked: () => set({ clicked: !get().clicked }),
+  paneClicked: false,
+  togglePaneClicked: () => set({ paneClicked: !get().paneClicked }),
+  nodeClicked: false,
+  toggleNodeClicked: () => set({ nodeClicked: !get().nodeClicked }),
 
   autoLayoutROOT: () => {
     // get all scopes,

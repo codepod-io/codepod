@@ -422,10 +422,11 @@ function CanvasImpl() {
   const [parentNode, setParentNode] = useState(undefined);
 
   const moved = useStore(store, (state) => state.moved);
-  const clicked = useStore(store, (state) => state.clicked);
+  const paneClicked = useStore(store, (state) => state.paneClicked);
+  const nodeClicked = useStore(store, (state) => state.nodeClicked);
   useEffect(() => {
     setShowContextMenu(false);
-  }, [moved, clicked]);
+  }, [moved, paneClicked, nodeClicked]);
   const escapePressed = useKeyPress("Escape");
   useEffect(() => {
     if (escapePressed) {
@@ -465,7 +466,8 @@ function CanvasImpl() {
     (state) => state.helperLineVertical
   );
   const toggleMoved = useStore(store, (state) => state.toggleMoved);
-  const toggleClicked = useStore(store, (state) => state.toggleClicked);
+  const togglePaneClicked = useStore(store, (state) => state.togglePaneClicked);
+  const toggleNodeClicked = useStore(store, (state) => state.toggleNodeClicked);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -550,10 +552,10 @@ function CanvasImpl() {
             });
           }}
           onPaneClick={() => {
-            toggleClicked();
+            togglePaneClicked();
           }}
           onNodeClick={() => {
-            toggleClicked();
+            toggleNodeClicked();
           }}
           onNodeDragStop={(event, node) => {
             removeDragHighlight();

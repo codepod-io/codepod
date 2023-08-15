@@ -186,13 +186,13 @@ function useUpdatePositionerOnMove() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const moved = useStore(store, (state) => state.moved);
-  const clicked = useStore(store, (state) => state.clicked);
+  const paneClicked = useStore(store, (state) => state.paneClicked);
   useEffect(() => {
     forceUpdatePositioners();
   }, [moved]);
   useEffect(() => {
     emptySelection();
-  }, [clicked]);
+  }, [paneClicked]);
   return;
 }
 
