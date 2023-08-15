@@ -586,7 +586,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       "application/json",
       JSON.stringify({
         type: "pod",
-        data: nodes[0],
+        data: nodes,
       })
     );
     event.preventDefault();
@@ -603,23 +603,30 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     if (data.type !== "pod") return;
     // TODO support multiple pods
     // console.log("Paste data (should be a node)", data);
-    const oldnode = data.data as Node;
+    const oldnodes = data.data as Node[];
+
+    const minX = Math.min(...oldnodes.map((s) => s.position.x));
+    const minY = Math.min(...oldnodes.map((s) => s.position.y));
 
     // 3. construct new nodes
     const nodesMap = get().getNodesMap();
 
-    // If some pod is selected, paste to it at an offset. otherwise paste to the
-    // center of the screen
-    const newNode = {
-      ...oldnode,
-      id: myNanoId(),
-      position,
-    };
-
-    // 4. add them to the graph
-    nodesMap.set(newNode.id, newNode);
+    const newnodes = oldnodes.map((n) => {
+      const newNode = {
+        ...n,
+        id: myNanoId(),
+        position: {
+          x: n.position.x - minX + position.x,
+          y: n.position.y - minY + position.y,
+        },
+      };
+      return newNode;
+    });
     get().resetSelection();
-    get().selectPod(newNode.id, true);
+    newnodes.forEach((n) => {
+      nodesMap.set(n.id, n);
+      get().selectPod(n.id, true);
+    });
     get().updateView();
   },
 
