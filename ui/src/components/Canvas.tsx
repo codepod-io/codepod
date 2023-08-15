@@ -27,6 +27,7 @@ import ReactFlow, {
   useViewport,
   XYPosition,
   useStore as useRfStore,
+  useKeyPress,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -420,6 +421,18 @@ function CanvasImpl() {
   const [client, setClient] = useState({ x: 0, y: 0 });
   const [parentNode, setParentNode] = useState(undefined);
 
+  const moved = useStore(store, (state) => state.moved);
+  const clicked = useStore(store, (state) => state.clicked);
+  useEffect(() => {
+    setShowContextMenu(false);
+  }, [moved, clicked]);
+  const escapePressed = useKeyPress("Escape");
+  useEffect(() => {
+    if (escapePressed) {
+      setShowContextMenu(false);
+    }
+  }, [escapePressed]);
+
   const onPaneContextMenu = (event) => {
     event.preventDefault();
     setShowContextMenu(true);
@@ -539,6 +552,9 @@ function CanvasImpl() {
           onPaneClick={() => {
             toggleClicked();
           }}
+          onNodeClick={() => {
+            toggleClicked();
+          }}
           onNodeDragStop={(event, node) => {
             removeDragHighlight();
             let mousePos = project({ x: event.clientX, y: event.clientY });
@@ -650,25 +666,38 @@ function CanvasImpl() {
           <CanvasContextMenu
             x={points.x}
             y={points.y}
-            addCode={() =>
-              addNode("CODE", project({ x: client.x, y: client.y }), parentNode)
-            }
-            addScope={() =>
+            addCode={() => {
+              addNode(
+                "CODE",
+                project({ x: client.x, y: client.y }),
+                parentNode
+              );
+              setShowContextMenu(false);
+            }}
+            addScope={() => {
               addNode(
                 "SCOPE",
                 project({ x: client.x, y: client.y }),
                 parentNode
-              )
-            }
-            addRich={() =>
-              addNode("RICH", project({ x: client.x, y: client.y }), parentNode)
-            }
+              );
+              setShowContextMenu(false);
+            }}
+            addRich={() => {
+              addNode(
+                "RICH",
+                project({ x: client.x, y: client.y }),
+                parentNode
+              );
+              setShowContextMenu(false);
+            }}
             handleImportClick={() => {
               // handle CanvasContextMenu "import Jupyter notebook" click
               handleItemClick();
+              setShowContextMenu(false);
             }}
             onShareClick={() => {
               setShareOpen(true);
+              setShowContextMenu(false);
             }}
             parentNode={null}
           />
