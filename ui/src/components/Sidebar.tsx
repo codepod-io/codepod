@@ -5,10 +5,18 @@ import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import Popover from "@mui/material/Popover";
 import StopIcon from "@mui/icons-material/Stop";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import Drawer from "@mui/material/Drawer";
+import MenuList from "@mui/material/MenuList";
+import MenuItem from "@mui/material/MenuItem";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
+import ListItemButton from "@mui/material/ListItemButton";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
@@ -17,6 +25,8 @@ import Typography from "@mui/material/Typography";
 import { useSnackbar, VariantType } from "notistack";
 
 import { Node as ReactflowNode } from "reactflow";
+import { NodeData } from "../lib/store/canvasSlice";
+import * as Y from "yjs";
 
 import { gql, useQuery, useMutation, useApolloClient } from "@apollo/client";
 import { useStore } from "zustand";
@@ -1168,6 +1178,123 @@ function ExportButtons() {
   );
 }
 
+function TocPodButton({ id }) {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const setCursorNode = useStore(store, (state) => state.setCursorNode);
+
+  const codeMap = useStore(store, (state) => state.getCodeMap());
+  const wsRun = useStore(store, (state) => state.wsRun);
+
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+  return (
+    <ListItem disablePadding>
+      <ListItemButton
+        id={id}
+        onClick={() => {
+          setCursorNode(id);
+        }}
+      >
+        <ListItemText primary={id} />
+      </ListItemButton>
+      <IconButton aria-label="More options" onClick={handleClick}>
+        <MoreVertIcon />
+      </IconButton>
+      <Popover open={open} anchorEl={anchorEl} onClose={handleClose}>
+        <MenuList>
+          <MenuItem>Rename</MenuItem>
+          <MenuItem>Copy</MenuItem>
+          {codeMap.has(id) ? (
+            <MenuItem
+              onClick={() => {
+                wsRun(id);
+                handleClose();
+              }}
+            >
+              Run
+            </MenuItem>
+          ) : null}
+          <MenuItem>Delete</MenuItem>
+        </MenuList>
+      </Popover>
+    </ListItem>
+  );
+}
+
+function dfs(
+  nodeId: string,
+  toc: Map<string, ReactflowNode[]>,
+  nodesMap: Y.Map<ReactflowNode<NodeData>>
+) {
+  let jsx = <></>;
+
+  if (toc.has(nodeId) && toc.get(nodeId)!.length > 0) {
+    toc.get(nodeId)?.forEach((child) => {
+      jsx = (
+        <>
+          {jsx}
+          <TocPodButton id={child.id} />
+          {toc.has(child.id) ? <ul>{dfs(child.id, toc, nodesMap)}</ul> : null}
+        </>
+      );
+    });
+  }
+
+  return jsx;
+}
+
+function TableofPods() {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const nodesMap = useStore(store, (state) => state.getNodesMap());
+  let toc = new Map<string, ReactflowNode[]>();
+  let keys = new Set(nodesMap.keys());
+
+  for (const key of Array.from(keys)) {
+    const parent =
+      nodesMap.get(key)?.parentNode === undefined
+        ? "ROOT"
+        : nodesMap.get(key)?.parentNode;
+
+    if (!toc.has(parent!)) {
+      toc.set(parent!, []);
+    }
+
+    toc.get(parent!)!.push(nodesMap.get(key)!);
+  }
+
+  for (const value of Array.from(toc.values())) {
+    if (value.length > 1) {
+      value.sort((node1, node2) => {
+        if (node1 && node2) {
+          if (node1.position.y === node2.position.y) {
+            return node1.position.x - node2.position.x;
+          } else {
+            return node1.position.y - node2.position.y;
+          }
+        } else {
+          return 0;
+        }
+      });
+    }
+  }
+  return (
+    <List sx={{ bgcolor: "rgb(225,225,225)" }}>
+      {dfs("ROOT", toc, nodesMap)}
+    </List>
+  );
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
   width,
   open,
@@ -1250,6 +1377,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Typography variant="h6">Site Settings</Typography>
             <SidebarSettings />
             <ToastError />
+
+            <Divider />
+            <Typography variant="h6">Table of Pods</Typography>
+            <TableofPods />
           </Stack>
         </Box>
       </Drawer>
