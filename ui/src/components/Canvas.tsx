@@ -28,6 +28,7 @@ import ReactFlow, {
   XYPosition,
   useStore as useRfStore,
   useKeyPress,
+  SelectionMode,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -613,6 +614,7 @@ function CanvasImpl() {
           // disable node delete on backspace when the user is a guest.
           deleteKeyCode={isGuest ? null : "Backspace"}
           multiSelectionKeyCode={isMac ? "Meta" : "Control"}
+          selectionMode={SelectionMode.Partial}
           // TODO restore previous viewport
           defaultViewport={{ zoom: 1, x: 0, y: 0 }}
           proOptions={{ hideAttribution: true }}
