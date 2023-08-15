@@ -61,34 +61,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
   const reactFlowInstance = useReactFlow();
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const wsRunScope = useStore(store, (state) => state.wsRunScope);
-  const clonePod = useStore(store, (state) => state.clonePod);
 
-  const onCopy = useCallback(
-    (clipboardData: any) => {
-      const pod = clonePod(id);
-      if (!pod) return;
-      // set the plain text content of a scope as empty
-      clipboardData.setData("text/plain", "");
-      clipboardData.setData(
-        "application/json",
-        JSON.stringify({
-          type: "pod",
-          data: pod,
-        })
-      );
-    },
-    [clonePod, id]
-  );
-
-  const cutBegin = useStore(store, (state) => state.cutBegin);
-
-  const onCut = useCallback(
-    (clipboardData: any) => {
-      onCopy(clipboardData);
-      cutBegin(id);
-    },
-    [onCopy, cutBegin, id]
-  );
   const autoLayout = useStore(store, (state) => state.autoLayout);
 
   const zoomLevel = useReactFlowStore((s) => s.transform[2]);
@@ -134,33 +107,6 @@ function MyFloatingToolbar({ id }: { id: string }) {
             <ViewTimelineOutlinedIcon style={{ fontSize: iconFontSize }} />
           </IconButton>
         </Tooltip>
-      )}
-      {/* copy to clipbooard */}
-      <CopyToClipboard
-        text="dummy"
-        options={{ debug: true, format: "text/plain", onCopy } as any}
-      >
-        <Tooltip title="Copy">
-          <IconButton className="copy-button">
-            <ContentCopyIcon
-              style={{ fontSize: iconFontSize }}
-              className="copy-button"
-            />
-          </IconButton>
-        </Tooltip>
-      </CopyToClipboard>
-
-      {!isGuest && (
-        <CopyToClipboard
-          text="dummy"
-          options={{ debug: true, format: "text/plain", onCopy: onCut } as any}
-        >
-          <Tooltip title="Cut">
-            <IconButton>
-              <ContentCutIcon style={{ fontSize: iconFontSize }} />
-            </IconButton>
-          </Tooltip>
-        </CopyToClipboard>
       )}
       {!isGuest && (
         <Tooltip
@@ -214,7 +160,6 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const devMode = useStore(store, (state) => state.devMode);
-  const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
   const cursorNode = useStore(store, (state) => state.cursorNode);
 
   useEffect(() => {
@@ -301,7 +246,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
       sx={{
         width: "100%",
         height: "100%",
-        border: isCutting ? "dashed 2px red" : "solid 1px #d6dee6",
+        border: "solid 1px #d6dee6",
         borderColor: selected ? "#003c8f" : undefined,
         borderRadius: "4px",
         cursor: "auto",

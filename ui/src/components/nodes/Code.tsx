@@ -423,38 +423,9 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
   const wsRunChain = useStore(store, (state) => state.wsRunChain);
   // right, bottom
   const isGuest = useStore(store, (state) => state.role === "GUEST");
-  const clonePod = useStore(store, (state) => state.clonePod);
-  const setPaneFocus = useStore(store, (state) => state.setPaneFocus);
-
-  const onCopy = useCallback(
-    (clipboardData: any) => {
-      const pod = clonePod(id);
-      if (!pod) return;
-      clipboardData.setData("text/plain", pod.content);
-      clipboardData.setData(
-        "application/json",
-        JSON.stringify({
-          type: "pod",
-          data: pod,
-        })
-      );
-      setPaneFocus();
-    },
-    [clonePod, id]
-  );
 
   const zoomLevel = useReactFlowStore((s) => s.transform[2]);
   const iconFontSize = zoomLevel < 1 ? `${1.5 * (1 / zoomLevel)}rem` : `1.5rem`;
-
-  const cutBegin = useStore(store, (state) => state.cutBegin);
-
-  const onCut = useCallback(
-    (clipboardData: any) => {
-      onCopy(clipboardData);
-      cutBegin(id);
-    },
-    [onCopy, cutBegin, id]
-  );
 
   return (
     <Box
@@ -492,31 +463,6 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
             <KeyboardDoubleArrowRightIcon style={{ fontSize: iconFontSize }} />
           </IconButton>
         </Tooltip>
-      )}
-      <CopyToClipboard
-        text="dummy"
-        options={{ debug: true, format: "text/plain", onCopy } as any}
-      >
-        <Tooltip title="Copy">
-          <IconButton className="copy-button">
-            <ContentCopyIcon
-              style={{ fontSize: iconFontSize }}
-              className="copy-button"
-            />
-          </IconButton>
-        </Tooltip>
-      </CopyToClipboard>
-      {!isGuest && (
-        <CopyToClipboard
-          text="dummy"
-          options={{ debug: true, format: "text/plain", onCopy: onCut } as any}
-        >
-          <Tooltip title="Cut">
-            <IconButton>
-              <ContentCutIcon style={{ fontSize: iconFontSize }} />
-            </IconButton>
-          </Tooltip>
-        </CopyToClipboard>
       )}
       {!isGuest && (
         <Tooltip style={{ fontSize: iconFontSize }} title="Delete">
@@ -586,7 +532,6 @@ export const CodeNode = memo<NodeProps>(function ({
     store,
     (state) => state.podResults[id]?.exec_count || " "
   );
-  const isCutting = useStore(store, (state) => state.cuttingIds.has(id));
 
   const nodesMap = useStore(store, (state) => state.getNodesMap());
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
@@ -774,13 +719,11 @@ export const CodeNode = memo<NodeProps>(function ({
                 ? "4px"
                 : "2px",
               borderRadius: "4px",
-              borderStyle: isCutting ? "dashed" : "solid",
+              borderStyle: "solid",
               width: "100%",
               height: "100%",
               backgroundColor: "rgb(244, 246, 248)",
-              borderColor: isCutting
-                ? "red"
-                : false // FIXME pod.ispublic
+              borderColor: false // FIXME pod.ispublic
                 ? "green"
                 : selected
                 ? "#003c8f"

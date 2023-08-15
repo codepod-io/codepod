@@ -83,10 +83,8 @@ export interface RepoStateSlice {
   collaborators: any[];
   shareOpen: boolean;
   settingOpen: boolean;
-  cutting: string | null;
   setShareOpen: (open: boolean) => void;
   setSettingOpen: (open: boolean) => void;
-  setCutting: (id: string | null) => void;
   loadError: any;
   role: "OWNER" | "COLLABORATOR" | "GUEST";
   isPublic: boolean;
@@ -126,7 +124,6 @@ export const createRepoStateSlice: StateCreator<
   isPublic: false,
   shareOpen: false,
   settingOpen: false,
-  cutting: null,
   showLineNumbers: false,
   setSessionId: (id) => set({ sessionId: id }),
   addError: (error) => set({ error }),
@@ -194,7 +191,6 @@ export const createRepoStateSlice: StateCreator<
 
   setShareOpen: (open: boolean) => set({ shareOpen: open }),
   setSettingOpen: (open: boolean) => set({ settingOpen: open }),
-  setCutting: (id: string | null) => set({ cutting: id }),
   yjsConnecting: false,
   yjsStatus: undefined,
   yjsSyncStatus: undefined,

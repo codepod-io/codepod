@@ -26,6 +26,8 @@ import ReactFlow, {
   Edge,
   useViewport,
   XYPosition,
+  useStore as useRfStore,
+  useKeyPress,
 } from "reactflow";
 import "reactflow/dist/style.css";
 
@@ -278,179 +280,52 @@ function useJump() {
   }, [cursorNode]);
 }
 
-function usePaste(reactFlowWrapper) {
+export function useCopyPaste() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-
+  const rfDomNode = useRfStore((state) => state.domNode);
   const reactFlowInstance = useReactFlow();
+  const handleCopy = useStore(store, (state) => state.handleCopy);
+  const handlePaste = useStore(store, (state) => state.handlePaste);
 
-  const pasteBegin = useStore(store, (state) => state.pasteBegin);
-  const onPasteMove = useStore(store, (state) => state.onPasteMove);
-  const pasteEnd = useStore(store, (state) => state.pasteEnd);
-  const cancelPaste = useStore(store, (state) => state.cancelPaste);
-  const isPasting = useStore(store, (state) => state.isPasting);
-  const isCutting = useStore(store, (state) => state.isCutting);
-  const isGuest = useStore(store, (state) => state.role === "GUEST");
-  const isPaneFocused = useStore(store, (state) => state.isPaneFocused);
-  const resetSelection = useStore(store, (state) => state.resetSelection);
-
+  const posRef = useRef<XYPosition>({ x: 0, y: 0 });
   useEffect(() => {
-    if (!reactFlowWrapper.current) return;
-    if (!isPasting) return;
+    if (rfDomNode) {
+      const onMouseMove = (event: MouseEvent) => {
+        const bounds = rfDomNode.getBoundingClientRect();
+        const position = reactFlowInstance.project({
+          x: event.clientX - (bounds?.left ?? 0),
+          y: event.clientY - (bounds?.top ?? 0),
+        });
+        posRef.current = position;
+      };
 
-    const mouseMove = (event) => {
-      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-      const position = reactFlowInstance.project({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-      });
-      onPasteMove(position);
-    };
-    const mouseClick = (event) => {
-      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-      const position = reactFlowInstance.project({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-      });
-      pasteEnd(position, false);
-    };
-    const keyDown = (event) => {
-      if (event.key !== "Escape") return;
-      // delete the temporary node
-      cancelPaste(false);
-      //clear the pasting state
-      event.preventDefault();
-    };
-    reactFlowWrapper.current.addEventListener("mousemove", mouseMove);
-    reactFlowWrapper.current.addEventListener("click", mouseClick);
-    document.addEventListener("keydown", keyDown);
-    return () => {
-      if (reactFlowWrapper.current) {
-        reactFlowWrapper.current.removeEventListener("mousemove", mouseMove);
-        reactFlowWrapper.current.removeEventListener("click", mouseClick);
-      }
-      document.removeEventListener("keydown", keyDown);
-    };
-  }, [
-    cancelPaste,
-    onPasteMove,
-    pasteEnd,
-    isPasting,
-    reactFlowInstance,
-    reactFlowWrapper,
-  ]);
+      rfDomNode.addEventListener("mousemove", onMouseMove);
 
-  const handlePaste = useCallback(
+      return () => {
+        rfDomNode.removeEventListener("mousemove", onMouseMove);
+      };
+    }
+  }, [rfDomNode]);
+
+  const paste = useCallback(
     (event) => {
-      // avoid duplicated pastes
-      // check if the pane is focused
-      if (isPasting || isCutting || isGuest || !isPaneFocused) return;
-
-      try {
-        // the user clipboard data is unpreditable, may have application/json
-        // from other source that can't be parsed by us, use try-catch here.
-        const payload = event.clipboardData.getData("application/json");
-        const data = JSON.parse(payload);
-        if (data?.type !== "pod") {
-          return;
-        }
-        // clear the selection, make the temporary front-most
-        resetSelection();
-
-        // paste at the center of the pane
-        const reactFlowBounds =
-          reactFlowWrapper.current.getBoundingClientRect();
-        let [posX, posY] = [
-          reactFlowBounds.width / 2,
-          reactFlowBounds.height / 2,
-        ];
-
-        const position = reactFlowInstance.project({ x: posX, y: posY });
-        pasteBegin(position, data.data, false);
-      } catch (e) {
-        console.log("paste error", e);
-      }
+      handlePaste(event, posRef.current);
     },
-    [
-      isGuest,
-      isPasting,
-      pasteBegin,
-      reactFlowInstance,
-      reactFlowWrapper,
-      resetSelection,
-      isPaneFocused,
-    ]
+    [handlePaste, posRef]
   );
 
+  // bind copy/paste events
   useEffect(() => {
-    document.addEventListener("paste", handlePaste);
+    if (!rfDomNode) return;
+    document.addEventListener("copy", handleCopy);
+    document.addEventListener("paste", paste);
+
     return () => {
-      document.removeEventListener("paste", handlePaste);
+      document.removeEventListener("copy", handleCopy);
+      document.removeEventListener("paste", paste);
     };
-  }, [handlePaste]);
-}
-
-function useCut(reactFlowWrapper) {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-
-  const reactFlowInstance = useReactFlow();
-
-  const cutEnd = useStore(store, (state) => state.cutEnd);
-  const onCutMove = useStore(store, (state) => state.onCutMove);
-  const cancelCut = useStore(store, (state) => state.cancelCut);
-  const isCutting = useStore(store, (state) => state.isCutting);
-  const isPasting = useStore(store, (state) => state.isPasting);
-  const isGuest = useStore(store, (state) => state.role === "GUEST");
-  const apolloClient = useApolloClient();
-
-  useEffect(() => {
-    if (!reactFlowWrapper.current) return;
-    if (!isCutting) return;
-
-    const mouseMove = (event) => {
-      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-      const position = reactFlowInstance.project({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-      });
-      onCutMove(position);
-    };
-    const mouseClick = (event) => {
-      const reactFlowBounds = reactFlowWrapper.current.getBoundingClientRect();
-      const position = reactFlowInstance.project({
-        x: event.clientX - reactFlowBounds.left,
-        y: event.clientY - reactFlowBounds.top,
-      });
-      cutEnd(position, reactFlowInstance);
-    };
-    const keyDown = (event) => {
-      if (event.key !== "Escape") return;
-      // delete the temporary node
-      cancelCut();
-      //clear the pasting state
-      event.preventDefault();
-    };
-    reactFlowWrapper.current.addEventListener("mousemove", mouseMove);
-    reactFlowWrapper.current.addEventListener("click", mouseClick);
-    document.addEventListener("keydown", keyDown);
-    return () => {
-      if (reactFlowWrapper.current) {
-        reactFlowWrapper.current.removeEventListener("mousemove", mouseMove);
-        reactFlowWrapper.current.removeEventListener("click", mouseClick);
-      }
-      document.removeEventListener("keydown", keyDown);
-    };
-  }, [
-    cancelCut,
-    cutEnd,
-    isCutting,
-    isPasting,
-    apolloClient,
-    onCutMove,
-    reactFlowInstance,
-    reactFlowWrapper,
-  ]);
+  }, [handleCopy, handlePaste, rfDomNode]);
 }
 
 /**
@@ -458,16 +333,11 @@ function useCut(reactFlowWrapper) {
  * using this wrapper component to load the useXXX functions only once.
  */
 function CanvasImplWrap() {
-  // This wrapper is not the exact same <div> as the reactFlowWrapper in
-  // CanvasImpl, but they are exactly the same when using the bounding-box.
-  const reactFlowWrapper = useRef<any>(null);
-
   useYjsObserver();
-  usePaste(reactFlowWrapper);
-  useCut(reactFlowWrapper);
+  useCopyPaste();
   useJump();
   return (
-    <Box sx={{ height: "100%" }} ref={reactFlowWrapper}>
+    <Box sx={{ height: "100%" }}>
       <CanvasImpl />
       <ViewportInfo />
     </Box>
@@ -545,13 +415,24 @@ function CanvasImpl() {
   const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
   const shareOpen = useStore(store, (state) => state.shareOpen);
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
-  const setPaneFocus = useStore(store, (state) => state.setPaneFocus);
-  const setPaneBlur = useStore(store, (state) => state.setPaneBlur);
 
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [points, setPoints] = useState({ x: 0, y: 0 });
   const [client, setClient] = useState({ x: 0, y: 0 });
   const [parentNode, setParentNode] = useState(undefined);
+
+  const moved = useStore(store, (state) => state.moved);
+  const paneClicked = useStore(store, (state) => state.paneClicked);
+  const nodeClicked = useStore(store, (state) => state.nodeClicked);
+  useEffect(() => {
+    setShowContextMenu(false);
+  }, [moved, paneClicked, nodeClicked]);
+  const escapePressed = useKeyPress("Escape");
+  useEffect(() => {
+    if (escapePressed) {
+      setShowContextMenu(false);
+    }
+  }, [escapePressed]);
 
   const onPaneContextMenu = (event) => {
     event.preventDefault();
@@ -571,28 +452,6 @@ function CanvasImpl() {
     setClient({ x: event.clientX, y: event.clientY });
   };
 
-  useEffect(() => {
-    const handleClick = (event) => {
-      setShowContextMenu(false);
-      const target = event.target;
-      // set the pane focused only when the clicked target is pane or the copy buttons on a pod
-      // then we can paste right after click on the copy buttons
-      if (
-        target.className === "react-flow__pane" ||
-        target.classList?.contains("copy-button") ||
-        target.parentElement?.classList?.contains("copy-button")
-      ) {
-        setPaneFocus();
-      } else {
-        setPaneBlur();
-      }
-    };
-    document.addEventListener("click", handleClick);
-    return () => {
-      document.removeEventListener("click", handleClick);
-    };
-  }, [setShowContextMenu, setPaneFocus, setPaneBlur]);
-
   const getScopeAtPos = useStore(store, (state) => state.getScopeAtPos);
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
   const setAutoLayoutOnce = useStore(store, (state) => state.setAutoLayoutOnce);
@@ -607,7 +466,8 @@ function CanvasImpl() {
     (state) => state.helperLineVertical
   );
   const toggleMoved = useStore(store, (state) => state.toggleMoved);
-  const toggleClicked = useStore(store, (state) => state.toggleClicked);
+  const togglePaneClicked = useStore(store, (state) => state.togglePaneClicked);
+  const toggleNodeClicked = useStore(store, (state) => state.toggleNodeClicked);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -692,7 +552,10 @@ function CanvasImpl() {
             });
           }}
           onPaneClick={() => {
-            toggleClicked();
+            togglePaneClicked();
+          }}
+          onNodeClick={() => {
+            toggleNodeClicked();
           }}
           onNodeDragStop={(event, node) => {
             removeDragHighlight();
@@ -805,25 +668,38 @@ function CanvasImpl() {
           <CanvasContextMenu
             x={points.x}
             y={points.y}
-            addCode={() =>
-              addNode("CODE", project({ x: client.x, y: client.y }), parentNode)
-            }
-            addScope={() =>
+            addCode={() => {
+              addNode(
+                "CODE",
+                project({ x: client.x, y: client.y }),
+                parentNode
+              );
+              setShowContextMenu(false);
+            }}
+            addScope={() => {
               addNode(
                 "SCOPE",
                 project({ x: client.x, y: client.y }),
                 parentNode
-              )
-            }
-            addRich={() =>
-              addNode("RICH", project({ x: client.x, y: client.y }), parentNode)
-            }
+              );
+              setShowContextMenu(false);
+            }}
+            addRich={() => {
+              addNode(
+                "RICH",
+                project({ x: client.x, y: client.y }),
+                parentNode
+              );
+              setShowContextMenu(false);
+            }}
             handleImportClick={() => {
               // handle CanvasContextMenu "import Jupyter notebook" click
               handleItemClick();
+              setShowContextMenu(false);
             }}
             onShareClick={() => {
               setShareOpen(true);
+              setShowContextMenu(false);
             }}
             parentNode={null}
           />

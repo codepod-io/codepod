@@ -284,6 +284,9 @@ export interface CanvasSlice {
   selectPod: (id: string, selected: boolean) => void;
   resetSelection: () => boolean;
 
+  handlePaste(event: ClipboardEvent, position: XYPosition): void;
+  handleCopy(event: ClipboardEvent): void;
+
   focusedEditor: string | undefined;
   setFocusedEditor: (id?: string) => void;
 
@@ -292,16 +295,14 @@ export interface CanvasSlice {
 
   updateView: () => void;
 
-  isPaneFocused: boolean;
-  setPaneFocus: () => void;
-  setPaneBlur: () => void;
-
   // onMove indicator
   moved: boolean;
   toggleMoved: () => void;
   // clicked-on-canvas indicator
-  clicked: boolean;
-  toggleClicked: () => void;
+  paneClicked: boolean;
+  togglePaneClicked: () => void;
+  nodeClicked: boolean;
+  toggleNodeClicked: () => void;
 
   addNode: (
     type: "CODE" | "SCOPE" | "RICH",
@@ -315,26 +316,9 @@ export interface CanvasSlice {
     cellList: any[]
   ) => void;
 
-  pastingNodes?: Node[];
-  headPastingNodes?: Set<string>;
-  mousePos?: XYPosition | undefined;
-  isPasting: boolean;
-  pasteBegin: (position: XYPosition, pod: Pod, cutting: boolean) => void;
-  pasteEnd: (position: XYPosition, cutting: boolean) => void;
-  cancelPaste: (cutting: boolean) => void;
-  onPasteMove: (mousePos: XYPosition) => void;
-
-  isCutting: boolean;
-  cuttingIds: Set<string>;
-  cutBegin: (id: string) => void;
-  cutEnd: (position: XYPosition, reactFlowInstance: ReactFlowInstance) => void;
-  onCutMove: (mousePos: XYPosition) => void;
-  cancelCut: () => void;
-
   adjustLevel: () => void;
   getScopeAtPos: ({ x, y }: XYPosition, exclude: string) => Node | undefined;
   moveIntoScope: (nodeIds: string[], scopeId?: string) => void;
-  tempUpdateView: ({ x, y }: XYPosition) => void;
 
   helperLineHorizontal: number | undefined;
   helperLineVertical: number | undefined;
@@ -360,17 +344,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
 
   setDragHighlight: (dragHighlight) => set({ dragHighlight }),
   removeDragHighlight: () => set({ dragHighlight: undefined }),
-
-  // the nodes being cutting (on the top level)
-  cuttingIds: new Set(),
-  // all temporary nodes created during cutting/pasting
-  pastingNodes: [],
-  // the nodes being pasting (on the top level)
-  headPastingNodes: new Set(),
-  // current mouse position, used to update the pasting nodes on the top level when moving the mouse
-  mousePos: undefined,
-
-  isPaneFocused: false,
 
   selectedPods: new Set(),
   selectionParent: undefined,
@@ -444,14 +417,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   updateView: () => {
     const nodesMap = get().getNodesMap();
     let selectedPods = get().selectedPods;
-    // We have different sources of nodes:
-    // 1. those from nodesMap, synced with other users
     let nodes = Array.from(nodesMap.values());
-    // We don't use clientId anymore to filter pasting nodes. Instead, we filter
-    // out the nodes that is being cutted. But for now, we are now hiding it,
-    // but giving it a "cutting" className to add a dashed red border.
-    //
-    // .filter((node) => node.id !== get().cuttingId)
     nodes = nodes
       .sort((a: Node, b: Node) => a.data.level - b.data.level)
       .map((node) => ({
@@ -467,17 +433,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           .with(get().dragHighlight, () => "active")
           .otherwise(() => undefined),
       }));
-    // 2. show the temporary nodes, make the temporary nodes on the front-most
-    nodes = nodes.concat(get().pastingNodes || []);
 
-    const cursor = get().mousePos!;
-    const movingNodes = get().headPastingNodes;
-    if (cursor) {
-      nodes = nodes.map((node) =>
-        // update the position of top-level pasting nodes by the mouse position
-        movingNodes?.has(node.id) ? { ...node, position: cursor } : node
-      );
-    }
     set({ nodes });
     // edges view
     const edgesMap = get().getEdgesMap();
@@ -620,122 +576,76 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   autoLayoutOnce: false,
   setAutoLayoutOnce: (b) => set({ autoLayoutOnce: b }),
 
-  isPasting: false,
-  isCutting: false,
-
-  pasteBegin: (position, pod, cutting = false) => {
-    // 1. create temporary nodes and pods
-    const nodes = createTemporaryNode(pod, position);
-    set({
-      // Only headPastingNodes moves with the mouse, because the other temporary nodes are children of the headPastingNodes.
-      // For now, we can have only one headPastingNode on the top level.
-      // TODO: support multiple headPastingNodes on the top level when implementing multi-select copy-paste
-      headPastingNodes: new Set([nodes[0][0].id]),
-      // Distinguish the state of cutting or pasting
-      isPasting: !cutting,
-      isCutting: cutting,
-      // But we need to keep all the temporary nodes in the pastingNodes list to render them.
-      pastingNodes: nodes.map(([node, pod]) => node),
-    });
-    get().updateView();
-  },
-  onPasteMove: (mousePos: XYPosition) => {
-    // When the mouse moves, only the top-level nodes move with the mouse. We don't have to update all the view.
-    get().tempUpdateView(mousePos);
-  },
-  pasteEnd: (position, cutting = false) => {
-    // on drop, make this node into nodesMap. The nodesMap.observer will updateView.
-    const leadingNodes = get().headPastingNodes;
-    const pastingNodes = get().pastingNodes;
-    if (!pastingNodes || !leadingNodes) return;
-    let nodesMap = get().getNodesMap();
-
-    // clear the temporary nodes and the pasting/cutting state
-    set(
-      produce((state: MyState) => {
-        state.pastingNodes = undefined;
-        state.headPastingNodes = new Set();
-        state.pastingNodes = [];
-        state.mousePos = undefined;
-        if (cutting) state.isCutting = false;
-        else state.isPasting = false;
+  handleCopy(event) {
+    // TODO get selected nodes recursively
+    const nodesMap = get().getNodesMap();
+    const nodes = Array.from(get().selectedPods).map((id) => nodesMap.get(id));
+    if (nodes.length === 0) return;
+    // TODO get edges
+    // set to clipboard
+    // console.log("set clipboard", nodes[0]);
+    event.clipboardData!.setData(
+      "application/json",
+      JSON.stringify({
+        type: "pod",
+        data: nodes,
       })
     );
+    event.preventDefault();
+  },
+  handlePaste(event, position) {
+    // 2. get clipboard data
+    if (!event.clipboardData) return;
+    const payload = event.clipboardData.getData("application/json");
+    if (!payload) {
+      console.warn("No payload");
+      return;
+    }
+    const data = JSON.parse(payload);
+    if (data.type !== "pod") return;
+    // TODO support multiple pods
+    // console.log("Paste data (should be a node)", data);
+    const oldnodes = data.data as Node[];
 
-    pastingNodes.forEach((node) => {
-      // insert all nodes to the yjs map
-      nodesMap.set(node.id, {
-        ...(leadingNodes?.has(node.id) ? { ...node, position } : node),
-        style: { ...node.style, opacity: 1 },
-        draggable: true,
-      });
-    });
-    // update view
-    get().updateView();
+    const minX = Math.min(...oldnodes.map((s) => s.position.x));
+    const minY = Math.min(...oldnodes.map((s) => s.position.y));
 
-    // check if the final position located in another scope
-    leadingNodes.forEach((id) => {
-      let scope = getScopeAt(
-        position.x,
-        position.y,
-        [id],
-        get().nodes,
-        nodesMap
-      );
-      if (scope && scope.id !== id) {
-        get().moveIntoScope([id], scope.id);
+    // 3. construct new nodes
+    const nodesMap = get().getNodesMap();
+    const codeMap = get().getCodeMap();
+    const richMap = get().getRichMap();
+
+    const newnodes = oldnodes.map((n) => {
+      const id = myNanoId();
+      switch (n.type) {
+        case "CODE":
+          const ytext = new Y.Text(codeMap.get(n.id)!.toString());
+          codeMap.set(id, ytext);
+          break;
+        case "RICH":
+          const yxml = richMap.get(n.id)!.clone();
+          richMap.set(id, yxml);
+          break;
+        default:
+          break;
       }
+
+      const newNode = {
+        ...n,
+        id,
+        position: {
+          x: n.position.x - minX + position.x,
+          y: n.position.y - minY + position.y,
+        },
+      };
+      return newNode;
     });
-  },
-  cancelPaste: (cutting = false) => {
-    const pastingNodes = get().pastingNodes || [];
-    set(
-      produce((state: MyState) => {
-        // Remove pastingNode from store.
-        state.pastingNodes = [];
-        state.headPastingNodes = new Set();
-        // Clear pasting data and update view.
-        state.pastingNodes = undefined;
-        state.mousePos = undefined;
-        if (cutting) state.isCutting = false;
-        else state.isPasting = false;
-      })
-    );
+    get().resetSelection();
+    newnodes.forEach((n) => {
+      nodesMap.set(n.id, n);
+      get().selectPod(n.id, true);
+    });
     get().updateView();
-  },
-
-  //   checkDropIntoScope: (event, nodes: Node[], project: XYPosition=>XYPosition) => {},
-  // cut will:
-  // 1. hide the original node
-  // 2. create a dummy node that move with cursor
-  cutBegin: (id) => {
-    const pod = get().clonePod(id);
-    if (!pod) return;
-
-    // Store only the top-level cut nodes, for now, it contains only one element. But we will support multi-select cut-paste in the future.
-    set({ cuttingIds: new Set([id]) });
-    get().pasteBegin({ x: pod.x, y: pod.y }, pod, true);
-  },
-  onCutMove: (mousePos) => {
-    get().onPasteMove(mousePos);
-  },
-  // 3. on drop, delete the original node and create a new node
-  cutEnd: (position, reactFlowInstance) => {
-    const cuttingIds = get().cuttingIds;
-
-    if (!cuttingIds) return;
-
-    reactFlowInstance.deleteElements({
-      nodes: Array.from(cuttingIds).map((id) => ({ id })),
-    });
-
-    set({ cuttingIds: new Set() });
-
-    get().pasteEnd(position, true);
-  },
-  cancelCut: () => {
-    set({ cuttingIds: new Set() });
-    get().cancelPaste(true);
   },
 
   // NOTE: this does not mutate.
@@ -831,16 +741,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     get().adjustLevel();
     // update view
     get().updateView();
-  },
-
-  tempUpdateView: (position) => {
-    const movingNodes = get().headPastingNodes;
-    set({
-      mousePos: position,
-      nodes: get().nodes.map((node) =>
-        movingNodes?.has(node.id) ? { ...node, position } : node
-      ),
-    });
   },
 
   helperLineHorizontal: undefined,
@@ -939,6 +839,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           //
           // TODO remove from codeMap and richMap?
           nodesMap.delete(change.id);
+          // remove from selected pods
+          get().selectPod(change.id, false);
           // run auto-layout
           if (get().autoRunLayout) {
             get().autoLayoutROOT();
@@ -993,13 +895,13 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     edgesMap.set(edge.id, edge);
     get().updateView();
   },
-  setPaneFocus: () => set({ isPaneFocused: true }),
-  setPaneBlur: () => set({ isPaneFocused: false }),
 
   moved: false,
   toggleMoved: () => set({ moved: !get().moved }),
-  clicked: false,
-  toggleClicked: () => set({ clicked: !get().clicked }),
+  paneClicked: false,
+  togglePaneClicked: () => set({ paneClicked: !get().paneClicked }),
+  nodeClicked: false,
+  toggleNodeClicked: () => set({ nodeClicked: !get().nodeClicked }),
 
   autoLayoutROOT: () => {
     // get all scopes,
