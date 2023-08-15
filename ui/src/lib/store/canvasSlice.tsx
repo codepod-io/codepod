@@ -612,11 +612,27 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
 
     // 3. construct new nodes
     const nodesMap = get().getNodesMap();
+    const codeMap = get().getCodeMap();
+    const richMap = get().getRichMap();
 
     const newnodes = oldnodes.map((n) => {
+      const id = myNanoId();
+      switch (n.type) {
+        case "CODE":
+          const ytext = new Y.Text(codeMap.get(n.id)!.toString());
+          codeMap.set(id, ytext);
+          break;
+        case "RICH":
+          const yxml = richMap.get(n.id)!.clone();
+          richMap.set(id, yxml);
+          break;
+        default:
+          break;
+      }
+
       const newNode = {
         ...n,
-        id: myNanoId(),
+        id,
         position: {
           x: n.position.x - minX + position.x,
           y: n.position.y - minY + position.y,
