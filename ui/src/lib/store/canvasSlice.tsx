@@ -50,6 +50,7 @@ import {
 import { node } from "prop-types";
 import { quadtree } from "d3-quadtree";
 import { getHelperLines, level2fontsize } from "../../components/nodes/utils";
+import { json2yxml, yxml2json } from "./y-utils";
 
 // TODO add node's data typing.
 export type NodeData = {
@@ -579,8 +580,23 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   handleCopy(event) {
     // TODO get selected nodes recursively
     const nodesMap = get().getNodesMap();
-    const nodes = Array.from(get().selectedPods).map((id) => nodesMap.get(id));
+    const nodes = Array.from(get().selectedPods).map((id) => nodesMap.get(id)!);
     if (nodes.length === 0) return;
+    const codeMap = get().getCodeMap();
+    const richMap = get().getRichMap();
+    const contentMap: Record<string, string> = {};
+    nodes.forEach((node) => {
+      switch (node.type) {
+        case "CODE":
+          contentMap[node.id] = codeMap.get(node.id)!.toString();
+          break;
+        case "RICH":
+          contentMap[node.id] = JSON.stringify(
+            yxml2json(richMap.get(node.id)!)
+          );
+          break;
+      }
+    });
     // TODO get edges
     // set to clipboard
     // console.log("set clipboard", nodes[0]);
@@ -588,7 +604,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       "application/json",
       JSON.stringify({
         type: "pod",
-        data: nodes,
+        nodes: nodes,
+        contentMap: contentMap,
       })
     );
     event.preventDefault();
@@ -603,9 +620,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     }
     const data = JSON.parse(payload);
     if (data.type !== "pod") return;
-    // TODO support multiple pods
-    // console.log("Paste data (should be a node)", data);
-    const oldnodes = data.data as Node[];
+    const oldnodes = data.nodes as Node[];
+    const contentMap = data.contentMap as Record<string, string>;
 
     const minX = Math.min(...oldnodes.map((s) => s.position.x));
     const minY = Math.min(...oldnodes.map((s) => s.position.y));
@@ -619,11 +635,12 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       const id = myNanoId();
       switch (n.type) {
         case "CODE":
-          const ytext = new Y.Text(codeMap.get(n.id)!.toString());
+          const ytext = new Y.Text(contentMap[n.id]);
           codeMap.set(id, ytext);
           break;
         case "RICH":
-          const yxml = richMap.get(n.id)!.clone();
+          // const yxml = richMap.get(n.id)!.clone();
+          const yxml = json2yxml(JSON.parse(contentMap[n.id]));
           richMap.set(id, yxml);
           break;
         default:
