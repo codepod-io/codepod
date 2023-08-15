@@ -46,6 +46,7 @@ import {
   MarkerType,
   NodeDragHandler,
   ReactFlowInstance,
+  getConnectedEdges,
 } from "reactflow";
 import { node } from "prop-types";
 import { quadtree } from "d3-quadtree";
@@ -582,6 +583,16 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     const nodesMap = get().getNodesMap();
     const nodes = Array.from(get().selectedPods).map((id) => nodesMap.get(id)!);
     if (nodes.length === 0) return;
+    // edges
+    const selectedEdges = getConnectedEdges(nodes, get().edges).filter(
+      (edge) => {
+        const isExternalSource = nodes.every((n) => n.id !== edge.source);
+        const isExternalTarget = nodes.every((n) => n.id !== edge.target);
+
+        return !(isExternalSource || isExternalTarget);
+      }
+    );
+    // content
     const codeMap = get().getCodeMap();
     const richMap = get().getRichMap();
     const contentMap: Record<string, string> = {};
@@ -605,6 +616,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       JSON.stringify({
         type: "pod",
         nodes: nodes,
+        edges: selectedEdges,
         contentMap: contentMap,
       })
     );
@@ -621,6 +633,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     const data = JSON.parse(payload);
     if (data.type !== "pod") return;
     const oldnodes = data.nodes as Node[];
+    const oldedges = data.edges as Edge[];
     const contentMap = data.contentMap as Record<string, string>;
 
     const minX = Math.min(...oldnodes.map((s) => s.position.x));
@@ -628,11 +641,15 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
 
     // 3. construct new nodes
     const nodesMap = get().getNodesMap();
+    const edgesMap = get().getEdgesMap();
     const codeMap = get().getCodeMap();
     const richMap = get().getRichMap();
 
+    const old2newIdMap = new Map<string, string>();
+
     const newnodes = oldnodes.map((n) => {
       const id = myNanoId();
+      old2newIdMap.set(n.id, id);
       switch (n.type) {
         case "CODE":
           const ytext = new Y.Text(contentMap[n.id]);
@@ -657,10 +674,25 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       };
       return newNode;
     });
+
+    const newedges = oldedges.map((e) => {
+      const newSource = old2newIdMap.get(e.source)!;
+      const newTarget = old2newIdMap.get(e.target)!;
+      return {
+        ...e,
+        source: newSource,
+        target: newTarget,
+        id: `${newSource}_${newTarget}`,
+      };
+    });
+
     get().resetSelection();
     newnodes.forEach((n) => {
       nodesMap.set(n.id, n);
       get().selectPod(n.id, true);
+    });
+    newedges.forEach((e) => {
+      edgesMap.set(e.id, e);
     });
     get().updateView();
   },
