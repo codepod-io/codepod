@@ -150,8 +150,6 @@ function useJump() {
 
   const nodesMap = useStore(store, (state) => state.getNodesMap());
 
-  const reactflow = useReactFlow();
-
   const wsRun = useStore(store, (state) => state.wsRun);
   const wsRunScope = useStore(store, (state) => state.wsRunScope);
 
@@ -259,15 +257,6 @@ function useJump() {
 
     if (to) {
       setCursorNode(to.id);
-
-      // move the viewport to the to node
-      // get the absolute position of the to node
-      const pos = getAbsPos(to, nodesMap);
-
-      reactflow.setCenter(pos.x + to.width! / 2, pos.y + to.height! / 2, {
-        zoom: reactflow.getZoom(),
-        duration: 800,
-      });
     }
 
     event.preventDefault(); // Prevent default browser behavior for arrow keys
@@ -380,6 +369,7 @@ function CanvasImpl() {
 
   const nodes = useStore(store, (state) => state.nodes);
   const edges = useStore(store, (state) => state.edges);
+  const nodesMap = useStore(store, (state) => state.getNodesMap());
   const onNodesChange = useStore(store, (state) => state.onNodesChange);
   const onEdgesChange = useStore(store, (state) => state.onEdgesChange);
   const onConnect = useStore(store, (state) => state.onConnect);
@@ -398,6 +388,7 @@ function CanvasImpl() {
   const selectedPods = useStore(store, (state) => state.selectedPods);
 
   const reactFlowInstance = useReactFlow();
+  const cursorNode = useStore(store, (state) => state.cursorNode);
 
   const project = useCallback(
     ({ x, y }) => {
@@ -425,6 +416,7 @@ function CanvasImpl() {
   const moved = useStore(store, (state) => state.moved);
   const paneClicked = useStore(store, (state) => state.paneClicked);
   const nodeClicked = useStore(store, (state) => state.nodeClicked);
+
   useEffect(() => {
     setShowContextMenu(false);
   }, [moved, paneClicked, nodeClicked]);
@@ -434,6 +426,23 @@ function CanvasImpl() {
       setShowContextMenu(false);
     }
   }, [escapePressed]);
+
+  useEffect(() => {
+    // move the viewport to the to node
+    // get the absolute position of the to node
+    if (cursorNode) {
+      const pos = getAbsPos(nodesMap.get(cursorNode)!, nodesMap);
+
+      reactFlowInstance.setCenter(
+        pos.x + nodesMap.get(cursorNode)!.width! / 2,
+        pos.y + nodesMap.get(cursorNode)!.height! / 2,
+        {
+          zoom: reactFlowInstance.getZoom(),
+          duration: 800,
+        }
+      );
+    }
+  }, [cursorNode]);
 
   const onPaneContextMenu = (event) => {
     event.preventDefault();

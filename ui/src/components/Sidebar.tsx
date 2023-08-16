@@ -5,18 +5,32 @@ import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import Popover from "@mui/material/Popover";
 import StopIcon from "@mui/icons-material/Stop";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import Drawer from "@mui/material/Drawer";
+import MenuList from "@mui/material/MenuList";
+import MenuItem from "@mui/material/MenuItem";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
+import ListItemButton from "@mui/material/ListItemButton";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import Typography from "@mui/material/Typography";
+import TreeView from "@mui/lab/TreeView";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import TreeItem from "@mui/lab/TreeItem";
+
 import { useSnackbar, VariantType } from "notistack";
 
 import { Node as ReactflowNode } from "reactflow";
+import { NodeData } from "../lib/store/canvasSlice";
+import * as Y from "yjs";
 
 import { gql, useQuery, useMutation, useApolloClient } from "@apollo/client";
 import { useStore } from "zustand";
@@ -1168,6 +1182,91 @@ function ExportButtons() {
   );
 }
 
+function PodTreeItem({ id, node2children }) {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const setCursorNode = useStore(store, (state) => state.setCursorNode);
+
+  if (!node2children.has(id)) return null;
+  const children = node2children.get(id);
+  return (
+    <TreeItem
+      key={id}
+      nodeId={id}
+      label={id.substring(0, 8)}
+      onClick={() => {
+        setCursorNode(id);
+      }}
+    >
+      {children.length > 0 &&
+        children.map((child) => (
+          <PodTreeItem key={child} id={child} node2children={node2children} />
+        ))}
+    </TreeItem>
+  );
+}
+
+function TableofPods() {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const nodesMap = useStore(store, (state) => state.getNodesMap());
+  let node2children = new Map<string, string[]>();
+  let keys = new Set(nodesMap.keys());
+
+  for (const key of Array.from(keys)) {
+    if (!node2children.has(key)) {
+      node2children.set(key, []);
+    }
+    const parent =
+      nodesMap.get(key)?.parentNode === undefined
+        ? "ROOT"
+        : nodesMap.get(key)?.parentNode;
+
+    if (!node2children.has(parent!)) {
+      node2children.set(parent!, []);
+    }
+
+    node2children.get(parent!)!.push(key);
+  }
+
+  for (const value of Array.from(node2children.values())) {
+    if (value.length > 1) {
+      value.sort((id1, id2) => {
+        const node1 = nodesMap.get(id1);
+        const node2 = nodesMap.get(id2);
+        if (node1 && node2) {
+          if (node1.position.y === node2.position.y) {
+            return node1.position.x - node2.position.x;
+          } else {
+            return node1.position.y - node2.position.y;
+          }
+        } else {
+          return 0;
+        }
+      });
+    }
+  }
+
+  return (
+    <TreeView
+      aria-label="multi-select"
+      defaultCollapseIcon={<ExpandMoreIcon />}
+      defaultExpandIcon={<ChevronRightIcon />}
+      defaultExpanded={Array.from(node2children.keys()).filter(
+        (key) => node2children!.get(key!)!.length > 0
+      )}
+      multiSelect
+    >
+      {node2children &&
+        node2children!
+          .get("ROOT")!
+          .map((child) => (
+            <PodTreeItem key={child} id={child} node2children={node2children} />
+          ))}
+    </TreeView>
+  );
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
   width,
   open,
@@ -1250,6 +1349,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Typography variant="h6">Site Settings</Typography>
             <SidebarSettings />
             <ToastError />
+
+            <Divider />
+            <Typography variant="h6">Table of Pods</Typography>
+            <TableofPods />
           </Stack>
         </Box>
       </Drawer>
