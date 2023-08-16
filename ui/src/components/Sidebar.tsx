@@ -22,6 +22,10 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import Typography from "@mui/material/Typography";
+import TreeView from "@mui/lab/TreeView";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import TreeItem from "@mui/lab/TreeItem";
+
 import { useSnackbar, VariantType } from "notistack";
 
 import { Node as ReactflowNode } from "reactflow";
@@ -1178,104 +1182,58 @@ function ExportButtons() {
   );
 }
 
-function TocPodButton({ id }) {
+function PodTreeItem({ id, node2children }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const setCursorNode = useStore(store, (state) => state.setCursorNode);
 
-  const codeMap = useStore(store, (state) => state.getCodeMap());
-  const wsRun = useStore(store, (state) => state.wsRun);
-
-  const [anchorEl, setAnchorEl] = useState(null);
-
-  const open = Boolean(anchorEl);
-
-  const handleClick = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
+  if (!node2children.has(id)) return null;
+  const children = node2children.get(id);
   return (
-    <ListItem disablePadding>
-      <ListItemButton
-        id={id}
-        onClick={() => {
-          setCursorNode(id);
-        }}
-      >
-        <ListItemText primary={id} />
-      </ListItemButton>
-      <IconButton aria-label="More options" onClick={handleClick}>
-        <MoreVertIcon />
-      </IconButton>
-      <Popover open={open} anchorEl={anchorEl} onClose={handleClose}>
-        <MenuList>
-          <MenuItem>Rename</MenuItem>
-          <MenuItem>Copy</MenuItem>
-          {codeMap.has(id) ? (
-            <MenuItem
-              onClick={() => {
-                wsRun(id);
-                handleClose();
-              }}
-            >
-              Run
-            </MenuItem>
-          ) : null}
-          <MenuItem>Delete</MenuItem>
-        </MenuList>
-      </Popover>
-    </ListItem>
+    <TreeItem
+      key={id}
+      nodeId={id}
+      label={id.substring(0, 8)}
+      onClick={() => {
+        setCursorNode(id);
+      }}
+    >
+      {children.length > 0 &&
+        children.map((child) => (
+          <PodTreeItem key={child} id={child} node2children={node2children} />
+        ))}
+    </TreeItem>
   );
-}
-
-function dfs(
-  nodeId: string,
-  toc: Map<string, ReactflowNode[]>,
-  nodesMap: Y.Map<ReactflowNode<NodeData>>
-) {
-  let jsx = <></>;
-
-  if (toc.has(nodeId) && toc.get(nodeId)!.length > 0) {
-    toc.get(nodeId)?.forEach((child) => {
-      jsx = (
-        <>
-          {jsx}
-          <TocPodButton id={child.id} />
-          {toc.has(child.id) ? <ul>{dfs(child.id, toc, nodesMap)}</ul> : null}
-        </>
-      );
-    });
-  }
-
-  return jsx;
 }
 
 function TableofPods() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const nodesMap = useStore(store, (state) => state.getNodesMap());
-  let toc = new Map<string, ReactflowNode[]>();
+  let node2children = new Map<string, string[]>();
   let keys = new Set(nodesMap.keys());
 
   for (const key of Array.from(keys)) {
+    if (!node2children.has(key)) {
+      node2children.set(key, []);
+    }
     const parent =
       nodesMap.get(key)?.parentNode === undefined
         ? "ROOT"
         : nodesMap.get(key)?.parentNode;
 
-    if (!toc.has(parent!)) {
-      toc.set(parent!, []);
+    if (!node2children.has(parent!)) {
+      node2children.set(parent!, []);
     }
 
-    toc.get(parent!)!.push(nodesMap.get(key)!);
+    node2children.get(parent!)!.push(key);
   }
 
-  for (const value of Array.from(toc.values())) {
+  for (const value of Array.from(node2children.values())) {
     if (value.length > 1) {
-      value.sort((node1, node2) => {
+      value.sort((id1, id2) => {
+        const node1 = nodesMap.get(id1);
+        const node2 = nodesMap.get(id2);
         if (node1 && node2) {
           if (node1.position.y === node2.position.y) {
             return node1.position.x - node2.position.x;
@@ -1288,10 +1246,24 @@ function TableofPods() {
       });
     }
   }
+
   return (
-    <List sx={{ bgcolor: "rgb(225,225,225)" }}>
-      {dfs("ROOT", toc, nodesMap)}
-    </List>
+    <TreeView
+      aria-label="multi-select"
+      defaultCollapseIcon={<ExpandMoreIcon />}
+      defaultExpandIcon={<ChevronRightIcon />}
+      defaultExpanded={Array.from(node2children.keys()).filter(
+        (key) => node2children!.get(key!)!.length > 0
+      )}
+      multiSelect
+    >
+      {node2children &&
+        node2children!
+          .get("ROOT")!
+          .map((child) => (
+            <PodTreeItem key={child} id={child} node2children={node2children} />
+          ))}
+    </TreeView>
   );
 }
 
