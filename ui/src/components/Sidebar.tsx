@@ -1257,7 +1257,7 @@ function TableofPods() {
       )}
       multiSelect
     >
-      {node2children &&
+      {node2children.size > 0 &&
         node2children!
           .get("ROOT")!
           .map((child) => (
