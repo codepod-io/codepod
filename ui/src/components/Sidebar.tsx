@@ -1269,9 +1269,6 @@ function TableofPods() {
 }
 
 function SnapshotItem({ id, message }) {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-
   const [anchorEl, setAnchorEl] = useState(null);
 
   const open = Boolean(anchorEl);
@@ -1301,15 +1298,9 @@ function SnapshotItem({ id, message }) {
 
 function RepoSnapshots() {
   const { id: repoId } = useParams();
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const {
-    loading: queryLoading,
-    error: queryError,
-    data: queryResult,
-  } = useQuery(gql`
-    query getRepoSnapshots {
-      getRepoSnapshots {
+  const { error: queryError, data: queryResult } = useQuery(gql`
+    query GetRepoSnapshots {
+      getRepoSnapshots(repoId: "${repoId}") {
         id
         createdAt
         message
@@ -1317,21 +1308,17 @@ function RepoSnapshots() {
       }
     }
   `);
-  const [
-    addRepoSnapshot,
-    { loading: mutationLoading, error: mutationError, data: mutationResult },
-  ] = useMutation(
-    gql`
-      mutation addRepoSnapshot($repoId: String!, $message: String!) {
-        addRepoSnapshot(repoId: $repoId, message: $message)
+  const [addRepoSnapshot, { error: mutationError, data: mutationResult }] =
+    useMutation(
+      gql`
+        mutation addRepoSnapshot($repoId: String!, $message: String!) {
+          addRepoSnapshot(repoId: $repoId, message: $message)
+        }
+      `,
+      {
+        refetchQueries: ["GetRepoSnapshots"],
       }
-    `
-  );
-  useEffect(() => {
-    if (mutationResult?.addRepoSnapshot) {
-      console.log(mutationResult.addRepoSnapshot);
-    }
-  }, [mutationResult]);
+    );
 
   if (queryError) {
     return <Box>ERROR: {queryError.message}</Box>;

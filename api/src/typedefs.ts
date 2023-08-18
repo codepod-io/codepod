@@ -110,7 +110,7 @@ export const typeDefs = gql`
     repo(id: String!): Repo
     pod(id: ID!): Pod
     getDashboardRepos: [Repo]
-    getRepoSnapshots: [YDocSnapshot]
+    getRepoSnapshots(repoId: String!): [YDocSnapshot]
     activeSessions: [String]
     listAllRuntimes: [RuntimeInfo]
     infoRuntime(sessionId: String!): RuntimeInfo
