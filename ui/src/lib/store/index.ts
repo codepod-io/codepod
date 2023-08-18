@@ -4,9 +4,9 @@ import { createContext } from "react";
 
 import { Annotation } from "../parser";
 import { PodSlice, createPodSlice } from "./podSlice";
-import { RepoMetaSlice, createRepoMetaSlice } from "./repoMetaSlice";
+import { RepoSlice, createRepoSlice } from "./repoSlice";
 import { SettingSlice, createSettingSlice } from "./settingSlice";
-import { RepoStateSlice, createRepoStateSlice } from "./repoStateSlice";
+import { YjsSlice, createYjsSlice } from "./yjsSlice";
 import { RuntimeSlice, createRuntimeSlice } from "./runtimeSlice";
 import { CanvasSlice, createCanvasSlice } from "./canvasSlice";
 
@@ -59,8 +59,8 @@ export type Pod = {
 };
 
 export type MyState = PodSlice &
-  RepoMetaSlice &
-  RepoStateSlice &
+  RepoSlice &
+  YjsSlice &
   RuntimeSlice &
   SettingSlice &
   CanvasSlice;
@@ -71,8 +71,8 @@ export const createRepoStore = () =>
   createStore(
     devtools<MyState>((...a) => ({
       ...createPodSlice(...a),
-      ...createRepoMetaSlice(...a),
-      ...createRepoStateSlice(...a),
+      ...createRepoSlice(...a),
+      ...createYjsSlice(...a),
       ...createSettingSlice(...a),
       ...createRuntimeSlice(...a),
       ...createCanvasSlice(...a),

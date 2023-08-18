@@ -38,9 +38,9 @@ import { customAlphabet } from "nanoid";
 import { lowercase, numbers } from "nanoid-dictionary";
 
 import { useStore } from "zustand";
+import * as Y from "yjs";
 
 import { RepoContext } from "../lib/store";
-import { useYjsObserver } from "../lib/nodes";
 
 import { useApolloClient } from "@apollo/client";
 import { CanvasContextMenu } from "./CanvasContextMenu";
@@ -316,6 +316,30 @@ export function useCopyPaste() {
       document.removeEventListener("paste", paste);
     };
   }, [handleCopy, handlePaste, rfDomNode]);
+}
+
+function useYjsObserver() {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const nodesMap = useStore(store, (state) => state.getNodesMap());
+  const updateView = useStore(store, (state) => state.updateView);
+  const resetSelection = useStore(store, (state) => state.resetSelection);
+
+  useEffect(() => {
+    const observer = (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
+      if (transaction.local) return;
+      updateView();
+    };
+
+    // FIXME need to observe edgesMap as well
+    // FIXME need to observe resultMap as well
+    nodesMap.observe(observer);
+
+    return () => {
+      nodesMap.unobserve(observer);
+      resetSelection();
+    };
+  }, [nodesMap, resetSelection, updateView]);
 }
 
 /**

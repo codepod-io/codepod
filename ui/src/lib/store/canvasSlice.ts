@@ -28,7 +28,7 @@ import {
 } from "d3-force";
 import * as Y from "yjs";
 
-import { myNanoId, level2color } from "../utils";
+import { myNanoId, level2color } from "../utils/utils";
 
 import {
   Connection,
@@ -51,7 +51,7 @@ import {
 import { node } from "prop-types";
 import { quadtree } from "d3-quadtree";
 import { getHelperLines, level2fontsize } from "../../components/nodes/utils";
-import { json2yxml, yxml2json } from "./y-utils";
+import { json2yxml, yxml2json } from "../utils/y-utils";
 
 // TODO add node's data typing.
 export type NodeData = {

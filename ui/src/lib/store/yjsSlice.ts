@@ -8,10 +8,10 @@ import { monaco } from "react-monaco-editor";
 import { IndexeddbPersistence } from "y-indexeddb";
 
 import { Doc, Transaction } from "yjs";
-import { WebsocketProvider } from "./y-websocket";
+import { WebsocketProvider } from "../utils/y-websocket";
 import { createRuntimeSlice, RuntimeSlice } from "./runtimeSlice";
 import { ApolloClient } from "@apollo/client";
-import { addAwarenessStyle } from "../styles";
+import { addAwarenessStyle } from "../utils/utils";
 import { Annotation } from "../parser";
 import { MyState, Pod } from ".";
 import { v4 as uuidv4 } from "uuid";
@@ -55,44 +55,17 @@ export async function registerUser(
   return user as { api_key: string; name: string };
 }
 
-export interface RepoStateSlice {
-  // From source pod id to target pod id.
-  setSessionId: (sessionId: string) => void;
-  setRepoData: (repo: {
-    id: string;
-    name: string;
-    userId: string;
-    public: boolean;
-    collaborators: [
-      {
-        id: string;
-        email: string;
-        firstname: string;
-        lastname: string;
-      }
-    ];
-  }) => void;
+export interface YjsSlice {
   addError: (error: { type: string; msg: string }) => void;
   clearError: () => void;
-  repoLoaded: boolean;
   error: { type: string; msg: string } | null;
   provider?: WebsocketProvider | null;
   clients: Map<string, any>;
   user: any;
   ydoc: Doc;
-  collaborators: any[];
-  shareOpen: boolean;
-  settingOpen: boolean;
-  setShareOpen: (open: boolean) => void;
-  setSettingOpen: (open: boolean) => void;
-  loadError: any;
-  role: "OWNER" | "COLLABORATOR" | "GUEST";
-  isPublic: boolean;
   setUser: (user: any) => void;
   addClient: (clientId: any, name, color) => void;
   deleteClient: (clientId: any) => void;
-  showLineNumbers: boolean;
-  flipShowLineNumbers: () => void;
   // A variable to avoid duplicate connection requests.
   yjsConnecting: boolean;
   // The status of yjs connection.
@@ -104,62 +77,21 @@ export interface RepoStateSlice {
   setYjsSyncStatus: (status: string) => void;
 }
 
-export const createRepoStateSlice: StateCreator<
-  MyState,
-  [],
-  [],
-  RepoStateSlice
-> = (set, get) => ({
+export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
+  set,
+  get
+) => ({
   error: null,
-  repoLoaded: false,
+
   user: {},
   ydoc: new Doc(),
   provider: null,
   // keep different seletced info on each user themselves
   //TODO: all presence information are now saved in clients map for future usage. create a modern UI to show those information from clients (e.g., online users)
   clients: new Map(),
-  loadError: null,
-  role: "GUEST",
-  collaborators: [],
-  isPublic: false,
-  shareOpen: false,
-  settingOpen: false,
-  showLineNumbers: false,
-  setSessionId: (id) => set({ sessionId: id }),
   addError: (error) => set({ error }),
   clearError: () => set({ error: null }),
 
-  setRepoData: (repo) =>
-    set(
-      produce((state: MyState) => {
-        state.repoName = repo.name;
-        state.isPublic = repo.public;
-        state.collaborators = repo.collaborators;
-        // set the user role in this repo FIXME this assumes state.user is
-        // loaded. Very prone to errors, e.g., state,.user must be loaded before
-        // repo data is loaded.
-        if (repo.userId === state.user.id) {
-          state.role = "OWNER";
-        } else if (
-          state.user &&
-          repo.collaborators.findIndex(({ id }) => state.user.id === id) >= 0
-        ) {
-          state.role = "COLLABORATOR";
-        } else {
-          state.role = "GUEST";
-        }
-        // only set the local awareness when the user is an owner or a collaborator
-        if (state.provider && state.role !== "GUEST") {
-          console.log("set awareness", state.user.firstname);
-          const awareness = state.provider.awareness;
-          awareness.setLocalStateField("user", {
-            name: state.user.firstname,
-            color: state.user.color,
-          });
-        }
-        state.repoLoaded = true;
-      })
-    ),
   addClient: (clientID, name, color) =>
     set((state) => {
       if (!state.clients.has(clientID)) {
@@ -186,11 +118,7 @@ export const createRepoStateSlice: StateCreator<
         state.user = { ...user, color };
       })
     ),
-  flipShowLineNumbers: () =>
-    set((state) => ({ showLineNumbers: !state.showLineNumbers })),
 
-  setShareOpen: (open: boolean) => set({ shareOpen: open }),
-  setSettingOpen: (open: boolean) => set({ settingOpen: open }),
   yjsConnecting: false,
   yjsStatus: undefined,
   yjsSyncStatus: undefined,

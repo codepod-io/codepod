@@ -40,7 +40,7 @@ import { usePrompt } from "../lib/prompt";
 
 import { RepoContext } from "../lib/store";
 
-import useMe from "../lib/me";
+import useMe from "../lib/auth";
 import {
   FormControlLabel,
   FormGroup,
@@ -50,7 +50,7 @@ import {
   Input,
   Grid,
 } from "@mui/material";
-import { getUpTime } from "../lib/utils";
+import { getUpTime } from "../lib/utils/utils";
 import { registerCompletion } from "../lib/monacoCompletionProvider";
 import { SettingDialog } from "./SettingDialog";
 import { toSvg } from "html-to-image";

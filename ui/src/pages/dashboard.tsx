@@ -19,8 +19,8 @@ import PublicIcon from "@mui/icons-material/Public";
 import PublicOffIcon from "@mui/icons-material/PublicOff";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
-import useMe from "../lib/me";
-import { getUpTime } from "../lib/utils";
+import useMe from "../lib/auth";
+import { getUpTime } from "../lib/utils/utils";
 import {
   Button,
   Card,
@@ -36,7 +36,7 @@ import {
 } from "@mui/material";
 import { useAuth } from "../lib/auth";
 import { GoogleSignin } from "./login";
-import { timeDifference } from "../lib/utils";
+import { timeDifference } from "../lib/utils/utils";
 import { useSnackbar } from "notistack";
 import { useTheme } from "@mui/material/styles";
 

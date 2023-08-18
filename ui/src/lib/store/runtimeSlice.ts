@@ -202,6 +202,8 @@ async function killRuntime(client, sessionId) {
 
 export interface RuntimeSlice {
   sessionId: string | null;
+  // From source pod id to target pod id.
+  setSessionId: (sessionId: string) => void;
   runtimeConnecting: boolean;
   runtimeConnected: boolean;
   kernels: Record<string, { status: string | null }>;
@@ -245,6 +247,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
 ) => ({
   parseResult: {},
   sessionId: null,
+  setSessionId: (id) => set({ sessionId: id }),
   kernels: {
     python: {
       status: null,
