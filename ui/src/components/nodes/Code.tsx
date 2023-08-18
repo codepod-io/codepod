@@ -59,7 +59,7 @@ import { NodeResizeControl, NodeResizer } from "reactflow";
 
 import "@reactflow/node-resizer/dist/style.css";
 import { Handles, level2fontsize } from "./utils";
-import { timeDifference } from "../../lib/utils";
+import { timeDifference } from "../../lib/utils/utils";
 import { ButtonGroup } from "@mui/material";
 
 import { ConfirmDeleteButton } from "./utils";

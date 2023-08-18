@@ -17,7 +17,7 @@ import { useStore } from "zustand";
 
 import { createRepoStore, RepoContext } from "../lib/store";
 
-import useMe from "../lib/me";
+import useMe from "../lib/auth";
 import { Canvas } from "../components/Canvas";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";

@@ -5,7 +5,7 @@ import Typography from "@mui/material/Typography";
 import Paper from "@mui/material/Paper";
 import { Container, Stack } from "@mui/material";
 
-import useMe from "../lib/me";
+import useMe from "../lib/auth";
 
 export default function Profile() {
   const { loading, me } = useMe();
