@@ -1,6 +1,6 @@
 import Parser from "web-tree-sitter";
 import { match, P } from "ts-pattern";
-import keywords from "./python-keywords";
+import keywords from "./utils/python-keywords";
 
 let parser: Parser | null = null;
 let parser_loading = false;
