@@ -96,10 +96,8 @@ export const typeDefs = gql`
 
   type YDocSnapshot {
     id: String
-    repoId: String
     createdAt: String
     message: String
-    yDocBlob: String
   }
 
   type Query {

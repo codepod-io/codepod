@@ -72,7 +72,7 @@ model YDocSnapshot {
     createdAt DateTime @default(now())
     message   String?
     yDocBlob  Bytes?
-    Repo      Repo?    @relation(fields: [repoId], references: [id])
+    repo      Repo?    @relation(fields: [repoId], references: [id])
     repoId    String?
 }
 

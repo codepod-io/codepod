@@ -533,7 +533,7 @@ async function addRepoSnapshot(_, { repoId, message }) {
       id: await nanoid(),
       yDocBlob: repo.yDocBlob,
       message: message,
-      repoId: repoId,
+      repo: { connect: { id: repoId } },
     },
   });
   return snapshot.id;
@@ -544,7 +544,7 @@ async function addRepoSnapshot(_, { repoId, message }) {
  */
 async function getRepoSnapshots(_, { repoId }) {
   const snapshots = await prisma.yDocSnapshot.findMany({
-    where: { repoId: repoId },
+    where: { repo: { id: repoId } },
   });
   if (!snapshots) throw Error(`No snapshot exists for repo ${repoId}.`);
 
