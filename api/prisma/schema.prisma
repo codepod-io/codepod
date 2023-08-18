@@ -67,6 +67,43 @@ model UserRepoData {
     @@id([userId, repoId])
 }
 
+model Snapshot1 {
+    id        String   @id
+    createdAt DateTime @default(now())
+    yDocBlob  Bytes?
+    Repo      Repo     @relation(fields: [repoId], references: [id])
+    repoId    String
+}
+
+model Blob {
+    id        String   @id
+    updatedAt DateTime @updatedAt
+    yDocBlob  Bytes?
+    Repo      Repo[]
+}
+
+model Snapshot {
+    id        String   @id
+    createdAt DateTime @default(now())
+    message   String?
+    yDocBlob  Bytes?
+    Repo      Repo?    @relation(fields: [repoId], references: [id])
+    repoId    String?
+}
+
+model UnifiedBlob {
+    id        String   @id
+    updatedAt DateTime @updatedAt
+    createdAt DateTime @default(now())
+
+    // FIXME history repo should be one repo, not a list.
+    yDocBlob Bytes?
+    history  Repo[]
+
+    current Repo?   @relation("HISTORY", fields: [repoId], references: [id])
+    repoId  String?
+}
+
 model Repo {
     id            String         @id
     name          String?
@@ -82,7 +119,20 @@ model Repo {
     updatedAt     DateTime       @default(now()) @updatedAt
     UserRepoData  UserRepoData[]
     stargazers    User[]         @relation("STAR")
-    yDocBlob      Bytes?
+
+    // Option 1:
+    yDocBlob1      Bytes?
+    yDocSnapshots1 Snapshot1[]
+
+    // Option 2:
+    yDocBlob2      Blob?      @relation(fields: [yDocBlob2Id], references: [id])
+    yDocBlob2Id    String?
+    yDocSnapshots2 Snapshot[]
+
+    // Option 3:
+    yDocBlob3      UnifiedBlob?  @relation(fields: [yDocBlob3Id], references: [id])
+    yDocBlob3Id    String?
+    yDocSnapshots3 UnifiedBlob[] @relation("HISTORY")
 }
 
 enum PodType {
