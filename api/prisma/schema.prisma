@@ -72,6 +72,7 @@ model YDocSnapshot {
     createdAt DateTime @default(now())
     message   String?
     yDocBlob  Bytes?
+    deleted   Boolean  @default(false)
     repo      Repo?    @relation(fields: [repoId], references: [id])
     repoId    String?
 }

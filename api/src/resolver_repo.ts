@@ -516,7 +516,7 @@ async function copyRepo(_, { repoId }, { userId }) {
 }
 
 /**
- * create yDoc snapshot upon request.
+ * Create yDoc snapshot upon request.
  */
 async function addRepoSnapshot(_, { repoId, message }) {
   const repo = await prisma.repo.findFirst({
@@ -540,11 +540,11 @@ async function addRepoSnapshot(_, { repoId, message }) {
 }
 
 /**
- * query yDoc snapshot for a repo.
+ * Query yDoc snapshot for a repo.
  */
 async function getRepoSnapshots(_, { repoId }) {
   const snapshots = await prisma.yDocSnapshot.findMany({
-    where: { repo: { id: repoId } },
+    where: { repo: { id: repoId }, deleted: false },
   });
   if (!snapshots) throw Error(`No snapshot exists for repo ${repoId}.`);
 
