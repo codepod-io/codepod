@@ -256,14 +256,14 @@ const MyStyledWrapper = styled("div")(
 function HotkeyControl({ id }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const setCursorNode = useStore(store, (state) => state.setCursorNode);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const selectPod = useStore(store, (state) => state.selectPod);
+  const resetSelection = useStore(store, (state) => state.resetSelection);
 
   useKeymap("Escape", () => {
-    setCursorNode(id);
     setFocusedEditor(undefined);
+    resetSelection();
     selectPod(id, true);
     return true;
   });
@@ -540,7 +540,6 @@ export const RichNode = memo<Props>(function ({
   // const pod = useStore(store, (state) => state.pods[id]);
   const setPodName = useStore(store, (state) => state.setPodName);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
-  const cursorNode = useStore(store, (state) => state.cursorNode);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
 
@@ -612,14 +611,6 @@ export const RichNode = memo<Props>(function ({
     store,
     (state) => state.contextualZoomParams.threshold
   );
-
-  useEffect(() => {
-    if (cursorNode === id) {
-      setShowToolbar(true);
-    } else {
-      setShowToolbar(false);
-    }
-  }, [cursorNode]);
 
   const node = nodesMap.get(id);
   if (!node) return null;

@@ -523,7 +523,6 @@ export const CodeNode = memo<NodeProps>(function ({
     };
   }, shallow);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
-  const cursorNode = useStore(store, (state) => state.cursorNode);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -549,14 +548,6 @@ export const CodeNode = memo<NodeProps>(function ({
       }
     }
   }, [layout]);
-
-  useEffect(() => {
-    if (cursorNode === id) {
-      setShowToolbar(true);
-    } else {
-      setShowToolbar(false);
-    }
-  }, [cursorNode]);
 
   const onResizeStop = useCallback(
     (e, data) => {

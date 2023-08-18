@@ -1185,7 +1185,12 @@ function ExportButtons() {
 function PodTreeItem({ id, node2children }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const setCursorNode = useStore(store, (state) => state.setCursorNode);
+  const selectPod = useStore(store, (state) => state.selectPod);
+  const resetSelection = useStore(store, (state) => state.resetSelection);
+  const setCenterSelection = useStore(
+    store,
+    (state) => state.setCenterSelection
+  );
 
   if (!node2children.has(id)) return null;
   const children = node2children.get(id);
@@ -1195,7 +1200,9 @@ function PodTreeItem({ id, node2children }) {
       nodeId={id}
       label={id.substring(0, 8)}
       onClick={() => {
-        setCursorNode(id);
+        resetSelection();
+        selectPod(id, true);
+        setCenterSelection(true);
       }}
     >
       {children.length > 0 &&
