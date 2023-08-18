@@ -67,6 +67,15 @@ model UserRepoData {
     @@id([userId, repoId])
 }
 
+model YDocSnapshot {
+    id        String   @id
+    createdAt DateTime @default(now())
+    message   String?
+    yDocBlob  Bytes?
+    Repo      Repo?    @relation(fields: [repoId], references: [id])
+    repoId    String?
+}
+
 model Repo {
     id            String         @id
     name          String?
@@ -83,6 +92,8 @@ model Repo {
     UserRepoData  UserRepoData[]
     stargazers    User[]         @relation("STAR")
     yDocBlob      Bytes?
+    yDocSnapshots YDocSnapshot[]
+
 }
 
 enum PodType {
