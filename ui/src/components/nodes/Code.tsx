@@ -87,7 +87,6 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
   const store = useContext(RepoContext)!;
   const results = useStore(store, (state) => state.podResults[id]?.result);
   const error = useStore(store, (state) => state.podResults[id]?.error);
-  const stdout = useStore(store, (state) => state.podResults[id]?.stdout);
   const running = useStore(
     store,
     (state) => state.podResults[id]?.running || false
@@ -119,9 +118,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
     (state) =>
       state.podResults[id]?.running ||
       state.podResults[id]?.result ||
-      state.podResults[id]?.error ||
-      state.podResults[id]?.stdout ||
-      state.podResults[id]?.stderr
+      state.podResults[id]?.error
   );
   const [resultScroll, setResultScroll] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -217,7 +214,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
           maxHeight="1000px"
           border="1px"
         >
-          {(stdout || exec_count || error) && showMenu && (
+          {(exec_count || error) && showMenu && (
             <ButtonGroup
               sx={{
                 // border: '1px solid #757ce8',
@@ -274,14 +271,6 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
             </ButtonGroup>
           )}
 
-          {stdout && (
-            <Box
-              whiteSpace="pre-wrap"
-              sx={{ fontSize: "0.8em", paddingBottom: 1 }}
-            >
-              <Ansi>{stdout}</Ansi>
-            </Box>
-          )}
           {results && results.length > 0 && (
             <Box
               sx={{

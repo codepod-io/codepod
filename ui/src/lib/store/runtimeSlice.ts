@@ -641,15 +641,6 @@ function onMessage(set, get: () => MyState) {
     let { type, payload } = JSON.parse(msg.data || msg.body || undefined);
     console.debug("got message", type, payload);
     switch (type) {
-      case "output":
-        console.log("output:", payload);
-        break;
-      case "stdout":
-        {
-          let { podId, stdout } = payload;
-          get().setPodStdout({ id: podId, stdout });
-        }
-        break;
       case "stream":
         {
           let { podId, content } = payload;
@@ -714,7 +705,7 @@ function onMessage(set, get: () => MyState) {
         get().wsRequestStatus({ lang: payload.lang });
         break;
       default:
-        console.log("WARNING unhandled message", { type, payload });
+        console.warn("WARNING unhandled message", { type, payload });
     }
   };
 }

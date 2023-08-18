@@ -16,8 +16,6 @@ type PodResult = {
   }[];
   running?: boolean;
   lastExecutedAt?: Date;
-  stdout?: string;
-  stderr?: string;
   error?: { ename: string; evalue: string; stacktrace: string[] } | null;
 };
 
@@ -27,7 +25,6 @@ export interface PodSlice {
   podNames: Record<string, string>;
   setPodName: ({ id, name }: { id: string; name: string }) => void;
   setPodResult: ({ id, type, content, count }) => void;
-  setPodStdout: ({ id, stdout }: { id: string; stdout: string }) => void;
   setPodError: ({ id, ename, evalue, stacktrace }) => void;
   setPodStatus: ({ id, status, lang }) => void;
 }
@@ -42,14 +39,6 @@ export const createPodSlice: StateCreator<MyState, [], [], PodSlice> = (
     set(
       produce((state: MyState) => {
         state.podNames[id] = name;
-      })
-    );
-  },
-  setPodStdout: ({ id, stdout }) => {
-    get().ensureResult(id);
-    set(
-      produce((state: MyState) => {
-        state.podResults[id].stdout = stdout;
       })
     );
   },
