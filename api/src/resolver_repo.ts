@@ -516,7 +516,7 @@ async function copyRepo(_, { repoId }, { userId }) {
 }
 
 /**
- * create yDoc snapshot upon request.
+ * Create yDoc snapshot upon request.
  */
 async function addRepoSnapshot(_, { repoId, message }) {
   const repo = await prisma.repo.findFirst({
@@ -540,7 +540,7 @@ async function addRepoSnapshot(_, { repoId, message }) {
 }
 
 /**
- * query yDoc snapshot for a repo.
+ * Fetch yDoc snapshots for a repo.
  */
 async function getRepoSnapshots(_, { repoId }) {
   const snapshots = await prisma.yDocSnapshot.findMany({
