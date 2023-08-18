@@ -285,15 +285,14 @@ export interface CanvasSlice {
   selectionParent: string | undefined;
   selectPod: (id: string, selected: boolean) => void;
   resetSelection: () => boolean;
+  centerSelection: boolean;
+  setCenterSelection: (b: boolean) => void;
 
   handlePaste(event: ClipboardEvent, position: XYPosition): void;
   handleCopy(event: ClipboardEvent): void;
 
   focusedEditor: string | undefined;
   setFocusedEditor: (id?: string) => void;
-
-  cursorNode: string | undefined;
-  setCursorNode: (id?: string) => void;
 
   updateView: () => void;
 
@@ -383,6 +382,10 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     );
     return true;
   },
+  centerSelection: false,
+  setCenterSelection(b: boolean) {
+    set({ centerSelection: b });
+  },
 
   focusedEditor: undefined,
   setFocusedEditor: (id?: string) =>
@@ -392,13 +395,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
       })
     ),
 
-  cursorNode: undefined,
-  setCursorNode: (id?: string) =>
-    set(
-      produce((state: MyState) => {
-        state.cursorNode = id;
-      })
-    ),
   getNodesMap() {
     return get().ydoc.getMap("rootMap").get("nodesMap") as Y.Map<
       Node<NodeData>
@@ -902,9 +898,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           throw new Error("Add node should not be handled here");
         case "select":
           get().selectPod(change.id, change.selected);
-          if (change.selected) {
-            get().setCursorNode(change.id);
-          }
           break;
         case "dimensions":
           {

@@ -160,7 +160,6 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const devMode = useStore(store, (state) => state.devMode);
-  const cursorNode = useStore(store, (state) => state.cursorNode);
 
   useEffect(() => {
     if (!data.name) return;
@@ -171,14 +170,6 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   }, [data.name, id, setPodName]);
 
   const [showToolbar, setShowToolbar] = useState(false);
-
-  useEffect(() => {
-    if (cursorNode === id) {
-      setShowToolbar(true);
-    } else {
-      setShowToolbar(false);
-    }
-  }, [cursorNode]);
 
   const { width, height, parent } = useReactFlowStore((s) => {
     const node = s.nodeInternals.get(id)!;

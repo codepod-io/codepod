@@ -398,7 +398,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const wsRun = useStore(store, (state) => state.wsRun);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
-  const setCursorNode = useStore(store, (state) => state.setCursorNode);
   const annotations = useStore(
     store,
     (state) => state.parseResult[id]?.annotations
@@ -496,8 +495,8 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       run: () => {
         if (document.activeElement) {
           (document.activeElement as any).blur();
-          setCursorNode(id);
           setFocusedEditor(undefined);
+          resetSelection();
           selectPod(id, true);
         }
       },

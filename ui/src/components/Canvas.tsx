@@ -143,15 +143,23 @@ function isInputDOMNode(event: KeyboardEvent): boolean {
 function useJump() {
   const store = useContext(RepoContext)!;
 
-  const cursorNode = useStore(store, (state) => state.cursorNode);
-  const setCursorNode = useStore(store, (state) => state.setCursorNode);
-
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
 
   const nodesMap = useStore(store, (state) => state.getNodesMap());
 
+  const reactflow = useReactFlow();
+
+  const selectedPods = useStore(store, (state) => state.selectedPods);
+  const resetSelection = useStore(store, (state) => state.resetSelection);
+  const selectPod = useStore(store, (state) => state.selectPod);
+
   const wsRun = useStore(store, (state) => state.wsRun);
   const wsRunScope = useStore(store, (state) => state.wsRunScope);
+
+  const setCenterSelection = useStore(
+    store,
+    (state) => state.setCenterSelection
+  );
 
   const handleKeyDown = (event) => {
     // This is a hack to address the extra propagation of "Esc" pressed in Rich node, https://github.com/codepod-io/codepod/pull/398#issuecomment-1655153696
@@ -168,7 +176,7 @@ function useJump() {
         return;
     }
     // Get the current cursor node.
-    const id = cursorNode;
+    const id = selectedPods.values().next().value; // Assuming only one node can be selected at a time
     if (!id) {
       console.log("No node selected");
       return; // Ignore arrow key presses if there's no selected node or if the user is typing in an input field
@@ -256,7 +264,9 @@ function useJump() {
     }
 
     if (to) {
-      setCursorNode(to.id);
+      resetSelection();
+      selectPod(to.id, true);
+      setCenterSelection(true);
     }
 
     event.preventDefault(); // Prevent default browser behavior for arrow keys
@@ -267,7 +277,7 @@ function useJump() {
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [cursorNode]);
+  }, [selectedPods]);
 }
 
 export function useCopyPaste() {
@@ -412,7 +422,6 @@ function CanvasImpl() {
   const selectedPods = useStore(store, (state) => state.selectedPods);
 
   const reactFlowInstance = useReactFlow();
-  const cursorNode = useStore(store, (state) => state.cursorNode);
 
   const project = useCallback(
     ({ x, y }) => {
@@ -451,22 +460,30 @@ function CanvasImpl() {
     }
   }, [escapePressed]);
 
+  const centerSelection = useStore(store, (state) => state.centerSelection);
+  const setCenterSelection = useStore(
+    store,
+    (state) => state.setCenterSelection
+  );
+
   useEffect(() => {
     // move the viewport to the to node
     // get the absolute position of the to node
-    if (cursorNode) {
-      const pos = getAbsPos(nodesMap.get(cursorNode)!, nodesMap);
+    if (centerSelection && selectedPods.size > 0) {
+      const node = selectedPods.values().next().value;
+      const pos = getAbsPos(nodesMap.get(node)!, nodesMap);
 
       reactFlowInstance.setCenter(
-        pos.x + nodesMap.get(cursorNode)!.width! / 2,
-        pos.y + nodesMap.get(cursorNode)!.height! / 2,
+        pos.x + nodesMap.get(node)!.width! / 2,
+        pos.y + nodesMap.get(node)!.height! / 2,
         {
           zoom: reactFlowInstance.getZoom(),
           duration: 800,
         }
       );
+      setCenterSelection(false);
     }
-  }, [cursorNode]);
+  }, [centerSelection, setCenterSelection]);
 
   const onPaneContextMenu = (event) => {
     event.preventDefault();
