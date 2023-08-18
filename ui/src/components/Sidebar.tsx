@@ -1304,7 +1304,6 @@ function RepoSnapshots() {
         id
         createdAt
         message
-        yDocBlob
       }
     }
   `);
