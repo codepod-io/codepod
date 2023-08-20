@@ -515,10 +515,50 @@ async function copyRepo(_, { repoId }, { userId }) {
   return id;
 }
 
+/**
+ * Create yDoc snapshot upon request.
+ */
+async function addRepoSnapshot(_, { repoId, message }) {
+  const repo = await prisma.repo.findFirst({
+    where: { id: repoId },
+    include: {
+      owner: true,
+      collaborators: true,
+    },
+  });
+  if (!repo) throw Error("Repo not exists.");
+  if (!repo.yDocBlob) throw Error(`yDocBlob on ${repoId} not found`);
+  const snapshot = await prisma.yDocSnapshot.create({
+    data: {
+      id: await nanoid(),
+      yDocBlob: repo.yDocBlob,
+      message: message,
+      repo: { connect: { id: repoId } },
+    },
+  });
+  return snapshot.id;
+}
+
+/**
+ * Fetch yDoc snapshots for a repo.
+ */
+async function getRepoSnapshots(_, { repoId }) {
+  const snapshots = await prisma.yDocSnapshot.findMany({
+    where: { repo: { id: repoId } },
+  });
+  if (!snapshots) throw Error(`No snapshot exists for repo ${repoId}.`);
+
+  return snapshots.map((snapshot) => ({
+    ...snapshot,
+    yDocBlob: JSON.stringify(snapshot.yDocBlob),
+  }));
+}
+
 export default {
   Query: {
     repo,
     getDashboardRepos,
+    getRepoSnapshots,
   },
   Mutation: {
     createRepo,
@@ -531,6 +571,7 @@ export default {
     addCollaborator,
     updateVisibility,
     deleteCollaborator,
+    addRepoSnapshot,
     star,
     unstar,
   },

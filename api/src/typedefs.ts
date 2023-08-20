@@ -94,6 +94,12 @@ export const typeDefs = gql`
     ttl: Int
   }
 
+  type YDocSnapshot {
+    id: String
+    createdAt: String
+    message: String
+  }
+  
   input RunSpecInput {
     code: String
     podId: String
@@ -107,6 +113,7 @@ export const typeDefs = gql`
     repo(id: String!): Repo
     pod(id: ID!): Pod
     getDashboardRepos: [Repo]
+    getRepoSnapshots(repoId: String!): [YDocSnapshot]
     activeSessions: [String]
     listAllRuntimes: [RuntimeInfo]
     infoRuntime(sessionId: String!): RuntimeInfo
@@ -142,6 +149,7 @@ export const typeDefs = gql`
 
     exportJSON(repoId: String!): String!
     exportFile(repoId: String!): String!
+    addRepoSnapshot(repoId: String!, message: String!): String!
     updateCodeiumAPIKey(apiKey: String!): Boolean
 
     connectRuntime(runtimeId: String, repoId: String): Boolean

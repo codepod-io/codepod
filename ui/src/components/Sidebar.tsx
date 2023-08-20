@@ -17,6 +17,7 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import ListItemButton from "@mui/material/ListItemButton";
+import AddIcon from "@mui/icons-material/Add";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
@@ -1337,6 +1338,105 @@ function TableofPods() {
   );
 }
 
+function SnapshotItem({ id, message }) {
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  const open = Boolean(anchorEl);
+
+  const handleClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+  return (
+    <ListItem disablePadding key={id}>
+      <ListItemText primary={message} />
+      <IconButton aria-label="More options" onClick={handleClick}>
+        <MoreVertIcon />
+      </IconButton>
+      <Popover open={open} anchorEl={anchorEl} onClose={handleClose}>
+        <MenuList>
+          <MenuItem>Restore</MenuItem>
+          <MenuItem>Delete</MenuItem>
+        </MenuList>
+      </Popover>
+    </ListItem>
+  );
+}
+
+function RepoSnapshots() {
+  const { id: repoId } = useParams();
+  const { error: queryError, data: queryResult } = useQuery(gql`
+    query GetRepoSnapshots {
+      getRepoSnapshots(repoId: "${repoId}") {
+        id
+        createdAt
+        message
+      }
+    }
+  `);
+  const [addRepoSnapshot, { error: mutationError, data: mutationResult }] =
+    useMutation(
+      gql`
+        mutation addRepoSnapshot($repoId: String!, $message: String!) {
+          addRepoSnapshot(repoId: $repoId, message: $message)
+        }
+      `,
+      {
+        refetchQueries: ["GetRepoSnapshots"],
+      }
+    );
+
+  if (queryError) {
+    return <Box>ERROR: {queryError.message}</Box>;
+  }
+
+  const snapshots = queryResult?.getRepoSnapshots.slice();
+  return (
+    <Box>
+      <Box
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+          alignItems: "stretch",
+        }}
+      >
+        <Box
+          style={{
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          <Typography variant="h6">Snapshots</Typography>
+        </Box>
+        <IconButton
+          onClick={() => {
+            addRepoSnapshot({
+              variables: { repoId: repoId, message: "placeholder" },
+            });
+          }}
+        >
+          <AddIcon />
+        </IconButton>
+      </Box>
+      <List>
+        {snapshots &&
+          snapshots.length > 0 &&
+          snapshots.map((snapshot) => (
+            <SnapshotItem
+              key={snapshot.id}
+              id={snapshot.id}
+              message={snapshot.createdAt}
+            />
+          ))}
+      </List>
+    </Box>
+  );
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
   width,
   open,
@@ -1422,6 +1522,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Divider />
             <Typography variant="h6">Table of Pods</Typography>
             <TableofPods />
+
+            <Divider />
+            <RepoSnapshots />
           </Stack>
         </Box>
       </Drawer>
