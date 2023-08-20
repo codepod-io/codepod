@@ -310,6 +310,16 @@ function startProxyServer() {
     activeTable[req.url] = new Date();
     let match = await getRouteTarget(req);
     if (!match) {
+      console.error("Not match!");
+      // respond to socket
+      socket.write(
+        "HTTP/1.1 404 Not Found\r\n" +
+          "Connection: close\r\n" +
+          "Content-type: text/html\r\n" +
+          "\r\n" +
+          "<html><head></head><body>Not Found</body></html>"
+      );
+      console.log("Finish write no match.");
       return;
     }
     console.log("target", `http://${match.target}`);

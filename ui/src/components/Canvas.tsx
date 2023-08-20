@@ -153,8 +153,7 @@ function useJump() {
   const resetSelection = useStore(store, (state) => state.resetSelection);
   const selectPod = useStore(store, (state) => state.selectPod);
 
-  const wsRun = useStore(store, (state) => state.wsRun);
-  const wsRunScope = useStore(store, (state) => state.wsRunScope);
+  const yjsRun = useStore(store, (state) => state.yjsRun);
 
   const setCenterSelection = useStore(
     store,
@@ -188,10 +187,10 @@ function useJump() {
     }
 
     // get the sibling nodes
-    const siblings = Array.from(nodesMap.values()).filter(
+    const siblings = Array.from<Node>(nodesMap.values()).filter(
       (node) => node.parentNode === pod.parentNode
     );
-    const children = Array.from(nodesMap.values()).filter(
+    const children = Array.from<Node>(nodesMap.values()).filter(
       (node) => node.parentNode === id
     );
 
@@ -244,7 +243,7 @@ function useJump() {
         if (pod.type == "CODE") {
           if (event.shiftKey) {
             // Hitting "SHIFT"+"Enter" will run the code pod
-            wsRun(id);
+            yjsRun(id);
           } else {
             // Hitting "Enter" on a Code pod will go to "Edit" mode.
             setFocusedEditor(id);
@@ -252,7 +251,7 @@ function useJump() {
         } else if (pod.type === "SCOPE") {
           if (event.shiftKey) {
             // Hitting "SHIFT"+"Enter" on a Scope will run the scope.
-            wsRunScope(id);
+            yjsRun(id);
           }
         } else if (pod.type === "RICH") {
           // Hitting "Enter" on a Rich pod will go to "Edit" mode.

@@ -5,9 +5,15 @@ import http from "http";
 
 import jwt from "jsonwebtoken";
 
-import { setupWSConnection } from "./yjs-setupWS";
+import { ApolloServer } from "apollo-server-express";
+
+import { gql } from "apollo-server";
+import { ApolloServerPluginLandingPageLocalDefault } from "apollo-server-core";
+
+import { getYDoc, setupWSConnection } from "./yjs-setupWS";
 
 import prisma from "./client";
+import { connectSocket, runtime2socket } from "./yjs-runtime";
 
 interface TokenInterface {
   id: string;
@@ -102,7 +108,148 @@ async function startServer() {
   });
 }
 
+async function startAPIServer() {
+  const apollo = new ApolloServer({
+    typeDefs: gql`
+      type RouteInfo {
+        url: String
+        lastActive: String
+      }
+
+      input RunSpecInput {
+        code: String
+        podId: String
+      }
+
+      type Query {
+        getUrls: [RouteInfo]
+        getRoute(url: String): String
+      }
+
+      type Mutation {
+        addRoute(url: String, target: String): Boolean
+        deleteRoute(url: String): Boolean
+        connectRuntime(runtimeId: String, repoId: String): Boolean
+        runCode(runtimeId: String, spec: RunSpecInput): Boolean
+        runChain(runtimeId: String, specs: [RunSpecInput]): Boolean
+        interruptKernel(runtimeId: String): Boolean
+        requestKernelStatus(runtimeId: String): Boolean
+      }
+    `,
+    resolvers: {
+      Query: {
+        getUrls: async () => {},
+        getRoute: async (_, { url }) => {},
+      },
+      Mutation: {
+        addRoute: async (_, { url, target }) => {},
+        deleteRoute: async (_, { url }) => {},
+        connectRuntime: async (_, { runtimeId, repoId }) => {
+          console.log("=== connectRuntime", runtimeId, repoId);
+          // assuming doc is already loaded.
+          // FIXME this socket/ is the prefix of url. This is very prone to errors.
+          const { doc } = getYDoc(`socket/${repoId}`);
+          const rootMap = doc.getMap("rootMap");
+          console.log("rootMap", Array.from(rootMap.keys()));
+          const runtimeMap = rootMap.get("runtimeMap") as any;
+          const resultMap = rootMap.get("resultMap") as any;
+          await connectSocket({ runtimeId, runtimeMap, resultMap });
+        },
+        runCode: async (_, { runtimeId, spec: { code, podId } }) => {
+          console.log("runCode", runtimeId, podId);
+          const socket = runtime2socket.get(runtimeId);
+          if (!socket) return false;
+          // clear old results
+          // TODO move this to frontend, because it is hard to get ydoc in GraphQL handler.
+          //
+          // console.log("clear old result");
+          // console.log("old", resultMap.get(runtimeId));
+          // resultMap.set(podId, { data: [] });
+          // console.log("new", resultMap.get(runtimeId));
+          // console.log("send new result");
+          socket.send(
+            JSON.stringify({
+              type: "runCode",
+              payload: {
+                lang: "python",
+                code: code,
+                raw: true,
+                podId: podId,
+                sessionId: runtimeId,
+              },
+            })
+          );
+          return true;
+        },
+        runChain: async (_, { runtimeId, specs }) => {
+          console.log("runChain", runtimeId, specs.podId);
+          const socket = runtime2socket.get(runtimeId);
+          if (!socket) return false;
+          specs.forEach(({ code, podId }) => {
+            socket.send(
+              JSON.stringify({
+                type: "runCode",
+                payload: {
+                  lang: "python",
+                  code: code,
+                  raw: true,
+                  podId: podId,
+                  sessionId: runtimeId,
+                },
+              })
+            );
+          });
+          return true;
+        },
+        interruptKernel: async (_, { runtimeId }) => {
+          const socket = runtime2socket.get(runtimeId);
+          if (!socket) return false;
+          socket.send(
+            JSON.stringify({
+              type: "interruptKernel",
+              payload: {
+                sessionId: runtimeId,
+              },
+            })
+          );
+          return true;
+        },
+        requestKernelStatus: async (_, { runtimeId }) => {
+          console.log("requestKernelStatus", runtimeId);
+          const socket = runtime2socket.get(runtimeId);
+          if (!socket) {
+            console.log("WARN: socket not found");
+            return false;
+          }
+          socket.send(
+            JSON.stringify({
+              type: "requestKernelStatus",
+              payload: {
+                sessionId: runtimeId,
+              },
+            })
+          );
+          return true;
+        },
+      },
+    },
+    plugins: [ApolloServerPluginLandingPageLocalDefault({ embed: true })],
+  });
+  const expapp = express();
+  const http_server = http.createServer(expapp);
+  // graphql api will be available at /graphql
+
+  await apollo.start();
+  apollo.applyMiddleware({ app: expapp });
+
+  const port = process.env.API_PORT || 4011;
+  http_server.listen({ port }, () => {
+    console.log(`🚀 API server ready at http://localhost:${port}`);
+  });
+}
+
 startServer();
+startAPIServer();
 
 // ts-node-dev might fail to restart. Force the exiting and restarting. Ref:
 // https://github.com/wclr/ts-node-dev/issues/69#issuecomment-493675960

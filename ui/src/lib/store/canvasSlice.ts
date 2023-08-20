@@ -415,7 +415,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   updateView: () => {
     const nodesMap = get().getNodesMap();
     let selectedPods = get().selectedPods;
-    let nodes = Array.from(nodesMap.values());
+    let nodes = Array.from<Node>(nodesMap.values());
     nodes = nodes
       .sort((a: Node, b: Node) => a.data.level - b.data.level)
       .map((node) => ({
@@ -428,14 +428,14 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         selected: selectedPods.has(node.id),
         // className: get().dragHighlight === node.id ? "active" : "",
         className: match(node.id)
-          .with(get().dragHighlight, () => "active")
+          .with(get().dragHighlight || "", () => "active")
           .otherwise(() => undefined),
       }));
 
     set({ nodes });
     // edges view
     const edgesMap = get().getEdgesMap();
-    set({ edges: Array.from(edgesMap.values()).filter((e) => e) });
+    set({ edges: Array.from<Edge>(edgesMap.values()).filter((e) => e) });
   },
 
   addNode: (type, position, parent) => {
@@ -581,7 +581,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     if (nodes.length === 0) return;
     // If a scope is selected, select all its children
     if (nodes.some((n) => n.type === "SCOPE")) {
-      const allnodes = Array.from(nodesMap.values());
+      const allnodes = Array.from<Node>(nodesMap.values());
       const dp: Record<string, boolean> = {};
       Array.from(get().selectedPods).forEach((id) => (dp[id] = true));
       // dp algorithm for collecting all descendants
@@ -745,7 +745,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   adjustLevel: () => {
     // adjust the levels of all nodes, using topoSort
     let nodesMap = get().getNodesMap();
-    let nodes = Array.from(nodesMap.values());
+    let nodes = Array.from<Node>(nodesMap.values());
     nodes = topologicalSort(nodes, nodesMap);
     // update nodes' level
     nodes.forEach((node) => {
@@ -992,7 +992,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     // get all scopes,
     console.debug("autoLayoutROOT");
     let nodesMap = get().getNodesMap();
-    let nodes: Node[] = Array.from(nodesMap.values());
+    let nodes = Array.from<Node>(nodesMap.values());
     nodes
       // sort the children so that the inner scope gets processed first.
       .sort((a: Node, b: Node) => b.data.level - a.data.level)

@@ -63,10 +63,29 @@ services:
     volumes:
       - ../../api:/app
       - api-node-modules:/app/node_modules
+      - /var/run/docker.sock:/var/run/docker.sock
     command: sh -c "yarn && yarn dev:yjs"
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
       JWT_SECRET: ${JWT_SECRET}
+      # TODO move kernel spawner to proxy server
+      KERNEL_NETWORK: "codepod"
+      PROXY_API_URL: "http://proxy:4011/graphql"
+      ZMQ_KERNEL_IMAGE: "lihebi/codepod-kernel-python:latest"
+      WS_RUNTIME_IMAGE: "lihebi/codepod-runtime:latest"
+      # Set PROJECT_ROOT to the absolute path of your codepod local repo if you
+      # want to debug the runtime code.
+      #
+      # PROJECT_ROOT: "/path/to/codepod"
+
+      # 1000 * 60 * 3: 3 minutes
+      # KERNEL_TTL: "180000"
+      # 1000 * 60 * 60 * 12: 12 hours
+      KERNEL_TTL: "43200000"
+      # 1000 * 5: 5 seconds
+      # LOOP_INTERVAL: "5000"
+      # 1000 * 60 * 1: 1 minute 
+      LOOP_INTERVAL: "60000"
 
   ui:
     image: node:18
