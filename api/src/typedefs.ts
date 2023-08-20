@@ -94,6 +94,11 @@ export const typeDefs = gql`
     ttl: Int
   }
 
+  input RunSpecInput {
+    code: String
+    podId: String
+  }
+
   type Query {
     hello: String
     users: [User]
@@ -138,5 +143,11 @@ export const typeDefs = gql`
     exportJSON(repoId: String!): String!
     exportFile(repoId: String!): String!
     updateCodeiumAPIKey(apiKey: String!): Boolean
+
+    connectRuntime(runtimeId: String, repoId: String): Boolean
+    runCode(runtimeId: String, spec: RunSpecInput): Boolean
+    runChain(runtimeId: String, specs: [RunSpecInput]): Boolean
+    interruptKernel(runtimeId: String): Boolean
+    requestKernelStatus(runtimeId: String): Boolean
   }
 `;

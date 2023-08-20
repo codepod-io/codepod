@@ -49,8 +49,10 @@ import {
   Slider,
   Input,
   Grid,
+  Paper,
+  Menu,
 } from "@mui/material";
-import { getUpTime } from "../lib/utils/utils";
+import { getUpTime, myNanoId } from "../lib/utils/utils";
 import { registerCompletion } from "../lib/monacoCompletionProvider";
 import { SettingDialog } from "./SettingDialog";
 import { toSvg } from "html-to-image";
@@ -553,129 +555,243 @@ function SidebarSettings() {
   );
 }
 
-function SidebarRuntime() {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
-  const runtimeConnecting = useStore(store, (state) => state.runtimeConnecting);
-  const { loading, me } = useMe();
-  const client = useApolloClient();
-  const restartRuntime = useStore(store, (state) => state.restartRuntime);
-  let { id: repoId } = useParams();
-  // get runtime information
-  const { data, error } = useQuery(gql`
-    query GetRuntimeInfo {
-      infoRuntime(sessionId: "${me.id}_${repoId}") {
-        startedAt
-      }
+const RuntimeMoreMenu = ({ runtimeId }) => {
+  // menu logic
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+  // codepod logic
+  const store = useContext(RepoContext)!;
+  const setActiveRuntime = useStore(store, (state) => state.setActiveRuntime);
+  const activeRuntime = useStore(store, (state) => state.activeRuntime);
+  const runtimeMap = useStore(store, (state) => state.getRuntimeMap());
+
+  return (
+    <Box component="span">
+      <IconButton
+        aria-label="more"
+        id="long-button"
+        aria-controls={open ? "basic-menu" : undefined}
+        aria-expanded={open ? "true" : undefined}
+        aria-haspopup="true"
+        onClick={handleClick}
+      >
+        <MoreVertIcon />
+      </IconButton>
+      <Menu
+        id="basic-menu"
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        MenuListProps={{
+          "aria-labelledby": "basic-button",
+        }}
+      >
+        <MenuItem
+          onClick={() => {
+            setActiveRuntime(runtimeId);
+            handleClose();
+          }}
+          disabled={activeRuntime === runtimeId}
+        >
+          Activate
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            runtimeMap.delete(runtimeId);
+            handleClose();
+          }}
+        >
+          Delete
+        </MenuItem>
+      </Menu>
+    </Box>
+  );
+};
+
+const RuntimeItem = ({ runtimeId }) => {
+  const store = useContext(RepoContext)!;
+  const runtimeMap = useStore(store, (state) => state.getRuntimeMap());
+  // Observe runtime change
+  const runtimeChanged = useStore(store, (state) => state.runtimeChanged);
+  // A dummy useEffect to indicate that runtimeChanged is used.
+  useEffect(() => {}, [runtimeChanged]);
+  const activeRuntime = useStore(store, (state) => state.activeRuntime);
+  const runtime = runtimeMap.get(runtimeId)!;
+  const repoId = useStore(store, (state) => state.repoId);
+  const [connect] = useMutation(gql`
+    mutation ConnectRuntime($runtimeId: String, $repoId: String) {
+      connectRuntime(runtimeId: $runtimeId, repoId: $repoId)
     }
   `);
-  // update time every second
-  let [uptime, setUptime] = useState("");
-  useEffect(() => {
-    if (data?.infoRuntime?.startedAt) {
-      setUptime(getUpTime(data.infoRuntime.startedAt));
+  const [requestKernelStatus] = useMutation(gql`
+    mutation RequestKernelStatus($runtimeId: String) {
+      requestKernelStatus(runtimeId: $runtimeId)
     }
-  }, [data]);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (data?.infoRuntime?.startedAt) {
-        setUptime(getUpTime(data.infoRuntime.startedAt));
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [data]);
+  `);
+  const [interruptKernel] = useMutation(gql`
+    mutation InterruptKernel($runtimeId: String) {
+      interruptKernel(runtimeId: $runtimeId)
+    }
+  `);
 
-  if (loading) return <Box>loading</Box>;
+  useEffect(() => {
+    // if the runtime is disconnected, keep trying to connect.
+    if (runtime.wsStatus !== "connected") {
+      const interval = setInterval(
+        () => {
+          console.log("try connecting to runtime", runtimeId);
+          connect({
+            variables: {
+              runtimeId,
+              repoId,
+            },
+          });
+        },
+        // ping every 3 seconds
+        3000
+      );
+      return () => clearInterval(interval);
+    }
+  }, [runtime]);
+
   return (
-    <Box>
-      <Box>
-        {runtimeConnected && (
-          <Stack>
-            <Box>
-              Runtime{" "}
-              <Box component="span" color="green">
+    <Box
+      sx={{
+        opacity: activeRuntime === runtimeId ? 1 : 0.3,
+      }}
+    >
+      <Paper>
+        <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
+          ID: {runtimeId.substring(0, 8)}
+        </Typography>
+
+        <Typography variant="body1">
+          Conn:{" "}
+          {match(runtime.wsStatus)
+            .with("connected", () => (
+              <Box color="green" component="span">
                 connected
               </Box>
-              <Tooltip title="restart">
-                <IconButton
-                  size="small"
+            ))
+            .with("connecting", () => (
+              <Box color="yellow" component="span">
+                connecting
+              </Box>
+            ))
+            .with("disconnected", () => (
+              <Box color="yellow" component="span">
+                Disconnected{" "}
+                <Button
                   onClick={() => {
-                    restartRuntime(client, `${me.id}_${repoId}`);
+                    connect({
+                      variables: {
+                        runtimeId,
+                        repoId,
+                      },
+                    });
                   }}
+                  sx={{ color: "red" }}
                 >
-                  <RestartAltIcon fontSize="inherit" />
-                </IconButton>
-              </Tooltip>
-            </Box>
-            <Box>Uptime: {uptime}</Box>
-
-            <SidebarKernel />
-          </Stack>
-        )}
-        {runtimeConnecting && <Box>Runtime connecting ..</Box>}
-        {!runtimeConnected && !runtimeConnecting && (
-          // NOTE: on restart runtime, the first several ws connection will
-          // fail. Since we re-connect every second, here are showing the same
-          // message to user.
-          <Box>Runtime connecting ..</Box>
-        )}
-      </Box>
-    </Box>
-  );
-}
-
-function SidebarKernel() {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const kernels = useStore(store, (state) => state.kernels);
-  const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
-  const wsRequestStatus = useStore(store, (state) => state.wsRequestStatus);
-  const wsInterruptKernel = useStore(store, (state) => state.wsInterruptKernel);
-  return (
-    <Box>
-      {/* CAUTION Object.entries is very tricky. Must use for .. of, and the destructure must be [k,v] LIST */}
-      {Object.entries(kernels).map(([lang, kernel]) => (
-        <Box key={`lang-${lang}`}>
-          <Box>
-            <Box component="span" color="blue">
-              {lang}
-            </Box>{" "}
-            {runtimeConnected ? (
-              <Box component="span" color="green">
-                {kernel.status ? kernel.status : "Unknown"}
+                  retry
+                </Button>
               </Box>
-            ) : (
+            ))
+            .otherwise(() => (
               <Box color="red" component="span">
-                NA
+                {runtime.wsStatus || "unknown"}
+                <Button
+                  onClick={() => {
+                    connect({
+                      variables: {
+                        runtimeId,
+                        repoId,
+                      },
+                    });
+                  }}
+                  sx={{ color: "red" }}
+                >
+                  retry
+                </Button>
               </Box>
-            )}
-            <Tooltip title="refresh status">
-              <IconButton
-                size="small"
-                onClick={() => {
-                  wsRequestStatus({ lang });
-                }}
-              >
-                <RefreshIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="interrupt">
-              <IconButton
-                size="small"
-                onClick={() => {
-                  wsInterruptKernel({ lang });
-                }}
-              >
-                <StopIcon fontSize="inherit" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-        </Box>
-      ))}
+            ))}
+          <RuntimeMoreMenu runtimeId={runtimeId} />
+        </Typography>
+        <Typography variant="body1">
+          Status:{" "}
+          {match(runtime.status)
+            .with("idle", () => (
+              <Box color="green" component="span">
+                idle
+              </Box>
+            ))
+            .with("busy", () => (
+              <Box color="yellow" component="span">
+                busy
+              </Box>
+            ))
+            .otherwise(() => runtime.status)}
+          <IconButton
+            size="small"
+            onClick={() => {
+              requestKernelStatus({
+                variables: {
+                  runtimeId,
+                },
+              });
+            }}
+          >
+            <RefreshIcon fontSize="inherit" />
+          </IconButton>
+          <Tooltip title="interrupt">
+            <IconButton
+              size="small"
+              onClick={() => {
+                interruptKernel({
+                  variables: {
+                    runtimeId,
+                  },
+                });
+              }}
+            >
+              <StopIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        </Typography>
+      </Paper>
     </Box>
   );
-}
+};
+
+const YjsRuntimeStatus = () => {
+  const store = useContext(RepoContext)!;
+  const runtimeMap = useStore(store, (state) => state.getRuntimeMap());
+  // Observe runtime change
+  const runtimeChanged = useStore(store, (state) => state.runtimeChanged);
+  const ids = Array.from<string>(runtimeMap.keys());
+  return (
+    <>
+      <Typography variant="h6">Runtime</Typography>
+      <Button
+        onClick={() => {
+          const id = myNanoId();
+          runtimeMap.set(id, {});
+        }}
+      >
+        Create New Runtime
+      </Button>
+
+      {ids.map((runtimeId) => (
+        <RuntimeItem key={runtimeId} runtimeId={runtimeId} />
+      ))}
+    </>
+  );
+};
 
 function YjsSyncStatus() {
   const store = useContext(RepoContext);
@@ -709,60 +825,6 @@ function YjsSyncStatus() {
           .with("synced", () => <Box color="green">synced</Box>)
           .otherwise(() => `Unknown: ${yjsSyncStatus}`)}
       </Stack>
-    </Box>
-  );
-}
-
-function ActiveSessions() {
-  const { loading, data, refetch } = useQuery(gql`
-    query GetActiveSessions {
-      activeSessions
-    }
-  `);
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
-  useEffect(() => {
-    console.log("----- refetching active sessions ..");
-    refetch();
-  }, [runtimeConnected, refetch]);
-  const [killSession] = useMutation(
-    gql`
-      mutation KillSession($sessionId: String!) {
-        killSession(sessionId: $sessionId)
-      }
-    `,
-    {
-      refetchQueries: ["GetActiveSessions"],
-    }
-  );
-  if (loading) {
-    return <Box>Loading</Box>;
-  }
-  return (
-    <Box>
-      {data.activeSessions && (
-        <Box>
-          <Box>Active Sessions:</Box>
-          {data.activeSessions.map((k) => (
-            <Flex key={k}>
-              <Box color="blue">{k}</Box>
-              <Button
-                size="small"
-                onClick={() => {
-                  killSession({
-                    variables: {
-                      sessionId: k,
-                    },
-                  });
-                }}
-              >
-                Kill
-              </Button>
-            </Flex>
-          ))}
-        </Box>
-      )}
     </Box>
   );
 }
@@ -894,7 +956,7 @@ function ExportJupyterNB() {
   const repoName = useStore(store, (state) => state.repoName);
   const nodesMap = useStore(store, (state) => state.getNodesMap());
   const nodes = Array.from<ReactflowNode>(nodesMap.values());
-  const podResults = useStore(store, (state) => state.podResults);
+  const resultMap = useStore(store, (state) => state.getResultMap());
   const codeMap = useStore(store, (state) => state.getCodeMap());
   const filename = `${
     repoName || "Untitled"
@@ -957,27 +1019,28 @@ function ExportJupyterNB() {
           q.push([pod, geoScore.substring(0, 2) + "0" + geoScore.substring(2)]);
         } else if (pod.type == "CODE") {
           let podOutput: any[] = [];
-          for (const result of podResults[pod.id].result!) {
-            switch (result.type) {
+          const result = resultMap.get(pod.id);
+          for (const item of result?.data || []) {
+            switch (item.type) {
               case "execute_result":
                 podOutput.push({
-                  output_type: result.type,
+                  output_type: item.type,
                   data: {
-                    "text/plain": (result.text || "")
+                    "text/plain": (item.text || "")
                       .split(/\r?\n/)
                       .map((line) => line + "\n") || [""],
                   },
-                  execution_count: podResults[pod.id].exec_count,
+                  execution_count: result!.exec_count,
                 });
                 break;
               case "display_data":
                 podOutput.push({
-                  output_type: result.type,
+                  output_type: item.type,
                   data: {
-                    "text/plain": (result.text || "")
+                    "text/plain": (item.text || "")
                       .split(/\r?\n/)
                       .map((line) => line + "\n") || [""],
-                    "image/png": result.image,
+                    "image/png": item.image,
                   },
                 });
                 break;
@@ -985,7 +1048,7 @@ function ExportJupyterNB() {
                 podOutput.push({
                   output_type: "stream",
                   name: "stdout",
-                  text: (result.text || "")
+                  text: (item.text || "")
                     .split(/\r?\n/)
                     .map((line) => line + "\n"),
                 });
@@ -994,7 +1057,7 @@ function ExportJupyterNB() {
                 podOutput.push({
                   output_type: "stream",
                   name: "stderr",
-                  text: (result.text || "")
+                  text: (item.text || "")
                     .split(/\r?\n/)
                     .map((line) => line + "\n"),
                 });
@@ -1003,7 +1066,7 @@ function ExportJupyterNB() {
                 break;
             }
           }
-          const error = podResults[pod.id].error;
+          const error = result?.error;
           if (error) {
             podOutput.push({
               output_type: "error",
@@ -1014,7 +1077,7 @@ function ExportJupyterNB() {
           }
           jupyterCellList.push({
             cell_type: "code",
-            execution_count: podResults[pod.id].exec_count,
+            execution_count: result?.exec_count,
             // TODO: expand other Codepod related-metadata fields, or run a real-time search in database when importing.
             metadata: { id: pod.id, geoScore: Number(geoScore) },
             source: [codeMap.get(pod.id)?.toString() || ""],
@@ -1344,8 +1407,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {/* <SyncStatus /> */}
                 <YjsSyncStatus />
                 <Divider />
-                <Typography variant="h6">Runtime Info</Typography>
-                <SidebarRuntime />
+                <YjsRuntimeStatus />
               </Box>
             )}
             <Divider />

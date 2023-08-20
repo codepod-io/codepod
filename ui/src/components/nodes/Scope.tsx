@@ -60,7 +60,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const reactFlowInstance = useReactFlow();
   const isGuest = useStore(store, (state) => state.role === "GUEST");
-  const wsRunScope = useStore(store, (state) => state.wsRunScope);
+  const yjsRun = useStore(store, (state) => state.yjsRun);
 
   const autoLayout = useStore(store, (state) => state.autoLayout);
 
@@ -89,7 +89,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
         <Tooltip title="Run (shift-enter)">
           <IconButton
             onClick={() => {
-              wsRunScope(id);
+              yjsRun(id);
             }}
           >
             <PlayCircleOutlineIcon style={{ fontSize: iconFontSize }} />

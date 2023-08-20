@@ -261,40 +261,6 @@ function NotFoundAlert({ error }) {
   );
 }
 
-function useRuntime() {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const runtimeConnected = useStore(store, (state) => state.runtimeConnected);
-  const wsConnect = useStore(store, (state) => state.wsConnect);
-  const client = useApolloClient();
-  const socket = useStore(store, (state) => state.socket);
-  const { loading, me } = useMe();
-  let { id: repoId } = useParams();
-  // periodically check if the runtime is still connected
-  useEffect(() => {
-    if (me && !runtimeConnected) {
-      wsConnect(client, `${me.id}_${repoId}`);
-    }
-    const interval = setInterval(() => {
-      if (me && !runtimeConnected) {
-        wsConnect(client, `${me.id}_${repoId}`);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [client, me, repoId, runtimeConnected, wsConnect]);
-  // Periodically send ping to the server to keep the connection alive.
-  // websocket resets after 60s of idle by most firewalls
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (socket) {
-        console.log("sending ping to keep runtime alive ..");
-        socket.send(JSON.stringify({ type: "ping" }));
-      }
-    }, 30000);
-    return () => clearInterval(interval);
-  }, [socket]);
-}
-
 function useRepo({ id }) {
   // load the repo
   let query = gql`
@@ -331,40 +297,14 @@ function useRepo({ id }) {
   return { data, loading };
 }
 
-function useInitNodes() {
-  const store = useContext(RepoContext)!;
-  const provider = useStore(store, (state) => state.provider);
-  const [loading, setLoading] = useState(true);
-  const updateView = useStore(store, (state) => state.updateView);
-  const adjustLevel = useStore(store, (state) => state.adjustLevel);
-  useEffect(() => {
-    const init = () => {
-      // adjust level and update view
-      adjustLevel();
-      updateView();
-      setLoading(false);
-    };
-
-    if (!provider) return;
-    if (provider.synced) {
-      init();
-    } else {
-      provider.once("synced", init);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [provider]);
-  return { loading };
-}
-
 /**
  * This loads repo metadata.
  */
 function RepoImpl2({ id }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  useRuntime();
   useRepo({ id });
-  const { loading } = useInitNodes();
+  const providerSynced = useStore(store, (state) => state.providerSynced);
   const parseAllPods = useStore(store, (state) => state.parseAllPods);
   const resolveAllPods = useStore(store, (state) => state.resolveAllPods);
   const [parserLoaded, setParserLoaded] = useState(false);
@@ -379,7 +319,7 @@ function RepoImpl2({ id }) {
   }, []);
 
   useEffect(() => {
-    if (repoLoaded && parserLoaded && !loading) {
+    if (repoLoaded && parserLoaded && providerSynced) {
       parseAllPods();
       resolveAllPods();
     }
@@ -389,7 +329,7 @@ function RepoImpl2({ id }) {
     repoLoaded,
     resolveAllPods,
     scopedVars,
-    loading,
+    providerSynced,
   ]);
 
   // TOFIX: consider more types of error and display detailed error message in the future
@@ -398,7 +338,7 @@ function RepoImpl2({ id }) {
     return <NotFoundAlert error={loadError.message} />;
   }
 
-  if (loading || !repoLoaded) return <Box>Loading</Box>;
+  if (!repoLoaded || !providerSynced) return <Box>Loading</Box>;
 
   return (
     <RepoWrapper id={id}>
@@ -424,7 +364,6 @@ function RepoImpl() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const loadError = useStore(store, (state) => state.loadError);
-  const setSessionId = useStore(store, (state) => state.setSessionId);
   const repoLoaded = useStore(store, (state) => state.repoLoaded);
   const setUser = useStore(store, (state) => state.setUser);
   const provider = useStore(store, (state) => state.provider);
@@ -433,11 +372,6 @@ function RepoImpl() {
 
   const { loading, me } = useMe();
   const { hasToken } = useAuth();
-  useEffect(() => {
-    if (me) {
-      setSessionId(`${me.id}_${id}`);
-    }
-  }, [me, id, setSessionId]);
 
   useEffect(() => {
     if (provider) {
@@ -458,10 +392,14 @@ function RepoImpl() {
     }
   }, [addClient, deleteClient, provider]);
 
+  const apolloClient = useApolloClient();
+  const setApolloClient = useStore(store, (state) => state.setApolloClient);
+
   useEffect(() => {
     if (hasToken()) {
       if (!loading && me) {
         setUser(me);
+        setApolloClient(apolloClient);
       }
     }
   }, [loading, me]);
