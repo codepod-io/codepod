@@ -16,7 +16,7 @@ function collectSymbolTables(
   get: () => MyState
 ): Record<string, string> {
   const nodesMap = get().getNodesMap();
-  const nodes = Array.from(nodesMap);
+  const nodes = Array.from<Node>(nodesMap.values());
   const parseResult = get().parseResult;
   const node = nodesMap.get(id);
   if (!node) return {};
@@ -26,7 +26,9 @@ function collectSymbolTables(
   let allSymbolTables: Record<string, string>[] = [];
   // do this for all ancestor scopes.
   while (parentId) {
-    const siblings = nodes.filter((node) => node.parentNode === parentId);
+    const siblings = nodes
+      .filter((node) => node.parentNode === parentId)
+      .map((n) => n.id);
     const tables = siblings.map((sibId) => {
       // FIXME make this consistent, CODE, POD, DECK, SCOPE; use enums
       if (nodesMap.get(sibId)?.type === "CODE") {
@@ -390,7 +392,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
    */
   wsRun: async (id) => {
     const nodesMap = get().getNodesMap();
-    const nodes = Array.from(nodesMap);
+    const nodes = Array.from<Node>(nodesMap.values());
     if (!get().socket) {
       get().addError({
         type: "error",
@@ -409,7 +411,9 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
     } else if (node.type === "SCOPE") {
       // If this pod is a scope, run all pods inside a scope by geographical order.
       // get the pods in the scope
-      const children = nodes.filter((n) => n.parentNode === id);
+      const children = nodes
+        .filter((n) => n.parentNode === id)
+        .map((n) => n.id);
       if (!children) return;
       // Sort by x and y positions, with the leftmost and topmost first.
       children.sort((a, b) => {
