@@ -84,50 +84,33 @@ function Timer({ lastExecutedAt }) {
 }
 
 export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
-  const store = useContext(RepoContext)!;
-  const results = useStore(store, (state) => state.podResults[id]?.result);
-  const error = useStore(store, (state) => state.podResults[id]?.error);
-  const stdout = useStore(store, (state) => state.podResults[id]?.stdout);
-  const running = useStore(
-    store,
-    (state) => state.podResults[id]?.running || false
-  );
-  const exec_count = useStore(
-    store,
-    (state) => state.podResults[id]?.exec_count
-  );
-  const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
-  const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
-
-  const prevRunning = useRef(false);
-  useEffect(() => {
-    if (autoRunLayout) {
-      if (prevRunning.current != running) {
-        autoLayoutROOT();
-        prevRunning.current = running;
-      }
-    }
-  }, [running]);
-
-  const lastExecutedAt = useStore(
-    store,
-    (state) => state.podResults[id]?.lastExecutedAt
-  );
   const [showOutput, setShowOutput] = useState(true);
-  const hasResult = useStore(
-    store,
-    (state) =>
-      state.podResults[id]?.running ||
-      state.podResults[id]?.result ||
-      state.podResults[id]?.error ||
-      state.podResults[id]?.stdout ||
-      state.podResults[id]?.stderr
-  );
   const [resultScroll, setResultScroll] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+
+  const store = useContext(RepoContext)!;
+  // TODO run autolayout after result change.
+  // TODO run autolayout when pod size changes caused by content change.
+  const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
+  const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
   const clearResults = useStore(store, (state) => state.clearResults);
-  const result = results ? results[0] : undefined;
-  if (!hasResult) return <></>;
+  // monitor result change
+  // FIXME performance: would this trigger re-render of all pods?
+  const resultChanged = useStore(store, (state) => state.resultChanged[id]);
+  // This is a dummy useEffect to indicate resultChanged is used.
+  useEffect(() => {}, [resultChanged]);
+  const resultMap = useStore(store, (state) => state.getResultMap());
+  const result = resultMap.get(id);
+  if (!result) {
+    return null;
+  }
+  const results = result.data;
+  const error = result.error;
+  const running = result.running;
+  const exec_count = result.exec_count;
+
+  const lastExecutedAt = result.lastExecutedAt;
+
   return (
     <Box
       onMouseEnter={() => setShowMenu(true)}
@@ -159,56 +142,42 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
         cursor: "auto",
       }}
     >
-      {result && (
-        <Box sx={{ display: "flex", flexDirection: "column" }}>
-          {result.html ? (
-            <div dangerouslySetInnerHTML={{ __html: result.html }}></div>
-          ) : (
-            <>
-              {lastExecutedAt && !error && (
-                <Box
-                  color="rgb(0, 183, 87)"
-                  sx={{
-                    padding: "6px",
-                    zIndex: 200,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      fontWeight: 500,
-                      position: "absolute",
-                      padding: "0 5px",
-                      backgroundColor: "rgb(255, 255, 255)",
-                      top: "-13.5px",
-                      left: "15px",
-                      height: "15px",
-                      borderWidth: "1px",
-                      borderStyle: "solid",
-                      borderColor:
-                        "rgb(214, 222, 230) rgb(214, 222, 230) rgb(255, 255, 255)",
-                      borderImage: "initial",
-                      borderTopLeftRadius: "20px",
-                      borderTopRightRadius: "20px",
-                      // FIXME: Why not a complete oval?
-                      // borderBottomLeftRadius: "20px",
-                      // borderBottomRightRadius: "20px",
-                      display: "flex",
-                      fontSize: "0.8em",
-                    }}
-                  >
-                    <CheckCircleIcon
-                      style={{ marginTop: "5px" }}
-                      fontSize="inherit"
-                    />{" "}
-                    <Timer lastExecutedAt={lastExecutedAt} />
-                  </Box>
-                </Box>
-              )}
-            </>
-          )}
+      {lastExecutedAt && !error && (
+        <Box
+          color="rgb(0, 183, 87)"
+          sx={{
+            padding: "6px",
+            zIndex: 200,
+          }}
+        >
+          <Box
+            sx={{
+              fontWeight: 500,
+              position: "absolute",
+              padding: "0 5px",
+              backgroundColor: "rgb(255, 255, 255)",
+              top: "-13.5px",
+              left: "15px",
+              height: "15px",
+              borderWidth: "1px",
+              borderStyle: "solid",
+              borderColor:
+                "rgb(214, 222, 230) rgb(214, 222, 230) rgb(255, 255, 255)",
+              borderImage: "initial",
+              borderTopLeftRadius: "20px",
+              borderTopRightRadius: "20px",
+              // FIXME: Why not a complete oval?
+              // borderBottomLeftRadius: "20px",
+              // borderBottomRightRadius: "20px",
+              display: "flex",
+              fontSize: "0.8em",
+            }}
+          >
+            <CheckCircleIcon style={{ marginTop: "5px" }} fontSize="small" />{" "}
+            <Timer lastExecutedAt={lastExecutedAt} />
+          </Box>
         </Box>
       )}
-
       {running && <CircularProgress />}
       {showOutput ? (
         <Box
@@ -217,7 +186,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
           maxHeight="1000px"
           border="1px"
         >
-          {(stdout || exec_count || error) && showMenu && (
+          {(exec_count || error) && showMenu && (
             <ButtonGroup
               sx={{
                 // border: '1px solid #757ce8',
@@ -274,14 +243,19 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
             </ButtonGroup>
           )}
 
-          {stdout && (
+          {exec_count && (
             <Box
-              whiteSpace="pre-wrap"
-              sx={{ fontSize: "0.8em", paddingBottom: 1 }}
+              sx={{
+                color: "#8b8282",
+                textAlign: "left",
+                paddingLeft: "5px",
+                fontSize: "12px",
+              }}
             >
-              <Ansi>{stdout}</Ansi>
+              [{exec_count}]
             </Box>
           )}
+
           {results && results.length > 0 && (
             <Box
               sx={{
@@ -318,6 +292,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                       </Box>
                     );
                   case "display_data":
+                    // TODO html results
                     return (
                       <Box
                         component="pre"
@@ -347,19 +322,8 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                         {res.text}
                       </Box>
                     );
-                  case "execute_reply":
-                    if (i == 0) {
-                      return (
-                        <Box
-                          component="pre"
-                          whiteSpace="pre-wrap"
-                          key={combinedKey}
-                          sx={{ fontSize: "0.8em", margin: 0, padding: 0 }}
-                        >
-                          {res.text}
-                        </Box>
-                      );
-                    }
+                  default:
+                    return <Box key="unknown">[WARN] Unknown Result</Box>;
                 }
               })}
             </Box>
@@ -419,8 +383,8 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
   const reactFlowInstance = useReactFlow();
   const devMode = useStore(store, (state) => state.devMode);
   // const pod = useStore(store, (state) => state.pods[id]);
-  const wsRun = useStore(store, (state) => state.wsRun);
-  const wsRunChain = useStore(store, (state) => state.wsRunChain);
+  const yjsRun = useStore(store, (state) => state.yjsRun);
+  const yjsRunChain = useStore(store, (state) => state.yjsRunChain);
   // right, bottom
   const isGuest = useStore(store, (state) => state.role === "GUEST");
 
@@ -446,7 +410,7 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
         <Tooltip title="Run (shift-enter)">
           <IconButton
             onClick={() => {
-              wsRun(id);
+              yjsRun(id);
             }}
           >
             <PlayCircleOutlineIcon style={{ fontSize: iconFontSize }} />
@@ -457,7 +421,7 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
         <Tooltip title="Run chain">
           <IconButton
             onClick={() => {
-              wsRunChain(id);
+              yjsRunChain(id);
             }}
           >
             <KeyboardDoubleArrowRightIcon style={{ fontSize: iconFontSize }} />
@@ -523,15 +487,10 @@ export const CodeNode = memo<NodeProps>(function ({
     };
   }, shallow);
   const isGuest = useStore(store, (state) => state.role === "GUEST");
-  const cursorNode = useStore(store, (state) => state.cursorNode);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const inputRef = useRef<HTMLInputElement>(null);
   const updateView = useStore(store, (state) => state.updateView);
-  const exec_count = useStore(
-    store,
-    (state) => state.podResults[id]?.exec_count || " "
-  );
 
   const nodesMap = useStore(store, (state) => state.getNodesMap());
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
@@ -549,14 +508,6 @@ export const CodeNode = memo<NodeProps>(function ({
       }
     }
   }, [layout]);
-
-  useEffect(() => {
-    if (cursorNode === id) {
-      setShowToolbar(true);
-    } else {
-      setShowToolbar(false);
-    }
-  }, [cursorNode]);
 
   const onResizeStop = useCallback(
     (e, data) => {
@@ -805,16 +756,6 @@ export const CodeNode = memo<NodeProps>(function ({
                     },
                   }}
                 ></InputBase>
-              </Box>
-              <Box
-                sx={{
-                  color: "#8b8282",
-                  textAlign: "left",
-                  paddingLeft: "5px",
-                  fontSize: "12px",
-                }}
-              >
-                [{exec_count}]
               </Box>
               <Box
                 sx={{

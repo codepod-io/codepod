@@ -24,6 +24,7 @@ import debounce from "lodash/debounce";
 
 import prisma from "./client";
 import { dbtype2nodetype, json2yxml } from "./yjs-utils";
+import { setupObserversToRuntime } from "./yjs-runtime";
 
 const debounceRegistry = new Map<string, any>();
 /**
@@ -40,9 +41,11 @@ function getDebouncedCallback(key) {
           console.log("debounced callback for", key);
           cb();
         },
-        1000,
+        // write if no new activity in 10s
+        10000,
         {
-          maxWait: 2000,
+          // write at least every 20s
+          maxWait: 20000,
         }
       )
     );
@@ -152,6 +155,7 @@ export async function bindState(doc: Y.Doc, repoId: string) {
   await loadFromDB(doc, repoId);
   // Observe changes and write to the database.
   setupObserversToDB(doc, repoId);
+  setupObserversToRuntime(doc, repoId);
 }
 
 export function writeState() {

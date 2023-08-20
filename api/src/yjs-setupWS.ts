@@ -196,6 +196,8 @@ const messageListener = (conn, doc, message, readOnly) => {
   }
 };
 
+const scheduledDelete = new Map();
+
 /**
  * @param {WSSharedDoc} doc
  * @param {any} conn
@@ -216,9 +218,18 @@ const closeConn = (doc, conn) => {
     console.log("=== closeConn, renaming conn size", doc.conns.size);
     if (doc.conns.size === 0) {
       writeState();
-      console.log("=== Destroying ydoc", doc.name);
-      doc.destroy();
-      docs.delete(doc.name);
+      console.log("=== scheduled to destroy ydoc", doc.name, "in 3 seconds");
+      // schedule to destroy the document if no new connections are made within 30 seconds
+      if (scheduledDelete.has(doc.name)) throw new Error("should not happen");
+      scheduledDelete.set(
+        doc.name,
+        setTimeout(() => {
+          console.log("=== Destroy ydoc", doc.name);
+          doc.destroy();
+          docs.delete(doc.name);
+          scheduledDelete.delete(doc.name);
+        }, 30000)
+      );
     }
   }
   conn.close();
@@ -263,8 +274,13 @@ export const setupWSConnection = async (
   conn.binaryType = "arraybuffer";
   console.log(`setupWSConnection ${docName}, read-only=${readOnly}`);
   // get doc, initialize if it does not exist yet
-  const { doc, docLoadedPromise } = await getYDoc(docName, gc);
+  const { doc, docLoadedPromise } = getYDoc(docName, gc);
   doc.conns.set(conn, new Set());
+  if (scheduledDelete.has(doc.name)) {
+    console.log("=== cancel previous scheduled destroy ydoc", doc.name);
+    clearTimeout(scheduledDelete.get(doc.name));
+    scheduledDelete.delete(doc.name);
+  }
 
   // It might take some time to load the doc, but before then we still need to
   // listen for websocket events, Ref:

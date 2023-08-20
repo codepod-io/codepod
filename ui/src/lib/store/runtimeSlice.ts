@@ -3,6 +3,7 @@ import { ApolloClient, gql } from "@apollo/client";
 import { createStore, StateCreator, StoreApi } from "zustand";
 
 import { Edge, Node } from "reactflow";
+import * as Y from "yjs";
 
 // FIXME cyclic import
 import { MyState } from ".";
@@ -16,7 +17,7 @@ function collectSymbolTables(
   get: () => MyState
 ): Record<string, string> {
   const nodesMap = get().getNodesMap();
-  const nodes = Array.from(nodesMap);
+  const nodes = Array.from<Node>(nodesMap.values());
   const parseResult = get().parseResult;
   const node = nodesMap.get(id);
   if (!node) return {};
@@ -26,7 +27,9 @@ function collectSymbolTables(
   let allSymbolTables: Record<string, string>[] = [];
   // do this for all ancestor scopes.
   while (parentId) {
-    const siblings = nodes.filter((node) => node.parentNode === parentId);
+    const siblings = nodes
+      .filter((node) => node.parentNode === parentId)
+      .map((n) => n.id);
     const tables = siblings.map((sibId) => {
       // FIXME make this consistent, CODE, POD, DECK, SCOPE; use enums
       if (nodesMap.get(sibId)?.type === "CODE") {
@@ -150,85 +153,36 @@ function rewriteCode(id: string, get: () => MyState): string | null {
   return newcode;
 }
 
-async function spawnRuntime(client, sessionId: string) {
-  // load from remote
-  let res = await client.mutate({
-    mutation: gql`
-      mutation spawnRuntime($sessionId: String!) {
-        spawnRuntime(sessionId: $sessionId)
-      }
-    `,
-    variables: {
-      sessionId,
-    },
-    // refetchQueries with array of strings are known not to work in many
-    // situations, ref:
-    // https://lightrun.com/answers/apollographql-apollo-client-refetchqueries-not-working-when-using-string-array-after-mutation
-    //
-    // refetchQueries: ["listAllRuntimes"],
-    refetchQueries: ["ListAllRuntimes", "GetRuntimeInfo"],
-  });
-  if (res.errors) {
-    throw Error(
-      `Error: ${
-        res.errors[0].message
-      }\n ${res.errors[0].extensions.exception.stacktrace.join("\n")}`
-    );
-  }
-  return res.data.spawnRuntime;
-}
+export type RuntimeInfo = {
+  status?: string;
+  wsStatus?: string;
+};
 
-async function killRuntime(client, sessionId) {
-  let res = await client.mutate({
-    mutation: gql`
-      mutation killRuntime($sessionId: String!) {
-        killRuntime(sessionId: $sessionId)
-      }
-    `,
-    variables: {
-      sessionId,
-    },
-    refetchQueries: ["ListAllRuntimes", "GetRuntimeInfo"],
-  });
-  if (res.errors) {
-    throw Error(
-      `Error: ${
-        res.errors[0].message
-      }\n ${res.errors[0].extensions.exception.stacktrace.join("\n")}`
-    );
-  }
-  return res.data.killRuntime;
-}
+type PodResult = {
+  exec_count?: number;
+  last_exec_end?: boolean;
+  data: {
+    type: string;
+    html?: string;
+    text?: string;
+    image?: string;
+  }[];
+  running?: boolean;
+  lastExecutedAt?: Date;
+  error?: { ename: string; evalue: string; stacktrace: string[] } | null;
+};
 
 export interface RuntimeSlice {
-  sessionId: string | null;
-  // From source pod id to target pod id.
-  setSessionId: (sessionId: string) => void;
-  runtimeConnecting: boolean;
-  runtimeConnected: boolean;
-  kernels: Record<string, { status: string | null }>;
-  // queueProcessing: boolean;
-  socket: WebSocket | null;
-  socketIntervalId: number | null;
-  wsConnect: (client, sessionId) => void;
-  wsDisconnect: () => void;
-  restartRuntime: (client: ApolloClient<any>, sessionId: string) => void;
-  wsRequestStatus: ({ lang }) => void;
+  apolloClient?: ApolloClient<any>;
+  setApolloClient: (client: ApolloClient<any>) => void;
+
   parsePod: (id: string) => void;
   parseAllPods: () => void;
   resolvePod: (id) => void;
   resolveAllPods: () => void;
-  runningId: string | null;
-  wsRun: (id: string) => void;
-  wsRunScope: (id: string) => void;
-  wsSendRun: (id: string) => void;
-  wsRunNext: () => void;
-  chain: string[];
-  wsRunChain: (id: string) => void;
-  wsInterruptKernel: ({ lang }) => void;
+  yjsRun: (id: string) => void;
+  yjsRunChain: (id: string) => void;
   clearResults: (id) => void;
-  clearAllResults: () => void;
-  ensureResult(id: string): void;
   setRunning: (id) => void;
   parseResult: Record<
     string,
@@ -239,35 +193,33 @@ export interface RuntimeSlice {
       annotations: Annotation[];
     }
   >;
+  getRuntimeMap(): Y.Map<RuntimeInfo>;
+  getResultMap(): Y.Map<PodResult>;
+  activeRuntime?: string;
+  setActiveRuntime(id: string): void;
+  yjsSendRun(ids: string[]): void;
+  isRuntimeReady(): boolean;
 }
 
 export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
   set,
   get
 ) => ({
+  apolloClient: undefined,
+  setApolloClient: (client) => set({ apolloClient: client }),
   parseResult: {},
-  sessionId: null,
-  setSessionId: (id) => set({ sessionId: id }),
-  kernels: {
-    python: {
-      status: null,
-    },
+
+  // new yjs-based runtime
+  getRuntimeMap() {
+    return get().ydoc.getMap("rootMap").get("runtimeMap") as Y.Map<RuntimeInfo>;
   },
-  runtimeConnecting: false,
-  runtimeConnected: false,
-  socket: null,
-  socketIntervalId: null,
-  wsConnect: wsConnect(set, get),
-  wsDisconnect: () => {
-    get().socket?.close();
+  getResultMap() {
+    return get().ydoc.getMap("rootMap").get("resultMap") as Y.Map<PodResult>;
   },
-  restartRuntime: async (client, sessionId) => {
-    console.log("killing runtime ..");
-    await killRuntime(client, sessionId);
-    console.log("runtime killed, spawning new one ..");
-    get().wsConnect(client, sessionId);
+  activeRuntime: undefined,
+  setActiveRuntime(id: string) {
+    set({ activeRuntime: id });
   },
-  wsRequestStatus: wsRequestStatus(set, get),
   /**
    * Parse the code for defined variables and functions.
    * @param id paod
@@ -335,123 +287,89 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       if (node.type === "CODE") get().resolvePod(node.id);
     });
   },
-  // This runningId is a unique pod id indicating which pod is being run. The
-  // state.pods[id].running is a indicator of the pod in the chain that is
-  // scheduled to run.
-  runningId: null,
-  /**
-   * Actually send the run request.
-   */
-  wsSendRun: async (id) => {
-    if (get().runningId !== null) {
-      // This should never happen: there shouldn't be another pod running.
+  isRuntimeReady() {
+    const runtimeMap = get().getRuntimeMap();
+    const activeRuntime = get().activeRuntime;
+    if (!activeRuntime) {
       get().addError({
         type: "error",
-        msg: "Another pod is running",
+        msg: "No active runtime",
       });
-      return;
+      return false;
     }
-    if (!get().socket) {
+    const runtime = runtimeMap.get(activeRuntime);
+    if (runtime?.wsStatus !== "connected") {
       get().addError({
         type: "error",
         msg: "Runtime not connected",
       });
-      return;
+      return false;
     }
-    // Set this pod as running.
-    set({ runningId: id });
-    // Actually send the run request.
-    // Analyze code and set symbol table
-    get().parsePod(id);
-    // update anontations according to st
-    get().resolvePod(id);
-    // rewrite the code
-    const newcode = rewriteCode(id, get);
-
-    // Run the code in remote kernel.
-    get().setRunning(id);
-    get().socket?.send(
-      JSON.stringify({
-        type: "runCode",
-        payload: {
-          lang: "python",
-          code: newcode,
-          raw: true,
-          podId: id,
-          sessionId: get().sessionId,
-        },
-      })
-    );
+    return true;
   },
-  // All pods are added to the chain before executing.
-  chain: [],
-  /**
-   * Add a pod to the chain and run it.
-   */
-  wsRun: async (id) => {
-    const nodesMap = get().getNodesMap();
-    const nodes = Array.from(nodesMap);
-    if (!get().socket) {
-      get().addError({
-        type: "error",
-        msg: "Runtime not connected",
+  yjsSendRun(ids) {
+    const activeRuntime = get().activeRuntime!;
+    let specs = ids.map((id) => {
+      // Actually send the run request.
+      // Analyze code and set symbol table
+      get().parsePod(id);
+      // update anontations according to st
+      get().resolvePod(id);
+      const newcode = rewriteCode(id, get);
+      return { podId: id, code: newcode };
+    });
+    // FIXME there's no control over duplicate runnings. This causes two
+    // problems:
+    // 1. if you click fast enough, you will see multiple results.
+    // 2. if a pod takes time to run, it will be shown completed after first run
+    //    finishes, but second run results could keep come after that.
+
+    // const resultMap = get().getResultMap();
+    // if (resultMap.get(id)?.running) {
+    //   console.warn(`Pod ${id} is already running.`);
+    //   return;
+    // }
+    specs = specs.filter(({ podId, code }) => {
+      if (code) {
+        get().clearResults(podId);
+        get().setRunning(podId);
+        return true;
+      }
+      return false;
+    });
+    if (specs) {
+      get().apolloClient?.mutate({
+        mutation: gql`
+          mutation RunChain($specs: [RunSpecInput], $runtimeId: String) {
+            runChain(specs: $specs, runtimeId: $runtimeId)
+          }
+        `,
+        variables: {
+          runtimeId: activeRuntime,
+          specs,
+        },
       });
-      return;
     }
+  },
+  yjsRun: (id) => {
+    if (!get().isRuntimeReady()) return;
+    const nodesMap = get().getNodesMap();
+    const nodes = Array.from<Node>(nodesMap.values());
     const node = nodesMap.get(id);
     if (!node) return;
-    // If this pod is a code pod, add it.
-    if (node.type === "CODE") {
-      // Add to the chain
-      get().clearResults(id);
-      get().setRunning(id);
-      set({ chain: [...get().chain, id] });
-    } else if (node.type === "SCOPE") {
-      // If this pod is a scope, run all pods inside a scope by geographical order.
-      // get the pods in the scope
-      const children = nodes.filter((n) => n.parentNode === id);
-      if (!children) return;
-      // Sort by x and y positions, with the leftmost and topmost first.
-      children.sort((a, b) => {
-        let nodeA = nodesMap.get(a);
-        let nodeB = nodesMap.get(b);
-        if (nodeA && nodeB) {
-          if (nodeA.position.y === nodeB.position.y) {
-            return nodeA.position.x - nodeB.position.x;
-          } else {
-            return nodeA.position.y - nodeB.position.y;
-          }
-        } else {
-          return 0;
-        }
-      });
-      // add to the chain
-      // set({ chain: [...get().chain, ...children.map(({ id }) => id)] });
-      children.forEach((id) => get().wsRun(id));
-    }
-    get().wsRunNext();
-  },
-  wsRunScope: async (id) => {
-    // This is a separate function only because we need to build the node2children map first.
-    // DEPRECATED. node2children is removed.
-    get().wsRun(id);
+    const chain = getDescendants(node, nodes);
+    get().yjsSendRun(chain);
   },
   /**
    * Add the pod and all its downstream pods (defined by edges) to the chain and run the chain.
    * @param id the id of the pod to start the chain
    * @returns
    */
-  wsRunChain: async (id) => {
-    if (!get().socket) {
-      get().addError({
-        type: "error",
-        msg: "Runtime not connected",
-      });
-      return;
-    }
+  yjsRunChain: async (id) => {
+    if (!get().isRuntimeReady()) return;
     // Get the chain: get the edges, and then get the pods
     const edgesMap = get().getEdgesMap();
-    let edges = Array.from(edgesMap.values());
+    let edges = Array.from<Edge>(edgesMap.values());
     // build a node2target map
     let node2target = {};
     edges.forEach(({ source, target }) => {
@@ -460,285 +378,46 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
     });
     // Get the chain
     let chain: string[] = [];
-    let node = id;
-    while (node) {
-      // if the node is already in the chain, then there is a loop
-      if (chain.includes(node)) break;
-      get().clearResults(node);
-      get().setRunning(node);
-      chain.push(node);
-      node = node2target[node];
+    let nodeid = id;
+    while (nodeid) {
+      // if the nodeid is already in the chain, then there is a loop
+      if (chain.includes(nodeid)) break;
+      chain.push(nodeid);
+      nodeid = node2target[nodeid];
     }
-    set({ chain });
-    get().wsRunNext();
-  },
-  wsRunNext: async () => {
-    const codeMap = get().getCodeMap();
-    // run the next pod in the chain
-    if (get().runningId !== null) return;
-    if (get().chain.length > 0) {
-      // Run the first pod in the chain
-      let chain = get().chain;
-      let id = chain[0];
-      console.log("running", id, "remaining number of pods:", chain.length - 1);
-      // remove the first element
-      set({ chain: chain.slice(1) });
-      // If the pod is empty, the kernel won't reply. So, we need to skip it.
-      if (
-        codeMap.get(id)?.toString() === undefined ||
-        codeMap.get(id)?.toString() === ""
-      ) {
-        get().ensureResult(id);
-        set(
-          produce((state: MyState) => {
-            state.podResults[id].running = false;
-          })
-        );
-      } else {
-        get().wsSendRun(id);
-      }
-    }
-  },
-  wsInterruptKernel: ({ lang }) => {
-    get().socket!.send(
-      JSON.stringify({
-        type: "interruptKernel",
-        payload: {
-          sessionId: get().sessionId,
-          lang,
-        },
-      })
-    );
+    get().yjsSendRun(chain);
   },
   clearResults: (id) => {
-    set(
-      produce((state: MyState) => {
-        state.podResults[id] = {
-          result: [],
-        };
-      })
-    );
-  },
-  ensureResult(id) {
-    if (id in get().podResults) return;
-    get().clearResults(id);
-  },
-  clearAllResults: () => {
-    const nodesMap = get().getNodesMap();
-    const nodes = Array.from(nodesMap);
-    nodes.forEach(({ id }) => get().clearResults(id));
+    const resultMap = get().getResultMap();
+    resultMap.delete(id);
   },
   setRunning: (id) => {
-    get().ensureResult(id);
     set(
       produce((state: MyState) => {
-        state.podResults[id].running = true;
+        const resultMap = get().getResultMap();
+        resultMap.set(id, { running: true, data: [] });
       })
     );
   },
 });
 
-let _ws_timeout = 1000;
-let _max_ws_timeout = 10000;
-
-function wsConnect(set, get: () => MyState) {
-  return async (client, sessionId) => {
-    if (get().runtimeConnecting) return;
-    if (get().runtimeConnected) return;
-    console.log(`connecting to runtime ${sessionId} ..`);
-    set({ runtimeConnecting: true });
-
-    // 0. ensure the runtime is created
-    let runtimeCreated = await spawnRuntime(client, sessionId);
-    if (!runtimeCreated) {
-      throw Error("ERROR: runtime not ready");
-    }
-    // 1. get the socket
-    // FIXME socket should be disconnected when leaving the repo page.
-    if (get().socket !== null) {
-      throw new Error("socket already connected");
-    }
-    // reset kernel status
-    set({
-      kernels: {
-        python: {
-          status: null,
-        },
-      },
-    });
-
-    // connect to the remote host
-    // socket = new WebSocket(action.host);
-    //
-    // I canont use "/ws" for a WS socket. Thus I need to detect what's the
-    // protocol used here, so that it supports both dev and prod env.
-    let socket_url;
-    if (window.location.protocol === "http:") {
-      socket_url = `ws://${window.location.host}/runtime/${sessionId}`;
-    } else {
-      socket_url = `wss://${window.location.host}/runtime/${sessionId}`;
-    }
-    console.log("connecting to websocket ..");
-    let socket = new WebSocket(socket_url);
-    // Set timeout.
-    console.log(`Setting ${_ws_timeout} ms timeout.`);
-    setTimeout(() => {
-      if (get().runtimeConnecting) {
-        console.log(`Websocket timed out, but still connecting. Reset socket.`);
-        socket.close();
-        set({ runtimeConnecting: false });
-        _ws_timeout = Math.min(_ws_timeout * 2, _max_ws_timeout);
+/**
+ * Get all code pods inside a scope by geographical order.
+ */
+function getDescendants(node: Node, nodes: Node[]): string[] {
+  if (node.type === "CODE") return [node.id];
+  if (node.type === "SCOPE") {
+    let children = nodes.filter((n) => n.parentNode === node.id);
+    children.sort((a, b) => {
+      if (a.position.y === b.position.y) {
+        return a.position.x - b.position.x;
+      } else {
+        return a.position.y - b.position.y;
       }
-    }, _ws_timeout);
-
-    // socket.emit("spawn", state.sessionId, lang);
-
-    // If the mqAddress is not supplied, use the websocket
-    socket.onmessage = onMessage(set, get);
-
-    // well, since it is already opened, this won't be called
-    //
-    // UPDATE it works, this will be called even after connection
-
-    socket.onopen = () => {
-      console.log("runtime connected");
-      // reset timeout
-      _ws_timeout = 1000;
-      set({ runtimeConnected: true });
-      set({ runtimeConnecting: false });
-      set({ socket });
-      // call connect kernel
-
-      // request kernel status after connection
-      Object.keys(get().kernels).forEach((k) => {
-        get().wsRequestStatus({
-          lang: k,
-        });
-      });
-    };
-    // so I'm setting this
-    // Well, I should probably not dispatch action inside another action
-    // (even though it is in a middleware)
-    //
-    // I probably can dispatch the action inside the middleware, because
-    // this is not a dispatch. It will not modify the store.
-    //
-    // store.dispatch(actions.wsConnected());
-    socket.onclose = () => {
-      console.log("Disconnected ..");
-      set({ runtimeConnected: false });
-      set({ runtimeConnecting: false });
-      set({ socket: null });
-    };
-  };
-}
-
-function onMessage(set, get: () => MyState) {
-  return (msg) => {
-    // console.log("onMessage", msg.data || msg.body || undefined);
-    // msg.data for websocket
-    // msg.body for rabbitmq
-    let { type, payload } = JSON.parse(msg.data || msg.body || undefined);
-    console.debug("got message", type, payload);
-    switch (type) {
-      case "output":
-        console.log("output:", payload);
-        break;
-      case "stdout":
-        {
-          let { podId, stdout } = payload;
-          get().setPodStdout({ id: podId, stdout });
-        }
-        break;
-      case "stream":
-        {
-          let { podId, content } = payload;
-          get().setPodResult({
-            id: podId,
-            type,
-            content,
-            count: null,
-          });
-        }
-        break;
-      case "execute_result":
-        {
-          let { podId, content, count } = payload;
-          get().setPodResult({
-            id: podId,
-            type,
-            content,
-            count,
-          });
-        }
-        break;
-      case "display_data":
-        {
-          let { podId, content } = payload;
-          get().setPodResult({
-            id: podId,
-            type,
-            content,
-            count: null,
-          });
-        }
-        break;
-      case "execute_reply":
-        {
-          let { podId, result, count } = payload;
-          get().setPodResult({
-            id: podId,
-            type,
-            content: result,
-            count,
-          });
-          set({ runningId: null });
-          // Continue to run the chain if there is any.
-          get().wsRunNext();
-        }
-        break;
-      case "error":
-        {
-          let { podId, ename, evalue, stacktrace } = payload;
-          get().setPodError({ id: podId, ename, evalue, stacktrace });
-        }
-        break;
-      case "status":
-        {
-          const { lang, status, id } = payload;
-          get().setPodStatus({ id, lang, status });
-        }
-        break;
-      case "interrupt_reply":
-        // console.log("got interrupt_reply", payload);
-        get().wsRequestStatus({ lang: payload.lang });
-        break;
-      default:
-        console.log("WARNING unhandled message", { type, payload });
-    }
-  };
-}
-
-function wsRequestStatus(set, get) {
-  return ({ lang }) => {
-    if (get().socket) {
-      // set to unknown
-      set(
-        produce((state: MyState) => {
-          state.kernels[lang].status = null;
-        })
-      );
-      get().socket?.send(
-        JSON.stringify({
-          type: "requestKernelStatus",
-          payload: {
-            sessionId: get().sessionId,
-            lang,
-          },
-        })
-      );
-    } else {
-      console.log("ERROR: not connected");
-    }
-  };
+    });
+    return ([] as string[]).concat(
+      ...children.map((n) => getDescendants(n, nodes))
+    );
+  }
+  return [];
 }

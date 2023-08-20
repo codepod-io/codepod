@@ -394,11 +394,9 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const readOnly = useStore(store, (state) => state.role === "GUEST");
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
-  const clearResults = useStore(store, (s) => s.clearResults);
-  const wsRun = useStore(store, (state) => state.wsRun);
+  const yjsRun = useStore(store, (state) => state.yjsRun);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
-  const setCursorNode = useStore(store, (state) => state.setCursorNode);
   const annotations = useStore(
     store,
     (state) => state.parseResult[id]?.annotations
@@ -485,8 +483,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       label: "Run",
       keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
       run: () => {
-        clearResults(id);
-        wsRun(id);
+        yjsRun(id);
       },
     });
     editor.addAction({
@@ -496,8 +493,8 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       run: () => {
         if (document.activeElement) {
           (document.activeElement as any).blur();
-          setCursorNode(id);
           setFocusedEditor(undefined);
+          resetSelection();
           selectPod(id, true);
         }
       },

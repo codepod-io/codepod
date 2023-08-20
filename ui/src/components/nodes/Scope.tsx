@@ -60,7 +60,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const reactFlowInstance = useReactFlow();
   const isGuest = useStore(store, (state) => state.role === "GUEST");
-  const wsRunScope = useStore(store, (state) => state.wsRunScope);
+  const yjsRun = useStore(store, (state) => state.yjsRun);
 
   const autoLayout = useStore(store, (state) => state.autoLayout);
 
@@ -89,7 +89,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
         <Tooltip title="Run (shift-enter)">
           <IconButton
             onClick={() => {
-              wsRunScope(id);
+              yjsRun(id);
             }}
           >
             <PlayCircleOutlineIcon style={{ fontSize: iconFontSize }} />
@@ -160,7 +160,6 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const devMode = useStore(store, (state) => state.devMode);
-  const cursorNode = useStore(store, (state) => state.cursorNode);
 
   useEffect(() => {
     if (!data.name) return;
@@ -171,14 +170,6 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   }, [data.name, id, setPodName]);
 
   const [showToolbar, setShowToolbar] = useState(false);
-
-  useEffect(() => {
-    if (cursorNode === id) {
-      setShowToolbar(true);
-    } else {
-      setShowToolbar(false);
-    }
-  }, [cursorNode]);
 
   const { width, height, parent } = useReactFlowStore((s) => {
     const node = s.nodeInternals.get(id)!;

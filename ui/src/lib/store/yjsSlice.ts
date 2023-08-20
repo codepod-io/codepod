@@ -8,6 +8,7 @@ import { monaco } from "react-monaco-editor";
 import { IndexeddbPersistence } from "y-indexeddb";
 
 import { Doc, Transaction } from "yjs";
+import * as Y from "yjs";
 import { WebsocketProvider } from "../utils/y-websocket";
 import { createRuntimeSlice, RuntimeSlice } from "./runtimeSlice";
 import { ApolloClient } from "@apollo/client";
@@ -75,6 +76,12 @@ export interface YjsSlice {
   // The status of the uploading and syncing of actual Y.Doc.
   yjsSyncStatus?: string;
   setYjsSyncStatus: (status: string) => void;
+  providerSynced: boolean;
+  setProviderSynced: (synced: boolean) => void;
+  runtimeChanged: boolean;
+  toggleRuntimeChanged: () => void;
+  resultChanged: Record<string, boolean>;
+  toggleResultChanged: (id: string) => void;
 }
 
 export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
@@ -122,7 +129,19 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
   yjsConnecting: false,
   yjsStatus: undefined,
   yjsSyncStatus: undefined,
+  providerSynced: false,
+  setProviderSynced: (synced) => set({ providerSynced: synced }),
   setYjsSyncStatus: (status) => set({ yjsSyncStatus: status }),
+  runtimeChanged: false,
+  toggleRuntimeChanged: () =>
+    set((state) => ({ runtimeChanged: !state.runtimeChanged })),
+  resultChanged: {},
+  toggleResultChanged: (id) =>
+    set(
+      produce((state: MyState) => {
+        state.resultChanged[id] = !state.resultChanged[id];
+      })
+    ),
   connectYjs: () => {
     if (get().yjsConnecting) return;
     if (get().provider) return;
@@ -179,6 +198,43 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
     // });
     // max retry time: 10s
     provider.maxBackoffTime = 10000;
+    provider.once("synced", () => {
+      console.log("Provider synced, setting initial content ...");
+      get().adjustLevel();
+      get().updateView();
+      // Trigger initial results rendering.
+      const resultMap = get().getResultMap();
+      Array.from(resultMap.keys()).forEach((key) => {
+        get().toggleResultChanged(key);
+      });
+      // Set observers to trigger future results rendering.
+      resultMap.observe(
+        (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
+          // clearResults and setRunning is local change.
+          // if (transaction.local) return;
+          YMapEvent.changes.keys.forEach((change, key) => {
+            // refresh result for pod key
+            // FIXME performance on re-rendering: would it trigger re-rendering for all pods?
+            get().toggleResultChanged(key);
+          });
+        }
+      );
+      // Set active runtime to the first one.
+      const runtimeMap = get().getRuntimeMap();
+      if (runtimeMap.size > 0) {
+        get().setActiveRuntime(Array.from(runtimeMap.keys())[0]);
+      }
+      // Set up observers to trigger future runtime status changes.
+      runtimeMap.observe(
+        (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
+          // delete runtime is a local change.
+          // if (transaction.local) return;
+          get().toggleRuntimeChanged();
+        }
+      );
+      // Set synced flag to be used to ensure canvas rendering after yjs synced.
+      get().setProviderSynced(true);
+    });
     provider.connect();
     set(
       produce((state: MyState) => {
