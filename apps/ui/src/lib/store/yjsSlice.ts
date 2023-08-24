@@ -1,6 +1,6 @@
 import { createStore, StateCreator, StoreApi } from "zustand";
 import { devtools } from "zustand/middleware";
-import produce from "immer";
+import { produce } from "immer";
 import { createContext } from "react";
 import { MonacoCompletionProvider } from "../monacoCompletionProvider";
 import { monaco } from "react-monaco-editor";
@@ -15,7 +15,6 @@ import { ApolloClient } from "@apollo/client";
 import { addAwarenessStyle } from "../utils/utils";
 import { Annotation } from "../parser";
 import { MyState, Pod } from ".";
-import { v4 as uuidv4 } from "uuid";
 
 let serverURL;
 if (window.location.protocol === "http:") {
@@ -25,24 +24,11 @@ if (window.location.protocol === "http:") {
 }
 console.log("yjs server url: ", serverURL);
 
-const openTokenPage = () => {
-  const PROFILE_URL = "https://www.codeium.com/profile";
-  const params = new URLSearchParams({
-    response_type: "token",
-    redirect_uri: "chrome-show-auth-token",
-    scope: "openid profile email",
-    prompt: "login",
-    redirect_parameters_type: "query",
-    state: uuidv4(),
-  });
-  window.open(`${PROFILE_URL}?${params}`);
-};
-
 export async function registerUser(
   token: string
 ): Promise<{ api_key: string; name: string }> {
   const url = new URL("register_user/", "https://api.codeium.com");
-  const response = await fetch(url, {
+  const response = await fetch(url.toString(), {
     body: JSON.stringify({ firebase_id_token: token }),
     method: "POST",
     headers: {

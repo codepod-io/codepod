@@ -54,10 +54,7 @@ import { shallow } from "zustand/shallow";
 import { RepoContext } from "../../lib/store";
 
 import { MyMonaco } from "../MyMonaco";
-import { useApolloClient } from "@apollo/client";
-import { NodeResizeControl, NodeResizer } from "reactflow";
 
-import "@reactflow/node-resizer/dist/style.css";
 import { Handles, level2fontsize } from "./utils";
 import { timeDifference } from "../../lib/utils/utils";
 import { ButtonGroup } from "@mui/material";

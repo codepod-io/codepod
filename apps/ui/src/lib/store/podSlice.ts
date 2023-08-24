@@ -1,5 +1,5 @@
 import { createStore, StateCreator, StoreApi } from "zustand";
-import produce from "immer";
+import { produce } from "immer";
 
 import * as Y from "yjs";
 

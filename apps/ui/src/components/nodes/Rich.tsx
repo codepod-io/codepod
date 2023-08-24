@@ -117,7 +117,6 @@ import { InputRule } from "@remirror/pm";
 import { markInputRule } from "@remirror/core-utils";
 
 import { TableExtension } from "@remirror/extension-react-tables";
-import { GenIcon, IconBase } from "@remirror/react-components";
 import "remirror/styles/all.css";
 import { styled } from "@mui/material";
 

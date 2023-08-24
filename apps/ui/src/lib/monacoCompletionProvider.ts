@@ -225,7 +225,7 @@ export async function registerUser(
   token: string
 ): Promise<{ api_key: string; name: string; error?: any }> {
   const url = new URL("register_user/", "https://api.codeium.com");
-  const response = await fetch(url, {
+  const response = await fetch(url.toString(), {
     body: JSON.stringify({ firebase_id_token: token }),
     method: "POST",
     headers: {
