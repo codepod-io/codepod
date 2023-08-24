@@ -27,6 +27,8 @@ async function startServer() {
       const token = req?.headers?.authorization?.slice(7);
       let userId;
 
+      console.log("in context", token);
+
       if (token) {
         const decoded = jwt.verify(
           token,

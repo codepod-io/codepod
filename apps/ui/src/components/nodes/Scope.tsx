@@ -45,8 +45,6 @@ import { shallow } from "zustand/shallow";
 import { RepoContext } from "../../lib/store";
 
 import { NodeResizer, NodeResizeControl } from "reactflow";
-import "@reactflow/node-resizer/dist/style.css";
-import { ResizableBox } from "react-resizable";
 import {
   ConfirmDeleteButton,
   Handles,
