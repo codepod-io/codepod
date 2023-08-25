@@ -75,6 +75,22 @@ function getParams(nodeA, nodeB) {
   return [x, y, position];
 }
 
+export function sortNodes(nodeIds, nodesMap) {
+  nodeIds.sort((id1, id2) => {
+    const node1 = nodesMap.get(id1);
+    const node2 = nodesMap.get(id2);
+    if (node1 && node2) {
+      if (node1.position.y === node2.position.y) {
+        return node1.position.x - node2.position.x;
+      } else {
+        return node1.position.y - node2.position.y;
+      }
+    } else {
+      return 0;
+    }
+  });
+}
+
 function getHandleCoordsByPosition(node, handlePosition) {
   // all handles are from type source, that's why we use handleBounds.source here
   const handle = node[internalsSymbol].handleBounds.source.find(
