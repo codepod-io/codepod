@@ -43,6 +43,7 @@ import PlayDisabledIcon from "@mui/icons-material/PlayDisabled";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 
+import { CopyToClipboard } from "react-copy-to-clipboard";
 import { ResizableBox } from "react-resizable";
 import Ansi from "ansi-to-react";
 
@@ -52,7 +53,10 @@ import { shallow } from "zustand/shallow";
 import { RepoContext } from "../../lib/store";
 
 import { MyMonaco } from "../MyMonaco";
+import { useApolloClient } from "@apollo/client";
+import { NodeResizeControl, NodeResizer } from "reactflow";
 
+import "@reactflow/node-resizer/dist/style.css";
 import { Handles, level2fontsize } from "./utils";
 import { timeDifference } from "../../lib/utils/utils";
 import { ButtonGroup } from "@mui/material";
@@ -295,10 +299,15 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                         key={combinedKey}
                       >
                         {res.text}
-                        <img
-                          src={`data:image/png;base64,${res.image}`}
-                          alt="output"
-                        />
+                        {res.html && (
+                          <div dangerouslySetInnerHTML={{ __html: res.html }} />
+                        )}
+                        {res.image && (
+                          <img
+                            src={`data:image/png;base64,${res.image}`}
+                            alt="output"
+                          />
+                        )}
                       </Box>
                     );
                   case "execute_result":
@@ -315,6 +324,9 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
                         }}
                       >
                         {res.text}
+                        {res.html && (
+                          <div dangerouslySetInnerHTML={{ __html: res.html }} />
+                        )}
                       </Box>
                     );
                   default:

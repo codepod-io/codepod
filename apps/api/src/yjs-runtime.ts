@@ -88,6 +88,7 @@ export async function setupRuntimeSocket({
           oldresult.data.push({
             type,
             text: content.data["text/plain"],
+            html: content.data["text/html"],
           });
           resultMap.set(podId, oldresult);
         }
@@ -100,6 +101,7 @@ export async function setupRuntimeSocket({
             type,
             text: content.data["text/plain"],
             image: content.data["image/png"],
+            html: content.data["text/html"],
           });
           resultMap.set(podId, oldresult);
         }
