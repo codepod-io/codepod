@@ -336,7 +336,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
             </Box>
           )}
           {error && <Box color="red">{error?.evalue}</Box>}
-          {error?.stacktrace && (
+          {error?.stacktrace && error?.stacktrace.length > 0 && (
             <Box>
               <Box>StackTrace</Box>
               <Box whiteSpace="pre-wrap" sx={{ fontSize: "0.8em" }}>
