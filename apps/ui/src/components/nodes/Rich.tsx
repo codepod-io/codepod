@@ -9,10 +9,7 @@ import {
 } from "react";
 import * as React from "react";
 
-import Moveable from "react-moveable";
 import { ResizableBox } from "react-resizable";
-
-import { useApolloClient } from "@apollo/client";
 
 import { useStore } from "zustand";
 import { shallow } from "zustand/shallow";

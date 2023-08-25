@@ -5,7 +5,7 @@ import { createContext } from "react";
 import { MonacoCompletionProvider } from "../monacoCompletionProvider";
 import { monaco } from "react-monaco-editor";
 
-import { IndexeddbPersistence } from "y-indexeddb";
+// import { IndexeddbPersistence } from "y-indexeddb";
 
 import { Doc, Transaction } from "yjs";
 import * as Y from "yjs";

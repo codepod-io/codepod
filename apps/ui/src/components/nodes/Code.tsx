@@ -43,8 +43,6 @@ import PlayDisabledIcon from "@mui/icons-material/PlayDisabled";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 
-import { CopyToClipboard } from "react-copy-to-clipboard";
-import Moveable from "react-moveable";
 import { ResizableBox } from "react-resizable";
 import Ansi from "ansi-to-react";
 

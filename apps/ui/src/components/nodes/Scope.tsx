@@ -37,8 +37,6 @@ import ViewTimelineOutlinedIcon from "@mui/icons-material/ViewTimelineOutlined";
 import CompressIcon from "@mui/icons-material/Compress";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 
-import Moveable from "react-moveable";
-
 import { useStore } from "zustand";
 import { shallow } from "zustand/shallow";
 

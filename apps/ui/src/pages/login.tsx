@@ -104,11 +104,10 @@ export function GoogleSignin() {
 
   useEffect(() => {
     if (!scriptLoadedSuccessfully) return;
-    console.log("nodeenv", process.env.NODE_ENV);
-    let client_id =
-      process.env.NODE_ENV === "development"
-        ? process.env.REACT_APP_GOOGLE_CLIENT_ID
-        : window.GOOGLE_CLIENT_ID || null;
+    console.log("nodeenv mode", import.meta.env.MODE);
+    let client_id = import.meta.env.DEV
+      ? import.meta.env.VITE_APP_GOOGLE_CLIENT_ID
+      : window.GOOGLE_CLIENT_ID || null;
     console.log("google client_id", client_id);
     google.accounts.id.initialize({
       client_id,

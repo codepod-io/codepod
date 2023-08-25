@@ -8,11 +8,6 @@ import { MyState, Pod } from ".";
 
 import { produce } from "immer";
 
-import { useCallback, useEffect, useState, useContext } from "react";
-import { useStore } from "zustand";
-import { ApolloClient, useApolloClient, gql } from "@apollo/client";
-import { Transaction, YEvent } from "yjs";
-
 import { match, P } from "ts-pattern";
 
 import {
