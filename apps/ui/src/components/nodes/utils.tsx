@@ -512,7 +512,7 @@ export function level2fontsize(
 // Have to use React.forwardRef to allows <Tooltip> over this component. Ref:
 // https://mui.com/material-ui/guides/composition/#caveat-with-refs
 export const ConfirmDeleteButton = React.forwardRef(
-  ({ handleConfirm, ...props }: any) => {
+  ({ handleConfirm, ...props }: any, ref) => {
     const [open, setOpen] = useState(false);
     return (
       <Box>
