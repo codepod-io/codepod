@@ -1,34 +1,24 @@
-.App {
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
+@keyframes logo-spin {
   from {
     transform: rotate(0deg);
   }
@@ -37,117 +27,16 @@
   }
 }
 
-.myLineDecoration-modified {
-  background: lightblue;
-  width: 5px !important;
-  margin-left: 3px;
-}
-
-.myLineDecoration-add {
-  background: green;
-  width: 5px !important;
-  margin-left: 3px;
-}
-
-.myLineDecoration-delete {
-  background: red;
-  width: 5px !important;
-  margin-left: 3px;
-}
-
-.myDecoration-function {
-  background: yellow;
-}
-
-.myDecoration-callsite {
-  background: orange;
-}
-
-.myDecoration-vardef {
-  background: cyan;
-}
-
-.myDecoration-varuse {
-  background: rgb(221, 247, 255);
-}
-
-.my-underline {
-  text-decoration: wavy underline red;
-}
-
-.react-flow__node-SCOPE.active {
-  box-shadow: 2px 2px 2px 2px rgba(208, 2, 27, 1),
-    8px 8px 8px 8px rgba(218, 102, 123, 1);
-}
-
-.react-flow__node-SCOPE.selected {
-  box-shadow: 0px 0px 8px 0px rgba(100, 100, 100, 0.5);
-}
-
-.react-flow__node-SCOPE.selected {
-  border-width: 2px;
-}
-
-.react-flow__handle {
-  z-index: 100;
-}
-
-/* Remove the right scrollbar on Remirror. */
-.remirror-editor.ProseMirror {
-  overflow-y: hidden !important;
-}
-
-.mention {
-  background: #7963d266;
-  padding: 2px 4px;
-  border-radius: 4px;
-}
-
-.remirror-theme {
-  /* Provide sufficient space to see the popup */
-  --rmr-space-6: 400px;
-}
-.suggestions {
-  border: 1px solid darkgray;
-  border-radius: 4px;
-  background: white;
-  cursor: pointer;
-}
-.suggestion {
-  padding: 2px 8px;
-}
-.highlighted {
-  background: #7963d233;
-}
-.hovered {
-  background: #7963d222;
-}
-
-.react-flow__edges {
-  z-index: 9999 !important;
-}
-
-/* some scope nodes have z-index: 1000. This is set internally by reactflow, we
-have to force set the collapsed scope block (when contextual zoomed) to be above
-it, so that we can drag the block. */
-.react-flow__node:has(.scope-block) {
-  z-index: 1001 !important;
-}
-
-.global-drag-handle {
-  position: absolute;
-
-  &::after {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 1rem;
-    height: 1.25rem;
-    content: "⠿";
-    font-weight: 700;
-    cursor: grab;
-    background: #0d0d0d10;
-    color: #0d0d0d50;
-    border-radius: 0.25rem;
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
   }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
 }

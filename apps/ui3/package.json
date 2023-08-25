@@ -1,0 +1,137 @@
+{
+  "name": "codepod-ui",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@apollo/client": "^3.7.0",
+    "@benrbray/prosemirror-math": "^0.2.2",
+    "@bufbuild/buf": "^1.21.0-1",
+    "@bufbuild/connect": "^0.9.1",
+    "@bufbuild/connect-web": "^0.9.1",
+    "@bufbuild/protobuf": "^1.2.1",
+    "@bufbuild/protoc-gen-connect-es": "^0.9.1",
+    "@bufbuild/protoc-gen-es": "^1.2.1",
+    "@dnd-kit/core": "^6.0.5",
+    "@emotion/css": "^11.10.0",
+    "@emotion/react": "^11.10.5",
+    "@emotion/styled": "^11.10.5",
+    "@mui/icons-material": "^5.10.9",
+    "@mui/lab": "^5.0.0-alpha.140",
+    "@mui/material": "^5.14.5",
+    "@remirror/core": "^2.0.19",
+    "@remirror/core-utils": "^2.0.13",
+    "@remirror/extension-mention": "^2.0.15",
+    "@remirror/extension-react-tables": "^2.2.18",
+    "@remirror/messages": "^2.0.6",
+    "@remirror/pm": "^2.0.5",
+    "@remirror/react": "^2.0.28",
+    "@remirror/react-core": "^2.0.21",
+    "@remirror/theme": "^2.0.9",
+    "@testing-library/jest-dom": "^5.14.1",
+    "@testing-library/react": "^13.0.0",
+    "@testing-library/user-event": "^13.2.1",
+    "@types/jest": "^27.0.1",
+    "@types/node": "^16.7.13",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "ansi-to-react": "^6.1.6",
+    "crypto-js": "^4.1.1",
+    "d3-force": "^3.0.0",
+    "d3-quadtree": "^3.0.1",
+    "formik": "^2.2.9",
+    "google-protobuf": "^3.21.2",
+    "graphql": "^16.6.0",
+    "html-to-image": "^1.11.11",
+    "immer": "^10.0.2",
+    "jwt-decode": "^3.1.2",
+    "katex": "0.13.0",
+    "kbar": "^0.1.0-beta.40",
+    "lib0": "^0.2.83",
+    "monaco-editor": "^0.34.1",
+    "monaco-editor-webpack-plugin": "^7.0.1",
+    "nanoid": "^3.0.0",
+    "nanoid-dictionary": "^4.3.0",
+    "net": "^1.0.2",
+    "notistack": "^2.0.8",
+    "prosemirror-model": "^1.19.3",
+    "prosemirror-view": "^1.31.7",
+    "react": "^18.2.0",
+    "react-copy-to-clipboard": "^5.1.0",
+    "react-dom": "^18.2.0",
+    "react-icons": "^4.6.0",
+    "react-monaco-editor": "^0.50.1",
+    "react-moveable": "^0.40.0",
+    "react-resizable": "^3.0.4",
+    "react-router-dom": "^6.4.2",
+    "react-scripts": "5.0.1",
+    "reactflow": "^11.7.0",
+    "remirror": "^2.0.31",
+    "slate": "^0.82.1",
+    "slate-history": "^0.66.0",
+    "slate-react": "^0.83.2",
+    "socket.io-client": "^4.5.3",
+    "stompjs": "^2.3.3",
+    "svgmoji": "^3.2.0",
+    "ts-pattern": "^4.0.6",
+    "turndown": "^7.1.2",
+    "typescript": "^4.4.2",
+    "uuid": "^9.0.0",
+    "web-tree-sitter": "^0.20.8",
+    "web-vitals": "^2.1.0",
+    "xterm": "^5.0.0",
+    "xterm-addon-fit": "^0.6.0",
+    "y-indexeddb": "^9.0.11",
+    "y-monaco": "^0.1.4",
+    "y-prosemirror": "^1.2.1",
+    "y-protocols": "^1.0.5",
+    "y-websocket": "^1.4.5",
+    "yjs": "^13.5.42",
+    "zustand": "^4.4.1"
+  },
+  "scripts": {
+    "generate": "chmod 777 /root && rm -rf ./src/proto && npx buf generate --output ./src/",
+    "dev": "react-app-rewired start",
+    "build": "react-app-rewired build --max_old_space_size=4096",
+    "test": "react-app-rewired test",
+    "eject": "react-app-rewired eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ],
+    "overrides": [
+      {
+        "files": [
+          "**/*.stories.*"
+        ],
+        "rules": {
+          "import/no-anonymous-default-export": "off"
+        }
+      }
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {
+    "@types/react-copy-to-clipboard": "^5.0.4",
+    "@types/react-resizable": "^3.0.3",
+    "@types/turndown": "^5.0.1",
+    "babel-plugin-named-exports-order": "^0.0.2",
+    "prop-types": "^15.8.1",
+    "react-app-rewired": "^2.2.1",
+    "tree-sitter-javascript": "^0.19.0",
+    "tree-sitter-python": "^0.20.1",
+    "webpack": "^5.74.0"
+  }
+}
