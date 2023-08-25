@@ -58,7 +58,7 @@ import { SettingDialog } from "./SettingDialog";
 import { toSvg } from "html-to-image";
 import { match } from "ts-pattern";
 
-const defaultAPIKey = process.env.REACT_APP_CODEIUM_API_KEY;
+const defaultAPIKey = import.meta.env.VITE_APP_CODEIUM_API_KEY;
 
 function Flex(props) {
   return (

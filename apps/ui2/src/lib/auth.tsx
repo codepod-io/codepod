@@ -7,7 +7,6 @@ import {
   gql,
   useQuery,
 } from "@apollo/client";
-import jwt_decode from "jwt-decode";
 
 type AuthContextType = ReturnType<typeof useProvideAuth>;
 

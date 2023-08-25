@@ -34,21 +34,16 @@ import "reactflow/dist/style.css";
 
 import Box from "@mui/material/Box";
 
-import { customAlphabet } from "nanoid";
-import { lowercase, numbers } from "nanoid-dictionary";
-
 import { useStore } from "zustand";
 import * as Y from "yjs";
 
 import { RepoContext } from "../lib/store";
 
-import { useApolloClient } from "@apollo/client";
 import { CanvasContextMenu } from "./CanvasContextMenu";
 import { ShareProjDialog } from "./ShareProjDialog";
 import { RichNode } from "./nodes/Rich";
 import { CodeNode } from "./nodes/Code";
 import { ScopeNode } from "./nodes/Scope";
-import { YMap } from "yjs/dist/src/types/YMap";
 import FloatingEdge from "./nodes/FloatingEdge";
 import CustomConnectionLine from "./nodes/CustomConnectionLine";
 import HelperLines from "./HelperLines";
