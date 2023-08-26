@@ -100,7 +100,7 @@ services:
     volumes:
       - ../../apps/ui:/app
       - ui-node-modules:/app/node_modules
-    command: sh -c "corepack enable && pnpm install && pnpx generate && pnpm dev"
+    command: sh -c "corepack enable && pnpm install && pnpm generate && pnpm dev"
 
   proxy:
     image: node:18
