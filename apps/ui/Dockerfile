@@ -1,11 +1,9 @@
 FROM node:18 AS builder
 
 WORKDIR /app
-COPY package.json .
-COPY yarn.lock .
+COPY package.json yarn.lock ./
 RUN yarn install --frozen-lockfile
 
-# FIXME would this copy node_modules?
 COPY . .
 
 ENV NODE_OPTIONS="--max_old_space_size=4096"
