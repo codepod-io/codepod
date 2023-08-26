@@ -1294,10 +1294,24 @@ function PodTreeItem({ id, node2children }) {
   );
 }
 
+function dfs(node, node2children, visited) {
+  if (!visited.has(node)) {
+    visited.add(node);
+    const children = node2children.get(node);
+    children.forEach((n) => {
+      dfs(n, node2children, visited);
+    });
+  }
+}
+
 function TableofPods() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const nodesMap = useStore(store, (state) => state.getNodesMap());
+  const selectedToc = useStore(store, (state) => state.selectedToc);
+  const setSelectedToc = useStore(store, (state) => state.setSelectedToc);
+  const setSelectiveView = useStore(store, (state) => state.setSelectiveView);
+  const clearSelectedToc = useStore(store, (state) => state.clearSelectedToc);
   let node2children = new Map<string, string[]>();
   let keys = new Set(nodesMap.keys());
 
@@ -1323,6 +1337,23 @@ function TableofPods() {
     }
   }
 
+  const handleSelect = (event, nodeIds: string[]) => {
+    if (nodeIds.length > 1) {
+      const selectedItems = new Set<string>();
+      //select all descendants of a node
+      nodeIds.forEach((n) => {
+        dfs(n, node2children, selectedItems);
+      });
+
+      if (selectedItems !== selectedToc) {
+        setSelectedToc(selectedItems);
+      }
+      setSelectiveView(true);
+    } else {
+      clearSelectedToc();
+      setSelectiveView(false);
+    }
+  };
   return (
     <TreeView
       aria-label="multi-select"
@@ -1331,6 +1362,7 @@ function TableofPods() {
       defaultExpanded={Array.from(node2children.keys()).filter(
         (key) => node2children!.get(key!)!.length > 0
       )}
+      onNodeSelect={handleSelect}
       multiSelect
     >
       {node2children.size > 0 &&
