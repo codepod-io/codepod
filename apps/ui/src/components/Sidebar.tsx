@@ -856,101 +856,6 @@ type SidebarProps = {
   onClose: () => void;
 };
 
-function download(url) {
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = "";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-function ExportFile() {
-  // an export component
-  let { id: repoId } = useParams();
-  // the useMutation for exportJSON
-  const [exportJSON, { data, loading, error }] = useMutation(
-    gql`
-      mutation ExportFile($repoId: String!) {
-        exportFile(repoId: $repoId)
-      }
-    `
-  );
-  useEffect(() => {
-    if (data?.exportFile) {
-      download(data.exportFile);
-    }
-  }, [data]);
-  return (
-    <>
-      <Button
-        variant="outlined"
-        size="small"
-        color="secondary"
-        onClick={() => {
-          // call export graphQL api to get the AWS S3 url
-          exportJSON({ variables: { repoId } });
-        }}
-        disabled={true}
-      >
-        Python File
-      </Button>
-      {error && <Box>Error: {error?.message}</Box>}
-    </>
-  );
-}
-
-function ExportJSON() {
-  // an export component
-  let { id: repoId } = useParams();
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const repoName = useStore(store, (state) => state.repoName);
-  // the useMutation for exportJSON
-  const [exportJSON, { data, loading, error }] = useMutation(
-    gql`
-      mutation ExportJSON($repoId: String!) {
-        exportJSON(repoId: $repoId)
-      }
-    `
-  );
-  useEffect(() => {
-    if (data?.exportJSON) {
-      let element = document.createElement("a");
-      element.setAttribute(
-        "href",
-        "data:text/plain;charset=utf-8," + encodeURIComponent(data.exportJSON)
-      );
-      const filename = `${
-        repoName || "Untitled"
-      }-${new Date().toISOString()}.json`;
-      element.setAttribute("download", filename);
-
-      element.style.display = "none";
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
-    }
-  }, [data]);
-  return (
-    <>
-      <Button
-        variant="outlined"
-        size="small"
-        color="secondary"
-        onClick={() => {
-          // call export graphQL api to get JSON string
-          exportJSON({ variables: { repoId } });
-        }}
-        disabled={false}
-      >
-        Raw JSON
-      </Button>
-      {error && <Box>Error: {error.message}</Box>}
-    </>
-  );
-}
-
 function ExportJupyterNB() {
   const { id: repoId } = useParams();
   const store = useContext(RepoContext);
@@ -1255,8 +1160,6 @@ function ExportSVG() {
 function ExportButtons() {
   return (
     <Stack spacing={1}>
-      <ExportFile />
-      <ExportJSON />
       <ExportJupyterNB />
       <ExportSVG />
     </Stack>

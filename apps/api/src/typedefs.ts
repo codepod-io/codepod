@@ -140,8 +140,6 @@ export const typeDefs = gql`
     star(repoId: ID!): Boolean
     unstar(repoId: ID!): Boolean
 
-    exportJSON(repoId: String!): String!
-    exportFile(repoId: String!): String!
     updateCodeiumAPIKey(apiKey: String!): Boolean
 
     connectRuntime(runtimeId: String, repoId: String): Boolean
