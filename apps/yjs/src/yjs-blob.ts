@@ -145,6 +145,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
       rootMap.set("edgesMap", new Y.Map<ReactflowEdge>());
       rootMap.set("codeMap", new Y.Map<Y.Text>());
       rootMap.set("richMap", new Y.Map<Y.XmlFragment>());
+      rootMap.set("resultMap", new Y.Map<any>());
       const metaMap = new Y.Map();
       metaMap.set("version", "v0.0.1");
       rootMap.set("metaMap", metaMap);
