@@ -73,7 +73,7 @@ function Timer({ lastExecutedAt }) {
         padding: "5px",
       }}
     >
-      Last run: {timeDifference(new Date(), lastExecutedAt)}
+      Last run: {timeDifference(new Date(), new Date(lastExecutedAt))}
     </Box>
   );
 }

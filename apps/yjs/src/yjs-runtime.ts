@@ -5,7 +5,6 @@ import { spawnRuntime, killRuntime } from "./runtime";
 
 type PodResult = {
   exec_count?: number;
-  last_exec_end?: boolean;
   data: {
     type: string;
     html?: string;
@@ -13,7 +12,7 @@ type PodResult = {
     image?: string;
   }[];
   running?: boolean;
-  lastExecutedAt?: Date;
+  lastExecutedAt?: number;
   error?: { ename: string; evalue: string; stacktrace: string[] } | null;
 };
 
@@ -111,7 +110,7 @@ export async function setupRuntimeSocket({
           let { podId, result, count } = payload;
           const oldresult: PodResult = resultMap.get(podId) || { data: [] };
           oldresult.running = false;
-          oldresult.lastExecutedAt = new Date();
+          oldresult.lastExecutedAt = Date.now();
           oldresult.exec_count = count;
           resultMap.set(podId, oldresult);
         }

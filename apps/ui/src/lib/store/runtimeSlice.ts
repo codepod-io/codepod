@@ -160,7 +160,6 @@ export type RuntimeInfo = {
 
 type PodResult = {
   exec_count?: number;
-  last_exec_end?: boolean;
   data: {
     type: string;
     html?: string;
@@ -168,7 +167,7 @@ type PodResult = {
     image?: string;
   }[];
   running?: boolean;
-  lastExecutedAt?: Date;
+  lastExecutedAt?: number;
   error?: { ename: string; evalue: string; stacktrace: string[] } | null;
 };
 
