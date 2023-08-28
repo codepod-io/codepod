@@ -100,6 +100,8 @@ function setupObserversToDB(ydoc: Y.Doc, repoId: string) {
   codeMap.observeDeep(observer);
   const richMap = rootMap.get("richMap") as Y.Map<Y.XmlFragment>;
   richMap.observeDeep(observer);
+  const resultMap = rootMap.get("resultMap") as Y.Map<any>;
+  resultMap.observeDeep(observer);
 }
 
 /**
