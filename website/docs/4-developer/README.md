@@ -23,101 +23,38 @@ To install docker-compose, follow the official [Docker documentation](https://do
 
 ## .env file
 
-Now enter the `CODEPOD_ROOT/compose/dev` folder
-
-```bash
-cd dev
-```
-
-and create a `.env` file with the following content (leave as is or change the value to
-whatever you want).
-
-```properties
-# Mandatory settings
-POSTGRES_USER=myusername
-POSTGRES_PASSWORD=mypassword
-POSTGRES_DB=mydbname
-JWT_SECRET=mysupersecretjwttoken
-
-# optional settings
-GOOGLE_CLIENT_ID=<google oauth client id>
-
-EXPORT_AWS_S3_REGION=us-west-1
-EXPORT_AWS_S3_BUCKET=<YOUR_BUCKET_NAME>
-EXPORT_AWS_S3_ACCESS_KEY_ID=<YOUR_ACCESS_KEY>
-EXPORT_AWS_S3_SECRET_ACCESS_KEY=<YOUR_SECRET_ACCESS_KEY>
-```
-
-Optional:
-
-- Leave the `GOOGLE_CLIENT_ID` empty if you do not need the OAuth provided by Google.
-- `EXPORT_AWS_S3_XXX` are used for file export. You could leave it empty if you don't use it.
+Now enter the `CODEPOD_ROOT/compose/dev` folder and copy `.env.example` to `.env` file, and optionally change the settings.
 
 ## Starting the stack
 
-From the `CODEPOD_ROOT/compose/dev` folder, run:
+From the `CODEPOD_ROOT/compose/dev` folder, first run:
+
+```bash
+docker compose up setup
+```
+
+This will invoke pnpm install to download `node_modules`, and initialize DB. The
+`node_modules` will be installed locally to your host file-system, so that
+error linting will work in your VSCode when you open source files.
+
+Then fire up the stack:
 
 ```bash
 docker compose up -d
 ```
 
-If you this is your first time setting up CodePod, or the database schema has been updated (which you can tell from errors), you will also need to [initalize database tables](#initializing-the-database).
-
-Wait a few minutes for the package installation and compilation. Once the `ui` and
-`api` containers are ready, go to `http://localhost:8080` to see the app.
-
-- `http://localhost:8080/graphql`: Apollo GraphQL explorer for the backend APIs
-- `http://prisma.127.0.0.1.sslip.io`: Prisma Studio for viewing and debugging the database.
-
-### Initializing database tables
-
-To initialize or update the database schema, open a shell into the API container (by default called `dev-api-1` but please use `docker ps` to confirm):
-
-```bash
-docker exec -it dev-api-1 /bin/bash
-```
-
-:::note
-You can also use docker desktop or VSCode's docker plugin to attach a shell to the container.
-
-<img src={require("./open-shell-vscode.png").default} alt="attach shell to container" width="300" />
-
-:::
-
-and then **from the shell of the API container** run:
-
-```bash
-npx prisma migrate dev
-```
-
-:::note
-Known issues: if you get the error below during the migration,
-
-```bash
-EACCES: permission denied, unlink '/app/node_modules/.prisma/client/index.js'
-EACCES: permission denied, unlink '/app/node_modules/.prisma/client/index.js'
-```
-
-then please change the ownership of the folder `node_modules` (**from the shell of the API container**):
-
-```bash
-chown node:node node_modules/ -R
-```
-
-Afterwards, re-run
-
-```bash
-npx prisma migrate dev
-```
-
-:::
+Once the `ui` and `api` containers are ready, go to `http://localhost:8080` to
+see the app.
 
 ### Database Schema Migration
 
-If you are a developer who wants to change the database schema for adding a feature, you can update the schema file `CODEPOD_ROOT/api/prisma/schema.prisma` and then run
+If you are a developer who wants to change the database schema for adding a feature, you can update the schema file `CODEPOD_ROOT/api/prisma/schema.prisma` and then run the command in the `api` contianer:
 
 ```bash
-npx prisma migrate dev --name add_a_new_field
+# Be sure to run the command in the container!
+docker exec -it dev-api-1 /bin/bash
+# The command to migrate
+pnpm dlx prisma migrate dev --name add_a_new_field
 ```
 
 to generate a migration, like [this](https://github.com/codepod-io/codepod/blob/main/api/prisma/migrations/20230223102734_add_updated_at/migration.sql).
@@ -126,23 +63,18 @@ The schema change along with this migration need to be checked in (add, commit, 
 Once the DB schema is changed, other developers need to pull the changes, and
 apply the migration by running the following command in the `api` container:
 
-```
-npx prisma migrate dev
+```bash
+pnpm dlx prisma migrate dev
 ```
 
 and then restart the `api` container to take effect of the new DB schema.
 
-## Auto-completion & Linting
+:::note
+You can also use docker desktop or VSCode's docker plugin to attach a shell to the container.
 
-Although we developed this project using docker, we still want features like auto-completion and linting while coding. For that to work, you need to install the all the relevant node packages, i.e.
+<img src={require("./open-shell-vscode.png").default} alt="attach shell to container" width="300" />
 
-```bash
-# api, proxy, runtime, ui
-cd ./api/
-
-# Run 'npm install' instead if you are using npm
-yarn
-```
+:::
 
 ## Starting two stacks simultaneously
 
