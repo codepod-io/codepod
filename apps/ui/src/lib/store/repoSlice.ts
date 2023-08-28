@@ -1,8 +1,6 @@
 import { createStore, StateCreator, StoreApi } from "zustand";
 import { produce } from "immer";
 
-import { Doc } from "yjs";
-import { WebsocketProvider } from "y-websocket";
 import { MyState } from ".";
 import { gql } from "@apollo/client";
 
