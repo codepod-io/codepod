@@ -168,7 +168,7 @@ type PodResult = {
     image?: string;
   }[];
   running?: boolean;
-  lastExecutedAt?: Date;
+  lastExecutedAt?: number;
   error?: { ename: string; evalue: string; stacktrace: string[] } | null;
 };
 

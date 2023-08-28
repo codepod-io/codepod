@@ -13,7 +13,7 @@ type PodResult = {
     image?: string;
   }[];
   running?: boolean;
-  lastExecutedAt?: Date;
+  lastExecutedAt?: number;
   error?: { ename: string; evalue: string; stacktrace: string[] } | null;
 };
 
@@ -67,6 +67,15 @@ export async function setupRuntimeSocket({
     // FIXME is msg.data a string?
     let { type, payload } = JSON.parse(msg.data as string);
     // console.debug("got message", type, payload);
+    let podId = payload["podId"] || undefined;
+    if (podId) {
+      const oldresult: PodResult = resultMap.get(podId) || { data: [] };
+      if (oldresult.last_exec_end) {
+        oldresult.data = [];
+        oldresult.error = null;
+        oldresult.last_exec_end = false;
+      }
+    }
 
     switch (type) {
       case "stream":
@@ -78,7 +87,6 @@ export async function setupRuntimeSocket({
             type: `${type}_${content.name}`,
             text: content.text,
           });
-          resultMap.set(podId, oldresult);
         }
         break;
       case "execute_result":
@@ -90,7 +98,6 @@ export async function setupRuntimeSocket({
             text: content.data["text/plain"],
             html: content.data["text/html"],
           });
-          resultMap.set(podId, oldresult);
         }
         break;
       case "display_data":
@@ -103,7 +110,6 @@ export async function setupRuntimeSocket({
             image: content.data["image/png"],
             html: content.data["text/html"],
           });
-          resultMap.set(podId, oldresult);
         }
         break;
       case "execute_reply":
@@ -111,8 +117,9 @@ export async function setupRuntimeSocket({
           let { podId, result, count } = payload;
           const oldresult: PodResult = resultMap.get(podId) || { data: [] };
           oldresult.running = false;
-          oldresult.lastExecutedAt = new Date();
+          oldresult.lastExecutedAt = Date.now();
           oldresult.exec_count = count;
+          oldresult.last_exec_end = true;
           resultMap.set(podId, oldresult);
         }
         break;
