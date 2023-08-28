@@ -160,7 +160,6 @@ export type RuntimeInfo = {
 
 type PodResult = {
   exec_count?: number;
-  last_exec_end?: boolean;
   data: {
     type: string;
     html?: string;
