@@ -12,7 +12,7 @@ import { ApolloServerPluginLandingPageLocalDefault } from "apollo-server-core";
 
 import { getYDoc, setupWSConnection } from "./yjs-setupWS";
 
-import prisma from "./client";
+import prisma from "@codepod/prisma";
 import { connectSocket, runtime2socket } from "./yjs-runtime";
 
 interface TokenInterface {

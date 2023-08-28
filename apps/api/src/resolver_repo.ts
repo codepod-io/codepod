@@ -1,7 +1,7 @@
 // nanoid v4 does not work with nodejs. https://github.com/ai/nanoid/issues/365
 import { customAlphabet } from "nanoid/async";
 import { lowercase, numbers } from "nanoid-dictionary";
-import prisma from "./client";
+import prisma from "@codepod/prisma";
 
 const nanoid = customAlphabet(lowercase + numbers, 20);
 

@@ -11,6 +11,9 @@ importers:
       '@apollo/client':
         specifier: ^3.7.1
         version: 3.7.1(graphql@16.6.0)(react-dom@18.2.0)(react@18.2.0)
+      '@codepod/prisma':
+        specifier: workspace:*
+        version: link:../../packages/prisma
       '@kubernetes/client-node':
         specifier: ^0.17.1
         version: 0.17.1
@@ -426,6 +429,16 @@ importers:
       vite:
         specifier: ^4.4.5
         version: 4.4.5(@types/node@20.5.6)
+
+  packages/prisma:
+    dependencies:
+      '@prisma/client':
+        specifier: 4.3.1
+        version: 4.3.1(prisma@4.3.1)
+    devDependencies:
+      typescript:
+        specifier: ^5.2.2
+        version: 5.2.2
 
 packages:
 
@@ -4571,7 +4584,7 @@ packages:
     resolution: {integrity: sha512-6bSZTPaTIACxn48l50SR+axgrqm6qXFIxrdAKaG6PaJk3+zuUr35hBlgT7vOmJcum+OEaIBLtHV/qloEAFITeA==}
     dependencies:
       '@types/body-parser': 1.19.2
-      '@types/express-serve-static-core': 4.17.30
+      '@types/express-serve-static-core': 4.17.36
       '@types/qs': 6.9.7
       '@types/serve-static': 1.15.2
     dev: false
@@ -10852,6 +10865,12 @@ packages:
   /typescript@5.0.2:
     resolution: {integrity: sha512-wVORMBGO/FAs/++blGNeAVdbNKtIh1rbBL2EyQ1+J9lClJ93KiiKe8PmFIVdXhHcyv44SL9oglmfeSsndo0jRw==}
     engines: {node: '>=12.20'}
+    hasBin: true
+    dev: true
+
+  /typescript@5.2.2:
+    resolution: {integrity: sha512-mI4WrpHsbCIcwT9cF4FZvr80QUeKvsUsUvKDoR+X/7XHQH98xYD8YHZg7ANtz2GtZt/CBq2QJ0thkGJMHfqc1w==}
+    engines: {node: '>=14.17'}
     hasBin: true
     dev: true
 
