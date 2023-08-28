@@ -22,7 +22,7 @@ import { Node as ReactflowNode, Edge as ReactflowEdge } from "reactflow";
 
 import debounce from "lodash/debounce";
 
-import prisma from "./client";
+import prisma from "@codepod/prisma";
 import { dbtype2nodetype, json2yxml } from "./yjs-utils";
 import { setupObserversToRuntime } from "./yjs-runtime";
 

@@ -6,7 +6,7 @@ import { OAuth2Client } from "google-auth-library";
 import { customAlphabet } from "nanoid/async";
 import { lowercase, numbers } from "nanoid-dictionary";
 
-import prisma from "./client";
+import prisma from "@codepod/prisma";
 
 const nanoid = customAlphabet(lowercase + numbers, 20);
 
