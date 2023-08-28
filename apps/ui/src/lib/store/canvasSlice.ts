@@ -43,7 +43,6 @@ import {
   ReactFlowInstance,
   getConnectedEdges,
 } from "reactflow";
-import { node } from "prop-types";
 import { quadtree } from "d3-quadtree";
 import { getHelperLines, level2fontsize } from "../../components/nodes/utils";
 import { json2yxml, yxml2json } from "../utils/y-utils";
