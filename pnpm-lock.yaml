@@ -93,6 +93,9 @@ importers:
         specifier: ^6.0.0-beta.6
         version: 6.0.0-beta.6
     devDependencies:
+      '@jest/globals':
+        specifier: ^29.6.4
+        version: 29.6.4
       '@types/bcryptjs':
         specifier: ^2.4.2
         version: 2.4.2
@@ -2440,7 +2443,7 @@ packages:
       classcat: 5.0.4
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
-      zustand: 4.4.1(react@18.2.0)
+      zustand: 4.4.1(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
     transitivePeerDependencies:
       - '@types/react'
       - immer
@@ -2472,7 +2475,7 @@ packages:
       classcat: 5.0.4
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
-      zustand: 4.4.1(react@18.2.0)
+      zustand: 4.4.1(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
     transitivePeerDependencies:
       - '@types/react'
       - immer
@@ -2510,7 +2513,7 @@ packages:
       d3-zoom: 3.0.0
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
-      zustand: 4.4.1(react@18.2.0)
+      zustand: 4.4.1(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
     transitivePeerDependencies:
       - '@types/react'
       - immer
@@ -2552,7 +2555,7 @@ packages:
       d3-zoom: 3.0.0
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
-      zustand: 4.4.1(react@18.2.0)
+      zustand: 4.4.1(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
     transitivePeerDependencies:
       - '@types/react'
       - immer
@@ -2590,7 +2593,7 @@ packages:
       d3-selection: 3.0.0
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
-      zustand: 4.4.1(react@18.2.0)
+      zustand: 4.4.1(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
     transitivePeerDependencies:
       - '@types/react'
       - immer
@@ -2624,7 +2627,7 @@ packages:
       classcat: 5.0.4
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
-      zustand: 4.4.1(react@18.2.0)
+      zustand: 4.4.1(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0)
     transitivePeerDependencies:
       - '@types/react'
       - immer
@@ -11426,25 +11429,6 @@ packages:
     dependencies:
       '@types/react': 18.2.15
       immer: 10.0.2
-      react: 18.2.0
-      use-sync-external-store: 1.2.0(react@18.2.0)
-    dev: false
-
-  /zustand@4.4.1(react@18.2.0):
-    resolution: {integrity: sha512-QCPfstAS4EBiTQzlaGP1gmorkh/UL1Leaj2tdj+zZCZ/9bm0WS7sI2wnfD5lpOszFqWJ1DcPnGoY8RDL61uokw==}
-    engines: {node: '>=12.7.0'}
-    peerDependencies:
-      '@types/react': '>=16.8'
-      immer: '>=9.0'
-      react: '>=16.8'
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      immer:
-        optional: true
-      react:
-        optional: true
-    dependencies:
       react: 18.2.0
       use-sync-external-store: 1.2.0(react@18.2.0)
     dev: false
