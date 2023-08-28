@@ -1,7 +1,7 @@
 import * as Y from "yjs";
 import WebSocket from "ws";
 
-import runtimeResolver from "./resolver_runtime";
+import { spawnRuntime, killRuntime } from "./runtime";
 
 type PodResult = {
   exec_count?: number;
@@ -216,7 +216,7 @@ export function setupObserversToRuntime(ydoc: Y.Doc, repoId: string) {
             runtimeMap.get(runtimeId)
           );
           const sessionId = runtimeId;
-          const created = await runtimeResolver.Mutation.spawnRuntime(null, {
+          const created = await spawnRuntime(null, {
             sessionId,
           });
           if (!created) {
@@ -244,7 +244,7 @@ export function setupObserversToRuntime(ydoc: Y.Doc, repoId: string) {
           // kill the runtime
           const socket = runtime2socket.get(runtimeId);
           socket?.close();
-          await runtimeResolver.Mutation.killRuntime(null, {
+          await killRuntime(null, {
             sessionId: runtimeId,
           });
           runtime2socket.delete(runtimeId);

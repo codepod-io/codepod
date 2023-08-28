@@ -15,6 +15,8 @@ import { getYDoc, setupWSConnection } from "./yjs-setupWS";
 import prisma from "@codepod/prisma";
 import { connectSocket, runtime2socket } from "./yjs-runtime";
 
+import { initRoutes, loopKillInactiveRoutes } from "./runtime";
+
 interface TokenInterface {
   id: string;
 }
@@ -101,6 +103,9 @@ async function startServer() {
     socket.destroy();
     return;
   });
+
+  await initRoutes();
+  loopKillInactiveRoutes();
 
   const port = process.env.PORT || 4233;
   http_server.listen({ port }, () => {

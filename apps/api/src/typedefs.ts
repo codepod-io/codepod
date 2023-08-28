@@ -109,7 +109,6 @@ export const typeDefs = gql`
     getDashboardRepos: [Repo]
     activeSessions: [String]
     listAllRuntimes: [RuntimeInfo]
-    infoRuntime(sessionId: String!): RuntimeInfo
   }
 
   type Mutation {
@@ -132,8 +131,6 @@ export const typeDefs = gql`
     clearUser: Boolean
     clearRepo: Boolean
     clearPod: Boolean
-    spawnRuntime(sessionId: String!): Boolean
-    killRuntime(sessionId: String!): Boolean
     updateVisibility(repoId: String!, isPublic: Boolean!): Boolean
     addCollaborator(repoId: String!, email: String!): Boolean
     deleteCollaborator(repoId: String!, collaboratorId: String!): Boolean
