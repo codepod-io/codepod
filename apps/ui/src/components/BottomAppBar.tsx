@@ -234,7 +234,7 @@ const YjsRuntimeStatus = () => {
         alignItems: "center",
       }}
     >
-      Runtime
+      <Paper elevation={0}>Runtime</Paper>
       <Tooltip title="Create new Runtime">
         <IconButton
           onClick={() => {
