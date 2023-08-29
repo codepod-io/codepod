@@ -1,8 +1,9 @@
 {
-  "name": "ui2",
+  "name": "@codepod/ui",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "src/index.tsx",
   "scripts": {
     "generate": "chmod 777 -R /root && rm -rf ./src/proto && npx buf generate --output ./src/",
     "dev": "vite --host",

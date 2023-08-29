@@ -117,6 +117,9 @@ importers:
 
   apps/electron-app:
     dependencies:
+      '@codepod/ui':
+        specifier: workspace:^
+        version: link:../ui
       '@electron-forge/shared-types':
         specifier: ^6.4.1
         version: 6.4.1

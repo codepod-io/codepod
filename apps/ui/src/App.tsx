@@ -13,7 +13,7 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import Home from "./pages/index";
 import Dashboard from "./pages/dashboard";
 import Repo from "./pages/repo";
-import Test from "./pages/test";
+import { Test } from "./pages/test";
 import Login from "./pages/login";
 import Signup from "./pages/signup";
 import Profile from "./pages/profile";
