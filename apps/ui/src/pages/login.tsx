@@ -121,7 +121,7 @@ export function GoogleSignin() {
   return <Box id="googleLoginDiv"></Box>;
 }
 
-export default function SignIn() {
+export function SignIn() {
   /* eslint-disable no-unused-vars */
   const { signIn, isSignedIn, handleGoogle } = useAuth();
   const [error, setError] = useState(null);

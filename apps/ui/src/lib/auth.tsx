@@ -6,14 +6,15 @@ import {
   HttpLink,
   gql,
   useQuery,
+  split,
 } from "@apollo/client";
 
 type AuthContextType = ReturnType<typeof useProvideAuth>;
 
 const authContext = createContext<AuthContextType | null>(null);
 
-export function AuthProvider({ children }) {
-  const auth = useProvideAuth();
+export function AuthProvider({ children, apiUrl, spawnerApiUrl }) {
+  const auth = useProvideAuth({ apiUrl, spawnerApiUrl });
 
   return (
     <authContext.Provider value={auth}>
@@ -28,7 +29,7 @@ export const useAuth = () => {
   return useContext(authContext)!;
 };
 
-function useProvideAuth() {
+function useProvideAuth({ apiUrl, spawnerApiUrl }) {
   const [authToken, setAuthToken] = useState<String | null>(null);
 
   useEffect(() => {
@@ -46,12 +47,20 @@ function useProvideAuth() {
 
   function createApolloClient(auth = true) {
     const link = new HttpLink({
-      uri: "/graphql",
+      uri: apiUrl,
+      headers: auth ? getAuthHeaders() : undefined,
+    });
+    const yjslink = new HttpLink({
+      uri: spawnerApiUrl,
       headers: auth ? getAuthHeaders() : undefined,
     });
 
     return new ApolloClient({
-      link,
+      link: split(
+        (operation) => operation.getContext().clientName === "spawner",
+        yjslink,
+        link
+      ),
       cache: new InMemoryCache(),
     });
   }
@@ -193,7 +202,7 @@ const PROFILE_QUERY = gql`
 
 //   avatar_url
 
-export default function useMe() {
+export function useMe() {
   /* eslint-disable no-unused-vars */
   const { loading, data } = useQuery(PROFILE_QUERY, {
     // fetchPolicy: "network-only",

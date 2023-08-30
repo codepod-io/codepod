@@ -12,13 +12,45 @@ import {
 } from "apollo-server-core";
 
 import { typeDefs } from "./typedefs";
-import { resolvers } from "./resolver";
+import { createUserResolver } from "./resolver_user";
+import { RepoResolver } from "./resolver_repo";
+
+// dotenv
+require("dotenv").config();
+
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET env variable is not set.");
+}
+// FIXME even if this is undefined, the token verification still works. Looks
+// like I only need to set client ID in the frontend?
+if (!process.env.GOOGLE_CLIENT_ID) {
+  console.log("WARNING: GOOGLE_CLIENT_ID env variable is not set.");
+}
+
+const UserResolver = createUserResolver({
+  jwtSecret: process.env.JWT_SECRET,
+  googleClientId: process.env.GOOGLE_CLIENT_ID,
+});
+
+export const resolvers = {
+  Query: {
+    hello: () => {
+      return "Hello world!";
+    },
+    ...UserResolver.Query,
+    ...RepoResolver.Query,
+  },
+  Mutation: {
+    ...UserResolver.Mutation,
+    ...RepoResolver.Mutation,
+  },
+};
 
 interface TokenInterface {
   id: string;
 }
 
-async function startServer() {
+async function startServer({ port }) {
   const apollo = new ApolloServer({
     typeDefs,
     resolvers,
@@ -50,10 +82,9 @@ async function startServer() {
   await apollo.start();
   apollo.applyMiddleware({ app: expapp });
 
-  const port = process.env.PORT || 4000;
   http_server.listen({ port }, () => {
     console.log(`🚀 Server ready at http://localhost:${port}`);
   });
 }
 
-startServer();
+startServer({ port: 4000 });

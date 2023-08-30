@@ -1,6 +1,6 @@
 import Box from "@mui/material/Box";
 
-export default function Docs() {
+export function Docs() {
   return (
     <Box
       sx={{

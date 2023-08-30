@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 import Alert from "@mui/material/Alert";
 import Stack from "@mui/material/Stack";
 
-export default function Home() {
+export function Home() {
   return (
     <Box
       sx={{

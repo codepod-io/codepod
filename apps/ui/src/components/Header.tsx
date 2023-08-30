@@ -23,7 +23,7 @@ import AppBar from "@mui/material/AppBar";
 
 import { useAuth } from "../lib/auth";
 
-import useMe from "../lib/auth";
+import { useMe } from "../lib/auth";
 
 type HeaderProps = {
   open?: boolean;
