@@ -6,12 +6,14 @@ import Button from "@mui/material/Button";
 import CircleIcon from "@mui/icons-material/Circle";
 import CircularProgress from "@mui/material/CircularProgress";
 import CloudDoneIcon from "@mui/icons-material/CloudDone";
+import CloudOffIcon from "@mui/icons-material/CloudOff";
 import DeleteIcon from "@mui/icons-material/Delete";
 import Divider from "@mui/material/Divider";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
+import LinkOffIcon from "@mui/icons-material/LinkOff";
 import Paper from "@mui/material/Paper";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import Popover from "@mui/material/Popover";
@@ -41,21 +43,56 @@ const RuntimeItem = ({ runtimeId }) => {
   const setActiveRuntime = useStore(store, (state) => state.setActiveRuntime);
   const runtime = runtimeMap.get(runtimeId) || { wsStatus: "unknown" };
   const repoId = useStore(store, (state) => state.repoId);
-  const [connect] = useMutation(gql`
-    mutation ConnectRuntime($runtimeId: String, $repoId: String) {
-      connectRuntime(runtimeId: $runtimeId, repoId: $repoId)
-    }
-  `);
-  const [requestKernelStatus] = useMutation(gql`
-    mutation RequestKernelStatus($runtimeId: String) {
-      requestKernelStatus(runtimeId: $runtimeId)
-    }
-  `);
-  const [interruptKernel] = useMutation(gql`
-    mutation InterruptKernel($runtimeId: String) {
-      interruptKernel(runtimeId: $runtimeId)
-    }
-  `);
+  const [connect] = useMutation(
+    gql`
+      mutation ConnectRuntime($runtimeId: String, $repoId: String) {
+        connectRuntime(runtimeId: $runtimeId, repoId: $repoId)
+      }
+    `,
+    { context: { clientName: "spawner" } }
+  );
+  const [requestKernelStatus] = useMutation(
+    gql`
+      mutation RequestKernelStatus($runtimeId: String) {
+        requestKernelStatus(runtimeId: $runtimeId)
+      }
+    `,
+    { context: { clientName: "spawner" } }
+  );
+  const [interruptKernel] = useMutation(
+    gql`
+      mutation InterruptKernel($runtimeId: String) {
+        interruptKernel(runtimeId: $runtimeId)
+      }
+    `,
+    { context: { clientName: "spawner" } }
+  );
+  const [killRuntime] = useMutation(
+    gql`
+      mutation KillRuntime($runtimeId: String, $repoId: String) {
+        killRuntime(runtimeId: $runtimeId, repoId: $repoId)
+      }
+    `,
+    { context: { clientName: "spawner" } }
+  );
+
+  const [disconnectRuntime] = useMutation(
+    gql`
+      mutation DisconnectRuntime($runtimeId: String, $repoId: String) {
+        disconnectRuntime(runtimeId: $runtimeId, repoId: $repoId)
+      }
+    `,
+    { context: { clientName: "spawner" } }
+  );
+
+  const runtimeStatusColors = { idle: "green", busy: "yellow", default: "red" };
+  const runtimeStatus = runtime.status ?? "default";
+  const wsStatusConfig = {
+    connected: { title: "connected", color: "green" },
+    disconnected: { title: "disconnected", color: "red" },
+    connecting: { title: "connecting", color: "yellow" },
+  };
+  const wsStatus = wsStatusConfig[runtime.wsStatus || ""] ?? "default";
 
   useEffect(() => {
     // if the runtime is disconnected, keep trying to connect.
@@ -90,40 +127,28 @@ const RuntimeItem = ({ runtimeId }) => {
       }}
     >
       {activeRuntime === runtimeId &&
-        match(runtime.wsStatus)
-          .with("connected", () => (
-            <Tooltip title="connected">
-              <CircleIcon style={{ color: "green" }} />
-            </Tooltip>
-          ))
-          .with("connecting", () => (
-            <Tooltip title="connecting">
-              <CircleIcon style={{ color: "yellow" }} />
-            </Tooltip>
-          ))
-          .with("disconnected", () => (
-            <Tooltip title="disconnected">
-              <CircleIcon style={{ color: "red" }} />
-            </Tooltip>
-          ))
-          .otherwise(() => (
-            <Box color="red" component="span">
-              {runtime!.wsStatus || "unknown"}
-              <Button
-                onClick={() => {
-                  connect({
-                    variables: {
-                      runtimeId,
-                      repoId,
-                    },
-                  });
-                }}
-                sx={{ color: "red" }}
-              >
-                retry
-              </Button>
-            </Box>
-          ))}
+        (wsStatus ? (
+          <Tooltip title={wsStatus.title}>
+            <CircleIcon style={{ color: wsStatus.color }} />
+          </Tooltip>
+        ) : (
+          <Box color="red" component="span">
+            {runtime!.wsStatus || "unknown"}
+            <Button
+              onClick={() => {
+                connect({
+                  variables: {
+                    runtimeId,
+                    repoId,
+                  },
+                });
+              }}
+              sx={{ color: "red" }}
+            >
+              retry
+            </Button>
+          </Box>
+        ))}
 
       {activeRuntime === runtimeId && (
         <Divider orientation="vertical" flexItem />
@@ -166,25 +191,41 @@ const RuntimeItem = ({ runtimeId }) => {
           <StopIcon fontSize="inherit" />
         </IconButton>
       </Tooltip>
+      <Tooltip title="disconnect">
+        <IconButton
+          size="small"
+          onClick={() => {
+            disconnectRuntime({ variables: { runtimeId, repoId } });
+          }}
+        >
+          <LinkOffIcon fontSize="inherit" />
+        </IconButton>
+      </Tooltip>
       <Divider orientation="vertical" flexItem />
-      <Box>
-        Status:{" "}
-        {match(runtime.status)
-          .with("idle", () => (
-            <Box color="green" component="span">
-              idle
-            </Box>
-          ))
-          .with("busy", () => (
-            <Box color="yellow" component="span">
-              busy
-            </Box>
-          ))
-          .otherwise(() => (
-            <Box color="red" component="span">
-              Not connected
-            </Box>
-          ))}
+      <Box
+        color="inherit"
+        sx={{
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            paddingLeft: "4px",
+            paddingRight: "4px",
+          }}
+        >
+          Status:{" "}
+        </Paper>
+        <Box color={runtimeStatusColors[status]} component="span">
+          {runtimeStatus === "idle"
+            ? "idle"
+            : runtimeStatus === "busy"
+            ? "busy"
+            : "Not connected"}
+        </Box>
       </Box>
       <Paper
         elevation={0}
@@ -202,7 +243,7 @@ const RuntimeItem = ({ runtimeId }) => {
           <IconButton
             size="small"
             onClick={() => {
-              runtimeMap.delete(runtimeId);
+              killRuntime({ variables: { runtimeId, repoId: repoId } });
             }}
           >
             <DeleteIcon fontSize="inherit" />
@@ -213,8 +254,9 @@ const RuntimeItem = ({ runtimeId }) => {
   );
 };
 
-const YjsRuntimeStatus = () => {
+const RuntimeStatus = () => {
   const store = useContext(RepoContext)!;
+  const repoId = useStore(store, (state) => state.repoId);
   const runtimeMap =
     useStore(store, (state) => state.getRuntimeMap()) || new Map();
   // Observe runtime change
@@ -224,6 +266,15 @@ const YjsRuntimeStatus = () => {
   const listItemRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
+
+  const [spawnRuntime] = useMutation(
+    gql`
+      mutation SpawnRuntime($runtimeId: String, $repoId: String) {
+        spawnRuntime(runtimeId: $runtimeId, repoId: $repoId)
+      }
+    `,
+    { context: { clientName: "spawner" } }
+  );
 
   return (
     <Box
@@ -239,7 +290,7 @@ const YjsRuntimeStatus = () => {
         <IconButton
           onClick={() => {
             const id = myNanoId();
-            runtimeMap.set(id, {});
+            spawnRuntime({ variables: { runtimeId: id, repoId: repoId } });
           }}
         >
           <AddIcon />
@@ -274,7 +325,10 @@ const YjsRuntimeStatus = () => {
       )}
       <List>
         <ListItem ref={listItemRef}>
-          <RuntimeItem key={activeRuntime} runtimeId={activeRuntime} />
+          <RuntimeItem
+            key={activeRuntime}
+            runtimeId={activeRuntime || ids[0]}
+          />
         </ListItem>
         <Popover
           open={open}
@@ -291,7 +345,7 @@ const YjsRuntimeStatus = () => {
             horizontal: "left",
           }}
         >
-          {ids
+          {Array.from<string>(runtimeMap.keys())
             .filter((runtimeId) => runtimeId !== activeRuntime)
             .map((runtimeId) => (
               <ListItem>
@@ -310,30 +364,20 @@ function YjsSyncStatus() {
   // FIXME performance issue
   const yjsStatus = useStore(store, (state) => state.yjsStatus);
   const yjsSyncStatus = useStore(store, (state) => state.yjsSyncStatus);
+  const statusConfig = {
+    connected: { title: "connected", color: "green" },
+    disconnected: { title: "disconnected", color: "red" },
+    connecting: { title: "connecting", color: "yellow" },
+    default: { title: "unknown", color: "grey" },
+  };
+  const status = statusConfig[yjsStatus || ""] || statusConfig.default;
   return (
     <Stack direction="row" spacing={1}>
       <Stack direction="row" spacing={0.5} alignItems="center">
         <Paper elevation={0}>Sync Server:</Paper>
-        {match(yjsStatus)
-          .with("connected", () => (
-            <Tooltip title="connected">
-              <CircleIcon style={{ color: "green" }} />
-            </Tooltip>
-          ))
-          .with("disconnected", () => (
-            <Tooltip title="disconnected">
-              <CircleIcon style={{ color: "red" }} />
-            </Tooltip>
-          ))
-          .with("connecting", () => (
-            <Tooltip title="connecting">
-              <CircleIcon style={{ color: "yellow" }} />
-            </Tooltip>
-          ))
-          // .with("syncing", () => <Box color="green">online</Box>)
-          .otherwise(() => (
-            <CircularProgress />
-          ))}
+        <Tooltip title={status.title}>
+          <CircleIcon style={{ color: status.color }} />
+        </Tooltip>
       </Stack>
       <Stack direction="row" spacing={0.5} alignItems="center">
         <Paper elevation={0}>Sync Status:</Paper>
@@ -349,7 +393,9 @@ function YjsSyncStatus() {
             </Tooltip>
           ))
           .otherwise(() => (
-            <CircularProgress />
+            <Tooltip title="disconnected">
+              <CloudOffIcon />
+            </Tooltip>
           ))}
       </Stack>
     </Stack>
@@ -395,7 +441,7 @@ export const BottomAppBar: React.FC<BottomAppBarProps> = ({
         }}
       >
         <YjsSyncStatus />
-        <YjsRuntimeStatus />
+        <RuntimeStatus />
       </Stack>
     </AppBar>
   ) : (
