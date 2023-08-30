@@ -10,13 +10,13 @@ import {
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
-import Home from "./pages/index";
-import Dashboard from "./pages/dashboard";
-import Repo from "./pages/repo";
+import { Home } from "./pages/index";
+import { Dashboard } from "./pages/dashboard";
+import { Repo } from "./pages/repo";
 import { Test } from "./pages/test";
-import Login from "./pages/login";
-import Signup from "./pages/signup";
-import Profile from "./pages/profile";
+import { SignIn } from "./pages/login";
+import { SignUp } from "./pages/signup";
+import { Profile } from "./pages/profile";
 
 import { AuthProvider } from "./lib/auth";
 import { Header, Footer } from "./components/Header";
@@ -24,7 +24,21 @@ import { Header, Footer } from "./components/Header";
 import Box from "@mui/material/Box";
 import { SnackbarProvider } from "notistack";
 
-import Docs from "./pages/docs";
+import { Docs } from "./pages/docs";
+
+const yjsWsUrl = import.meta.env.VITE_APP_YJS_WS_URL;
+const apiUrl = import.meta.env.VITE_APP_API_URL;
+const spawnerApiUrl = import.meta.env.VITE_APP_SPAWNER_API_URL;
+
+if (!yjsWsUrl) {
+  throw new Error("VITE_APP_YJS_WS_URL is not defined");
+}
+if (!apiUrl) {
+  throw new Error("VITE_APP_API_URL is not defined");
+}
+if (!spawnerApiUrl) {
+  throw new Error("VITE_APP_RUNTIME_API_URL is not defined");
+}
 
 const theme = createTheme({
   typography: {
@@ -73,7 +87,7 @@ const router = createBrowserRouter([
     path: "repo/:id",
     element: (
       <Box height="100vh" width="100%" boxSizing={"border-box"}>
-        <Repo />
+        <Repo yjsWsUrl={yjsWsUrl} />
       </Box>
     ),
   },
@@ -81,7 +95,7 @@ const router = createBrowserRouter([
     path: "login",
     element: (
       <NormalLayout>
-        <Login />
+        <SignIn />
       </NormalLayout>
     ),
   },
@@ -89,7 +103,7 @@ const router = createBrowserRouter([
     path: "signup",
     element: (
       <NormalLayout>
-        <Signup />
+        <SignUp />
       </NormalLayout>
     ),
   },
@@ -120,10 +134,10 @@ const router = createBrowserRouter([
   },
 ]);
 
-export default function App() {
+export function App() {
   return (
     <ThemeProvider theme={theme}>
-      <AuthProvider>
+      <AuthProvider apiUrl={apiUrl} spawnerApiUrl={spawnerApiUrl}>
         <SnackbarProvider maxSnack={5}>
           <RouterProvider router={router} />
         </SnackbarProvider>

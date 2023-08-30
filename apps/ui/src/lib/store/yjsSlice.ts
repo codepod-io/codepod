@@ -16,14 +16,6 @@ import { addAwarenessStyle } from "../utils/utils";
 import { Annotation } from "../parser";
 import { MyState, Pod } from ".";
 
-let serverURL;
-if (window.location.protocol === "http:") {
-  serverURL = `ws://${window.location.host}/socket`;
-} else {
-  serverURL = `wss://${window.location.host}/socket`;
-}
-console.log("yjs server url: ", serverURL);
-
 export async function registerUser(
   token: string
 ): Promise<{ api_key: string; name: string }> {
@@ -57,7 +49,7 @@ export interface YjsSlice {
   yjsConnecting: boolean;
   // The status of yjs connection.
   yjsStatus?: string;
-  connectYjs: () => void;
+  connectYjs: (yjsWsUrl: string) => void;
   disconnectYjs: () => void;
   // The status of the uploading and syncing of actual Y.Doc.
   yjsSyncStatus?: string;
@@ -128,11 +120,11 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
         state.resultChanged[id] = !state.resultChanged[id];
       })
     ),
-  connectYjs: () => {
+  connectYjs: (yjsWsUrl) => {
     if (get().yjsConnecting) return;
     if (get().provider) return;
     set({ yjsConnecting: true });
-    console.log("connecting yjs socket ..");
+    console.log(`connecting yjs socket ${yjsWsUrl} ..`);
     const ydoc = new Doc();
 
     // TODO offline support
@@ -142,7 +134,7 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
     // });
 
     // connect to primary database
-    const provider = new WebsocketProvider(serverURL, get().repoId!, ydoc, {
+    const provider = new WebsocketProvider(yjsWsUrl, get().repoId!, ydoc, {
       // resyncInterval: 2000,
       //
       // BC is more complex to track our custom Uploading status and SyncDone events.

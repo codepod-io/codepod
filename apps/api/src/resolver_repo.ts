@@ -515,7 +515,7 @@ async function copyRepo(_, { repoId }, { userId }) {
   return id;
 }
 
-export default {
+export const RepoResolver = {
   Query: {
     repo,
     getDashboardRepos,

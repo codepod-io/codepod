@@ -17,7 +17,7 @@ import { useStore } from "zustand";
 
 import { createRepoStore, RepoContext } from "../lib/store";
 
-import useMe from "../lib/auth";
+import { useMe } from "../lib/auth";
 import { Canvas } from "../components/Canvas";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
@@ -419,7 +419,7 @@ function RepoImpl() {
   return <RepoImpl2 id={id} />;
 }
 
-export default function Repo() {
+export function Repo({ yjsWsUrl }) {
   let { id } = useParams();
   const store = useRef(createRepoStore()).current;
   const disconnectYjs = useStore(store, (state) => state.disconnectYjs);
@@ -428,10 +428,10 @@ export default function Repo() {
   // console.log("load store", useRef(createRepoStore()));
   useEffect(() => {
     setRepo(id!);
-    connectYjs();
+    connectYjs(yjsWsUrl);
 
     let intervalId = setInterval(() => {
-      connectYjs();
+      connectYjs(yjsWsUrl);
     }, 1000);
     return () => {
       clearInterval(intervalId);

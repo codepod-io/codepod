@@ -1,9 +1,8 @@
 import * as Y from "yjs";
 import WebSocket from "ws";
+import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
 
-import { spawnRuntime, killRuntime } from "./runtime";
-
-type PodResult = {
+export type PodResult = {
   exec_count?: number;
   data: {
     type: string;
@@ -16,7 +15,7 @@ type PodResult = {
   error?: { ename: string; evalue: string; stacktrace: string[] } | null;
 };
 
-type RuntimeInfo = {
+export type RuntimeInfo = {
   status?: string;
   wsStatus?: string;
 };
@@ -150,9 +149,11 @@ export async function connectSocket({
   runtimeMap: Y.Map<RuntimeInfo>;
   resultMap: Y.Map<PodResult>;
 }) {
+  console.log("connectSocket");
   const runtime = runtimeMap.get(runtimeId)!;
   switch (runtime.wsStatus) {
     case "connecting":
+      // FIXME connecting status could cause dead lock.
       console.log("socket was connecting, skip");
       return;
     case "connected":
@@ -161,11 +162,14 @@ export async function connectSocket({
     case "disconnected":
     case undefined:
       {
+        // the routing table is actually pre-defined
+        const url = `ws://cpruntime_${runtimeId}:4020`;
+        console.log("connecting to websocket url", url);
         runtimeMap.set(runtimeId, {
           ...runtime,
           wsStatus: "connecting",
         });
-        let socket = new WebSocket(`ws://proxy:4010/${runtimeId}`);
+        let socket = new WebSocket(url);
         await setupRuntimeSocket({
           socket,
           sessionId: runtimeId,
@@ -177,78 +181,4 @@ export async function connectSocket({
     default:
       throw new Error(`unknown wsStatus ${runtime.wsStatus}`);
   }
-}
-
-/**
- * Observe the runtime status info, talk to runtime servver, and update the result.
- */
-export function setupObserversToRuntime(ydoc: Y.Doc, repoId: string) {
-  const rootMap = ydoc.getMap("rootMap");
-  if (rootMap.get("runtimeMap") === undefined) {
-    rootMap.set("runtimeMap", new Y.Map<RuntimeInfo>());
-  }
-  if (rootMap.get("resultMap") === undefined) {
-    rootMap.set("resultMap", new Y.Map<PodResult>());
-  }
-  const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
-  // clear runtimeMap status/commands but keep the ID
-  for (let key of runtimeMap.keys()) {
-    runtimeMap.set(key, {});
-  }
-  const resultMap = rootMap.get("resultMap") as Y.Map<PodResult>;
-  runtimeMap.observe(
-    async (ymapEvent: Y.YMapEvent<RuntimeInfo>, transaction: Y.Transaction) => {
-      if (transaction.local) {
-        return;
-      }
-      ymapEvent.changes.keys.forEach(async (change, runtimeId) => {
-        if (change.action === "add") {
-          console.log(
-            `Property "${runtimeId}" was added. Initial value: "${runtimeMap.get(
-              runtimeId
-            )}".`
-          );
-          const runtime = runtimeMap.get(runtimeId)!;
-          console.log(
-            "TODO create runtime",
-            runtimeId,
-            runtimeMap.get(runtimeId)
-          );
-          const sessionId = runtimeId;
-          const created = await spawnRuntime(null, {
-            sessionId,
-          });
-          if (!created) {
-            // throw new Error("Failed to create runtime");
-            console.error("Failed to create runtime");
-          }
-          // create socket
-          //
-          // FIXME it takes time to create the socket, so we need to wait for a
-          // while, so we need to keep trying to connect. Currently the re-try
-          // logic is done in the frontend.
-          //
-          // TODO in the future, we need to either attach a callback to the
-          // spawner. When the runtime is ready, it should menifest itself.
-          //
-          // await connectSocket({ runtimeId: sessionId, runtimeMap, resultMap
-          // });
-          //
-          // try an interval
-        } else if (change.action === "update") {
-          // NO OP
-        } else if (change.action === "delete") {
-          // FIXME make sure the runtime is deleted.
-          console.log("delete runtime", runtimeId, change.oldValue);
-          // kill the runtime
-          const socket = runtime2socket.get(runtimeId);
-          socket?.close();
-          await killRuntime(null, {
-            sessionId: runtimeId,
-          });
-          runtime2socket.delete(runtimeId);
-        }
-      });
-    }
-  );
 }

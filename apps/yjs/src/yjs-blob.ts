@@ -24,7 +24,6 @@ import debounce from "lodash/debounce";
 
 import prisma from "@codepod/prisma";
 import { dbtype2nodetype, json2yxml } from "./yjs-utils";
-import { setupObserversToRuntime } from "./yjs-runtime";
 
 const debounceRegistry = new Map<string, any>();
 /**
@@ -146,6 +145,7 @@ async function loadFromDB(ydoc: Y.Doc, repoId: string) {
       rootMap.set("codeMap", new Y.Map<Y.Text>());
       rootMap.set("richMap", new Y.Map<Y.XmlFragment>());
       rootMap.set("resultMap", new Y.Map<any>());
+      rootMap.set("runtimeMap", new Y.Map<any>());
       const metaMap = new Y.Map();
       metaMap.set("version", "v0.0.1");
       rootMap.set("metaMap", metaMap);
@@ -158,7 +158,17 @@ export async function bindState(doc: Y.Doc, repoId: string) {
   await loadFromDB(doc, repoId);
   // Observe changes and write to the database.
   setupObserversToDB(doc, repoId);
-  setupObserversToRuntime(doc, repoId);
+  // setupObserversToRuntime(doc, repoId);
+  // reset runtime status
+  // clear runtimeMap status/commands but keep the ID
+  const rootMap = doc.getMap("rootMap");
+  if (rootMap.get("runtimeMap") === undefined) {
+    rootMap.set("runtimeMap", new Y.Map<any>());
+  }
+  const runtimeMap = rootMap.get("runtimeMap") as Y.Map<any>;
+  for (let key of runtimeMap.keys()) {
+    runtimeMap.set(key, {});
+  }
 }
 
 export function writeState() {

@@ -2,13 +2,6 @@ import Docker from "dockerode";
 
 import { ApolloClient, InMemoryCache, gql } from "@apollo/client/core";
 
-const apollo_client = new ApolloClient({
-  cache: new InMemoryCache({}),
-  uri: process.env.PROXY_API_URL,
-});
-
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
 async function removeContainer(name) {
   return new Promise((resolve, reject) => {
     var docker = new Docker();
@@ -166,7 +159,7 @@ async function createContainer(spec, network) {
   });
 }
 
-async function scanRunningSessions(): Promise<string[]> {
+export async function scanRunningSessions(): Promise<string[]> {
   return new Promise((resolve, reject) => {
     var docker = new Docker();
     docker.listContainers((err, containers) => {
@@ -184,6 +177,10 @@ async function scanRunningSessions(): Promise<string[]> {
   });
 }
 
+/**
+ *
+ * @returns target url: ws://container:port
+ */
 export async function spawnRuntime(_, { sessionId }) {
   // launch the kernel
   console.log("Spawning ");
@@ -239,34 +236,8 @@ export async function spawnRuntime(_, { sessionId }) {
       "codepod"
     );
   }
-
-  console.log("adding route", url, ws_host);
-  // add to routing table
-  await apollo_client.mutate({
-    mutation: gql`
-      mutation addRoute($url: String, $target: String) {
-        addRoute(url: $url, target: $target)
-      }
-    `,
-    variables: {
-      url,
-      // This 4020 is the WS listening port in WS_RUNTIME_IMAGE
-      target: `${ws_host}:4020`,
-    },
-    // refetchQueries: ["getUrls"],
-    refetchQueries: [
-      {
-        query: gql`
-          query getUrls {
-            getUrls
-          }
-        `,
-      },
-    ],
-  });
-  console.log("returning");
-  // console.log("res", res);
-  return true;
+  // This 4020 is the WS listening port in WS_RUNTIME_IMAGE
+  return `ws://${ws_host}:4020`;
 }
 
 export async function killRuntime(_, { sessionId }) {
@@ -289,20 +260,6 @@ export async function killRuntime(_, { sessionId }) {
     return false;
   }
   // remote route
-  console.log("Removing route ..");
-  await apollo_client.mutate({
-    mutation: gql`
-      mutation deleteRoute($url: String) {
-        deleteRoute(url: $url)
-      }
-    `,
-    variables: {
-      url,
-    },
-    // FIMXE why name doesn't work? Actually the refetchQueries doesn't work
-    // refetchQueries: ["getUrls"],
-    // refetchQueries: [{ query: GET_URLS_QUERY }],
-  });
   return true;
 }
 
@@ -318,83 +275,4 @@ export async function infoRuntime(_, { sessionId }) {
   return {
     startedAt: startedAt ? new Date(startedAt).getTime() : null,
   };
-}
-// debug: 3 min: 1000 * 60 * 3;
-// prod: 12 hours: 1000 * 60 * 60 * 12;
-let kernel_ttl: number = process.env.KERNEL_TTL
-  ? parseInt(process.env.KERNEL_TTL)
-  : 1000 * 60 * 60 * 12;
-let loop_interval = process.env.LOOP_INTERVAL
-  ? parseInt(process.env.LOOP_INTERVAL)
-  : 1000 * 60 * 1;
-
-async function killInactiveRoutes() {
-  let { data } = await apollo_client.query({
-    query: gql`
-      query GetUrls {
-        getUrls {
-          url
-          lastActive
-        }
-      }
-    `,
-    fetchPolicy: "network-only",
-  });
-  const now = new Date();
-  let inactiveRoutes = data.getUrls
-    .filter(({ url, lastActive }) => {
-      if (!lastActive) return true;
-      let d2 = new Date(parseInt(lastActive));
-      let activeTime = now.getTime() - d2.getTime();
-      return activeTime > kernel_ttl;
-    })
-    .map(({ url }) => url);
-  console.log("Inactive routes", inactiveRoutes);
-  for (let url of inactiveRoutes) {
-    let sessionId = url.substring(1);
-    await killRuntime(null, { sessionId });
-  }
-}
-
-/**
- * Periodically kill inactive routes every minute.
- */
-export function loopKillInactiveRoutes() {
-  setInterval(async () => {
-    await killInactiveRoutes();
-  }, loop_interval);
-}
-
-/**
- * At startup, check all active containers and add them to the table.
- */
-export async function initRoutes() {
-  let sessionIds = await scanRunningSessions();
-  console.log("initRoutes sessionIds", sessionIds);
-  for (let id of sessionIds) {
-    let url = `/${id}`;
-    let ws_host = `cpruntime_${id}`;
-    await apollo_client.mutate({
-      mutation: gql`
-        mutation addRoute($url: String, $target: String) {
-          addRoute(url: $url, target: $target)
-        }
-      `,
-      variables: {
-        url,
-        // This 4020 is the WS listening port in WS_RUNTIME_IMAGE
-        target: `${ws_host}:4020`,
-      },
-      // refetchQueries: ["getUrls"],
-      refetchQueries: [
-        {
-          query: gql`
-            query getUrls {
-              getUrls
-            }
-          `,
-        },
-      ],
-    });
-  }
 }

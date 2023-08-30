@@ -108,7 +108,6 @@ export const typeDefs = gql`
     pod(id: ID!): Pod
     getDashboardRepos: [Repo]
     activeSessions: [String]
-    listAllRuntimes: [RuntimeInfo]
   }
 
   type Mutation {
@@ -138,11 +137,5 @@ export const typeDefs = gql`
     unstar(repoId: ID!): Boolean
 
     updateCodeiumAPIKey(apiKey: String!): Boolean
-
-    connectRuntime(runtimeId: String, repoId: String): Boolean
-    runCode(runtimeId: String, spec: RunSpecInput): Boolean
-    runChain(runtimeId: String, specs: [RunSpecInput]): Boolean
-    interruptKernel(runtimeId: String): Boolean
-    requestKernelStatus(runtimeId: String): Boolean
   }
 `;

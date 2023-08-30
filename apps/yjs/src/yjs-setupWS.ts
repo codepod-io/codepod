@@ -216,6 +216,14 @@ const closeConn = (doc, conn) => {
       null
     );
     console.log("=== closeConn, renaming conn size", doc.conns.size);
+    if (conn.role === "runtime") {
+      // this is the runtime spawner. I need to reset all runtime status
+      console.log("Runtime connection lost, resetting all runtime status.");
+      const runtimeMap = doc.getMap("rootMap").get("runtimeMap");
+      runtimeMap.forEach((_, runtimeId) => {
+        runtimeMap.set(runtimeId, {});
+      });
+    }
     if (doc.conns.size === 0) {
       writeState();
       console.log("=== scheduled to destroy ydoc", doc.name, "in 3 seconds");
@@ -269,9 +277,15 @@ const pingTimeout = 30000;
 export const setupWSConnection = async (
   conn,
   req,
-  { docName = req.url.slice(1).split("?")[0], gc = true, readOnly = false } = {}
+  {
+    docName = req.url.slice(1).split("?")[0],
+    gc = true,
+    readOnly = false,
+    role = undefined,
+  } = {}
 ) => {
   conn.binaryType = "arraybuffer";
+  if (role) conn.role = role;
   console.log(`setupWSConnection ${docName}, read-only=${readOnly}`);
   // get doc, initialize if it does not exist yet
   const { doc, docLoadedPromise } = getYDoc(docName, gc);

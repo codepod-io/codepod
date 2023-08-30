@@ -42,7 +42,6 @@ import { RepoContext } from "../lib/store";
 
 import { sortNodes } from "./nodes/utils";
 
-import useMe from "../lib/auth";
 import {
   FormControlLabel,
   FormGroup,
@@ -572,6 +571,25 @@ const RuntimeMoreMenu = ({ runtimeId }) => {
   const setActiveRuntime = useStore(store, (state) => state.setActiveRuntime);
   const activeRuntime = useStore(store, (state) => state.activeRuntime);
   const runtimeMap = useStore(store, (state) => state.getRuntimeMap());
+  const repoId = useStore(store, (state) => state.repoId);
+
+  const [killRuntime] = useMutation(
+    gql`
+      mutation KillRuntime($runtimeId: String, $repoId: String) {
+        killRuntime(runtimeId: $runtimeId, repoId: $repoId)
+      }
+    `,
+    { context: { clientName: "spawner" } }
+  );
+
+  const [disconnectRuntime] = useMutation(
+    gql`
+      mutation DisconnectRuntime($runtimeId: String, $repoId: String) {
+        disconnectRuntime(runtimeId: $runtimeId, repoId: $repoId)
+      }
+    `,
+    { context: { clientName: "spawner" } }
+  );
 
   return (
     <Box component="span">
@@ -605,7 +623,15 @@ const RuntimeMoreMenu = ({ runtimeId }) => {
         </MenuItem>
         <MenuItem
           onClick={() => {
-            runtimeMap.delete(runtimeId);
+            disconnectRuntime({ variables: { runtimeId, repoId } });
+            handleClose();
+          }}
+        >
+          Disconnect
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            killRuntime({ variables: { runtimeId, repoId: repoId } });
             handleClose();
           }}
         >
@@ -626,21 +652,30 @@ const RuntimeItem = ({ runtimeId }) => {
   const activeRuntime = useStore(store, (state) => state.activeRuntime);
   const runtime = runtimeMap.get(runtimeId)!;
   const repoId = useStore(store, (state) => state.repoId);
-  const [connect] = useMutation(gql`
-    mutation ConnectRuntime($runtimeId: String, $repoId: String) {
-      connectRuntime(runtimeId: $runtimeId, repoId: $repoId)
-    }
-  `);
-  const [requestKernelStatus] = useMutation(gql`
-    mutation RequestKernelStatus($runtimeId: String) {
-      requestKernelStatus(runtimeId: $runtimeId)
-    }
-  `);
-  const [interruptKernel] = useMutation(gql`
-    mutation InterruptKernel($runtimeId: String) {
-      interruptKernel(runtimeId: $runtimeId)
-    }
-  `);
+  const [connect] = useMutation(
+    gql`
+      mutation ConnectRuntime($runtimeId: String, $repoId: String) {
+        connectRuntime(runtimeId: $runtimeId, repoId: $repoId)
+      }
+    `,
+    { context: { clientName: "spawner" } }
+  );
+  const [requestKernelStatus] = useMutation(
+    gql`
+      mutation RequestKernelStatus($runtimeId: String) {
+        requestKernelStatus(runtimeId: $runtimeId)
+      }
+    `,
+    { context: { clientName: "spawner" } }
+  );
+  const [interruptKernel] = useMutation(
+    gql`
+      mutation InterruptKernel($runtimeId: String) {
+        interruptKernel(runtimeId: $runtimeId)
+      }
+    `,
+    { context: { clientName: "spawner" } }
+  );
 
   useEffect(() => {
     // if the runtime is disconnected, keep trying to connect.
@@ -772,17 +807,26 @@ const RuntimeItem = ({ runtimeId }) => {
 
 const YjsRuntimeStatus = () => {
   const store = useContext(RepoContext)!;
+  const repoId = useStore(store, (state) => state.repoId);
   const runtimeMap = useStore(store, (state) => state.getRuntimeMap());
   // Observe runtime change
   const runtimeChanged = useStore(store, (state) => state.runtimeChanged);
   const ids = Array.from<string>(runtimeMap.keys());
+  const [spawnRuntime] = useMutation(
+    gql`
+      mutation SpawnRuntime($runtimeId: String, $repoId: String) {
+        spawnRuntime(runtimeId: $runtimeId, repoId: $repoId)
+      }
+    `,
+    { context: { clientName: "spawner" } }
+  );
   return (
     <>
       <Typography variant="h6">Runtime</Typography>
       <Button
         onClick={() => {
           const id = myNanoId();
-          runtimeMap.set(id, {});
+          spawnRuntime({ variables: { runtimeId: id, repoId: repoId } });
         }}
       >
         Create New Runtime
