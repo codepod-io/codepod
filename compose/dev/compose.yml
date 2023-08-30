@@ -86,6 +86,7 @@ services:
       # spawner need to add routes to proxy server
       # PROXY_API_URL: "http://proxy:4011/graphql"
       YJS_WS_URL: "ws://yjs-server:4233/socket"
+      JWT_SECRET: ${JWT_SECRET}
 
   yjs-server:
     image: node:18
