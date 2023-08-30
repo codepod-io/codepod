@@ -197,10 +197,18 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
           });
         }
       );
-      // Set active runtime to the first one.
+      // Set active runtime
       const runtimeMap = get().getRuntimeMap();
       if (runtimeMap.size > 0) {
-        get().setActiveRuntime(Array.from(runtimeMap.keys())[0]);
+        const runtimeList = Array.from(runtimeMap.keys());
+        const activeInstances = runtimeList.filter((id) => {
+          return runtimeMap.get(id)?.status !== undefined;
+        });
+        if (activeInstances) {
+          get().setActiveRuntime(activeInstances[0]);
+        } else {
+          get().setActiveRuntime(runtimeList[0]);
+        }
       }
       // Set up observers to trigger future runtime status changes.
       runtimeMap.observe(
