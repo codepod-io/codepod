@@ -35,6 +35,9 @@ importers:
       dockerode:
         specifier: ^3.3.1
         version: 3.3.1
+      dotenv:
+        specifier: ^16.3.1
+        version: 16.3.1
       express:
         specifier: ^4.18.2
         version: 4.18.2
@@ -182,40 +185,6 @@ importers:
         specifier: ~4.5.4
         version: 4.5.4
 
-  apps/proxy:
-    dependencies:
-      apollo-server:
-        specifier: ^3.10.3
-        version: 3.10.3(graphql@16.6.0)
-      apollo-server-core:
-        specifier: ^3.10.3
-        version: 3.12.0(graphql@16.6.0)
-      apollo-server-express:
-        specifier: ^3.10.3
-        version: 3.10.3(express@4.18.2)(graphql@16.6.0)
-      express:
-        specifier: ^4.18.2
-        version: 4.18.2
-      graphql:
-        specifier: ^16.6.0
-        version: 16.6.0
-      http-proxy:
-        specifier: ^1.18.1
-        version: 1.18.1
-    devDependencies:
-      '@types/express':
-        specifier: ^4.17.14
-        version: 4.17.17
-      '@types/node':
-        specifier: ^18.11.7
-        version: 18.11.7
-      ts-node-dev:
-        specifier: ^2.0.0
-        version: 2.0.0(@types/node@18.11.7)(typescript@4.8.4)
-      typescript:
-        specifier: ^4.8.4
-        version: 4.8.4
-
   apps/runtime:
     dependencies:
       '@apollo/client':
@@ -248,6 +217,97 @@ importers:
         version: 2.0.0(@types/node@18.11.7)(typescript@4.8.4)
       typescript:
         specifier: ^4.8.4
+        version: 4.8.4
+
+  apps/spawner:
+    dependencies:
+      '@apollo/client':
+        specifier: ^3.7.1
+        version: 3.8.1(graphql@16.6.0)(react-dom@18.2.0)(react@18.2.0)
+      '@codepod/prisma':
+        specifier: workspace:*
+        version: link:../../packages/prisma
+      '@kubernetes/client-node':
+        specifier: ^0.17.1
+        version: 0.17.1
+      apollo-server:
+        specifier: ^3.5.0
+        version: 3.10.3(graphql@16.6.0)
+      apollo-server-core:
+        specifier: ^3.10.3
+        version: 3.12.0(graphql@16.6.0)
+      apollo-server-express:
+        specifier: 3.10.2
+        version: 3.10.2(express@4.18.2)(graphql@16.6.0)
+      dockerode:
+        specifier: ^3.3.1
+        version: 3.3.1
+      express:
+        specifier: ^4.18.2
+        version: 4.18.2
+      graphql:
+        specifier: 16.6.0
+        version: 16.6.0
+      jest:
+        specifier: ^29.0.3
+        version: 29.0.3(@types/node@18.17.10)
+      jsdom:
+        specifier: ^22.1.0
+        version: 22.1.0
+      jsonwebtoken:
+        specifier: ^8.5.1
+        version: 8.5.1
+      lib0:
+        specifier: ^0.2.83
+        version: 0.2.83
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      prosemirror-model:
+        specifier: ^1.19.3
+        version: 1.19.3
+      prosemirror-view:
+        specifier: ^1.31.7
+        version: 1.31.7
+      reactflow:
+        specifier: ^11.7.4
+        version: 11.8.3(@types/react@18.2.15)(immer@10.0.2)(react-dom@18.2.0)(react@18.2.0)
+      ws:
+        specifier: ^8.2.3
+        version: 8.13.0
+      y-prosemirror:
+        specifier: ^1.2.1
+        version: 1.2.1(prosemirror-model@1.19.3)(prosemirror-state@1.4.3)(prosemirror-view@1.31.7)(y-protocols@1.0.5)(yjs@13.6.7)
+      y-protocols:
+        specifier: ^1.0.5
+        version: 1.0.5
+      yjs:
+        specifier: ^13.6.7
+        version: 13.6.7
+    devDependencies:
+      '@types/dockerode':
+        specifier: ^3.3.11
+        version: 3.3.11
+      '@types/express':
+        specifier: ^4.17.14
+        version: 4.17.17
+      '@types/jsdom':
+        specifier: ^21.1.1
+        version: 21.1.1
+      '@types/jsonwebtoken':
+        specifier: ^8.5.9
+        version: 8.5.9
+      '@types/node':
+        specifier: ^18.11.2
+        version: 18.17.10
+      '@types/ws':
+        specifier: ^8.5.3
+        version: 8.5.3
+      ts-node-dev:
+        specifier: ^2.0.0
+        version: 2.0.0(@types/node@18.17.10)(typescript@4.8.4)
+      typescript:
+        specifier: ^4.4.4
         version: 4.8.4
 
   apps/ui:
@@ -1287,7 +1347,7 @@ packages:
         optional: true
     dependencies:
       '@bufbuild/connect': 0.9.1(@bufbuild/protobuf@1.2.1)
-      '@bufbuild/protobuf': 1.2.1
+      '@bufbuild/protobuf': 1.3.0
       '@bufbuild/protoc-gen-es': 1.3.0(@bufbuild/protobuf@1.2.1)
       '@bufbuild/protoplugin': 1.3.0
     transitivePeerDependencies:
@@ -5149,6 +5209,7 @@ packages:
 
   /@types/minimatch@5.1.2:
     resolution: {integrity: sha512-K0VQKziLUWkVKiRVrx4a40iPaxTUefQmjtkQofBkYRcoaaL/8rhwDWww9qWbrgicNOgnpIsMxyNIUM4+n6dUIA==}
+    requiresBuild: true
     dev: true
     optional: true
 
@@ -5850,32 +5911,6 @@ packages:
       - supports-color
     dev: false
 
-  /apollo-server-express@3.10.3(express@4.18.2)(graphql@16.6.0):
-    resolution: {integrity: sha512-Z8m0r10mX8KlGS3noYeRPcWxWR2hX6NHJicjuwZ62PeTZlrDJF5cwGmXqbUg/sCTPx7Ny//ZEASBTwFFp8DOeQ==}
-    engines: {node: '>=12.0'}
-    deprecated: The `apollo-server-express` package is part of Apollo Server v2 and v3, which are now deprecated (end-of-life October 22nd 2023 and October 22nd 2024, respectively). This package's functionality is now found in the `@apollo/server` package. See https://www.apollographql.com/docs/apollo-server/previous-versions/ for more details.
-    peerDependencies:
-      express: ^4.17.1
-      graphql: ^15.3.0 || ^16.0.0
-    dependencies:
-      '@types/accepts': 1.3.5
-      '@types/body-parser': 1.19.2
-      '@types/cors': 2.8.12
-      '@types/express': 4.17.14
-      '@types/express-serve-static-core': 4.17.31
-      accepts: 1.3.8
-      apollo-server-core: 3.12.0(graphql@16.6.0)
-      apollo-server-types: 3.8.0(graphql@16.6.0)
-      body-parser: 1.20.2
-      cors: 2.8.5
-      express: 4.18.2
-      graphql: 16.6.0
-      parseurl: 1.3.3
-    transitivePeerDependencies:
-      - encoding
-      - supports-color
-    dev: false
-
   /apollo-server-express@3.12.0(express@4.18.2)(graphql@16.6.0):
     resolution: {integrity: sha512-m8FaGPUfDOEGSm7QRWRmUUGjG/vqvpQoorkId9/FXkC57fz/A59kEdrzkMt9538Xgsa5AV+X4MEWLJhTvlW3LQ==}
     engines: {node: '>=12.0'}
@@ -6032,6 +6067,7 @@ packages:
     engines: {node: '>=10.12.0'}
     deprecated: Please use @electron/asar moving forward.  There is no API change, just a package name change
     hasBin: true
+    requiresBuild: true
     dependencies:
       chromium-pickle-js: 0.2.0
       commander: 5.1.0
@@ -6070,6 +6106,7 @@ packages:
   /at-least-node@1.0.0:
     resolution: {integrity: sha512-+q/t7Ekv1EDY2l6Gda6LLiX14rU9TV20Wa3ofeQmwPFZbOMo9DXrLbOjFaaclkXKWidIaopwAObQDqwWtGUjqg==}
     engines: {node: '>= 4.0.0'}
+    requiresBuild: true
 
   /author-regex@1.0.0:
     resolution: {integrity: sha512-KbWgR8wOYRAPekEmMXrYYdc7BRyhn2Ftk7KWfMUnQ43hFdojWEFRxhhRUm3/OFEdPa1r0KAvTTg9YQK57xTe0g==}
@@ -6249,6 +6286,7 @@ packages:
 
   /boolean@3.2.0:
     resolution: {integrity: sha512-d0II/GO9uf9lfUHH2BQsjxzRJZBdsjgsBiW4BvhWk/3qoKwQFjIDVN19PfX8F2D/r9PCMTtLWjYVCFrpeYUzsw==}
+    requiresBuild: true
     optional: true
 
   /brace-expansion@1.1.11:
@@ -6445,6 +6483,7 @@ packages:
 
   /chromium-pickle-js@0.2.0:
     resolution: {integrity: sha512-1R5Fho+jBq0DDydt+/vHWj5KJNJCKdARKOCwZUen84I5BreWoLqRLANH1U87eJy1tiASPtMnGqJJq0ZsLoRPOw==}
+    requiresBuild: true
 
   /ci-info@3.8.0:
     resolution: {integrity: sha512-eXTggHWSooYhq49F2opQhuHWgzucfF2YgODK4e1566GQs5BIfP30B0oenwBJHfWxAs2fyPB1s7Mg949zLf61Yw==}
@@ -6480,6 +6519,7 @@ packages:
 
   /cliui@7.0.4:
     resolution: {integrity: sha512-OcRE68cOsVMXp1Yvonl/fzkQOyjLSu/8bhPDfQt0e0/Eb283TKP20Fs2MqoPsr9SwA595rRCA+QMzYc9nBP+JQ==}
+    requiresBuild: true
     dependencies:
       string-width: 4.2.3
       strip-ansi: 6.0.1
@@ -6580,6 +6620,7 @@ packages:
   /commander@5.1.0:
     resolution: {integrity: sha512-P0CysNDQ7rtVw4QIQtm+MRxV66vKFSvlsQvGYXZWR3qFU0jlMKHZZZgw8e+8DSah4UDKMqnknRDQz+xuQXQ/Zg==}
     engines: {node: '>= 6'}
+    requiresBuild: true
 
   /commander@6.2.1:
     resolution: {integrity: sha512-U7VdrJFnJgo4xjrHpTzu0yrHPGImdsmD95ZlgYSEajAn2JKzDhDTPG9kBTefmObL2w/ngeZnilk+OV9CG3d7UA==}
@@ -6936,6 +6977,7 @@ packages:
 
   /detect-node@2.1.0:
     resolution: {integrity: sha512-T0NIuQpnTvFDATNuHN5roPwSBG83rFsuO+MXXH9/3N1eFbn4wcPjttvjMLEPWJ0RGUYgQE7cGgS3tNxbqCGM7g==}
+    requiresBuild: true
     optional: true
 
   /diff-sequences@29.6.3:
@@ -7023,6 +7065,11 @@ packages:
     resolution: {integrity: sha512-3VdM/SXBZX2omc9JF9nOPCtDaYQ67BGp5CoLpIQlO2KCAPETs8TcDHacF26jXadGbvUteZzRTeos2fhID5+ucQ==}
     dev: false
 
+  /dotenv@16.3.1:
+    resolution: {integrity: sha512-IPzF4w4/Rd94bA9imS68tZBaYyBWSCE47V1RGuMrB94iyTOIEwRmVL2x/4An+6mETpLrKJ5hQkB8W4kFAadeIQ==}
+    engines: {node: '>=12'}
+    dev: false
+
   /dynamic-dedupe@0.3.0:
     resolution: {integrity: sha512-ssuANeD+z97meYOqd50e04Ze5qp4bPqo8cCkI4TRjZkzAUgIDTrXV1R8QCdINpiI+hw14+rYazvTRdQrz0/rFQ==}
     dependencies:
@@ -7051,6 +7098,7 @@ packages:
   /electron-installer-common@0.10.3:
     resolution: {integrity: sha512-mYbP+6i+nHMIm0WZHXgGdmmXMe+KXncl6jZYQNcCF9C1WsNA9C5SZ2VP4TLQMSIoFO+X4ugkMEA5uld1bmyEvA==}
     engines: {node: '>= 10.0.0'}
+    requiresBuild: true
     dependencies:
       '@malept/cross-spawn-promise': 1.1.1
       asar: 3.2.0
@@ -7307,6 +7355,7 @@ packages:
 
   /es6-error@4.1.1:
     resolution: {integrity: sha512-Um/+FxMr9CISWh0bi5Zv0iOD+4cFh5qLeks1qhAopKVAJw3drgKbKySikp7wGhDL0HPeaja0P5ULZrxLkniUVg==}
+    requiresBuild: true
     optional: true
 
   /esbuild@0.18.20:
@@ -7577,10 +7626,6 @@ packages:
   /etag@1.8.1:
     resolution: {integrity: sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==}
     engines: {node: '>= 0.6'}
-
-  /eventemitter3@4.0.7:
-    resolution: {integrity: sha512-8guHBZCwKnFhYdHr2ysuRWErTwhoN2X8XELRlrRwpmfeY2jjuUN4taQMsULKUVo1K4DvZl+0pgfyoysHxvmvEw==}
-    dev: false
 
   /execa@1.0.0:
     resolution: {integrity: sha512-adbxcyWV46qiHyvSp50TKt05tB4tK3HcmF7/nxfAdhnox83seTDbwnaqKO4sXRy7roHAIFqJP/Rw/AuEbX61LA==}
@@ -7854,16 +7899,6 @@ packages:
     transitivePeerDependencies:
       - supports-color
 
-  /follow-redirects@1.15.2:
-    resolution: {integrity: sha512-VQLG33o04KaQ8uYi2tVNbdrWp1QWxNNea+nmIB4EVM28v0hmP17z7aG1+wAkNzVq4KeXTq3221ye5qTJP91JwA==}
-    engines: {node: '>=4.0'}
-    peerDependencies:
-      debug: '*'
-    peerDependenciesMeta:
-      debug:
-        optional: true
-    dev: false
-
   /for-each@0.3.3:
     resolution: {integrity: sha512-jqYfLp7mo9vIyQf8ykW2v7A+2N4QjeCeI5+Dz9XraiO1ign81wjiH7Fb9vSOWvQfNtmSa4H2RoQTrrXivdUZmw==}
     dependencies:
@@ -7944,6 +7979,7 @@ packages:
   /fs-extra@7.0.1:
     resolution: {integrity: sha512-YJDaCJZEnBmcbw13fvdAM9AwNOJwOzrE4pqMqBq5nFiEqXUqHwlK4B+3pUw6JNvfSPtX05xFHtYy/1ni01eGCw==}
     engines: {node: '>=6 <7 || >=8'}
+    requiresBuild: true
     dependencies:
       graceful-fs: 4.2.11
       jsonfile: 4.0.0
@@ -8021,6 +8057,7 @@ packages:
 
   /gar@1.0.4:
     resolution: {integrity: sha512-w4n9cPWyP7aHxKxYHFQMegj7WIAsL/YX/C4Bs5Rr8s1H9M1rNtRWRsw+ovYMkXDQ5S4ZbYHsHAPmevPjPgw44w==}
+    requiresBuild: true
     dev: true
     optional: true
 
@@ -8081,6 +8118,7 @@ packages:
   /get-folder-size@2.0.1:
     resolution: {integrity: sha512-+CEb+GDCM7tkOS2wdMKTn9vU7DgnKUTuDlehkNJKNSovdCOVxs14OfKCk4cvSaR3za4gj+OBdl9opPN9xrJ0zA==}
     hasBin: true
+    requiresBuild: true
     dependencies:
       gar: 1.0.4
       tiny-each-async: 2.0.3
@@ -8462,17 +8500,6 @@ packages:
       debug: 4.3.4
     transitivePeerDependencies:
       - supports-color
-
-  /http-proxy@1.18.1:
-    resolution: {integrity: sha512-7mz/721AbnJwIVbnaSv1Cz3Am0ZLT/UBwkC92VlxhXv/k/BBQfM2fXElQNC27BVGr0uwUpplYPQM9LnaBMR5NQ==}
-    engines: {node: '>=8.0.0'}
-    dependencies:
-      eventemitter3: 4.0.7
-      follow-redirects: 1.15.2
-      requires-port: 1.0.0
-    transitivePeerDependencies:
-      - debug
-    dev: false
 
   /http-signature@1.2.0:
     resolution: {integrity: sha512-CAbnr6Rz4CYQkLYUtSNXxQPUH2gK8f3iWexVlsnMeD+GjlsQ0Xsy1cOX+mN3dtxYomRy21CiOzU8Uhw6OwncEQ==}
@@ -9676,6 +9703,7 @@ packages:
 
   /lodash._reinterpolate@3.0.0:
     resolution: {integrity: sha512-xYHt68QRoYGjeeM/XOE1uJtvXQAgvszfBhjV4yvsQH0u2i9I6cI6c6/eG4Hh3UAOVn0y/xAXwmTzEay49Q//HA==}
+    requiresBuild: true
     dev: true
     optional: true
 
@@ -9724,6 +9752,7 @@ packages:
 
   /lodash.template@4.5.0:
     resolution: {integrity: sha512-84vYFxIkmidUiFxidA/KjjH9pAycqW+h980j7Fuz5qxRtO9pgB7MDFTdys1N7A5mcucRiDyEq4fusljItR1T/A==}
+    requiresBuild: true
     dependencies:
       lodash._reinterpolate: 3.0.0
       lodash.templatesettings: 4.2.0
@@ -9732,6 +9761,7 @@ packages:
 
   /lodash.templatesettings@4.2.0:
     resolution: {integrity: sha512-stgLz+i3Aa9mZgnjr/O+v9ruKZsPsndy7qPZOchbqk2cnTU1ZaldKK+v7m54WoKIyxiuMZTKT2H81F8BeAc3ZQ==}
+    requiresBuild: true
     dependencies:
       lodash._reinterpolate: 3.0.0
     dev: true
@@ -9858,6 +9888,7 @@ packages:
   /matcher@3.0.0:
     resolution: {integrity: sha512-OkeDaAZ/bQCxeFAozM55PKcKU0yJMPGifLwV4Qgjitu+5MoAfSQN4lsLJeXZ1b8w0x+/Emda6MZgXS1jvsapng==}
     engines: {node: '>=10'}
+    requiresBuild: true
     dependencies:
       escape-string-regexp: 4.0.0
     optional: true
@@ -10010,6 +10041,7 @@ packages:
   /mkdirp@0.5.6:
     resolution: {integrity: sha512-FP+p8RB8OWpF3YZBCrP5gtADmtXApB5AMLn+vdyA+PyxCjrCs00mjyUozssO33cwDeT3wNGdLxJ5M//YqtHAJw==}
     hasBin: true
+    requiresBuild: true
     dependencies:
       minimist: 1.2.8
     dev: true
@@ -11343,6 +11375,7 @@ packages:
   /rimraf@2.6.3:
     resolution: {integrity: sha512-mwqeW5XsA2qAejG46gYdENaxXjx9onRNCfn7L0duuP4hCuTIi/QO7PDK07KJfp1d+izWPrzEJDcSqBa0OZQriA==}
     hasBin: true
+    requiresBuild: true
     dependencies:
       glob: 7.2.3
     dev: true
@@ -11364,6 +11397,7 @@ packages:
   /roarr@2.15.4:
     resolution: {integrity: sha512-CHhPh+UNHD2GTXNYhPWLnU8ONHdI+5DI+4EYIAOaiD63rHeYlZvyh8P+in5999TTSFgUYuKUAjzRI4mdh/p+2A==}
     engines: {node: '>=8.0'}
+    requiresBuild: true
     dependencies:
       boolean: 3.2.0
       detect-node: 2.1.0
@@ -11456,6 +11490,7 @@ packages:
 
   /semver-compare@1.0.0:
     resolution: {integrity: sha512-YM3/ITh2MJ5MtzaM429anh+x2jiLVjqILF4m4oyQB18W7Ggea7BfqdH/wGMK7dDiMghv/6WG7znWMwUDzJiXow==}
+    requiresBuild: true
     optional: true
 
   /semver@5.7.2:
@@ -11496,6 +11531,7 @@ packages:
   /serialize-error@7.0.1:
     resolution: {integrity: sha512-8I8TjW5KMOKsZQTvoxjuSIa7foAwPWGOts+6o7sgjz41/qMD9VQHEDxi6PBvK2l0MXUmqZyNpUK+T2tQaaElvw==}
     engines: {node: '>=10'}
+    requiresBuild: true
     dependencies:
       type-fest: 0.13.1
     optional: true
@@ -11673,6 +11709,7 @@ packages:
 
   /sprintf-js@1.1.2:
     resolution: {integrity: sha512-VE0SOVEHCk7Qc8ulkWw3ntAzXuqf7S2lvwQaDLRnUeIEaKNQJzV6BwmLKhOqT61aGhfUMrXeaBk+oDGCzvhcug==}
+    requiresBuild: true
     optional: true
 
   /ssh2@1.14.0:
@@ -11927,6 +11964,7 @@ packages:
   /temp@0.9.4:
     resolution: {integrity: sha512-yYrrsWnrXMcdsnu/7YMYAofM1ktpL5By7vZhf15CrXijWWrEYZks5AXBudalfSWJLlnen/QUJUB5aoB0kqZUGA==}
     engines: {node: '>=6.0.0'}
+    requiresBuild: true
     dependencies:
       mkdirp: 0.5.6
       rimraf: 2.6.3
@@ -11955,6 +11993,7 @@ packages:
 
   /tiny-each-async@2.0.3:
     resolution: {integrity: sha512-5ROII7nElnAirvFn8g7H7MtpfV1daMcyfTGQwsn/x2VtyV+VPiO5CjReCJtWLvoKTDEDmZocf3cNPraiMnBXLA==}
+    requiresBuild: true
     dev: true
     optional: true
 
@@ -12312,6 +12351,7 @@ packages:
   /type-fest@0.13.1:
     resolution: {integrity: sha512-34R7HTnG0XIJcBSn5XhDd7nNFPRcXYRZrBB2O2jdKqYODldSzBAqzsWoZYYvduky73toYS/ESqxPvkDf/F0XMg==}
     engines: {node: '>=10'}
+    requiresBuild: true
     optional: true
 
   /type-fest@0.20.2:
@@ -12742,6 +12782,7 @@ packages:
   /word-wrap@1.2.5:
     resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
     engines: {node: '>=0.10.0'}
+    requiresBuild: true
     dev: true
     optional: true
 
@@ -12927,6 +12968,7 @@ packages:
   /yargs-parser@20.2.9:
     resolution: {integrity: sha512-y11nGElTIV+CT3Zv9t7VKl+Q3hTQoT9a1Qzezhhl6Rp21gJ/IVTW7Z3y9EWXhuUBC2Shnf+DX0antecpAwSP8w==}
     engines: {node: '>=10'}
+    requiresBuild: true
     dev: true
     optional: true
 
@@ -12937,6 +12979,7 @@ packages:
   /yargs@16.2.0:
     resolution: {integrity: sha512-D1mvvtDG0L5ft/jGWkLpG1+m0eQxOfaBvTNELraWj22wSVUMWxZUvYgJYcKh6jGGIkJFhH4IZPQhR4TKpc8mBw==}
     engines: {node: '>=10'}
+    requiresBuild: true
     dependencies:
       cliui: 7.0.4
       escalade: 3.1.1

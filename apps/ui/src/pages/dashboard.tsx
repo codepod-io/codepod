@@ -19,7 +19,7 @@ import PublicIcon from "@mui/icons-material/Public";
 import PublicOffIcon from "@mui/icons-material/PublicOff";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
-import useMe from "../lib/auth";
+import { useMe } from "../lib/auth";
 import { getUpTime } from "../lib/utils/utils";
 import {
   Button,
@@ -129,70 +129,6 @@ const StarButton = ({ repo }) => {
         </Tooltip>
       )}
     </>
-  );
-};
-
-const KillRuntimeButton = ({ repo }) => {
-  const { loading, data } = useQuery(gql`
-    query ListAllRuntimes {
-      listAllRuntimes {
-        sessionId
-        lastActive
-      }
-    }
-  `);
-  const { me } = useMe();
-  const [killRuntime, { loading: killing }] = useMutation(
-    gql`
-      mutation killRuntime($sessionId: String!) {
-        killRuntime(sessionId: $sessionId)
-      }
-    `,
-    {
-      refetchQueries: ["ListAllRuntimes"],
-    }
-  );
-  const theme = useTheme();
-
-  if (loading) return null;
-  const info = data.listAllRuntimes.find(
-    ({ sessionId }) => sessionId === `${me.id}_${repo.id}`
-  );
-  if (!info) return null;
-  if (!info.lastActive) return null;
-
-  return (
-    <Box>
-      {/* last active: {getUpTime(info.lastActive)} */}
-      <Tooltip title={getUpTime(info.lastActive)} placement="top">
-        <Box>
-          <Tooltip title="Kill runtime">
-            <IconButton
-              disabled={killing}
-              size="small"
-              sx={{
-                "&:hover": {
-                  color: theme.palette.error.main,
-                },
-              }}
-              onClick={async () => {
-                killRuntime({
-                  variables: {
-                    sessionId: `${me.id}_${repo.id}`,
-                  },
-                });
-              }}
-            >
-              {killing ? (
-                <CircularProgress size="14px" />
-              ) : (
-                <StopCircleIcon fontSize="inherit" />
-              )}
-            </IconButton>
-          </Tooltip>
-        </Box>
-      </Tooltip>
-    </Box>
   );
 };
 
@@ -316,13 +252,6 @@ const RepoCard = ({ repo }) => {
               <PublicIcon fontSize="small" color="success" />
             </Tooltip>
           )}
-        </Box>
-        <Box
-          sx={{
-            marginLeft: "auto",
-          }}
-        >
-          <KillRuntimeButton repo={repo} />
         </Box>
 
         <DeleteRepoButton repo={repo} />
@@ -449,7 +378,7 @@ function NoLogginErrorAlert() {
   );
 }
 
-export default function Dashboard() {
+export function Dashboard() {
   const { loading, me } = useMe();
   if (loading)
     return (

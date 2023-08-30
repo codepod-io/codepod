@@ -347,6 +347,9 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
           runtimeId: activeRuntime,
           specs,
         },
+        context: {
+          clientName: "spawner",
+        },
       });
     }
   },

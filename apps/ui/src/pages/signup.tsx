@@ -41,7 +41,7 @@ function Copyright(props) {
   );
 }
 
-export default function SignUp() {
+export function SignUp() {
   const { signUp, isSignedIn } = useAuth();
   const [error, setError] = useState(null);
 
