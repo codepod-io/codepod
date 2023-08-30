@@ -5,9 +5,21 @@ import Button from "@mui/material/Button";
 import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import Popover from "@mui/material/Popover";
+import StopIcon from "@mui/icons-material/Stop";
+import RefreshIcon from "@mui/icons-material/Refresh";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import Drawer from "@mui/material/Drawer";
+import MenuList from "@mui/material/MenuList";
+import MenuItem from "@mui/material/MenuItem";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
+import ListItemButton from "@mui/material/ListItemButton";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import RestartAltIcon from "@mui/icons-material/RestartAlt";
 import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import Typography from "@mui/material/Typography";
 import TreeView from "@mui/lab/TreeView";
@@ -17,14 +29,20 @@ import TreeItem from "@mui/lab/TreeItem";
 import { useSnackbar, VariantType } from "notistack";
 
 import { Node as ReactflowNode } from "reactflow";
+import { NodeData } from "../lib/store/canvasSlice";
+import * as Y from "yjs";
 
+import { gql, useQuery, useMutation, useApolloClient } from "@apollo/client";
 import { useStore } from "zustand";
 import { MyKBar } from "./MyKBar";
+
+import { usePrompt } from "../lib/prompt";
 
 import { RepoContext } from "../lib/store";
 
 import { sortNodes } from "./nodes/utils";
 
+import useMe from "../lib/auth";
 import {
   FormControlLabel,
   FormGroup,
@@ -33,12 +51,24 @@ import {
   Slider,
   Input,
   Grid,
+  Paper,
+  Menu,
 } from "@mui/material";
+import { getUpTime, myNanoId } from "../lib/utils/utils";
 import { registerCompletion } from "../lib/monacoCompletionProvider";
 import { SettingDialog } from "./SettingDialog";
 import { toSvg } from "html-to-image";
+import { match } from "ts-pattern";
 
 const defaultAPIKey = import.meta.env.VITE_APP_CODEIUM_API_KEY;
+
+function Flex(props) {
+  return (
+    <Box sx={{ display: "flex" }} {...props}>
+      {props.children}
+    </Box>
+  );
+}
 
 function SidebarSettings() {
   const store = useContext(RepoContext);
@@ -527,6 +557,280 @@ function SidebarSettings() {
   );
 }
 
+const RuntimeMoreMenu = ({ runtimeId }) => {
+  // menu logic
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+  // codepod logic
+  const store = useContext(RepoContext)!;
+  const setActiveRuntime = useStore(store, (state) => state.setActiveRuntime);
+  const activeRuntime = useStore(store, (state) => state.activeRuntime);
+  const runtimeMap = useStore(store, (state) => state.getRuntimeMap());
+
+  return (
+    <Box component="span">
+      <IconButton
+        aria-label="more"
+        id="long-button"
+        aria-controls={open ? "basic-menu" : undefined}
+        aria-expanded={open ? "true" : undefined}
+        aria-haspopup="true"
+        onClick={handleClick}
+      >
+        <MoreVertIcon />
+      </IconButton>
+      <Menu
+        id="basic-menu"
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+        MenuListProps={{
+          "aria-labelledby": "basic-button",
+        }}
+      >
+        <MenuItem
+          onClick={() => {
+            setActiveRuntime(runtimeId);
+            handleClose();
+          }}
+          disabled={activeRuntime === runtimeId}
+        >
+          Activate
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            runtimeMap.delete(runtimeId);
+            handleClose();
+          }}
+        >
+          Delete
+        </MenuItem>
+      </Menu>
+    </Box>
+  );
+};
+
+const RuntimeItem = ({ runtimeId }) => {
+  const store = useContext(RepoContext)!;
+  const runtimeMap = useStore(store, (state) => state.getRuntimeMap());
+  // Observe runtime change
+  const runtimeChanged = useStore(store, (state) => state.runtimeChanged);
+  // A dummy useEffect to indicate that runtimeChanged is used.
+  useEffect(() => {}, [runtimeChanged]);
+  const activeRuntime = useStore(store, (state) => state.activeRuntime);
+  const runtime = runtimeMap.get(runtimeId)!;
+  const repoId = useStore(store, (state) => state.repoId);
+  const [connect] = useMutation(gql`
+    mutation ConnectRuntime($runtimeId: String, $repoId: String) {
+      connectRuntime(runtimeId: $runtimeId, repoId: $repoId)
+    }
+  `);
+  const [requestKernelStatus] = useMutation(gql`
+    mutation RequestKernelStatus($runtimeId: String) {
+      requestKernelStatus(runtimeId: $runtimeId)
+    }
+  `);
+  const [interruptKernel] = useMutation(gql`
+    mutation InterruptKernel($runtimeId: String) {
+      interruptKernel(runtimeId: $runtimeId)
+    }
+  `);
+
+  useEffect(() => {
+    // if the runtime is disconnected, keep trying to connect.
+    if (runtime.wsStatus !== "connected") {
+      const interval = setInterval(
+        () => {
+          console.log("try connecting to runtime", runtimeId);
+          connect({
+            variables: {
+              runtimeId,
+              repoId,
+            },
+          });
+        },
+        // ping every 3 seconds
+        3000
+      );
+      return () => clearInterval(interval);
+    }
+  }, [runtime]);
+
+  return (
+    <Box
+      sx={{
+        opacity: activeRuntime === runtimeId ? 1 : 0.3,
+      }}
+    >
+      <Paper>
+        <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
+          ID: {runtimeId.substring(0, 8)}
+        </Typography>
+
+        <Typography variant="body1">
+          Conn:{" "}
+          {match(runtime.wsStatus)
+            .with("connected", () => (
+              <Box color="green" component="span">
+                connected
+              </Box>
+            ))
+            .with("connecting", () => (
+              <Box color="yellow" component="span">
+                connecting
+              </Box>
+            ))
+            .with("disconnected", () => (
+              <Box color="yellow" component="span">
+                Disconnected{" "}
+                <Button
+                  onClick={() => {
+                    connect({
+                      variables: {
+                        runtimeId,
+                        repoId,
+                      },
+                    });
+                  }}
+                  sx={{ color: "red" }}
+                >
+                  retry
+                </Button>
+              </Box>
+            ))
+            .otherwise(() => (
+              <Box color="red" component="span">
+                {runtime.wsStatus || "unknown"}
+                <Button
+                  onClick={() => {
+                    connect({
+                      variables: {
+                        runtimeId,
+                        repoId,
+                      },
+                    });
+                  }}
+                  sx={{ color: "red" }}
+                >
+                  retry
+                </Button>
+              </Box>
+            ))}
+          <RuntimeMoreMenu runtimeId={runtimeId} />
+        </Typography>
+        <Typography variant="body1">
+          Status:{" "}
+          {match(runtime.status)
+            .with("idle", () => (
+              <Box color="green" component="span">
+                idle
+              </Box>
+            ))
+            .with("busy", () => (
+              <Box color="yellow" component="span">
+                busy
+              </Box>
+            ))
+            .otherwise(() => runtime.status)}
+          <IconButton
+            size="small"
+            onClick={() => {
+              requestKernelStatus({
+                variables: {
+                  runtimeId,
+                },
+              });
+            }}
+          >
+            <RefreshIcon fontSize="inherit" />
+          </IconButton>
+          <Tooltip title="interrupt">
+            <IconButton
+              size="small"
+              onClick={() => {
+                interruptKernel({
+                  variables: {
+                    runtimeId,
+                  },
+                });
+              }}
+            >
+              <StopIcon fontSize="inherit" />
+            </IconButton>
+          </Tooltip>
+        </Typography>
+      </Paper>
+    </Box>
+  );
+};
+
+const YjsRuntimeStatus = () => {
+  const store = useContext(RepoContext)!;
+  const runtimeMap = useStore(store, (state) => state.getRuntimeMap());
+  // Observe runtime change
+  const runtimeChanged = useStore(store, (state) => state.runtimeChanged);
+  const ids = Array.from<string>(runtimeMap.keys());
+  return (
+    <>
+      <Typography variant="h6">Runtime</Typography>
+      <Button
+        onClick={() => {
+          const id = myNanoId();
+          runtimeMap.set(id, {});
+        }}
+      >
+        Create New Runtime
+      </Button>
+
+      {ids.map((runtimeId) => (
+        <RuntimeItem key={runtimeId} runtimeId={runtimeId} />
+      ))}
+    </>
+  );
+};
+
+function YjsSyncStatus() {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  // FIXME performance issue
+  const yjsStatus = useStore(store, (state) => state.yjsStatus);
+  const yjsSyncStatus = useStore(store, (state) => state.yjsSyncStatus);
+  return (
+    <Box>
+      <Stack
+        direction="row"
+        spacing={2}
+        sx={{
+          alignItems: "center",
+        }}
+      >
+        {/* Synced? <Box>{provider?.synced}</Box> */}
+        {/* {yjsStatus} */}
+        Sync Server:
+        {match(yjsStatus)
+          .with("connected", () => <Box color="green">connected</Box>)
+          .with("disconnected", () => <Box color="red">disconnected</Box>)
+          .with("connecting", () => <Box color="yellow">connecting</Box>)
+          // .with("syncing", () => <Box color="green">online</Box>)
+          .otherwise(() => `${yjsStatus}`)}
+      </Stack>
+      <Stack direction="row" spacing={2}>
+        Sync Status:
+        {match(yjsSyncStatus)
+          .with("uploading", () => <Box color="yellow">uploading</Box>)
+          .with("synced", () => <Box color="green">synced</Box>)
+          .otherwise(() => `Unknown: ${yjsSyncStatus}`)}
+      </Stack>
+    </Box>
+  );
+}
+
 function ToastError() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -1007,6 +1311,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           }}
         >
           <Stack>
+            {!isGuest && (
+              <Box>
+                {/* <SyncStatus /> */}
+                <YjsSyncStatus />
+                <Divider />
+                <YjsRuntimeStatus />
+              </Box>
+            )}
+            <Divider />
             <Typography variant="h6">Export to ..</Typography>
             <ExportButtons />
 
