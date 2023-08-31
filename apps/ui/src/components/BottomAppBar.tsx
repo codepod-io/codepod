@@ -96,14 +96,14 @@ const RuntimeItem = ({ runtimeId }) => {
 
   useEffect(() => {
     // if the runtime is disconnected, keep trying to connect.
-    if (runtime) {
-      if (runtime.wsStatus !== "connected") {
+    if (activeRuntime) {
+      if (runtimeMap.get(activeRuntime)!.wsStatus !== "connected") {
         const interval = setInterval(
           () => {
-            console.log("try connecting to runtime", runtimeId);
+            console.log("try connecting to runtime", activeRuntime);
             connect({
               variables: {
-                runtimeId,
+                activeRuntime,
                 repoId,
               },
             });
@@ -114,7 +114,7 @@ const RuntimeItem = ({ runtimeId }) => {
         return () => clearInterval(interval);
       }
     }
-  }, [runtime]);
+  }, [activeRuntime]);
 
   return (
     <Stack
@@ -219,7 +219,7 @@ const RuntimeItem = ({ runtimeId }) => {
         >
           Status:{" "}
         </Paper>
-        <Box color={runtimeStatusColors[status]} component="span">
+        <Box color={runtimeStatusColors[runtimeStatus]} component="span">
           {runtimeStatus === "idle"
             ? "idle"
             : runtimeStatus === "busy"
@@ -266,7 +266,7 @@ const RuntimeStatus = () => {
   const listItemRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
-
+  useEffect(() => {}, [runtimeChanged]);
   const [spawnRuntime] = useMutation(
     gql`
       mutation SpawnRuntime($runtimeId: String, $repoId: String) {
@@ -275,7 +275,6 @@ const RuntimeStatus = () => {
     `,
     { context: { clientName: "spawner" } }
   );
-
   return (
     <Box
       sx={{
@@ -404,13 +403,11 @@ function YjsSyncStatus() {
 
 type BottomAppBarProps = {
   open: boolean;
-  height: number;
   drawerWidth: number;
 };
 
 export const BottomAppBar: React.FC<BottomAppBarProps> = ({
   open = false,
-  height = 5,
   drawerWidth = 0,
 }) => {
   // never render saving status / runtime module for a guest
@@ -424,13 +421,13 @@ export const BottomAppBar: React.FC<BottomAppBarProps> = ({
       color="inherit"
       sx={{
         width: `calc(100% - ${open ? drawerWidth : 0}px)`,
-        height: { height },
         transition: "width 195ms cubic-bezier(0.4, 0, 0.6, 1) 0ms",
         top: "auto",
         bottom: 0,
         display: "flex",
         flexDirection: "row",
         alignItems: "center",
+        maxHeight: "35px",
       }}
     >
       <Stack

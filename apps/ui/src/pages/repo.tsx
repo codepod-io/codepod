@@ -159,7 +159,6 @@ function RepoWrapper({ children, id }) {
   // }
 
   const DrawerWidth = 240;
-  const BottomAppBarHeight = 30;
   return (
     <Box
       sx={{
@@ -216,19 +215,18 @@ function RepoWrapper({ children, id }) {
           sx={{
             boxSizing: "border-box",
             width: "100%",
-            height: "96%",
+            height: "100%",
             pt: `52px`,
+            pb: `40px`,
             mx: "auto",
           }}
         >
           {children}
         </Box>
+        <Box>
+          <BottomAppBar open={open} drawerWidth={DrawerWidth} />
+        </Box>
       </Box>
-      <BottomAppBar
-        open={open}
-        height={BottomAppBarHeight}
-        drawerWidth={DrawerWidth}
-      />
     </Box>
   );
 }
