@@ -195,7 +195,7 @@ export interface RuntimeSlice {
   getRuntimeMap(): Y.Map<RuntimeInfo>;
   getResultMap(): Y.Map<PodResult>;
   activeRuntime?: string;
-  setActiveRuntime(id: string): void;
+  setActiveRuntime(id?: string): void;
   yjsSendRun(ids: string[]): void;
   isRuntimeReady(): boolean;
 }
@@ -216,7 +216,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
     return get().ydoc.getMap("rootMap").get("resultMap") as Y.Map<PodResult>;
   },
   activeRuntime: undefined,
-  setActiveRuntime(id: string) {
+  setActiveRuntime(id?: string) {
     set({ activeRuntime: id });
   },
   /**
