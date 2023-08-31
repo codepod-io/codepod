@@ -721,40 +721,9 @@ const RuntimeItem = ({ runtimeId }) => {
                 connecting
               </Box>
             ))
-            .with("disconnected", () => (
-              <Box color="yellow" component="span">
-                Disconnected{" "}
-                <Button
-                  onClick={() => {
-                    connect({
-                      variables: {
-                        runtimeId,
-                        repoId,
-                      },
-                    });
-                  }}
-                  sx={{ color: "red" }}
-                >
-                  retry
-                </Button>
-              </Box>
-            ))
             .otherwise(() => (
               <Box color="red" component="span">
-                {runtime.wsStatus || "unknown"}
-                <Button
-                  onClick={() => {
-                    connect({
-                      variables: {
-                        runtimeId,
-                        repoId,
-                      },
-                    });
-                  }}
-                  sx={{ color: "red" }}
-                >
-                  retry
-                </Button>
+                Disconnected{" "}
               </Box>
             ))}
           <RuntimeMoreMenu runtimeId={runtimeId} />
