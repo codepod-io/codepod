@@ -132,8 +132,7 @@ export async function startAPIServer({ port }) {
           const doc = await getMyYDoc({ repoId, token });
           const rootMap = doc.getMap("rootMap");
           const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
-          runtimeMap.set(runtimeId, {});
-          // runtimeMap.delete(runtimeId)
+          runtimeMap.delete(runtimeId);
           return true;
         },
 
