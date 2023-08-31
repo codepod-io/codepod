@@ -34,9 +34,13 @@ const yjsServerUrl = process.env.YJS_WS_URL;
 // FIXME need to have a TTL to clear the ydoc.
 const docs: Map<string, Y.Doc> = new Map();
 
-function getMyYDoc({ repoId, token }): Y.Doc {
+async function getMyYDoc({ repoId, token }): Promise<Y.Doc> {
+  return new Promise((resolve, reject) => {
   const oldydoc = docs.get(repoId);
-  if (oldydoc) return oldydoc;
+    if (oldydoc) {
+      resolve(oldydoc);
+      return;
+    }
   const ydoc = new Y.Doc();
   // connect to primary database
   console.log("connecting to y-websocket provider");
@@ -52,10 +56,11 @@ function getMyYDoc({ repoId, token }): Y.Doc {
   });
   provider.once("synced", () => {
     console.log("Provider synced");
+      docs.set(repoId, ydoc);
+      resolve(ydoc);
   });
   provider.connect();
-  docs.set(repoId, ydoc);
-  return ydoc;
+  });
 }
 
 export async function startAPIServer({ port }) {
@@ -63,8 +68,6 @@ export async function startAPIServer({ port }) {
     context: ({ req }) => {
       const token = req?.headers?.authorization?.slice(7);
       let userId;
-
-      console.log("in context", token);
 
       if (token) {
         const decoded = jwt.verify(
@@ -110,11 +113,11 @@ export async function startAPIServer({ port }) {
       Mutation: {
         spawnRuntime: async (_, { runtimeId, repoId }, { token }) => {
           // create the runtime container
-          const target = await spawnRuntime(null, {
+          await spawnRuntime(null, {
             sessionId: runtimeId,
           });
           // set initial runtimeMap info for this runtime
-          const doc = getMyYDoc({ repoId, token });
+          const doc = await getMyYDoc({ repoId, token });
           const rootMap = doc.getMap("rootMap");
           const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
           runtimeMap.set(runtimeId, {});
@@ -126,7 +129,7 @@ export async function startAPIServer({ port }) {
           });
           console.log("Removing route ..");
           // remove from runtimeMap
-          const doc = getMyYDoc({ repoId, token });
+          const doc = await getMyYDoc({ repoId, token });
           const rootMap = doc.getMap("rootMap");
           const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
           runtimeMap.set(runtimeId, {});
@@ -139,7 +142,7 @@ export async function startAPIServer({ port }) {
           console.log("=== connectRuntime", runtimeId, repoId);
           // assuming doc is already loaded.
           // FIXME this socket/ is the prefix of url. This is very prone to errors.
-          const doc = getMyYDoc({ repoId, token });
+          const doc = await getMyYDoc({ repoId, token });
           const rootMap = doc.getMap("rootMap");
           console.log("rootMap", Array.from(rootMap.keys()));
           const runtimeMap = rootMap.get("runtimeMap") as any;
@@ -156,7 +159,7 @@ export async function startAPIServer({ port }) {
             runtime2socket.delete(runtimeId);
           }
 
-          const doc = getMyYDoc({ repoId, token });
+          const doc = await getMyYDoc({ repoId, token });
           const rootMap = doc.getMap("rootMap");
           const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
           runtimeMap.set(runtimeId, {});
