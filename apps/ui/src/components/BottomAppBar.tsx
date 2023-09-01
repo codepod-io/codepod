@@ -48,14 +48,7 @@ const RuntimeItem = ({ runtimeId }) => {
   const setActiveRuntime = useStore(store, (state) => state.setActiveRuntime);
   const runtime = runtimeMap.get(runtimeId) || { wsStatus: "unknown" };
   const repoId = useStore(store, (state) => state.repoId);
-  const [connect] = useMutation(
-    gql`
-      mutation ConnectRuntime($runtimeId: String, $repoId: String) {
-        connectRuntime(runtimeId: $runtimeId, repoId: $repoId)
-      }
-    `,
-    { context: { clientName: "spawner" } }
-  );
+
   const [requestKernelStatus] = useMutation(
     gql`
       mutation RequestKernelStatus($runtimeId: String) {
@@ -94,60 +87,20 @@ const RuntimeItem = ({ runtimeId }) => {
   const runtimeStatus = runtime.status ?? "default";
   const wsStatusConfig = {
     connected: { title: "connected", color: "green" },
-    disconnected: { title: "disconnected", color: "red" },
     connecting: { title: "connecting", color: "yellow" },
+    default: { title: "disconnected", color: "red" },
   };
-  const wsStatus = wsStatusConfig[runtime.wsStatus || ""] ?? "default";
-
-  useEffect(() => {
-    // if the runtime is disconnected, keep trying to connect.
-    if (activeRuntime) {
-      if (runtimeMap.get(activeRuntime)!.wsStatus !== "connected") {
-        const interval = setInterval(
-          () => {
-            console.log("try connecting to runtime", activeRuntime);
-            connect({
-              variables: {
-                activeRuntime,
-                repoId,
-              },
-            });
-          },
-          // ping every 3 seconds
-          3000
-        );
-        return () => clearInterval(interval);
-      }
-    }
-  }, [activeRuntime]);
+  const wsStatus = wsStatusConfig[runtime.wsStatus || "default"];
 
   return (
     <ListItem key={runtimeId} disablePadding sx={{ margin: 0 }}>
-      {activeRuntime === runtimeId &&
-        (wsStatus ? (
-          <Tooltip title={wsStatus.title}>
-            <ListItemIcon>
-              <CircleIcon style={{ color: wsStatus.color }} />
-            </ListItemIcon>
-          </Tooltip>
-        ) : (
-          <Box color="red" component="span">
-            {runtime!.wsStatus || "unknown"}
-            <Button
-              onClick={() => {
-                connect({
-                  variables: {
-                    runtimeId,
-                    repoId,
-                  },
-                });
-              }}
-              sx={{ color: "red" }}
-            >
-              retry
-            </Button>
-          </Box>
-        ))}
+      {activeRuntime === runtimeId && (
+        <Tooltip title={wsStatus.title}>
+          <ListItemIcon>
+            <CircleIcon style={{ color: wsStatus.color }} />
+          </ListItemIcon>
+        </Tooltip>
+      )}
 
       {activeRuntime === runtimeId && (
         <Divider orientation="vertical" flexItem />
@@ -314,6 +267,35 @@ const RuntimeStatus = () => {
     `,
     { context: { clientName: "spawner" } }
   );
+  const [connect] = useMutation(
+    gql`
+      mutation ConnectRuntime($runtimeId: String, $repoId: String) {
+        connectRuntime(runtimeId: $runtimeId, repoId: $repoId)
+      }
+    `,
+    { context: { clientName: "spawner" } }
+  );
+  useEffect(() => {
+    // if the active runtime is disconnected, keep trying to connect.
+    if (activeRuntime) {
+      if (runtimeMap.get(activeRuntime)!.wsStatus !== "connected") {
+        const interval = setInterval(
+          () => {
+            console.log("try connecting to runtime", activeRuntime);
+            connect({
+              variables: {
+                activeRuntime,
+                repoId,
+              },
+            });
+          },
+          // ping every 3 seconds
+          3000
+        );
+        return () => clearInterval(interval);
+      }
+    }
+  }, [activeRuntime]);
   return (
     <Box
       sx={{
