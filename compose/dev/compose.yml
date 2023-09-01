@@ -56,7 +56,24 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
 
-  spawner:
+  spawner-native:
+    # This image has python and ipykernel installed.
+    build:
+      context: .
+    ports:
+      - 4022:4021
+    working_dir: /codepod/apps/spawner
+    volumes:
+      - ../..:/codepod
+      - pnpm-store:/codepod/.pnpm-store
+    command: bash -c "corepack enable && pnpm dev:native"
+    environment:
+      KERNEL_TTL: "43200000"
+      LOOP_INTERVAL: "60000"
+      YJS_WS_URL: "ws://yjs-server:4233/socket"
+      JWT_SECRET: ${JWT_SECRET}
+
+  spawner-docker:
     image: node:18
     working_dir: /codepod/apps/spawner
     ports:
@@ -65,7 +82,7 @@ services:
       - ../..:/codepod
       - pnpm-store:/codepod/.pnpm-store
       - /var/run/docker.sock:/var/run/docker.sock
-    command: sh -c "corepack enable && pnpm dev"
+    command: sh -c "corepack enable && pnpm dev:docker"
     environment:
       # Set PROJECT_ROOT to the absolute path of your codepod local repo if you
       # want to debug the runtime code.
@@ -113,7 +130,10 @@ services:
       VITE_APP_CODEIUM_API_KEY: ${CODEIUM_API_KEY}
       VITE_APP_YJS_WS_URL: "ws://localhost:4233/socket"
       VITE_APP_API_URL: "http://localhost:4000/graphql"
-      VITE_APP_SPAWNER_API_URL: "http://localhost:4021/graphql"
+      # Native spawner
+      VITE_APP_SPAWNER_API_URL: "http://localhost:4022/graphql"
+      # Docker spawner
+      # VITE_APP_SPAWNER_API_URL: "http://localhost:4021/graphql"
     volumes:
       - ../..:/codepod
       - pnpm-store:/codepod/.pnpm-store

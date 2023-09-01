@@ -144,10 +144,12 @@ export async function connectSocket({
   runtimeId,
   runtimeMap,
   resultMap,
+  routingTable,
 }: {
   runtimeId: string;
   runtimeMap: Y.Map<RuntimeInfo>;
   resultMap: Y.Map<PodResult>;
+  routingTable: Map<string, string>;
 }) {
   console.log("connectSocket");
   const runtime = runtimeMap.get(runtimeId)!;
@@ -162,8 +164,8 @@ export async function connectSocket({
     case "disconnected":
     case undefined:
       {
-        // the routing table is actually pre-defined
-        const url = `ws://cpruntime_${runtimeId}:4020`;
+        const url = routingTable.get(runtimeId);
+        if (!url) throw new Error(`cannot find url for runtime ${runtimeId}`);
         console.log("connecting to websocket url", url);
         runtimeMap.set(runtimeId, {
           ...runtime,
