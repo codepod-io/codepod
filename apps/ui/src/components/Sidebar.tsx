@@ -920,38 +920,25 @@ type SidebarProps = {
   onClose: () => void;
 };
 
-function ProjectItem({ projId, projName }) {
+function ExportPanel() {
+  const { id: repoId } = useParams();
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const repoName = useStore(store, (state) => state.repoName);
   const nodesMap = useStore(store, (state) => state.getNodesMap());
   const resultMap = useStore(store, (state) => state.getResultMap());
   const codeMap = useStore(store, (state) => state.getCodeMap());
   const [loading, setLoading] = useState(false);
-  const [showGotoIcon, setShowGotoIcon] = useState(false);
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const open = Boolean(anchorEl);
-  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
-    setAnchorEl(event.currentTarget);
+
+  const downloadLink = (dataUrl, fileName) => {
+    let element = document.createElement("a");
+    element.setAttribute("href", dataUrl);
+    element.setAttribute("download", fileName);
+
+    element.style.display = "none";
+    document.body.appendChild(element);
+    element.click();
   };
-  const handleClose = () => {
-    setAnchorEl(null);
-  };
-  const setShareOpen = useStore(store, (state) => state.setShareOpen);
-  const [copyRepo] = useMutation(
-    gql`
-      mutation CopyRepo($id: String!) {
-        copyRepo(projId: $id)
-      }
-    `,
-    { variables: { projId } }
-  );
-  const ipynbFilename = `${
-    projName || "Untitled"
-  }-${new Date().toISOString()}.ipynb`;
-  const svgFilename = `${projName?.replaceAll(
-    " ",
-    "-"
-  )}-${projId}-${new Date().toISOString()}.svg`;
 
   const exportJupyterNB = () => {
     setLoading(true);
@@ -1145,14 +1132,14 @@ function ProjectItem({ projId, projName }) {
       {
         // hard-code Jupyter Notebook top-level metadata
         metadata: {
-          name: projName,
+          name: repoName,
           kernelspec: {
             name: "python3",
             display_name: "Python 3",
           },
           language_info: { name: "python" },
           Codepod_version: "v0.0.1",
-          Codepod_repo_id: `${projId}`,
+          Codepod_repo_id: `${repoId}`,
         },
         nbformat: 4.0,
         nbformat_minor: 0,
@@ -1163,17 +1150,12 @@ function ProjectItem({ projId, projName }) {
     );
 
     // Generate the download link on the fly
-    let element = document.createElement("a");
-    element.setAttribute(
-      "href",
-      "data:text/plain;charset=utf-8," + encodeURIComponent(fileContent)
-    );
-    element.setAttribute("download", ipynbFilename);
-
-    element.style.display = "none";
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    const fileName = `${
+      repoName || "Untitled"
+    }-${new Date().toISOString()}.ipynb`;
+    const dataUrl =
+      "data:text/plain;charset=utf-8," + encodeURIComponent(fileContent);
+    downloadLink(dataUrl, fileName);
     setLoading(false);
   };
 
@@ -1194,142 +1176,15 @@ function ProjectItem({ projId, projName }) {
         return true;
       },
     }).then((dataUrl) => {
-      const a = document.createElement("a");
-
-      a.setAttribute("download", svgFilename);
-      a.setAttribute("href", dataUrl);
-      a.click();
+      const fileName = `${repoName?.replaceAll(
+        " ",
+        "-"
+      )}-${repoId}-${new Date().toISOString()}.svg`;
+      downloadLink(dataUrl, fileName);
       setLoading(false);
     });
   };
-  return (
-    <ListItem
-      key={projId}
-      onMouseEnter={() => setShowGotoIcon(true)}
-      onMouseLeave={() => setShowGotoIcon(false)}
-      secondaryAction={
-        <Tooltip title="More operations">
-          <IconButton
-            edge="end"
-            aria-label="More operations"
-            onClick={handleClick}
-          >
-            <MoreVertIcon />
-          </IconButton>
-        </Tooltip>
-      }
-    >
-      <ListItemText>
-        <Typography fontSize={16}>{projName}</Typography>
-      </ListItemText>
-      {showGotoIcon && (
-        <IconButton
-          aria-label="Go to the project"
-          size="small"
-          onClick={() => window.open(`/repo/${projId}`)}
-        >
-          <KeyboardReturnIcon />
-        </IconButton>
-      )}
-      <Menu
-        id="basic-menu"
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleClose}
-      >
-        <MenuItem
-          onClick={() => {
-            async () => {
-              const result = await copyRepo();
-              const newRepoId = result.data.copyRepo;
-              window.open(`/repo/${newRepoId}`);
-            };
-            handleClose();
-          }}
-        >
-          Duplicate
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            setShareOpen(true);
-            handleClose();
-          }}
-        >
-          Share
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            exportJupyterNB();
-            handleClose();
-          }}
-          disabled={loading}
-        >
-          Export as Notebook
-        </MenuItem>
-        <MenuItem
-          onClick={() => {
-            exportSVG();
-            handleClose();
-          }}
-        >
-          Export as SVG
-        </MenuItem>
-      </Menu>
-    </ListItem>
-  );
-}
 
-function ProjectPanel() {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const navigate = useNavigate();
-  const { loading, error, data } = useQuery(gql`
-    query GetDashboardRepos {
-      getDashboardRepos {
-        name
-        id
-        userId
-        public
-        stargazers {
-          id
-        }
-        updatedAt
-        createdAt
-        accessedAt
-      }
-    }
-  `);
-  const [createRepo] = useMutation(
-    gql`
-      mutation CreateRepo {
-        createRepo {
-          id
-        }
-      }
-    `,
-    {
-      refetchQueries: ["GetDashboardRepos"],
-    }
-  );
-  if (loading) {
-    return <CircularProgress />;
-  }
-  if (error) {
-    return <Box>ERROR: {error.message}</Box>;
-  }
-  const projects = data.getDashboardRepos.slice();
-  // sort repos by last access time
-  projects.sort((a, b) => {
-    if (a.accessedAt && b.accessedAt) {
-      return parseInt(b.accessedAt) - parseInt(a.accessedAt);
-    } else if (a.accessedAt) {
-      return -1;
-    } else if (b.accessedAt) {
-      return 1;
-    } else {
-      return 0;
-    }
-  });
   return (
     <Card elevation={1} sx={{ pl: "0", ml: "-20px", pb: "0", mb: "0" }}>
       <Box
@@ -1337,10 +1192,6 @@ function ProjectPanel() {
           ml: "10px",
           pb: "0",
           mb: "0",
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-          backgroundColor: "#1976d2",
         }}
       >
         <Paper
@@ -1350,31 +1201,35 @@ function ProjectPanel() {
             fontSize: "18px",
             color: "white",
             backgroundColor: "#1976d2",
-            width: "90%",
           }}
         >
-          Project Panel
+          Export Panel
         </Paper>
-        <Tooltip title="Create new project">
-          <IconButton
-            size="small"
-            onClick={async () => {
-              let res = await createRepo();
-              if (res.data.createRepo.id) {
-                navigate(`/repo/${res.data.createRepo.id}`);
-              }
-            }}
-          >
-            <AddIcon fontSize="inherit" sx={{ color: "white" }} />
-          </IconButton>
-        </Tooltip>
       </Box>
-
-      <CardContent sx={{ margin: "-20px -10px -20px -10px" }}>
+      <CardContent sx={{ margin: "-10px 0px -20px -5px" }}>
         <List dense>
-          {projects.slice(0, 5).map((proj) => (
-            <ProjectItem key={proj.id} projId={proj.id} projName={proj.name} />
-          ))}
+          <ListItem disablePadding>
+            <ListItemButton
+              onClick={() => {
+                exportJupyterNB();
+              }}
+            >
+              <ListItemText>
+                <Typography fontSize={16}>Jupyter Notebook</Typography>
+              </ListItemText>
+            </ListItemButton>
+          </ListItem>
+          <ListItem disablePadding>
+            <ListItemButton
+              onClick={() => {
+                exportSVG();
+              }}
+            >
+              <ListItemText>
+                <Typography fontSize={16}>SVG</Typography>
+              </ListItemText>
+            </ListItemButton>
+          </ListItem>
         </List>
       </CardContent>
     </Card>
@@ -1556,7 +1411,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </Box>
             )}
             <Divider />
-            <ProjectPanel />
+            <ExportPanel />
+            {/*<ProjectPanel />*/}
 
             <Divider />
             <SidebarSettings />
