@@ -282,6 +282,12 @@ export interface CanvasSlice {
   centerSelection: boolean;
   setCenterSelection: (b: boolean) => void;
 
+  isSelectiveView: boolean;
+  setSelectiveView: (b: boolean) => void;
+  selectedToc: Set<string>;
+  clearSelectedToc: () => void;
+  setSelectedToc: (selectedItems: Set<string>) => void;
+
   handlePaste(event: ClipboardEvent, position: XYPosition): void;
   handleCopy(event: ClipboardEvent): void;
 
@@ -381,6 +387,23 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     set({ centerSelection: b });
   },
 
+  isSelectiveView: false,
+  setSelectiveView: (b: boolean) => set({ isSelectiveView: b }),
+  selectedToc: new Set(),
+  setSelectedToc(selectedItems) {
+    set(
+      produce((state: MyState) => {
+        state.selectedToc = selectedItems;
+      })
+    );
+  },
+  clearSelectedToc: () => {
+    set(
+      produce((state: MyState) => {
+        state.selectedToc.clear();
+      })
+    );
+  },
   focusedEditor: undefined,
   setFocusedEditor: (id?: string) =>
     set(
@@ -407,29 +430,68 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
    * This function handles the real updates to the reactflow nodes to render.
    */
   updateView: () => {
+    let nodes: Node[] = [];
     const nodesMap = get().getNodesMap();
-    let selectedPods = get().selectedPods;
-    let nodes = Array.from<Node>(nodesMap.values());
-    nodes = nodes
-      .sort((a: Node, b: Node) => a.data.level - b.data.level)
-      .map((node) => ({
-        ...node,
-        style: {
-          ...node.style,
-          backgroundColor:
-            node.type === "SCOPE" ? level2color[node.data.level] : undefined,
-        },
-        selected: selectedPods.has(node.id),
-        // className: get().dragHighlight === node.id ? "active" : "",
-        className: match(node.id)
-          .with(get().dragHighlight || "", () => "active")
-          .otherwise(() => undefined),
-      }));
+    if (!get().isSelectiveView) {
+      let selectedPods = get().selectedPods;
+      nodes = Array.from<Node>(nodesMap.values());
+      nodes = nodes
+        .sort((a: Node, b: Node) => a.data.level - b.data.level)
+        .map((node) => ({
+          ...node,
+          style: {
+            ...node.style,
+            backgroundColor:
+              node.type === "SCOPE" ? level2color[node.data.level] : undefined,
+          },
+          selected: selectedPods.has(node.id),
+          // className: get().dragHighlight === node.id ? "active" : "",
+          className: match(node.id)
+            .with(get().dragHighlight || "", () => "active")
+            .otherwise(() => undefined),
+        }));
+    } else {
+      nodes = Array.from(
+        [...get().selectedToc].map((id): Node => {
+          return nodesMap.get(id)!;
+        })
+      );
+      nodes = nodes
+        .sort((a: Node, b: Node) => a.data.level - b.data.level)
+        .map((node) => ({
+          ...node,
+          style: {
+            ...node.style,
+            backgroundColor:
+              node.type === "SCOPE" ? level2color[node.data.level] : undefined,
+          },
+          parentNode:
+            node.parentNode === undefined ||
+            get().selectedToc.has(node.parentNode)
+              ? node.parentNode
+              : undefined,
+          position:
+            node.parentNode === undefined ||
+            get().selectedToc.has(node.parentNode)
+              ? node.position
+              : getAbsPos(node, nodesMap),
+          selected: get().selectedToc.has(node.id),
+          // className: get().dragHighlight === node.id ? "active" : "",
+          className: match(node.id)
+            .with(get().dragHighlight || "", () => "active")
+            .otherwise(() => undefined),
+        }));
+    }
 
     set({ nodes });
     // edges view
     const edgesMap = get().getEdgesMap();
-    set({ edges: Array.from<Edge>(edgesMap.values()).filter((e) => e) });
+    const nodeSet = new Set<Node>(Array.from(nodes));
+    set({
+      edges: Array.from<Edge>(edgesMap.values()).filter(
+        (e) => nodeSet.has(e.sourceNode!) && nodeSet.has(e.targetNode!)
+      ),
+    });
   },
 
   addNode: (type, position, parent) => {
