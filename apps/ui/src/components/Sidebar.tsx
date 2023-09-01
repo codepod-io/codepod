@@ -1407,12 +1407,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {/* <SyncStatus /> */}
                 <YjsSyncStatus />
                 <Divider />
-                {<YjsRuntimeStatus />}
+                <YjsRuntimeStatus />
               </Box>
             )}
             <Divider />
             <ExportPanel />
-            {/*<ProjectPanel />*/}
 
             <Divider />
             <SidebarSettings />
