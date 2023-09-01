@@ -14,11 +14,6 @@ import Y from "yjs";
 import { WebsocketProvider } from "./y-websocket";
 
 import { connectSocket, runtime2socket, RuntimeInfo } from "./yjs-runtime";
-import {
-  killRuntime,
-  scanRunningSessions,
-  spawnRuntime,
-} from "./spawner-docker";
 
 interface TokenInterface {
   id: string;
@@ -63,7 +58,9 @@ async function getMyYDoc({ repoId, token }): Promise<Y.Doc> {
   });
 }
 
-export async function startAPIServer({ port }) {
+const routingTable: Map<string, string> = new Map();
+
+export async function startAPIServer({ port, spawnRuntime, killRuntime }) {
   const apollo = new ApolloServer({
     context: ({ req }) => {
       const token = req?.headers?.authorization?.slice(7);
@@ -115,9 +112,8 @@ export async function startAPIServer({ port }) {
           // TODO verify repoId is owned by userId
           if (!userId) throw new Error("Not authorized.");
           // create the runtime container
-          await spawnRuntime(null, {
-            sessionId: runtimeId,
-          });
+          const wsUrl = await spawnRuntime(runtimeId);
+          routingTable.set(runtimeId, wsUrl);
           // set initial runtimeMap info for this runtime
           const doc = await getMyYDoc({ repoId, token });
           const rootMap = doc.getMap("rootMap");
@@ -127,15 +123,14 @@ export async function startAPIServer({ port }) {
         },
         killRuntime: async (_, { runtimeId, repoId }, { token, userId }) => {
           if (!userId) throw new Error("Not authorized.");
-          await killRuntime(null, {
-            sessionId: runtimeId,
-          });
+          await killRuntime(runtimeId);
           console.log("Removing route ..");
           // remove from runtimeMap
           const doc = await getMyYDoc({ repoId, token });
           const rootMap = doc.getMap("rootMap");
           const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
           runtimeMap.delete(runtimeId);
+          routingTable.delete(runtimeId);
           return true;
         },
 
@@ -149,7 +144,12 @@ export async function startAPIServer({ port }) {
           console.log("rootMap", Array.from(rootMap.keys()));
           const runtimeMap = rootMap.get("runtimeMap") as any;
           const resultMap = rootMap.get("resultMap") as any;
-          await connectSocket({ runtimeId, runtimeMap, resultMap });
+          await connectSocket({
+            runtimeId,
+            runtimeMap,
+            resultMap,
+            routingTable,
+          });
         },
         disconnectRuntime: async (
           _,

@@ -154,14 +154,8 @@ export class ZmqWire {
   kernelStatus;
   results;
 
-  constructor(spec, ip) {
+  constructor(spec) {
     this.kernelSpec = spec;
-    // console.log(this.kernelSpec);
-    if (ip) {
-      console.log("Got IP Address:", ip);
-      // FIXME hard-coded IP and port
-      this.kernelSpec.ip = ip;
-    }
     this.onshell = (msgs) => {
       console.log("Default OnShell:", msgs);
     };

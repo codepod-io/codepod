@@ -181,7 +181,7 @@ export async function scanRunningSessions(): Promise<string[]> {
  *
  * @returns target url: ws://container:port
  */
-export async function spawnRuntime(_, { sessionId }) {
+export async function spawnRuntime(sessionId) {
   // launch the kernel
   console.log("Spawning ");
   let url = `/${sessionId}`;
@@ -240,7 +240,7 @@ export async function spawnRuntime(_, { sessionId }) {
   return `ws://${ws_host}:4020`;
 }
 
-export async function killRuntime(_, { sessionId }) {
+export async function killRuntime(sessionId) {
   if (!sessionId) return false;
   // TODO kill the runtime server.
   // FIXME handle exception, and kill zombie containers
@@ -261,18 +261,4 @@ export async function killRuntime(_, { sessionId }) {
   }
   // remote route
   return true;
-}
-
-/**
- * Get the runtime info.
- * @param sessionId the session ID
- * @returns {startedAt} the time when the runtime is started.
- */
-export async function infoRuntime(_, { sessionId }) {
-  let zmq_host = `cpkernel_${sessionId}`;
-  let ws_host = `cpruntime_${sessionId}`;
-  let startedAt = await getContainerInfo(ws_host);
-  return {
-    startedAt: startedAt ? new Date(startedAt).getTime() : null,
-  };
 }

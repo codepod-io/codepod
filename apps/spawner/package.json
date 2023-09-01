@@ -5,12 +5,14 @@
   "scripts": {
     "build": "tsc",
     "start": "node build/run.js",
-    "dev": "ts-node-dev src/run.ts",
+    "dev:native": "ts-node-dev src/run-native.ts",
+    "dev:docker": "ts-node-dev src/run-docker.ts",
     "test": "jest --config jest.config.js"
   },
   "dependencies": {
     "@apollo/client": "^3.7.1",
     "@codepod/prisma": "workspace:*",
+    "@codepod/runtime": "workspace:^",
     "@kubernetes/client-node": "^0.17.1",
     "apollo-server": "^3.5.0",
     "apollo-server-core": "^3.10.3",
