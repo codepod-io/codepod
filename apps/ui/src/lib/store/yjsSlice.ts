@@ -205,8 +205,21 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
       // Set up observers to trigger future runtime status changes.
       runtimeMap.observe(
         (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
-          // delete runtime is a local change.
-          // if (transaction.local) return;
+          if (transaction.local) return;
+          YMapEvent.changes.keys.forEach((change, key) => {
+            if (change.action === "add") {
+            } else if (change.action === "update") {
+            } else if (change.action === "delete") {
+              // If it was the active runtime, reset it.
+              if (get().activeRuntime === key) {
+                get().setActiveRuntime(undefined);
+              }
+            }
+          });
+          // Set active runtime if it is not set
+          if (runtimeMap.size > 0 && !get().activeRuntime) {
+            get().setActiveRuntime(Array.from(runtimeMap.keys())[0]);
+          }
           get().toggleRuntimeChanged();
         }
       );

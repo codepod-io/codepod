@@ -34,28 +34,33 @@ const yjsServerUrl = process.env.YJS_WS_URL;
 // FIXME need to have a TTL to clear the ydoc.
 const docs: Map<string, Y.Doc> = new Map();
 
-function getMyYDoc({ repoId, token }): Y.Doc {
-  const oldydoc = docs.get(repoId);
-  if (oldydoc) return oldydoc;
-  const ydoc = new Y.Doc();
-  // connect to primary database
-  console.log("connecting to y-websocket provider");
-  const provider = new WebsocketProvider(yjsServerUrl, repoId, ydoc, {
-    // resyncInterval: 2000,
-    //
-    // BC is more complex to track our custom Uploading status and SyncDone events.
-    disableBc: true,
-    params: {
-      token,
-      role: "runtime",
-    },
+async function getMyYDoc({ repoId, token }): Promise<Y.Doc> {
+  return new Promise((resolve, reject) => {
+    const oldydoc = docs.get(repoId);
+    if (oldydoc) {
+      resolve(oldydoc);
+      return;
+    }
+    const ydoc = new Y.Doc();
+    // connect to primary database
+    console.log("connecting to y-websocket provider");
+    const provider = new WebsocketProvider(yjsServerUrl, repoId, ydoc, {
+      // resyncInterval: 2000,
+      //
+      // BC is more complex to track our custom Uploading status and SyncDone events.
+      disableBc: true,
+      params: {
+        token,
+        role: "runtime",
+      },
+    });
+    provider.once("synced", () => {
+      console.log("Provider synced");
+      docs.set(repoId, ydoc);
+      resolve(ydoc);
+    });
+    provider.connect();
   });
-  provider.once("synced", () => {
-    console.log("Provider synced");
-  });
-  provider.connect();
-  docs.set(repoId, ydoc);
-  return ydoc;
 }
 
 export async function startAPIServer({ port }) {
@@ -63,8 +68,6 @@ export async function startAPIServer({ port }) {
     context: ({ req }) => {
       const token = req?.headers?.authorization?.slice(7);
       let userId;
-
-      console.log("in context", token);
 
       if (token) {
         const decoded = jwt.verify(
@@ -108,46 +111,52 @@ export async function startAPIServer({ port }) {
     resolvers: {
       Query: {},
       Mutation: {
-        spawnRuntime: async (_, { runtimeId, repoId }, { token }) => {
+        spawnRuntime: async (_, { runtimeId, repoId }, { token, userId }) => {
+          // TODO verify repoId is owned by userId
+          if (!userId) throw new Error("Not authorized.");
           // create the runtime container
-          const target = await spawnRuntime(null, {
+          await spawnRuntime(null, {
             sessionId: runtimeId,
           });
           // set initial runtimeMap info for this runtime
-          const doc = getMyYDoc({ repoId, token });
+          const doc = await getMyYDoc({ repoId, token });
           const rootMap = doc.getMap("rootMap");
           const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
           runtimeMap.set(runtimeId, {});
           return true;
         },
-        killRuntime: async (_, { runtimeId, repoId }, { token }) => {
+        killRuntime: async (_, { runtimeId, repoId }, { token, userId }) => {
+          if (!userId) throw new Error("Not authorized.");
           await killRuntime(null, {
             sessionId: runtimeId,
           });
           console.log("Removing route ..");
           // remove from runtimeMap
-          const doc = getMyYDoc({ repoId, token });
+          const doc = await getMyYDoc({ repoId, token });
           const rootMap = doc.getMap("rootMap");
           const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
-          runtimeMap.set(runtimeId, {});
-          // runtimeMap.delete(runtimeId)
+          runtimeMap.delete(runtimeId);
           return true;
         },
 
-        connectRuntime: async (_, { runtimeId, repoId }, { token }) => {
-          if (!token) throw new Error("Not authorized.");
+        connectRuntime: async (_, { runtimeId, repoId }, { token, userId }) => {
+          if (!userId) throw new Error("Not authorized.");
           console.log("=== connectRuntime", runtimeId, repoId);
           // assuming doc is already loaded.
           // FIXME this socket/ is the prefix of url. This is very prone to errors.
-          const doc = getMyYDoc({ repoId, token });
+          const doc = await getMyYDoc({ repoId, token });
           const rootMap = doc.getMap("rootMap");
           console.log("rootMap", Array.from(rootMap.keys()));
           const runtimeMap = rootMap.get("runtimeMap") as any;
           const resultMap = rootMap.get("resultMap") as any;
           await connectSocket({ runtimeId, runtimeMap, resultMap });
         },
-        disconnectRuntime: async (_, { runtimeId, repoId }, { token }) => {
-          if (!token) throw new Error("Not authorized.");
+        disconnectRuntime: async (
+          _,
+          { runtimeId, repoId },
+          { token, userId }
+        ) => {
+          if (!userId) throw new Error("Not authorized.");
           console.log("=== disconnectRuntime", runtimeId);
           // get socket
           const socket = runtime2socket.get(runtimeId);
@@ -156,12 +165,17 @@ export async function startAPIServer({ port }) {
             runtime2socket.delete(runtimeId);
           }
 
-          const doc = getMyYDoc({ repoId, token });
+          const doc = await getMyYDoc({ repoId, token });
           const rootMap = doc.getMap("rootMap");
           const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
           runtimeMap.set(runtimeId, {});
         },
-        runCode: async (_, { runtimeId, spec: { code, podId } }) => {
+        runCode: async (
+          _,
+          { runtimeId, spec: { code, podId } },
+          { userId }
+        ) => {
+          if (!userId) throw new Error("Not authorized.");
           console.log("runCode", runtimeId, podId);
           const socket = runtime2socket.get(runtimeId);
           if (!socket) return false;
@@ -187,7 +201,8 @@ export async function startAPIServer({ port }) {
           );
           return true;
         },
-        runChain: async (_, { runtimeId, specs }) => {
+        runChain: async (_, { runtimeId, specs }, { userId }) => {
+          if (!userId) throw new Error("Not authorized.");
           console.log("runChain", runtimeId, specs.podId);
           const socket = runtime2socket.get(runtimeId);
           if (!socket) return false;
@@ -207,7 +222,8 @@ export async function startAPIServer({ port }) {
           });
           return true;
         },
-        interruptKernel: async (_, { runtimeId }) => {
+        interruptKernel: async (_, { runtimeId }, { userId }) => {
+          if (!userId) throw new Error("Not authorized.");
           const socket = runtime2socket.get(runtimeId);
           if (!socket) return false;
           socket.send(
@@ -220,7 +236,8 @@ export async function startAPIServer({ port }) {
           );
           return true;
         },
-        requestKernelStatus: async (_, { runtimeId }) => {
+        requestKernelStatus: async (_, { runtimeId }, { userId }) => {
+          if (!userId) throw new Error("Not authorized.");
           console.log("requestKernelStatus", runtimeId);
           const socket = runtime2socket.get(runtimeId);
           if (!socket) {
