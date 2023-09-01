@@ -1,7 +1,11 @@
 import { useEffect, useContext, useState } from "react";
 import { useParams } from "react-router-dom";
+import AddIcon from "@mui/icons-material/Add";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import CardHeader from "@mui/material/CardHeader";
 import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
@@ -11,6 +15,7 @@ import StopIcon from "@mui/icons-material/Stop";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import Drawer from "@mui/material/Drawer";
+import KeyboardReturnIcon from "@mui/icons-material/KeyboardReturn";
 import MenuList from "@mui/material/MenuList";
 import MenuItem from "@mui/material/MenuItem";
 import List from "@mui/material/List";
@@ -28,7 +33,7 @@ import TreeItem from "@mui/lab/TreeItem";
 
 import { useSnackbar, VariantType } from "notistack";
 
-import { Node as ReactflowNode } from "reactflow";
+import { Handle, Node as ReactflowNode } from "reactflow";
 import { NodeData } from "../lib/store/canvasSlice";
 import * as Y from "yjs";
 
@@ -41,7 +46,7 @@ import { usePrompt } from "../lib/prompt";
 import { RepoContext } from "../lib/store";
 
 import { sortNodes } from "./nodes/utils";
-
+import { useNavigate } from "react-router-dom";
 import {
   FormControlLabel,
   FormGroup,
@@ -52,6 +57,8 @@ import {
   Grid,
   Paper,
   Menu,
+  TextField,
+  CircularProgress,
 } from "@mui/material";
 import { getUpTime, myNanoId } from "../lib/utils/utils";
 import { registerCompletion } from "../lib/monacoCompletionProvider";
@@ -127,432 +134,476 @@ function SidebarSettings() {
   }, [autoCompletion, apiKey]);
 
   return (
-    <Box>
-      <Box>
-        <Tooltip title={"Show Line Numbers"} disableInteractive>
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={showLineNumbers}
-                  size="small"
-                  color="warning"
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setShowLineNumbers(event.target.checked);
-                  }}
-                />
-              }
-              label="Show Line Numbers"
-            />
-          </FormGroup>
-        </Tooltip>
-        <Tooltip
-          title={"Enable Debug Mode, e.g., show pod IDs"}
-          disableInteractive
+    <Card elevation={1} sx={{ pl: "0", ml: "-20px", pb: "0", mb: "0" }}>
+      <Box sx={{ ml: "10px", pb: "0", mb: "0" }}>
+        <Paper
+          elevation={0}
+          sx={{
+            pl: "5px",
+            fontSize: "18px",
+            color: "white",
+            backgroundColor: "#1976d2",
+          }}
         >
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={devMode}
-                  size="small"
-                  color="warning"
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setDevMode(event.target.checked);
-                  }}
-                />
-              }
-              label="Debug Mode"
-            />
-          </FormGroup>
-        </Tooltip>
-        <Tooltip
-          title={"Automatically run auto-layout at the end of node dragging."}
-          disableInteractive
-        >
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={autoRunLayout}
-                  size="small"
-                  color="warning"
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setAutoRunLayout(event.target.checked);
-                    if (event.target.checked) {
-                      autoLayoutROOT();
-                    }
-                  }}
-                />
-              }
-              label="Auto Run Layout"
-            />
-          </FormGroup>
-        </Tooltip>
-        <Tooltip title={"Enable contextual zoom."} disableInteractive>
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={contextualZoom}
-                  size="small"
-                  color="warning"
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setContextualZoom(event.target.checked);
-                  }}
-                />
-              }
-              label="Contextual Zoom"
-            />
-          </FormGroup>
-        </Tooltip>
-        {contextualZoom && (
-          <Stack alignItems="center">
-            L0 Font Size
-            <Grid direction="row" container spacing={2} justifyContent="center">
-              <Grid item xs={8}>
-                <Slider
-                  aria-label="Font Size"
-                  value={contextualZoomParams[0]}
-                  defaultValue={16}
-                  aria-valuetext="size"
-                  step={2}
-                  marks
-                  min={8}
-                  max={60}
-                  valueLabelDisplay="auto"
-                  onChange={(event: Event, newValue: number | number[]) => {
-                    setContextualZoomParams(
-                      contextualZoomParams,
-                      0,
-                      newValue as number
-                    );
-                  }}
-                />
-              </Grid>
-              <Grid item xs={3}>
-                <Input
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setContextualZoomParams(
-                      contextualZoomParams,
-                      0,
-                      Number(event.target.value)
-                    );
-                  }}
-                  onBlur={(event) => {
-                    if (Number(event.target.value) > 60) {
-                      setContextualZoomParams(contextualZoomParams, 0, 60);
-                    } else if (Number(event.target.value) < 8) {
-                      setContextualZoomParams(contextualZoomParams, 0, 8);
-                    }
-                  }}
-                  value={contextualZoomParams[0]}
-                  size="small"
-                  inputProps={{
-                    step: 1,
-                    min: 8,
-                    max: 56,
-                    type: "number",
-                    "aria-labelledby": "input-slider",
-                  }}
-                />
-              </Grid>
-            </Grid>
-            L1 Font Size
-            <Grid direction="row" container spacing={2} justifyContent="center">
-              <Grid item xs={8}>
-                <Slider
-                  aria-label="Font Size"
-                  value={contextualZoomParams[1]}
-                  defaultValue={16}
-                  aria-valuetext="size"
-                  step={2}
-                  marks
-                  min={8}
-                  max={60}
-                  valueLabelDisplay="auto"
-                  onChange={(event: Event, newValue: number | number[]) => {
-                    setContextualZoomParams(
-                      contextualZoomParams,
-                      1,
-                      newValue as number
-                    );
-                  }}
-                />
-              </Grid>
-              <Grid item xs={3}>
-                <Input
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setContextualZoomParams(
-                      contextualZoomParams,
-                      1,
-                      Number(event.target.value)
-                    );
-                  }}
-                  onBlur={(event) => {
-                    if (Number(event.target.value) > 60) {
-                      setContextualZoomParams(contextualZoomParams, 1, 60);
-                    } else if (Number(event.target.value) < 8) {
-                      setContextualZoomParams(contextualZoomParams, 1, 8);
-                    }
-                  }}
-                  value={contextualZoomParams[1]}
-                  size="small"
-                  inputProps={{
-                    step: 1,
-                    min: 8,
-                    max: 56,
-                    type: "number",
-                    "aria-labelledby": "input-slider",
-                  }}
-                />
-              </Grid>
-            </Grid>
-            L2 Font Size
-            <Grid direction="row" container spacing={2} justifyContent="center">
-              <Grid item xs={8}>
-                <Slider
-                  aria-label="Font Size"
-                  value={contextualZoomParams[2]}
-                  defaultValue={16}
-                  aria-valuetext="size"
-                  step={2}
-                  marks
-                  min={8}
-                  max={60}
-                  valueLabelDisplay="auto"
-                  onChange={(event: Event, newValue: number | number[]) => {
-                    setContextualZoomParams(
-                      contextualZoomParams,
-                      2,
-                      newValue as number
-                    );
-                  }}
-                />
-              </Grid>
-              <Grid item xs={3}>
-                <Input
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setContextualZoomParams(
-                      contextualZoomParams,
-                      2,
-                      Number(event.target.value)
-                    );
-                  }}
-                  onBlur={(event) => {
-                    if (Number(event.target.value) > 60) {
-                      setContextualZoomParams(contextualZoomParams, 2, 60);
-                    } else if (Number(event.target.value) < 8) {
-                      setContextualZoomParams(contextualZoomParams, 2, 8);
-                    }
-                  }}
-                  value={contextualZoomParams[2]}
-                  size="small"
-                  inputProps={{
-                    step: 1,
-                    min: 8,
-                    max: 56,
-                    type: "number",
-                    "aria-labelledby": "input-slider",
-                  }}
-                />
-              </Grid>
-            </Grid>
-            L3 Font Size
-            <Grid direction="row" container spacing={2} justifyContent="center">
-              <Grid item xs={8}>
-                <Slider
-                  aria-label="Font Size"
-                  value={Number(contextualZoomParams[3])}
-                  defaultValue={16}
-                  aria-valuetext="size"
-                  step={2}
-                  marks
-                  min={8}
-                  max={60}
-                  valueLabelDisplay="auto"
-                  onChange={(event: Event, newValue: number | number[]) => {
-                    setContextualZoomParams(
-                      contextualZoomParams,
-                      3,
-                      newValue as number
-                    );
-                  }}
-                />
-              </Grid>
-              <Grid item xs={3}>
-                <Input
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setContextualZoomParams(
-                      contextualZoomParams,
-                      3,
-                      Number(event.target.value)
-                    );
-                  }}
-                  onBlur={(event) => {
-                    if (Number(event.target.value) > 60) {
-                      setContextualZoomParams(contextualZoomParams, 3, 60);
-                    } else if (Number(event.target.value) < 8) {
-                      setContextualZoomParams(contextualZoomParams, 3, 8);
-                    }
-                  }}
-                  value={contextualZoomParams[3]}
-                  size="small"
-                  inputProps={{
-                    step: 1,
-                    min: 8,
-                    max: 56,
-                    type: "number",
-                    "aria-labelledby": "input-slider",
-                  }}
-                />
-              </Grid>
-            </Grid>
-            L4+ Font Size
-            <Grid direction="row" container spacing={2} justifyContent="center">
-              <Grid item xs={8}>
-                <Slider
-                  aria-label="Font Size"
-                  value={Number(contextualZoomParams.next)}
-                  defaultValue={16}
-                  aria-valuetext="size"
-                  step={2}
-                  marks
-                  min={8}
-                  max={60}
-                  valueLabelDisplay="auto"
-                  onChange={(event: Event, newValue: number | number[]) => {
-                    setContextualZoomParams(
-                      contextualZoomParams,
-                      4,
-                      newValue as number
-                    );
-                  }}
-                />
-              </Grid>
-              <Grid item xs={3}>
-                <Input
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setContextualZoomParams(
-                      contextualZoomParams,
-                      4,
-                      Number(event.target.value)
-                    );
-                  }}
-                  onBlur={(event) => {
-                    if (Number(event.target.value) > 60) {
-                      setContextualZoomParams(contextualZoomParams, 4, 60);
-                    } else if (Number(event.target.value) < 8) {
-                      setContextualZoomParams(contextualZoomParams, 4, 8);
-                    }
-                  }}
-                  value={contextualZoomParams.next}
-                  size="small"
-                  inputProps={{
-                    step: 1,
-                    min: 8,
-                    max: 56,
-                    type: "number",
-                    "aria-labelledby": "input-slider",
-                  }}
-                />
-              </Grid>
-            </Grid>
-            <Button onClick={() => restoreParamsDefault()}>
-              Restore Default
-            </Button>
-          </Stack>
-        )}
-        <Tooltip title={"Enable Scoped Variables"} disableInteractive>
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={scopedVars}
-                  size="small"
-                  color="warning"
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setScopedVars(event.target.checked);
-                  }}
-                />
-              }
-              label="Scoped Variables"
-            />
-          </FormGroup>
-        </Tooltip>
-        <Tooltip title={"Auto Completion"} disableInteractive>
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={!!(apiKey && autoCompletion)}
-                  size="small"
-                  color="warning"
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    if (apiKey) {
-                      setAutoCompletion(event.target.checked);
-                    } else {
-                      setSettingOpen(true);
-                    }
-                  }}
-                />
-              }
-              label={
-                <>
-                  Auto Completion
-                  <Tooltip
-                    title={"Help"}
-                    disableInteractive
-                    sx={{ display: "inline" }}
-                  >
-                    <Box>
-                      <IconButton
-                        size="small"
-                        sx={{ display: "inline" }}
-                        onClick={() => setSettingOpen(true)}
-                        disabled={isGuest}
-                      >
-                        <HelpOutlineOutlinedIcon
-                          sx={{ fontSize: 14 }}
-                        ></HelpOutlineOutlinedIcon>
-                      </IconButton>
-                    </Box>
-                  </Tooltip>
-                </>
-              }
-              disabled={isGuest}
-            />
-          </FormGroup>
-        </Tooltip>
-        <Tooltip title={"Show Annotations in Editor"} disableInteractive>
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={showAnnotations}
-                  size="small"
-                  color="warning"
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setShowAnnotations(event.target.checked);
-                  }}
-                />
-              }
-              label="Enable Annotations"
-            />
-          </FormGroup>
-        </Tooltip>
-        {showAnnotations && (
-          <Stack spacing={0.5}>
-            <Box className="myDecoration-function">Function Definition</Box>
-            <Box className="myDecoration-vardef">Variable Definition</Box>
-            <Box className="myDecoration-varuse">Function/Variable Use</Box>
-            <Box className="myDecoration-varuse my-underline">
-              Undefined Variable
-            </Box>
-          </Stack>
-        )}
+          Site Settings
+        </Paper>
       </Box>
-    </Box>
+      <CardContent
+        sx={{
+          margin: "-10px -10px 0px 10px",
+        }}
+      >
+        <Box>
+          <FormGroup>
+            <Tooltip title={"Show Line Numbers"} disableInteractive>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={showLineNumbers}
+                    size="small"
+                    color="warning"
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                      setShowLineNumbers(event.target.checked);
+                    }}
+                  />
+                }
+                label="Show Line Numbers"
+              />
+            </Tooltip>
+            <Tooltip
+              title={"Enable Debug Mode, e.g., show pod IDs"}
+              disableInteractive
+            >
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={devMode}
+                    size="small"
+                    color="warning"
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                      setDevMode(event.target.checked);
+                    }}
+                  />
+                }
+                label="Debug Mode"
+              />
+            </Tooltip>
+            <Tooltip
+              title={
+                "Automatically run auto-layout at the end of node dragging."
+              }
+              disableInteractive
+            >
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={autoRunLayout}
+                    size="small"
+                    color="warning"
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                      setAutoRunLayout(event.target.checked);
+                      if (event.target.checked) {
+                        autoLayoutROOT();
+                      }
+                    }}
+                  />
+                }
+                label="Auto Run Layout"
+              />
+            </Tooltip>
+            <Tooltip title={"Enable contextual zoom."} disableInteractive>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={contextualZoom}
+                    size="small"
+                    color="warning"
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                      setContextualZoom(event.target.checked);
+                    }}
+                  />
+                }
+                label="Contextual Zoom"
+              />
+            </Tooltip>
+            {contextualZoom && (
+              <Stack alignItems="center">
+                L0 Font Size
+                <Grid
+                  direction="row"
+                  container
+                  spacing={2}
+                  justifyContent="center"
+                >
+                  <Grid item xs={8}>
+                    <Slider
+                      aria-label="Font Size"
+                      value={contextualZoomParams[0]}
+                      defaultValue={16}
+                      aria-valuetext="size"
+                      step={2}
+                      marks
+                      min={8}
+                      max={60}
+                      valueLabelDisplay="auto"
+                      onChange={(event: Event, newValue: number | number[]) => {
+                        setContextualZoomParams(
+                          contextualZoomParams,
+                          0,
+                          newValue as number
+                        );
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={3}>
+                    <Input
+                      onChange={(
+                        event: React.ChangeEvent<HTMLInputElement>
+                      ) => {
+                        setContextualZoomParams(
+                          contextualZoomParams,
+                          0,
+                          Number(event.target.value)
+                        );
+                      }}
+                      onBlur={(event) => {
+                        if (Number(event.target.value) > 60) {
+                          setContextualZoomParams(contextualZoomParams, 0, 60);
+                        } else if (Number(event.target.value) < 8) {
+                          setContextualZoomParams(contextualZoomParams, 0, 8);
+                        }
+                      }}
+                      value={contextualZoomParams[0]}
+                      size="small"
+                      inputProps={{
+                        step: 1,
+                        min: 8,
+                        max: 56,
+                        type: "number",
+                        "aria-labelledby": "input-slider",
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+                L1 Font Size
+                <Grid
+                  direction="row"
+                  container
+                  spacing={2}
+                  justifyContent="center"
+                >
+                  <Grid item xs={8}>
+                    <Slider
+                      aria-label="Font Size"
+                      value={contextualZoomParams[1]}
+                      defaultValue={16}
+                      aria-valuetext="size"
+                      step={2}
+                      marks
+                      min={8}
+                      max={60}
+                      valueLabelDisplay="auto"
+                      onChange={(event: Event, newValue: number | number[]) => {
+                        setContextualZoomParams(
+                          contextualZoomParams,
+                          1,
+                          newValue as number
+                        );
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={3}>
+                    <Input
+                      onChange={(
+                        event: React.ChangeEvent<HTMLInputElement>
+                      ) => {
+                        setContextualZoomParams(
+                          contextualZoomParams,
+                          1,
+                          Number(event.target.value)
+                        );
+                      }}
+                      onBlur={(event) => {
+                        if (Number(event.target.value) > 60) {
+                          setContextualZoomParams(contextualZoomParams, 1, 60);
+                        } else if (Number(event.target.value) < 8) {
+                          setContextualZoomParams(contextualZoomParams, 1, 8);
+                        }
+                      }}
+                      value={contextualZoomParams[1]}
+                      size="small"
+                      inputProps={{
+                        step: 1,
+                        min: 8,
+                        max: 56,
+                        type: "number",
+                        "aria-labelledby": "input-slider",
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+                L2 Font Size
+                <Grid
+                  direction="row"
+                  container
+                  spacing={2}
+                  justifyContent="center"
+                >
+                  <Grid item xs={8}>
+                    <Slider
+                      aria-label="Font Size"
+                      value={contextualZoomParams[2]}
+                      defaultValue={16}
+                      aria-valuetext="size"
+                      step={2}
+                      marks
+                      min={8}
+                      max={60}
+                      valueLabelDisplay="auto"
+                      onChange={(event: Event, newValue: number | number[]) => {
+                        setContextualZoomParams(
+                          contextualZoomParams,
+                          2,
+                          newValue as number
+                        );
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={3}>
+                    <Input
+                      onChange={(
+                        event: React.ChangeEvent<HTMLInputElement>
+                      ) => {
+                        setContextualZoomParams(
+                          contextualZoomParams,
+                          2,
+                          Number(event.target.value)
+                        );
+                      }}
+                      onBlur={(event) => {
+                        if (Number(event.target.value) > 60) {
+                          setContextualZoomParams(contextualZoomParams, 2, 60);
+                        } else if (Number(event.target.value) < 8) {
+                          setContextualZoomParams(contextualZoomParams, 2, 8);
+                        }
+                      }}
+                      value={contextualZoomParams[2]}
+                      size="small"
+                      inputProps={{
+                        step: 1,
+                        min: 8,
+                        max: 56,
+                        type: "number",
+                        "aria-labelledby": "input-slider",
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+                L3 Font Size
+                <Grid
+                  direction="row"
+                  container
+                  spacing={2}
+                  justifyContent="center"
+                >
+                  <Grid item xs={8}>
+                    <Slider
+                      aria-label="Font Size"
+                      value={Number(contextualZoomParams[3])}
+                      defaultValue={16}
+                      aria-valuetext="size"
+                      step={2}
+                      marks
+                      min={8}
+                      max={60}
+                      valueLabelDisplay="auto"
+                      onChange={(event: Event, newValue: number | number[]) => {
+                        setContextualZoomParams(
+                          contextualZoomParams,
+                          3,
+                          newValue as number
+                        );
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={3}>
+                    <Input
+                      onChange={(
+                        event: React.ChangeEvent<HTMLInputElement>
+                      ) => {
+                        setContextualZoomParams(
+                          contextualZoomParams,
+                          3,
+                          Number(event.target.value)
+                        );
+                      }}
+                      onBlur={(event) => {
+                        if (Number(event.target.value) > 60) {
+                          setContextualZoomParams(contextualZoomParams, 3, 60);
+                        } else if (Number(event.target.value) < 8) {
+                          setContextualZoomParams(contextualZoomParams, 3, 8);
+                        }
+                      }}
+                      value={contextualZoomParams[3]}
+                      size="small"
+                      inputProps={{
+                        step: 1,
+                        min: 8,
+                        max: 56,
+                        type: "number",
+                        "aria-labelledby": "input-slider",
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+                L4+ Font Size
+                <Grid
+                  direction="row"
+                  container
+                  spacing={2}
+                  justifyContent="center"
+                >
+                  <Grid item xs={8}>
+                    <Slider
+                      aria-label="Font Size"
+                      value={Number(contextualZoomParams.next)}
+                      defaultValue={16}
+                      aria-valuetext="size"
+                      step={2}
+                      marks
+                      min={8}
+                      max={60}
+                      valueLabelDisplay="auto"
+                      onChange={(event: Event, newValue: number | number[]) => {
+                        setContextualZoomParams(
+                          contextualZoomParams,
+                          4,
+                          newValue as number
+                        );
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={3}>
+                    <Input
+                      onChange={(
+                        event: React.ChangeEvent<HTMLInputElement>
+                      ) => {
+                        setContextualZoomParams(
+                          contextualZoomParams,
+                          4,
+                          Number(event.target.value)
+                        );
+                      }}
+                      onBlur={(event) => {
+                        if (Number(event.target.value) > 60) {
+                          setContextualZoomParams(contextualZoomParams, 4, 60);
+                        } else if (Number(event.target.value) < 8) {
+                          setContextualZoomParams(contextualZoomParams, 4, 8);
+                        }
+                      }}
+                      value={contextualZoomParams.next}
+                      size="small"
+                      inputProps={{
+                        step: 1,
+                        min: 8,
+                        max: 56,
+                        type: "number",
+                        "aria-labelledby": "input-slider",
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+                <Button onClick={() => restoreParamsDefault()}>
+                  Restore Default
+                </Button>
+              </Stack>
+            )}
+            <Tooltip title={"Enable Scoped Variables"} disableInteractive>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={scopedVars}
+                    size="small"
+                    color="warning"
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                      setScopedVars(event.target.checked);
+                    }}
+                  />
+                }
+                label="Scoped Variables"
+              />
+            </Tooltip>
+            <Tooltip title={"Auto Completion"} disableInteractive>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={!!(apiKey && autoCompletion)}
+                    size="small"
+                    color="warning"
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                      if (apiKey) {
+                        setAutoCompletion(event.target.checked);
+                      } else {
+                        setSettingOpen(true);
+                      }
+                    }}
+                  />
+                }
+                label={
+                  <>
+                    Auto Completion
+                    <Tooltip
+                      title={"Help"}
+                      disableInteractive
+                      sx={{ display: "inline" }}
+                    >
+                      <Box>
+                        <IconButton
+                          size="small"
+                          sx={{ display: "inline" }}
+                          onClick={() => setSettingOpen(true)}
+                          disabled={isGuest}
+                        >
+                          <HelpOutlineOutlinedIcon
+                            sx={{ fontSize: 14 }}
+                          ></HelpOutlineOutlinedIcon>
+                        </IconButton>
+                      </Box>
+                    </Tooltip>
+                  </>
+                }
+                disabled={isGuest}
+              />
+            </Tooltip>
+            <Tooltip title={"Show Annotations in Editor"} disableInteractive>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={showAnnotations}
+                    size="small"
+                    color="warning"
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                      setShowAnnotations(event.target.checked);
+                    }}
+                  />
+                }
+                label="Enable Annotations"
+              />
+            </Tooltip>
+            {showAnnotations && (
+              <Stack spacing={0.5}>
+                <Box className="myDecoration-function">Function Definition</Box>
+                <Box className="myDecoration-vardef">Variable Definition</Box>
+                <Box className="myDecoration-varuse">Function/Variable Use</Box>
+                <Box className="myDecoration-varuse my-underline">
+                  Undefined Variable
+                </Box>
+              </Stack>
+            )}
+          </FormGroup>
+        </Box>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -721,40 +772,9 @@ const RuntimeItem = ({ runtimeId }) => {
                 connecting
               </Box>
             ))
-            .with("disconnected", () => (
-              <Box color="yellow" component="span">
-                Disconnected{" "}
-                <Button
-                  onClick={() => {
-                    connect({
-                      variables: {
-                        runtimeId,
-                        repoId,
-                      },
-                    });
-                  }}
-                  sx={{ color: "red" }}
-                >
-                  retry
-                </Button>
-              </Box>
-            ))
             .otherwise(() => (
               <Box color="red" component="span">
-                {runtime.wsStatus || "unknown"}
-                <Button
-                  onClick={() => {
-                    connect({
-                      variables: {
-                        runtimeId,
-                        repoId,
-                      },
-                    });
-                  }}
-                  sx={{ color: "red" }}
-                >
-                  retry
-                </Button>
+                Disconnected{" "}
               </Box>
             ))}
           <RuntimeMoreMenu runtimeId={runtimeId} />
@@ -900,20 +920,40 @@ type SidebarProps = {
   onClose: () => void;
 };
 
-function ExportJupyterNB() {
-  const { id: repoId } = useParams();
+function ProjectItem({ projId, projName }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const repoName = useStore(store, (state) => state.repoName);
   const nodesMap = useStore(store, (state) => state.getNodesMap());
   const resultMap = useStore(store, (state) => state.getResultMap());
   const codeMap = useStore(store, (state) => state.getCodeMap());
-  const filename = `${
-    repoName || "Untitled"
-  }-${new Date().toISOString()}.ipynb`;
   const [loading, setLoading] = useState(false);
+  const [showGotoIcon, setShowGotoIcon] = useState(false);
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const open = Boolean(anchorEl);
+  const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleClose = () => {
+    setAnchorEl(null);
+  };
+  const setShareOpen = useStore(store, (state) => state.setShareOpen);
+  const [copyRepo] = useMutation(
+    gql`
+      mutation CopyRepo($id: String!) {
+        copyRepo(projId: $id)
+      }
+    `,
+    { variables: { projId } }
+  );
+  const ipynbFilename = `${
+    projName || "Untitled"
+  }-${new Date().toISOString()}.ipynb`;
+  const svgFilename = `${projName?.replaceAll(
+    " ",
+    "-"
+  )}-${projId}-${new Date().toISOString()}.svg`;
 
-  const onClick = () => {
+  const exportJupyterNB = () => {
     setLoading(true);
     const nodes = Array.from<ReactflowNode>(nodesMap.values());
 
@@ -1105,14 +1145,14 @@ function ExportJupyterNB() {
       {
         // hard-code Jupyter Notebook top-level metadata
         metadata: {
-          name: repoName,
+          name: projName,
           kernelspec: {
             name: "python3",
             display_name: "Python 3",
           },
           language_info: { name: "python" },
           Codepod_version: "v0.0.1",
-          Codepod_repo_id: `${repoId}`,
+          Codepod_repo_id: `${projId}`,
         },
         nbformat: 4.0,
         nbformat_minor: 0,
@@ -1128,7 +1168,7 @@ function ExportJupyterNB() {
       "href",
       "data:text/plain;charset=utf-8," + encodeURIComponent(fileContent)
     );
-    element.setAttribute("download", filename);
+    element.setAttribute("download", ipynbFilename);
 
     element.style.display = "none";
     document.body.appendChild(element);
@@ -1137,32 +1177,7 @@ function ExportJupyterNB() {
     setLoading(false);
   };
 
-  return (
-    <Button
-      variant="outlined"
-      size="small"
-      color="secondary"
-      onClick={onClick}
-      disabled={false}
-    >
-      Jupyter Notebook
-    </Button>
-  );
-}
-
-function ExportSVG() {
-  // The name should contain the name of the repo, the ID of the repo, and the current date
-  const { id: repoId } = useParams();
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const repoName = useStore(store, (state) => state.repoName);
-  const filename = `${repoName?.replaceAll(
-    " ",
-    "-"
-  )}-${repoId}-${new Date().toISOString()}.svg`;
-  const [loading, setLoading] = useState(false);
-
-  const onClick = () => {
+  const exportSVG = () => {
     setLoading(true);
     const elem = document.querySelector(".react-flow");
     if (!elem) return;
@@ -1181,32 +1196,188 @@ function ExportSVG() {
     }).then((dataUrl) => {
       const a = document.createElement("a");
 
-      a.setAttribute("download", filename);
+      a.setAttribute("download", svgFilename);
       a.setAttribute("href", dataUrl);
       a.click();
       setLoading(false);
     });
   };
-
   return (
-    <Button
-      variant="outlined"
-      size="small"
-      color="secondary"
-      onClick={onClick}
-      disabled={loading}
+    <ListItem
+      key={projId}
+      onMouseEnter={() => setShowGotoIcon(true)}
+      onMouseLeave={() => setShowGotoIcon(false)}
+      secondaryAction={
+        <Tooltip title="More operations">
+          <IconButton
+            edge="end"
+            aria-label="More operations"
+            onClick={handleClick}
+          >
+            <MoreVertIcon />
+          </IconButton>
+        </Tooltip>
+      }
     >
-      Download Image
-    </Button>
+      <ListItemText>
+        <Typography fontSize={16}>{projName}</Typography>
+      </ListItemText>
+      {showGotoIcon && (
+        <IconButton
+          aria-label="Go to the project"
+          size="small"
+          onClick={() => window.open(`/repo/${projId}`)}
+        >
+          <KeyboardReturnIcon />
+        </IconButton>
+      )}
+      <Menu
+        id="basic-menu"
+        anchorEl={anchorEl}
+        open={open}
+        onClose={handleClose}
+      >
+        <MenuItem
+          onClick={() => {
+            async () => {
+              const result = await copyRepo();
+              const newRepoId = result.data.copyRepo;
+              window.open(`/repo/${newRepoId}`);
+            };
+            handleClose();
+          }}
+        >
+          Duplicate
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            setShareOpen(true);
+            handleClose();
+          }}
+        >
+          Share
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            exportJupyterNB();
+            handleClose();
+          }}
+          disabled={loading}
+        >
+          Export as Notebook
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            exportSVG();
+            handleClose();
+          }}
+        >
+          Export as SVG
+        </MenuItem>
+      </Menu>
+    </ListItem>
   );
 }
 
-function ExportButtons() {
+function ProjectPanel() {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const navigate = useNavigate();
+  const { loading, error, data } = useQuery(gql`
+    query GetDashboardRepos {
+      getDashboardRepos {
+        name
+        id
+        userId
+        public
+        stargazers {
+          id
+        }
+        updatedAt
+        createdAt
+        accessedAt
+      }
+    }
+  `);
+  const [createRepo] = useMutation(
+    gql`
+      mutation CreateRepo {
+        createRepo {
+          id
+        }
+      }
+    `,
+    {
+      refetchQueries: ["GetDashboardRepos"],
+    }
+  );
+  if (loading) {
+    return <CircularProgress />;
+  }
+  if (error) {
+    return <Box>ERROR: {error.message}</Box>;
+  }
+  const projects = data.getDashboardRepos.slice();
+  // sort repos by last access time
+  projects.sort((a, b) => {
+    if (a.accessedAt && b.accessedAt) {
+      return parseInt(b.accessedAt) - parseInt(a.accessedAt);
+    } else if (a.accessedAt) {
+      return -1;
+    } else if (b.accessedAt) {
+      return 1;
+    } else {
+      return 0;
+    }
+  });
   return (
-    <Stack spacing={1}>
-      <ExportJupyterNB />
-      <ExportSVG />
-    </Stack>
+    <Card elevation={1} sx={{ pl: "0", ml: "-20px", pb: "0", mb: "0" }}>
+      <Box
+        sx={{
+          ml: "10px",
+          pb: "0",
+          mb: "0",
+          display: "flex",
+          flexDirection: "row",
+          alignItems: "center",
+          backgroundColor: "#1976d2",
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            pl: "5px",
+            fontSize: "18px",
+            color: "white",
+            backgroundColor: "#1976d2",
+            width: "90%",
+          }}
+        >
+          Project Panel
+        </Paper>
+        <Tooltip title="Create new project">
+          <IconButton
+            size="small"
+            onClick={async () => {
+              let res = await createRepo();
+              if (res.data.createRepo.id) {
+                navigate(`/repo/${res.data.createRepo.id}`);
+              }
+            }}
+          >
+            <AddIcon fontSize="inherit" sx={{ color: "white" }} />
+          </IconButton>
+        </Tooltip>
+      </Box>
+
+      <CardContent sx={{ margin: "-20px -10px -20px -10px" }}>
+        <List dense>
+          {projects.slice(0, 5).map((proj) => (
+            <ProjectItem key={proj.id} projId={proj.id} projName={proj.name} />
+          ))}
+        </List>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1271,22 +1442,43 @@ function TableofPods() {
   }
 
   return (
-    <TreeView
-      aria-label="multi-select"
-      defaultCollapseIcon={<ExpandMoreIcon />}
-      defaultExpandIcon={<ChevronRightIcon />}
-      defaultExpanded={Array.from(node2children.keys()).filter(
-        (key) => node2children!.get(key!)!.length > 0
-      )}
-      multiSelect
-    >
-      {node2children.size > 0 &&
-        node2children!
-          .get("ROOT")!
-          .map((child) => (
-            <PodTreeItem key={child} id={child} node2children={node2children} />
-          ))}
-    </TreeView>
+    <Card elevation={1} sx={{ pl: "0", ml: "-20px", pb: "0", mb: "0" }}>
+      <Box sx={{ ml: "10px", pb: "0", mb: "0" }}>
+        <Paper
+          elevation={0}
+          sx={{
+            pl: "5px",
+            fontSize: "18px",
+            color: "white",
+            backgroundColor: "#1976d2",
+          }}
+        >
+          Table of Pods
+        </Paper>
+      </Box>
+      <CardContent sx={{ mt: "-10px" }}>
+        <TreeView
+          aria-label="multi-select"
+          defaultCollapseIcon={<ExpandMoreIcon />}
+          defaultExpandIcon={<ChevronRightIcon />}
+          defaultExpanded={Array.from(node2children.keys()).filter(
+            (key) => node2children!.get(key!)!.length > 0
+          )}
+          multiSelect
+        >
+          {node2children.size > 0 &&
+            node2children!
+              .get("ROOT")!
+              .map((child) => (
+                <PodTreeItem
+                  key={child}
+                  id={child}
+                  node2children={node2children}
+                />
+              ))}
+        </TreeView>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1360,20 +1552,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 {/* <SyncStatus /> */}
                 <YjsSyncStatus />
                 <Divider />
-                <YjsRuntimeStatus />
+                {<YjsRuntimeStatus />}
               </Box>
             )}
             <Divider />
-            <Typography variant="h6">Export to ..</Typography>
-            <ExportButtons />
+            <ProjectPanel />
 
             <Divider />
-            <Typography variant="h6">Site Settings</Typography>
             <SidebarSettings />
             <ToastError />
 
             <Divider />
-            <Typography variant="h6">Table of Pods</Typography>
             <TableofPods />
           </Stack>
         </Box>

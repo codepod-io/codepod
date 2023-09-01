@@ -27,7 +27,12 @@ import { gql, useMutation } from "@apollo/client";
 import { useStore } from "zustand";
 
 import { RepoContext } from "../lib/store";
-import { Stack } from "@mui/material";
+import {
+  ListItemIcon,
+  ListItemButton,
+  Stack,
+  ListItemText,
+} from "@mui/material";
 import { myNanoId } from "../lib/utils/utils";
 import { match } from "ts-pattern";
 
@@ -117,19 +122,13 @@ const RuntimeItem = ({ runtimeId }) => {
   }, [activeRuntime]);
 
   return (
-    <Stack
-      direction="row"
-      spacing={0.5}
-      alignItems="center"
-      sx={{
-        paddingLeft: "8px",
-        height: 20,
-      }}
-    >
+    <ListItem key={runtimeId} disablePadding sx={{ margin: 0 }}>
       {activeRuntime === runtimeId &&
         (wsStatus ? (
           <Tooltip title={wsStatus.title}>
-            <CircleIcon style={{ color: wsStatus.color }} />
+            <ListItemIcon>
+              <CircleIcon style={{ color: wsStatus.color }} />
+            </ListItemIcon>
           </Tooltip>
         ) : (
           <Box color="red" component="span">
@@ -154,18 +153,33 @@ const RuntimeItem = ({ runtimeId }) => {
         <Divider orientation="vertical" flexItem />
       )}
       <Tooltip title="activate">
-        <IconButton
+        <ListItemButton
+          sx={{
+            padding: 0,
+            margin: 0,
+          }}
           onClick={() => {
             setActiveRuntime(runtimeId);
           }}
           disabled={activeRuntime === runtimeId}
         >
-          <PlayArrowIcon fontSize="inherit" />
-        </IconButton>
+          <ListItemIcon
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <PlayArrowIcon fontSize="inherit" />
+          </ListItemIcon>
+        </ListItemButton>
       </Tooltip>
       <Tooltip title="refresh">
-        <IconButton
-          size="small"
+        <ListItemButton
+          sx={{
+            padding: 0,
+            margin: 0,
+          }}
           onClick={() => {
             requestKernelStatus({
               variables: {
@@ -174,12 +188,23 @@ const RuntimeItem = ({ runtimeId }) => {
             });
           }}
         >
-          <RefreshIcon fontSize="inherit" />
-        </IconButton>
+          <ListItemIcon
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <RefreshIcon fontSize="inherit" />
+          </ListItemIcon>
+        </ListItemButton>
       </Tooltip>
       <Tooltip title="interrupt">
-        <IconButton
-          size="small"
+        <ListItemButton
+          sx={{
+            padding: 0,
+            margin: 0,
+          }}
           onClick={() => {
             interruptKernel({
               variables: {
@@ -188,69 +213,83 @@ const RuntimeItem = ({ runtimeId }) => {
             });
           }}
         >
-          <StopIcon fontSize="inherit" />
-        </IconButton>
+          <ListItemIcon
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <StopIcon fontSize="inherit" />
+          </ListItemIcon>
+        </ListItemButton>
       </Tooltip>
       <Tooltip title="disconnect">
-        <IconButton
-          size="small"
+        <ListItemButton
+          sx={{
+            padding: 0,
+            margin: 0,
+          }}
           onClick={() => {
             disconnectRuntime({ variables: { runtimeId, repoId } });
           }}
         >
-          <LinkOffIcon fontSize="inherit" />
-        </IconButton>
+          <ListItemIcon
+            sx={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
+            <LinkOffIcon fontSize="inherit" />
+          </ListItemIcon>
+        </ListItemButton>
       </Tooltip>
+
       <Divider orientation="vertical" flexItem />
-      <Box
-        color="inherit"
-        sx={{
-          display: "flex",
-          flexDirection: "row",
-          alignItems: "center",
-        }}
-      >
-        <Paper
-          elevation={0}
-          sx={{
-            paddingLeft: "4px",
-            paddingRight: "4px",
-          }}
-        >
-          Status:{" "}
-        </Paper>
-        <Box color={runtimeStatusColors[runtimeStatus]} component="span">
-          {runtimeStatus === "idle"
+      <ListItemText primary="Status: " sx={{ ml: "4px" }} />
+      <ListItemText
+        primary={
+          runtimeStatus === "idle"
             ? "idle"
             : runtimeStatus === "busy"
             ? "busy"
-            : "Not connected"}
-        </Box>
-      </Box>
-      <Paper
-        elevation={0}
-        sx={{
-          paddingLeft: "4px",
-          paddingRight: "4px",
+            : "Not connected"
+        }
+        primaryTypographyProps={{
+          style: { color: runtimeStatusColors[runtimeStatus] },
         }}
-      >
-        ID: {(runtimeId || "").substring(0, 8)}
-      </Paper>
-
+        sx={{ mr: "4px" }}
+      />
+      <ListItemText
+        primary={`ID: ${(runtimeId || "").substring(0, 8)}`}
+        sx={{ mr: "4px" }}
+      />
       <Divider orientation="vertical" flexItem />
       {activeRuntime !== runtimeId && (
         <Tooltip title="delete">
-          <IconButton
-            size="small"
+          <ListItemButton
+            sx={{
+              padding: 0,
+              margin: 0,
+            }}
             onClick={() => {
               killRuntime({ variables: { runtimeId, repoId: repoId } });
             }}
           >
-            <DeleteIcon fontSize="inherit" />
-          </IconButton>
+            <ListItemIcon
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <DeleteIcon fontSize="inherit" />
+            </ListItemIcon>
+          </ListItemButton>
         </Tooltip>
       )}
-    </Stack>
+    </ListItem>
   );
 };
 
@@ -323,12 +362,12 @@ const RuntimeStatus = () => {
         <></>
       )}
       <List>
-        <ListItem ref={listItemRef}>
+        <Box ref={listItemRef}>
           <RuntimeItem
             key={activeRuntime}
             runtimeId={activeRuntime || ids[0]}
           />
-        </ListItem>
+        </Box>
         <Popover
           open={open}
           anchorEl={anchorEl}
@@ -347,9 +386,7 @@ const RuntimeStatus = () => {
           {Array.from<string>(runtimeMap.keys())
             .filter((runtimeId) => runtimeId !== activeRuntime)
             .map((runtimeId) => (
-              <ListItem>
-                <RuntimeItem key={runtimeId} runtimeId={runtimeId} />
-              </ListItem>
+              <RuntimeItem key={runtimeId} runtimeId={runtimeId} />
             ))}
         </Popover>
       </List>
