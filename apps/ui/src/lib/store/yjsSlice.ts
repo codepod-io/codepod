@@ -182,6 +182,8 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
       get().updateView();
       // Trigger initial results rendering.
       const resultMap = get().getResultMap();
+      // Initialize node2children
+      get().buildNode2Children();
       Array.from(resultMap.keys()).forEach((key) => {
         get().toggleResultChanged(key);
       });

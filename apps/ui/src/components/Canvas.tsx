@@ -413,11 +413,6 @@ function CanvasImpl() {
   const addNode = useStore(store, (state) => state.addNode);
   const importLocalCode = useStore(store, (state) => state.importLocalCode);
 
-  const node2children = useStore(store, (state) => state.node2children);
-  const buildNode2Children = useStore(
-    store,
-    (state) => state.buildNode2Children
-  );
   const selectedPods = useStore(store, (state) => state.selectedPods);
 
   const reactFlowInstance = useReactFlow();
@@ -458,12 +453,6 @@ function CanvasImpl() {
       setShowContextMenu(false);
     }
   }, [escapePressed]);
-
-  useEffect(() => {
-    if (node2children.size == 0) {
-      buildNode2Children();
-    }
-  }, [node2children]);
 
   const centerSelection = useStore(store, (state) => state.centerSelection);
   const setCenterSelection = useStore(
