@@ -44,7 +44,11 @@ import {
   getConnectedEdges,
 } from "reactflow";
 import { quadtree } from "d3-quadtree";
-import { getHelperLines, level2fontsize } from "../../components/nodes/utils";
+import {
+  getHelperLines,
+  level2fontsize,
+  sortNodes,
+} from "../../components/nodes/utils";
 import { json2yxml, yxml2json } from "../utils/y-utils";
 
 // TODO add node's data typing.
@@ -323,6 +327,9 @@ export interface CanvasSlice {
   onNodesChange: OnNodesChange;
   onEdgesChange: OnEdgesChange;
   onConnect: OnConnect;
+
+  node2children: Map<string, string[]>;
+  buildNode2Children: () => void;
 
   autoLayout: (scopeId?: string) => void;
   autoLayoutROOT: () => void;
@@ -992,6 +999,41 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   nodeClicked: false,
   toggleNodeClicked: () => set({ nodeClicked: !get().nodeClicked }),
 
+  /**
+   * This node2children is maintained with the canvas reactflow states and
+   * this mapping may be used by other components, e.g. the runtime.
+   *
+   * TODO we should optimize the performance of this function, maybe only update
+   * the mapping when the structure is changed.
+   */
+  node2children: new Map<string, string[]>(),
+  buildNode2Children: () => {
+    console.debug("Building node2children..");
+    // build a map from node to its children
+    let nodesMap = get().getNodesMap();
+    let nodes: Node[] = Array.from(nodesMap.values());
+    let node2children = new Map<string, string[]>();
+    node2children.set("ROOT", []);
+    nodes.forEach((node) => {
+      if (!node2children.has(node.id)) {
+        node2children.set(node.id, []);
+      }
+      if (node.parentNode) {
+        if (!node2children.has(node.parentNode)) {
+          node2children.set(node.parentNode, []);
+        }
+        node2children.get(node.parentNode)?.push(node.id);
+      } else {
+        node2children.get("ROOT")?.push(node.id);
+      }
+    });
+    for (const value of Array.from(node2children.values())) {
+      if (value.length > 1) {
+        sortNodes(value, nodesMap);
+      }
+    }
+    set({ node2children });
+  },
   autoLayoutROOT: () => {
     // get all scopes,
     console.debug("autoLayoutROOT");
@@ -1005,6 +1047,8 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           get().autoLayout(node.id);
         }
       });
+    // Build node2Children
+    get().buildNode2Children();
     // Applying on ROOT scope is not ideal.
     get().autoLayout();
   },

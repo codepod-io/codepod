@@ -1213,31 +1213,7 @@ function PodTreeItem({ id, node2children }) {
 function TableofPods() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const nodesMap = useStore(store, (state) => state.getNodesMap());
-  let node2children = new Map<string, string[]>();
-  let keys = new Set(nodesMap.keys());
-
-  for (const key of Array.from(keys)) {
-    if (!node2children.has(key)) {
-      node2children.set(key, []);
-    }
-    const parent =
-      nodesMap.get(key)?.parentNode === undefined
-        ? "ROOT"
-        : nodesMap.get(key)?.parentNode;
-
-    if (!node2children.has(parent!)) {
-      node2children.set(parent!, []);
-    }
-
-    node2children.get(parent!)!.push(key);
-  }
-
-  for (const value of Array.from(node2children.values())) {
-    if (value.length > 1) {
-      sortNodes(value, nodesMap);
-    }
-  }
+  const node2children = useStore(store, (state) => state.node2children);
 
   return (
     <TreeView
