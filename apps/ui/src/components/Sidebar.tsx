@@ -2,11 +2,14 @@ import { useEffect, useContext, useState } from "react";
 import { useParams } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
 import Divider from "@mui/material/Divider";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import Popover from "@mui/material/Popover";
+
 import StopIcon from "@mui/icons-material/Stop";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -869,7 +872,7 @@ type SidebarProps = {
   onClose: () => void;
 };
 
-function ExportJupyterNB() {
+function ExportPanel() {
   const { id: repoId } = useParams();
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -877,12 +880,19 @@ function ExportJupyterNB() {
   const nodesMap = useStore(store, (state) => state.getNodesMap());
   const resultMap = useStore(store, (state) => state.getResultMap());
   const codeMap = useStore(store, (state) => state.getCodeMap());
-  const filename = `${
-    repoName || "Untitled"
-  }-${new Date().toISOString()}.ipynb`;
   const [loading, setLoading] = useState(false);
 
-  const onClick = () => {
+  const downloadLink = (dataUrl, fileName) => {
+    let element = document.createElement("a");
+    element.setAttribute("href", dataUrl);
+    element.setAttribute("download", fileName);
+
+    element.style.display = "none";
+    document.body.appendChild(element);
+    element.click();
+  };
+
+  const exportJupyterNB = () => {
     setLoading(true);
     const nodes = Array.from<ReactflowNode>(nodesMap.values());
 
@@ -1092,46 +1102,16 @@ function ExportJupyterNB() {
     );
 
     // Generate the download link on the fly
-    let element = document.createElement("a");
-    element.setAttribute(
-      "href",
-      "data:text/plain;charset=utf-8," + encodeURIComponent(fileContent)
-    );
-    element.setAttribute("download", filename);
-
-    element.style.display = "none";
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    const fileName = `${
+      repoName || "Untitled"
+    }-${new Date().toISOString()}.ipynb`;
+    const dataUrl =
+      "data:text/plain;charset=utf-8," + encodeURIComponent(fileContent);
+    downloadLink(dataUrl, fileName);
     setLoading(false);
   };
 
-  return (
-    <Button
-      variant="outlined"
-      size="small"
-      color="secondary"
-      onClick={onClick}
-      disabled={false}
-    >
-      Jupyter Notebook
-    </Button>
-  );
-}
-
-function ExportSVG() {
-  // The name should contain the name of the repo, the ID of the repo, and the current date
-  const { id: repoId } = useParams();
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const repoName = useStore(store, (state) => state.repoName);
-  const filename = `${repoName?.replaceAll(
-    " ",
-    "-"
-  )}-${repoId}-${new Date().toISOString()}.svg`;
-  const [loading, setLoading] = useState(false);
-
-  const onClick = () => {
+  const exportSVG = () => {
     setLoading(true);
     const elem = document.querySelector(".react-flow");
     if (!elem) return;
@@ -1148,34 +1128,63 @@ function ExportSVG() {
         return true;
       },
     }).then((dataUrl) => {
-      const a = document.createElement("a");
-
-      a.setAttribute("download", filename);
-      a.setAttribute("href", dataUrl);
-      a.click();
+      const fileName = `${repoName?.replaceAll(
+        " ",
+        "-"
+      )}-${repoId}-${new Date().toISOString()}.svg`;
+      downloadLink(dataUrl, fileName);
       setLoading(false);
     });
   };
 
   return (
-    <Button
-      variant="outlined"
-      size="small"
-      color="secondary"
-      onClick={onClick}
-      disabled={loading}
-    >
-      Download Image
-    </Button>
-  );
-}
-
-function ExportButtons() {
-  return (
-    <Stack spacing={1}>
-      <ExportJupyterNB />
-      <ExportSVG />
-    </Stack>
+    <Card elevation={1} sx={{ pl: "0", ml: "-20px", pb: "0", mb: "0" }}>
+      <Box
+        sx={{
+          ml: "10px",
+          pb: "0",
+          mb: "0",
+        }}
+      >
+        <Paper
+          elevation={0}
+          sx={{
+            pl: "5px",
+            fontSize: "18px",
+            color: "white",
+            backgroundColor: "#1976d2",
+          }}
+        >
+          Export
+        </Paper>
+      </Box>
+      <CardContent sx={{ margin: "-10px 0px -20px -5px" }}>
+        <List dense>
+          <ListItem disablePadding>
+            <ListItemButton
+              onClick={() => {
+                exportJupyterNB();
+              }}
+            >
+              <ListItemText>
+                <Typography fontSize={16}>Jupyter Notebook</Typography>
+              </ListItemText>
+            </ListItemButton>
+          </ListItem>
+          <ListItem disablePadding>
+            <ListItemButton
+              onClick={() => {
+                exportSVG();
+              }}
+            >
+              <ListItemText>
+                <Typography fontSize={16}>SVG</Typography>
+              </ListItemText>
+            </ListItemButton>
+          </ListItem>
+        </List>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1333,8 +1342,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </Box>
             )}
             <Divider />
-            <Typography variant="h6">Export to ..</Typography>
-            <ExportButtons />
+            <ExportPanel />
 
             <Divider />
             <Typography variant="h6">Site Settings</Typography>
