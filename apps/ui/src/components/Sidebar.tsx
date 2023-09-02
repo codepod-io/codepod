@@ -1155,7 +1155,7 @@ function ExportPanel() {
             backgroundColor: "#1976d2",
           }}
         >
-          Export
+          Export To
         </Paper>
       </Box>
       <CardContent sx={{ margin: "-10px 0px -20px -5px" }}>
@@ -1178,7 +1178,7 @@ function ExportPanel() {
               }}
             >
               <ListItemText>
-                <Typography fontSize={16}>SVG</Typography>
+                <Typography fontSize={16}>Download Image</Typography>
               </ListItemText>
             </ListItemButton>
           </ListItem>
