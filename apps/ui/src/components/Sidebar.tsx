@@ -43,7 +43,7 @@ import { usePrompt } from "../lib/prompt";
 
 import { RepoContext } from "../lib/store";
 
-import { sortNodes } from "./nodes/utils";
+import { sortNodes, downloadLink, repo2ipynb } from "./nodes/utils";
 
 import {
   FormControlLabel,
@@ -865,14 +865,7 @@ function ToastError() {
   return <Box></Box>;
 }
 
-type SidebarProps = {
-  width: number;
-  open: boolean;
-  onOpen: () => void;
-  onClose: () => void;
-};
-
-function ExportPanel() {
+function ExportJupyterNB() {
   const { id: repoId } = useParams();
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
@@ -882,236 +875,51 @@ function ExportPanel() {
   const codeMap = useStore(store, (state) => state.getCodeMap());
   const [loading, setLoading] = useState(false);
 
-  const downloadLink = (dataUrl, fileName) => {
-    let element = document.createElement("a");
-    element.setAttribute("href", dataUrl);
-    element.setAttribute("download", fileName);
-
-    element.style.display = "none";
-    document.body.appendChild(element);
-    element.click();
-  };
-
-  const exportJupyterNB = () => {
+  const onClick = () => {
     setLoading(true);
-    const nodes = Array.from<ReactflowNode>(nodesMap.values());
-
-    // Hard-code Jupyter cell format. Reference, https://nbformat.readthedocs.io/en/latest/format_description.html
-    let jupyterCellList: {
-      cell_type: string;
-      execution_count?: number;
-      metadata: object;
-      source: string[];
-      outputs?: object[];
-    }[] = [];
-
-    // 1. iteratively retrieve and sort all pods level by level
-    // Queue to sort the pods geographically
-    let q = new Array<[ReactflowNode | undefined, string]>();
-    // adjacency list for podId -> parentId mapping
-    let adj = {};
-    q.push([undefined, "0.0"]);
-    while (q.length > 0) {
-      let [curPod, curScore] = q.shift()!;
-      let children: string[] = [];
-      if (curScore === "0.0") {
-        // fetch top-level nodes
-        children = nodes.filter((n) => !n.parentNode).map((node) => node.id);
-      } else {
-        children = nodes
-          .filter((n) => n.parentNode === curPod?.id)
-          .map((n) => n.id);
-      }
-
-      // sort the pods geographically(top-down, left-right)
-      sortNodes(children, nodesMap);
-
-      children.forEach((id, index) => {
-        const pod = nodesMap.get(id)!;
-        let geoScore = `${curScore}${index + 1}`;
-        adj[pod.id] = {
-          name: pod.data.name,
-          parentId: pod.parentNode || "ROOT",
-        };
-        switch (pod.type) {
-          case "SCOPE":
-            q.push([
-              pod,
-              geoScore.substring(0, geoScore.length - 1) +
-                "0" +
-                geoScore.substring(geoScore.length - 1),
-            ]);
-            break;
-          case "CODE":
-            jupyterCellList.push({
-              cell_type: "code",
-              // TODO: expand other Codepod related-metadata fields, or run a real-time search in database when importing.
-              metadata: { id: pod.id, geoScore: Number(geoScore) },
-              source: [],
-            });
-            break;
-          case "RICH":
-            jupyterCellList.push({
-              cell_type: "markdown",
-              // TODO: expand other Codepod related-metadata fields, or run a real-time search in database when importing.
-              metadata: { id: pod.id, geoScore: Number(geoScore) },
-              source: ["TODO"], // [pod.richContent || ""],
-            });
-            break;
-        }
-      });
-    }
-
-    // sort the generated cells by their geoScore
-    jupyterCellList.sort((cell1, cell2) => {
-      if (
-        Number(cell1.metadata["geoScore"]) < Number(cell2.metadata["geoScore"])
-      ) {
-        return -1;
-      } else {
-        return 1;
-      }
-    });
-
-    // 2. fill in the sources and outputs for sorted cell lists
-    jupyterCellList.forEach((pod) => {
-      // generate the scope structure as comment for each cell
-      let scopes: string[] = [];
-      let parentId = adj[pod.metadata["id"]].parentId;
-
-      // iterative {parentId,name} retrieval
-      while (parentId && parentId != "ROOT") {
-        scopes.push(adj[parentId].name);
-        parentId = adj[parentId].parentId;
-      }
-
-      // Add scope structure as a block comment at the head of each cell
-      // FIXME, RICH pod should have a different format
-      let scopeStructureAsComment =
-        scopes.length > 0
-          ? [
-              "'''\n",
-              `CodePod Scope structure: ${scopes.reverse().join("/")}\n`,
-              "'''\n",
-            ]
-          : [""];
-      switch (pod.cell_type) {
-        case "code":
-          const result = resultMap.get(pod.metadata["id"]);
-          let podOutput: any[] = [];
-          for (const item of result?.data || []) {
-            switch (item.type) {
-              case "execute_result":
-                podOutput.push({
-                  output_type: item.type,
-                  data: {
-                    "text/plain": (item.text || "")
-                      .split(/\r?\n/)
-                      .map((line) => line + "\n") || [""],
-                    "text/html": (item.html || "")
-                      .split(/\r?\n/)
-                      .map((line) => line + "\n") || [""],
-                  },
-                  execution_count: result!.exec_count,
-                });
-                break;
-              case "display_data":
-                podOutput.push({
-                  output_type: item.type,
-                  data: {
-                    "text/plain": (item.text || "")
-                      .split(/\r?\n/)
-                      .map((line) => line + "\n") || [""],
-                    "text/html": (item.html || "")
-                      .split(/\r?\n/)
-                      .map((line) => line + "\n") || [""],
-                    "image/png": item.image,
-                  },
-                });
-                break;
-              case "stream_stdout":
-                podOutput.push({
-                  output_type: "stream",
-                  name: "stdout",
-                  text: (item.text || "")
-                    .split(/\r?\n/)
-                    .map((line) => line + "\n"),
-                });
-                break;
-              case "stream_stderr":
-                podOutput.push({
-                  output_type: "stream",
-                  name: "stderr",
-                  text: (item.text || "")
-                    .split(/\r?\n/)
-                    .map((line) => line + "\n"),
-                });
-                break;
-              default:
-                break;
-            }
-          }
-          const error = result?.error;
-          if (error) {
-            podOutput.push({
-              output_type: "error",
-              ename: error.ename,
-              evalue: error.evalue,
-              traceback: error.stacktrace,
-            });
-          }
-
-          const contentArray =
-            codeMap
-              .get(pod.metadata["id"])
-              ?.toString()
-              .split(/\r?\n/)
-              .map((line) => line + "\n") || [];
-          pod.source = [...scopeStructureAsComment, ...contentArray];
-          pod.outputs = podOutput;
-          pod.execution_count = result?.exec_count;
-          break;
-        case "markdown":
-          pod.source = [...scopeStructureAsComment, "TODO"];
-          break;
-        default:
-          break;
-      }
-    });
-
-    // 3. produce the final .ipynb file
-    const fileContent = JSON.stringify(
-      {
-        // hard-code Jupyter Notebook top-level metadata
-        metadata: {
-          name: repoName,
-          kernelspec: {
-            name: "python3",
-            display_name: "Python 3",
-          },
-          language_info: { name: "python" },
-          Codepod_version: "v0.0.1",
-          Codepod_repo_id: `${repoId}`,
-        },
-        nbformat: 4.0,
-        nbformat_minor: 0,
-        cells: jupyterCellList,
-      },
-      null,
-      4
+    const fileContent = repo2ipynb(
+      nodesMap,
+      codeMap,
+      resultMap,
+      repoId,
+      repoName
     );
-
-    // Generate the download link on the fly
-    const fileName = `${
-      repoName || "Untitled"
-    }-${new Date().toISOString()}.ipynb`;
     const dataUrl =
       "data:text/plain;charset=utf-8," + encodeURIComponent(fileContent);
-    downloadLink(dataUrl, fileName);
+    const filename = `${
+      repoName || "Untitled"
+    }-${new Date().toISOString()}.ipynb`;
+    // Generate the download link on the fly
+    downloadLink(dataUrl, filename);
     setLoading(false);
   };
 
-  const exportSVG = () => {
+  return (
+    <Button
+      variant="outlined"
+      size="small"
+      color="secondary"
+      onClick={onClick}
+      disabled={loading}
+    >
+      Jupyter Notebook
+    </Button>
+  );
+}
+
+function ExportSVG() {
+  // The name should contain the name of the repo, the ID of the repo, and the current date
+  const { id: repoId } = useParams();
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const repoName = useStore(store, (state) => state.repoName);
+  const filename = `${repoName?.replaceAll(
+    " ",
+    "-"
+  )}-${repoId}-${new Date().toISOString()}.svg`;
+  const [loading, setLoading] = useState(false);
+
+  const onClick = () => {
     setLoading(true);
     const elem = document.querySelector(".react-flow");
     if (!elem) return;
@@ -1128,63 +936,30 @@ function ExportPanel() {
         return true;
       },
     }).then((dataUrl) => {
-      const fileName = `${repoName?.replaceAll(
-        " ",
-        "-"
-      )}-${repoId}-${new Date().toISOString()}.svg`;
-      downloadLink(dataUrl, fileName);
+      downloadLink(dataUrl, filename);
       setLoading(false);
     });
   };
 
   return (
-    <Card elevation={1} sx={{ pl: "0", ml: "-20px", pb: "0", mb: "0" }}>
-      <Box
-        sx={{
-          ml: "10px",
-          pb: "0",
-          mb: "0",
-        }}
-      >
-        <Paper
-          elevation={0}
-          sx={{
-            pl: "5px",
-            fontSize: "18px",
-            color: "white",
-            backgroundColor: "#1976d2",
-          }}
-        >
-          Export To
-        </Paper>
-      </Box>
-      <CardContent sx={{ margin: "-10px 0px -20px -5px" }}>
-        <List dense>
-          <ListItem disablePadding>
-            <ListItemButton
-              onClick={() => {
-                exportJupyterNB();
-              }}
-            >
-              <ListItemText>
-                <Typography fontSize={16}>Jupyter Notebook</Typography>
-              </ListItemText>
-            </ListItemButton>
-          </ListItem>
-          <ListItem disablePadding>
-            <ListItemButton
-              onClick={() => {
-                exportSVG();
-              }}
-            >
-              <ListItemText>
-                <Typography fontSize={16}>Download Image</Typography>
-              </ListItemText>
-            </ListItemButton>
-          </ListItem>
-        </List>
-      </CardContent>
-    </Card>
+    <Button
+      variant="outlined"
+      size="small"
+      color="secondary"
+      onClick={onClick}
+      disabled={loading}
+    >
+      Download Image
+    </Button>
+  );
+}
+
+function ExportButtons() {
+  return (
+    <Stack spacing={1}>
+      <ExportJupyterNB />
+      <ExportSVG />
+    </Stack>
   );
 }
 
@@ -1268,6 +1043,13 @@ function TableofPods() {
   );
 }
 
+type SidebarProps = {
+  width: number;
+  open: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+};
+
 export const Sidebar: React.FC<SidebarProps> = ({
   width,
   open,
@@ -1342,7 +1124,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </Box>
             )}
             <Divider />
-            <ExportPanel />
+            <Typography variant="h6">Export to ..</Typography>
+            <ExportButtons />
 
             <Divider />
             <Typography variant="h6">Site Settings</Typography>
