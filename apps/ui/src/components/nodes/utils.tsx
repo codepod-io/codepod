@@ -557,3 +557,224 @@ export const ConfirmDeleteButton = React.forwardRef(
     );
   }
 );
+
+export function downloadLink(dataUrl, fileName) {
+  let element = document.createElement("a");
+  element.setAttribute("href", dataUrl);
+  element.setAttribute("download", fileName);
+
+  element.style.display = "none";
+  document.body.appendChild(element);
+  element.click();
+}
+
+export function repo2ipynb(nodesMap, codeMap, resultMap, repoId, repoName) {
+  const nodes = Array.from<Node>(nodesMap.values());
+
+  // Hard-code Jupyter cell format. Reference, https://nbformat.readthedocs.io/en/latest/format_description.html
+  let jupyterCellList: {
+    cell_type: string;
+    execution_count?: number;
+    metadata: object;
+    source: string[];
+    outputs?: object[];
+  }[] = [];
+
+  // 1. iteratively retrieve and sort all pods level by level
+  // Queue to sort the pods geographically
+  let q = new Array<[Node | undefined, string]>();
+  // adjacency list for podId -> parentId mapping
+  let adj = {};
+  q.push([undefined, "0.0"]);
+  while (q.length > 0) {
+    let [curPod, curScore] = q.shift()!;
+    let children: string[] = [];
+    if (curScore === "0.0") {
+      // fetch top-level nodes
+      children = nodes.filter((n) => !n.parentNode).map((node) => node.id);
+    } else {
+      children = nodes
+        .filter((n) => n.parentNode === curPod?.id)
+        .map((n) => n.id);
+    }
+
+    // sort the pods geographically(top-down, left-right)
+    sortNodes(children, nodesMap);
+
+    children.forEach((id, index) => {
+      const pod = nodesMap.get(id)!;
+      let geoScore = `${curScore}${index + 1}`;
+      adj[pod.id] = {
+        name: pod.data.name,
+        parentId: pod.parentNode || "ROOT",
+      };
+      switch (pod.type) {
+        case "SCOPE":
+          q.push([
+            pod,
+            geoScore.substring(0, geoScore.length - 1) +
+              "0" +
+              geoScore.substring(geoScore.length - 1),
+          ]);
+          break;
+        case "CODE":
+          jupyterCellList.push({
+            cell_type: "code",
+            // TODO: expand other Codepod related-metadata fields, or run a real-time search in database when importing.
+            metadata: { id: pod.id, geoScore: Number(geoScore) },
+            source: [],
+          });
+          break;
+        case "RICH":
+          jupyterCellList.push({
+            cell_type: "markdown",
+            // TODO: expand other Codepod related-metadata fields, or run a real-time search in database when importing.
+            metadata: { id: pod.id, geoScore: Number(geoScore) },
+            source: ["TODO"], // [pod.richContent || ""],
+          });
+          break;
+      }
+    });
+  }
+
+  // sort the generated cells by their geoScore
+  jupyterCellList.sort((cell1, cell2) => {
+    if (
+      Number(cell1.metadata["geoScore"]) < Number(cell2.metadata["geoScore"])
+    ) {
+      return -1;
+    } else {
+      return 1;
+    }
+  });
+
+  // 2. fill in the sources and outputs for sorted cell lists
+  jupyterCellList.forEach((pod) => {
+    // generate the scope structure as comment for each cell
+    let scopes: string[] = [];
+    let parentId = adj[pod.metadata["id"]].parentId;
+
+    // iterative {parentId,name} retrieval
+    while (parentId && parentId != "ROOT") {
+      scopes.push(adj[parentId].name);
+      parentId = adj[parentId].parentId;
+    }
+
+    // Add scope structure as a block comment at the head of each cell
+    // FIXME, RICH pod should have a different format
+    let scopeStructureAsComment =
+      scopes.length > 0
+        ? [
+            "'''\n",
+            `CodePod Scope structure: ${scopes.reverse().join("/")}\n`,
+            "'''\n",
+          ]
+        : [""];
+    switch (pod.cell_type) {
+      case "code":
+        const result = resultMap.get(pod.metadata["id"]);
+        let podOutput: any[] = [];
+        for (const item of result?.data || []) {
+          switch (item.type) {
+            case "execute_result":
+              podOutput.push({
+                output_type: item.type,
+                data: {
+                  "text/plain": (item.text || "")
+                    .split(/\r?\n/)
+                    .map((line) => line + "\n") || [""],
+                  "text/html": (item.html || "")
+                    .split(/\r?\n/)
+                    .map((line) => line + "\n") || [""],
+                },
+                execution_count: result!.exec_count,
+              });
+              break;
+            case "display_data":
+              podOutput.push({
+                output_type: item.type,
+                data: {
+                  "text/plain": (item.text || "")
+                    .split(/\r?\n/)
+                    .map((line) => line + "\n") || [""],
+                  "text/html": (item.html || "")
+                    .split(/\r?\n/)
+                    .map((line) => line + "\n") || [""],
+                  "image/png": item.image,
+                },
+              });
+              break;
+            case "stream_stdout":
+              podOutput.push({
+                output_type: "stream",
+                name: "stdout",
+                text: (item.text || "")
+                  .split(/\r?\n/)
+                  .map((line) => line + "\n"),
+              });
+              break;
+            case "stream_stderr":
+              podOutput.push({
+                output_type: "stream",
+                name: "stderr",
+                text: (item.text || "")
+                  .split(/\r?\n/)
+                  .map((line) => line + "\n"),
+              });
+              break;
+            default:
+              break;
+          }
+        }
+        const error = result?.error;
+        if (error) {
+          podOutput.push({
+            output_type: "error",
+            ename: error.ename,
+            evalue: error.evalue,
+            traceback: error.stacktrace,
+          });
+        }
+
+        const contentArray =
+          codeMap
+            .get(pod.metadata["id"])
+            ?.toString()
+            .split(/\r?\n/)
+            .map((line) => line + "\n") || [];
+        pod.source = [...scopeStructureAsComment, ...contentArray];
+        pod.outputs = podOutput;
+        pod.execution_count = result?.exec_count;
+        break;
+      case "markdown":
+        pod.source = [...scopeStructureAsComment, "TODO"];
+        break;
+      default:
+        break;
+    }
+  });
+
+  // 3. produce the final .ipynb file
+  const fileContent = JSON.stringify(
+    {
+      // hard-code Jupyter Notebook top-level metadata
+      metadata: {
+        name: repoName,
+        kernelspec: {
+          name: "python3",
+          display_name: "Python 3",
+        },
+        language_info: { name: "python" },
+        Codepod_version: "v0.0.1",
+        Codepod_repo_id: `${repoId}`,
+      },
+      nbformat: 4.0,
+      nbformat_minor: 0,
+      cells: jupyterCellList,
+    },
+    null,
+    4
+  );
+
+  return fileContent;
+}
