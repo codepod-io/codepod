@@ -392,14 +392,10 @@ function RepoImpl() {
     }
   }, [addClient, deleteClient, provider]);
 
-  const apolloClient = useApolloClient();
-  const setApolloClient = useStore(store, (state) => state.setApolloClient);
-
   useEffect(() => {
     if (hasToken()) {
       if (!loading && me) {
         setUser(me);
-        setApolloClient(apolloClient);
       }
     }
   }, [loading, me]);

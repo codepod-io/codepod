@@ -58,6 +58,7 @@ import { timeDifference } from "../../lib/utils/utils";
 import { ButtonGroup } from "@mui/material";
 
 import { ConfirmDeleteButton } from "./utils";
+import { useApolloClient } from "@apollo/client";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);
@@ -388,6 +389,7 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
   // const pod = useStore(store, (state) => state.pods[id]);
   const yjsRun = useStore(store, (state) => state.yjsRun);
   const yjsRunChain = useStore(store, (state) => state.yjsRunChain);
+  const apolloClient = useApolloClient();
   // right, bottom
   const isGuest = useStore(store, (state) => state.role === "GUEST");
 
@@ -413,7 +415,7 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
         <Tooltip title="Run (shift-enter)">
           <IconButton
             onClick={() => {
-              yjsRun(id);
+              yjsRun(id, apolloClient);
             }}
           >
             <PlayCircleOutlineIcon style={{ fontSize: iconFontSize }} />
@@ -424,7 +426,7 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
         <Tooltip title="Run chain">
           <IconButton
             onClick={() => {
-              yjsRunChain(id);
+              yjsRunChain(id, apolloClient);
             }}
           >
             <KeyboardDoubleArrowRightIcon style={{ fontSize: iconFontSize }} />

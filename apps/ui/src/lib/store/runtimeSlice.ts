@@ -172,15 +172,12 @@ type PodResult = {
 };
 
 export interface RuntimeSlice {
-  apolloClient?: ApolloClient<any>;
-  setApolloClient: (client: ApolloClient<any>) => void;
-
   parsePod: (id: string) => void;
   parseAllPods: () => void;
   resolvePod: (id) => void;
   resolveAllPods: () => void;
-  yjsRun: (id: string) => void;
-  yjsRunChain: (id: string) => void;
+  yjsRun: (id: string, apolloClient: ApolloClient<any>) => void;
+  yjsRunChain: (id: string, apolloClient: ApolloClient<any>) => void;
   clearResults: (id) => void;
   setRunning: (id) => void;
   parseResult: Record<
@@ -196,7 +193,7 @@ export interface RuntimeSlice {
   getResultMap(): Y.Map<PodResult>;
   activeRuntime?: string;
   setActiveRuntime(id?: string): void;
-  yjsSendRun(ids: string[]): void;
+  yjsSendRun(ids: string[], apolloClient: ApolloClient<any>): void;
   isRuntimeReady(): boolean;
 }
 
@@ -204,8 +201,6 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
   set,
   get
 ) => ({
-  apolloClient: undefined,
-  setApolloClient: (client) => set({ apolloClient: client }),
   parseResult: {},
 
   // new yjs-based runtime
@@ -306,7 +301,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
     }
     return true;
   },
-  yjsSendRun(ids) {
+  yjsSendRun(ids, apolloClient) {
     const activeRuntime = get().activeRuntime!;
     let specs = ids.map((id) => {
       // Actually send the run request.
@@ -337,7 +332,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       return false;
     });
     if (specs) {
-      get().apolloClient?.mutate({
+      apolloClient.mutate({
         mutation: gql`
           mutation RunChain($specs: [RunSpecInput], $runtimeId: String) {
             runChain(specs: $specs, runtimeId: $runtimeId)
@@ -353,21 +348,21 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       });
     }
   },
-  yjsRun: (id) => {
+  yjsRun: (id, apolloClient) => {
     if (!get().isRuntimeReady()) return;
     const nodesMap = get().getNodesMap();
     const nodes = Array.from<Node>(nodesMap.values());
     const node = nodesMap.get(id);
     if (!node) return;
     const chain = getDescendants(node, nodes);
-    get().yjsSendRun(chain);
+    get().yjsSendRun(chain, apolloClient);
   },
   /**
    * Add the pod and all its downstream pods (defined by edges) to the chain and run the chain.
    * @param id the id of the pod to start the chain
    * @returns
    */
-  yjsRunChain: async (id) => {
+  yjsRunChain: async (id, apolloClient) => {
     if (!get().isRuntimeReady()) return;
     // Get the chain: get the edges, and then get the pods
     const edgesMap = get().getEdgesMap();
@@ -387,7 +382,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       chain.push(nodeid);
       nodeid = node2target[nodeid];
     }
-    get().yjsSendRun(chain);
+    get().yjsSendRun(chain, apolloClient);
   },
   clearResults: (id) => {
     const resultMap = get().getResultMap();
