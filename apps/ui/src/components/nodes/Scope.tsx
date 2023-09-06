@@ -50,6 +50,7 @@ import {
   level2fontsize,
 } from "./utils";
 import { CopyToClipboard } from "react-copy-to-clipboard";
+import { useApolloClient } from "@apollo/client";
 
 function MyFloatingToolbar({ id }: { id: string }) {
   const store = useContext(RepoContext);
@@ -57,6 +58,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
   const reactFlowInstance = useReactFlow();
   const isGuest = useStore(store, (state) => state.role === "GUEST");
   const yjsRun = useStore(store, (state) => state.yjsRun);
+  const apolloClient = useApolloClient();
 
   const autoLayout = useStore(store, (state) => state.autoLayout);
 
@@ -85,7 +87,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
         <Tooltip title="Run (shift-enter)">
           <IconButton
             onClick={() => {
-              yjsRun(id);
+              yjsRun(id, apolloClient);
             }}
           >
             <PlayCircleOutlineIcon style={{ fontSize: iconFontSize }} />

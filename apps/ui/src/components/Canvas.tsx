@@ -48,6 +48,7 @@ import FloatingEdge from "./nodes/FloatingEdge";
 import CustomConnectionLine from "./nodes/CustomConnectionLine";
 import HelperLines from "./HelperLines";
 import { getAbsPos, newNodeShapeConfig } from "../lib/store/canvasSlice";
+import { useApolloClient } from "@apollo/client";
 
 const nodeTypes = { SCOPE: ScopeNode, CODE: CodeNode, RICH: RichNode };
 const edgeTypes = {
@@ -149,6 +150,7 @@ function useJump() {
   const selectPod = useStore(store, (state) => state.selectPod);
 
   const yjsRun = useStore(store, (state) => state.yjsRun);
+  const apolloClient = useApolloClient();
 
   const setCenterSelection = useStore(
     store,
@@ -238,7 +240,7 @@ function useJump() {
         if (pod.type == "CODE") {
           if (event.shiftKey) {
             // Hitting "SHIFT"+"Enter" will run the code pod
-            yjsRun(id);
+            yjsRun(id, apolloClient);
           } else {
             // Hitting "Enter" on a Code pod will go to "Edit" mode.
             setFocusedEditor(id);
@@ -246,7 +248,7 @@ function useJump() {
         } else if (pod.type === "SCOPE") {
           if (event.shiftKey) {
             // Hitting "SHIFT"+"Enter" on a Scope will run the scope.
-            yjsRun(id);
+            yjsRun(id, apolloClient);
           }
         } else if (pod.type === "RICH") {
           // Hitting "Enter" on a Rich pod will go to "Edit" mode.
