@@ -340,7 +340,7 @@ const MyEditor = ({
         autoLinkAllowedTLDs: ["dev", ...TOP_50_TLDS],
       }),
       new UnderlineExtension(),
-      new EmojiExtension({ data: emojiData, plainText: true }),
+      new EmojiExtension({ data: emojiData as any, plainText: true }),
       new SlashExtension({
         extraAttributes: { type: "user" },
         matchers: [
