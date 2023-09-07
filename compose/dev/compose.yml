@@ -151,9 +151,9 @@ services:
       - pnpm-store:/codepod/.pnpm-store
     command: sh -c "corepack enable && pnpm generate && pnpm dev"
 
-  desktop-ui:
+  ui-desktop:
     image: node:18
-    working_dir: /codepod/apps/desktop-ui
+    working_dir: /codepod/apps/ui-desktop
     ports:
       - 3001:3001
     environment:
