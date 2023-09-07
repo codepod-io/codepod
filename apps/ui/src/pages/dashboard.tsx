@@ -347,32 +347,14 @@ const RepoLists = () => {
 };
 
 function NoLogginErrorAlert() {
-  const nevigate = useNavigate();
-  const [seconds, setSeconds] = useState<number | null>(3);
-
-  useEffect(() => {
-    if (seconds === 0) {
-      setSeconds(null);
-      nevigate("/login");
-      return;
-    }
-    if (seconds === null) return;
-
-    const timer = setTimeout(() => {
-      setSeconds((prev) => prev! - 1);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [nevigate, seconds]);
-
   return (
     <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
       <Alert severity="error">
-        Please login first! Automatically jump to{" "}
+        Please{" "}
         <Link component={ReactLink} to="/login">
           login
         </Link>{" "}
-        page in {seconds} seconds.
+        first!
       </Alert>
     </Box>
   );
