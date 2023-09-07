@@ -123,78 +123,11 @@ async function repo(_, { id }, { userId }) {
     include: {
       owner: true,
       collaborators: true,
-      pods: {
-        include: {
-          children: true,
-          parent: true,
-        },
-        orderBy: {
-          index: "asc",
-        },
-      },
-      edges: true,
     },
   });
   if (!repo) throw Error("Repo not found");
   await updateUserRepoData({ userId, repoId: id });
-  return {
-    ...repo,
-    edges: repo.edges.map((edge) => ({
-      source: edge.sourceId,
-      target: edge.targetId,
-    })),
-  };
-}
-
-async function addEdge(_, { source, target }, { userId }) {
-  if (!userId) throw new Error("Not authenticated.");
-  const sourcePod = await prisma.pod.findFirst({ where: { id: source } });
-  const targetPod = await prisma.pod.findFirst({ where: { id: target } });
-  if (!sourcePod || !targetPod) throw new Error("Pods not found.");
-  if (sourcePod.repoId !== targetPod.repoId)
-    throw new Error("Pods are not in the same repo.");
-  await ensureRepoEditAccess({ repoId: sourcePod.repoId, userId });
-  await prisma.edge.create({
-    data: {
-      source: {
-        connect: {
-          id: source,
-        },
-      },
-      target: {
-        connect: {
-          id: target,
-        },
-      },
-      repo: {
-        connect: {
-          id: sourcePod.repoId,
-        },
-      },
-    },
-  });
-  return true;
-}
-
-async function deleteEdge(_, { source, target }, { userId }) {
-  if (!userId) throw new Error("Not authenticated.");
-  const sourcePod = await prisma.pod.findFirst({ where: { id: source } });
-  const targetPod = await prisma.pod.findFirst({ where: { id: target } });
-  if (!sourcePod || !targetPod) throw new Error("Pods not found.");
-  if (sourcePod.repoId !== targetPod.repoId)
-    throw new Error("Pods are not in the same repo.");
-  await ensureRepoEditAccess({ repoId: sourcePod.repoId, userId });
-  await prisma.edge.deleteMany({
-    where: {
-      source: {
-        id: source,
-      },
-      target: {
-        id: target,
-      },
-    },
-  });
-  return true;
+  return repo;
 }
 
 async function createRepo(_, {}, { userId }) {
@@ -213,21 +146,6 @@ async function createRepo(_, {}, { userId }) {
     },
   });
   return repo;
-}
-
-async function getVisibility(_, { repoId }, { userId }) {
-  if (!userId) throw Error("Unauthenticated");
-  const repo = await prisma.repo.findFirst({
-    where: {
-      id: repoId,
-      owner: { id: userId || "undefined" },
-    },
-    include: {
-      collaborators: true,
-    },
-  });
-  if (!repo) throw Error("Repo not found");
-  return { collaborators: repo.collaborators, isPublic: repo.public };
 }
 
 async function updateVisibility(_, { repoId, isPublic }, { userId }) {
@@ -414,43 +332,6 @@ async function unstar(_, { repoId }, { userId }) {
   return true;
 }
 
-async function updatePod(_, { id, repoId, input }, { userId }) {
-  if (!userId) throw new Error("Not authenticated.");
-  await ensureRepoEditAccess({ repoId, userId });
-  // if repoId has id, just update
-  let pod_found = await prisma.pod.findFirst({
-    where: {
-      id,
-      repo: {
-        id: repoId,
-      },
-    },
-  });
-  // or, return false and leave it dirty
-  if (!pod_found) return false;
-  const pod = await prisma.pod.update({
-    where: {
-      id,
-    },
-    data: {
-      ...input,
-      parent: input.parent
-        ? input.parent === "ROOT"
-          ? { disconnect: true }
-          : {
-              connect: {
-                id: input.parent,
-              },
-            }
-        : undefined,
-      children: {
-        connect: input.children?.map((id) => ({ id })),
-      },
-    },
-  });
-  return true;
-}
-
 async function copyRepo(_, { repoId }, { userId }) {
   // Find the repo
   const repo = await prisma.repo.findFirst({
@@ -525,9 +406,6 @@ export const RepoResolver = {
     updateRepo,
     deleteRepo,
     copyRepo,
-    updatePod,
-    addEdge,
-    deleteEdge,
     addCollaborator,
     updateVisibility,
     deleteCollaborator,

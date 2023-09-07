@@ -4,10 +4,8 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "start": "node build/server.js",
-    "dev": "ts-node-dev src/server.ts",
-    "start:yjs": "node build/yjs-server.js",
-    "dev:yjs": "ts-node-dev src/yjs-server.ts",
+    "start": "node build/run.js",
+    "dev": "ts-node-dev src/run.ts",
     "test": "jest --config jest.config.js"
   },
   "dependencies": {
