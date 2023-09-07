@@ -155,7 +155,7 @@ services:
     image: node:18
     working_dir: /codepod/apps/desktop-ui
     ports:
-      - 5173:5173
+      - 3001:3001
     environment:
       VITE_APP_YJS_WS_URL: "ws://localhost:4233/socket"
       VITE_APP_API_URL: "http://localhost:4000/graphql"
