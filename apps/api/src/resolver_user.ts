@@ -128,29 +128,6 @@ export function createUserResolver({ jwtSecret, googleClientId }) {
     };
   }
 
-  async function updateCodeiumAPIKey(_, { apiKey }, { userId }) {
-    if (!userId) throw Error("Unauthenticated");
-    let user = await prisma.user.findFirst({
-      where: {
-        id: userId,
-      },
-    });
-    if (!user) throw Error("User not found.");
-    if (user.id !== userId) {
-      throw new Error("You do not have access to the user.");
-    }
-    // do the udpate
-    await prisma.user.update({
-      where: {
-        id: userId,
-      },
-      data: {
-        codeiumAPIKey: apiKey,
-      },
-    });
-    return true;
-  }
-
   return {
     Query: {
       me,
@@ -160,7 +137,6 @@ export function createUserResolver({ jwtSecret, googleClientId }) {
       loginWithGoogle,
       signup,
       updateUser,
-      updateCodeiumAPIKey,
     },
   };
 }

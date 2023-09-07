@@ -139,7 +139,6 @@ services:
     environment:
       TEST: "123"
       VITE_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      VITE_APP_CODEIUM_API_KEY: ${CODEIUM_API_KEY}
       VITE_APP_YJS_WS_URL: "ws://localhost:4233/socket"
       VITE_APP_API_URL: "http://localhost:4000/graphql"
       # Native spawner

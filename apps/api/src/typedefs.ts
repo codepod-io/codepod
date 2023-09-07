@@ -12,7 +12,6 @@ export const typeDefs = gql`
     password: String!
     firstname: String!
     lastname: String!
-    codeiumAPIKey: String
   }
 
   type Repo {
@@ -55,7 +54,5 @@ export const typeDefs = gql`
     deleteCollaborator(repoId: String!, collaboratorId: String!): Boolean
     star(repoId: ID!): Boolean
     unstar(repoId: ID!): Boolean
-
-    updateCodeiumAPIKey(apiKey: String!): Boolean
   }
 `;

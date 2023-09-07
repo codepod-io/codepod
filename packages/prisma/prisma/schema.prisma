@@ -51,8 +51,6 @@ model User {
     sharedRepos  Repo[]         @relation("COLLABORATOR")
     stars        Repo[]         @relation("STAR")
     UserRepoData UserRepoData[]
-
-    codeiumAPIKey String? @default("")
 }
 
 model UserRepoData {

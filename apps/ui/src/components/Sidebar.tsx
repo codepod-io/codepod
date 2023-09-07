@@ -20,7 +20,6 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import RestartAltIcon from "@mui/icons-material/RestartAlt";
-import HelpOutlineOutlinedIcon from "@mui/icons-material/HelpOutlineOutlined";
 import Typography from "@mui/material/Typography";
 import TreeView from "@mui/lab/TreeView";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -54,20 +53,8 @@ import {
   Menu,
 } from "@mui/material";
 import { getUpTime, myNanoId } from "../lib/utils/utils";
-import { registerCompletion } from "../lib/monacoCompletionProvider";
-import { SettingDialog } from "./SettingDialog";
 import { toSvg } from "html-to-image";
 import { match } from "ts-pattern";
-
-const defaultAPIKey = import.meta.env.VITE_APP_CODEIUM_API_KEY;
-
-function Flex(props) {
-  return (
-    <Box sx={{ display: "flex" }} {...props}>
-      {props.children}
-    </Box>
-  );
-}
 
 function SidebarSettings() {
   const store = useContext(RepoContext);
@@ -86,24 +73,12 @@ function SidebarSettings() {
     store,
     (state) => state.setShowLineNumbers
   );
-  const isGuest = useStore(store, (state) => state.role === "GUEST");
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
   const setAutoRunLayout = useStore(store, (state) => state.setAutoRunLayout);
   const contextualZoom = useStore(store, (state) => state.contextualZoom);
   const setContextualZoom = useStore(store, (state) => state.setContextualZoom);
-  const autoCompletion = useStore(
-    store,
-    (state) => !isGuest && state.autoCompletion
-  );
 
-  const setAutoCompletion = useStore(store, (state) => state.setAutoCompletion);
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
-  const apiKey = useStore(store, (state) =>
-    state.isCustomToken
-      ? state.user.codeiumAPIKey ?? defaultAPIKey
-      : defaultAPIKey
-  );
-  const setSettingOpen = useStore(store, (state) => state.setSettingOpen);
 
   const contextualZoomParams = useStore(
     store,
@@ -117,14 +92,6 @@ function SidebarSettings() {
     store,
     (state) => state.restoreParamsDefault
   );
-  useEffect(() => {
-    if (autoCompletion && apiKey) {
-      const dispose = registerCompletion(apiKey);
-      if (dispose !== null) {
-        return dispose;
-      }
-    }
-  }, [autoCompletion, apiKey]);
 
   return (
     <Box>
@@ -477,50 +444,6 @@ function SidebarSettings() {
                 />
               }
               label="Scoped Variables"
-            />
-          </FormGroup>
-        </Tooltip>
-        <Tooltip title={"Auto Completion"} disableInteractive>
-          <FormGroup>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={!!(apiKey && autoCompletion)}
-                  size="small"
-                  color="warning"
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    if (apiKey) {
-                      setAutoCompletion(event.target.checked);
-                    } else {
-                      setSettingOpen(true);
-                    }
-                  }}
-                />
-              }
-              label={
-                <>
-                  Auto Completion
-                  <Tooltip
-                    title={"Help"}
-                    disableInteractive
-                    sx={{ display: "inline" }}
-                  >
-                    <Box>
-                      <IconButton
-                        size="small"
-                        sx={{ display: "inline" }}
-                        onClick={() => setSettingOpen(true)}
-                        disabled={isGuest}
-                      >
-                        <HelpOutlineOutlinedIcon
-                          sx={{ fontSize: 14 }}
-                        ></HelpOutlineOutlinedIcon>
-                      </IconButton>
-                    </Box>
-                  </Tooltip>
-                </>
-              }
-              disabled={isGuest}
             />
           </FormGroup>
         </Tooltip>
@@ -1034,7 +957,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const isGuest = useStore(store, (state) => state.role === "GUEST");
-  const settingOpen = useStore(store, (state) => state.settingOpen);
   return (
     <>
       <MyKBar />
@@ -1111,8 +1033,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </Stack>
         </Box>
       </Drawer>
-
-      {settingOpen && <SettingDialog open={settingOpen} />}
     </>
   );
 };
