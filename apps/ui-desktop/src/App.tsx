@@ -10,10 +10,10 @@ import {
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
-import { Dashboard, Repo, Test, Profile, Docs } from "@codepod/ui";
+import { Dashboard, Repo, Test } from "@codepod/ui";
 
 import { Header, Footer } from "@codepod/ui";
-import { AuthProvider } from "@codepod/ui";
+import { AuthProvider } from "./lib/auth";
 
 import Box from "@mui/material/Box";
 import { SnackbarProvider } from "notistack";

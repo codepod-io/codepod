@@ -21,11 +21,8 @@ import Tooltip from "@mui/material/Tooltip";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import AppBar from "@mui/material/AppBar";
 
-import { useAuth } from "../lib/auth";
-
-import { useMe } from "../lib/auth";
-
 type HeaderProps = {
+  children?: React.ReactNode;
   open?: boolean;
   drawerWidth?: number;
   currentPage?: string | null;
@@ -35,6 +32,7 @@ type HeaderProps = {
 };
 
 export const Header: React.FC<HeaderProps> = ({
+  children,
   open = false,
   drawerWidth = 0,
   currentPage = null,
@@ -42,28 +40,6 @@ export const Header: React.FC<HeaderProps> = ({
   shareButton = null,
   forkButton = null,
 }) => {
-  const [anchorElNav, setAnchorElNav] = useState(null);
-  const [anchorElUser, setAnchorElUser] = useState(null);
-
-  const handleOpenNavMenu = (event) => {
-    setAnchorElNav(event.currentTarget);
-  };
-  const handleOpenUserMenu = (event) => {
-    setAnchorElUser(event.currentTarget);
-  };
-
-  const handleCloseNavMenu = () => {
-    setAnchorElNav(null);
-  };
-
-  const handleCloseUserMenu = () => {
-    setAnchorElUser(null);
-  };
-
-  const { isSignedIn, signOut } = useAuth();
-  let navigate = useNavigate();
-  const { me } = useMe();
-
   return (
     <AppBar
       position="fixed"
@@ -142,44 +118,10 @@ export const Header: React.FC<HeaderProps> = ({
             </Link>
           </Box>
 
-          {isSignedIn() ? (
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              <Box sx={{ mr: 2 }}>
-                <Link component={ReactLink} to="/profile" underline="none">
-                  {me?.firstname}
-                </Link>
-              </Box>
-              <Button
-                onClick={() => {
-                  signOut();
-                  navigate("/login");
-                }}
-              >
-                Logout
-              </Button>
-            </Box>
-          ) : (
-            <MyMenuItem to="/login">Login</MyMenuItem>
-          )}
+          {children}
         </Toolbar>
       </Container>
     </AppBar>
-  );
-};
-
-const MyMenuItem = ({ children, to = "/" }) => {
-  return (
-    <Box display="block">
-      <Link to={to} component={ReactLink} underline="none">
-        {children}
-      </Link>
-    </Box>
   );
 };
 

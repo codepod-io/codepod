@@ -34,8 +34,6 @@ import {
   Stack,
   Typography,
 } from "@mui/material";
-import { useAuth } from "../lib/auth";
-import { GoogleSignin } from "./login";
 import { timeDifference } from "../lib/utils/utils";
 import { useSnackbar } from "notistack";
 import { useTheme } from "@mui/material/styles";

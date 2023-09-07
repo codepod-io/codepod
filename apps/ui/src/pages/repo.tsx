@@ -23,7 +23,6 @@ import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import { useLocalStorage } from "../hooks/useLocalStorage";
 import { Stack, TextField, Tooltip } from "@mui/material";
-import { useAuth } from "../lib/auth";
 import { initParser } from "../lib/parser";
 
 import { usePrompt } from "../lib/prompt";
@@ -371,7 +370,7 @@ function RepoImpl() {
   const deleteClient = useStore(store, (state) => state.deleteClient);
 
   const { loading, me } = useMe();
-  const { hasToken } = useAuth();
+  // const { hasToken } = useAuth();
 
   useEffect(() => {
     if (provider) {
@@ -392,13 +391,13 @@ function RepoImpl() {
     }
   }, [addClient, deleteClient, provider]);
 
-  useEffect(() => {
-    if (hasToken()) {
-      if (!loading && me) {
-        setUser(me);
-      }
-    }
-  }, [loading, me]);
+  // useEffect(() => {
+  //   if (hasToken()) {
+  //     if (!loading && me) {
+  //       setUser(me);
+  //     }
+  //   }
+  // }, [loading, me]);
 
   // FIXME Removing queueL. This will cause Repo to be re-rendered a lot of
   // times, particularly the delete pod action would cause syncstatus and repo
