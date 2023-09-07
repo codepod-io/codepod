@@ -12,14 +12,12 @@ export const typeDefs = gql`
     password: String!
     firstname: String!
     lastname: String!
-    codeiumAPIKey: String!
+    codeiumAPIKey: String
   }
 
   type Repo {
     id: ID!
     name: String
-    pods: [Pod]
-    edges: [Edge]
     userId: ID!
     stargazers: [User]
     collaborators: [User]
@@ -29,85 +27,13 @@ export const typeDefs = gql`
     accessedAt: String
   }
 
-  type Edge {
-    source: String!
-    target: String!
-  }
-
-  type Pod {
-    id: ID!
-    type: String
-    content: String
-    githead: String
-    staged: String
-    column: Int
-    lang: String
-    parent: Pod
-    index: Int
-    children: [Pod]
-    result: String
-    stdout: String
-    error: String
-    imports: String
-    exports: String
-    reexports: String
-    midports: String
-    fold: Boolean
-    thundar: Boolean
-    utility: Boolean
-    name: String
-    x: Float
-    y: Float
-    width: Float
-    height: Float
-  }
-
-  input PodInput {
-    id: ID!
-    type: String
-    content: String
-    column: Int
-    lang: String
-    result: String
-    stdout: String
-    error: String
-    imports: String
-    exports: String
-    reexports: String
-    midports: String
-    fold: Boolean
-    thundar: Boolean
-    utility: Boolean
-    name: String
-    x: Float
-    y: Float
-    width: Float
-    height: Float
-    parent: ID
-    children: [ID]
-  }
-
-  type RuntimeInfo {
-    startedAt: String
-    lastActive: String
-    sessionId: String
-    ttl: Int
-  }
-
-  input RunSpecInput {
-    code: String
-    podId: String
-  }
-
   type Query {
     hello: String
     users: [User]
     me: User
     repos: [Repo]
     repo(id: String!): Repo
-    pod(id: ID!): Pod
     getDashboardRepos: [Repo]
-    activeSessions: [String]
   }
 
   type Mutation {
@@ -124,12 +50,6 @@ export const typeDefs = gql`
     updateRepo(id: ID!, name: String!): Boolean
     deleteRepo(id: ID!): Boolean
     copyRepo(repoId: String!): ID!
-    updatePod(id: String!, repoId: String!, input: PodInput): Boolean
-    addEdge(source: ID!, target: ID!): Boolean
-    deleteEdge(source: ID!, target: ID!): Boolean
-    clearUser: Boolean
-    clearRepo: Boolean
-    clearPod: Boolean
     updateVisibility(repoId: String!, isPublic: Boolean!): Boolean
     addCollaborator(repoId: String!, email: String!): Boolean
     deleteCollaborator(repoId: String!, collaboratorId: String!): Boolean

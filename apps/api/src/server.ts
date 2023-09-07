@@ -50,7 +50,7 @@ interface TokenInterface {
   id: string;
 }
 
-async function startServer({ port }) {
+export async function startServer({ port }) {
   const apollo = new ApolloServer({
     typeDefs,
     resolvers,
@@ -86,5 +86,3 @@ async function startServer({ port }) {
     console.log(`🚀 Server ready at http://localhost:${port}`);
   });
 }
-
-startServer({ port: 4000 });
