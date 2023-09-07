@@ -1,38 +1,13 @@
 import { createStore, StateCreator, StoreApi } from "zustand";
-import { devtools } from "zustand/middleware";
 import { produce } from "immer";
-import { createContext } from "react";
-import { MonacoCompletionProvider } from "../monacoCompletionProvider";
-import { monaco } from "react-monaco-editor";
 
 // import { IndexeddbPersistence } from "y-indexeddb";
 
 import { Doc, Transaction } from "yjs";
 import * as Y from "yjs";
 import { WebsocketProvider } from "../utils/y-websocket";
-import { createRuntimeSlice, RuntimeSlice } from "./runtimeSlice";
-import { ApolloClient } from "@apollo/client";
 import { addAwarenessStyle } from "../utils/utils";
-import { Annotation } from "../parser";
 import { MyState, Pod } from ".";
-
-export async function registerUser(
-  token: string
-): Promise<{ api_key: string; name: string }> {
-  const url = new URL("register_user/", "https://api.codeium.com");
-  const response = await fetch(url.toString(), {
-    body: JSON.stringify({ firebase_id_token: token }),
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  });
-  if (!response.ok) {
-    throw new Error(response.statusText);
-  }
-  const user = await response.json();
-  return user as { api_key: string; name: string };
-}
 
 export interface YjsSlice {
   addError: (error: { type: string; msg: string }) => void;

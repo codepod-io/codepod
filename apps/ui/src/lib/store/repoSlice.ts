@@ -29,9 +29,7 @@ export interface RepoSlice {
   repoLoaded: boolean;
   collaborators: any[];
   shareOpen: boolean;
-  settingOpen: boolean;
   setShareOpen: (open: boolean) => void;
-  setSettingOpen: (open: boolean) => void;
   loadError: any;
   role: "OWNER" | "COLLABORATOR" | "GUEST";
   isPublic: boolean;
@@ -50,9 +48,7 @@ export const createRepoSlice: StateCreator<MyState, [], [], RepoSlice> = (
   collaborators: [],
   isPublic: false,
   shareOpen: false,
-  settingOpen: false,
   setShareOpen: (open: boolean) => set({ shareOpen: open }),
-  setSettingOpen: (open: boolean) => set({ settingOpen: open }),
 
   setRepo: (repoId: string) =>
     set(

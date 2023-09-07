@@ -195,7 +195,6 @@ const PROFILE_QUERY = gql`
       lastname
       email
       id
-      codeiumAPIKey
     }
   }
 `;

@@ -13,7 +13,6 @@ export const typeDefs = gql`
     password: String!
     firstname: String!
     lastname: String!
-    codeiumAPIKey: String
   }
 
   type Repo {

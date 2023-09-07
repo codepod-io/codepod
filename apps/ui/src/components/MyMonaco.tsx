@@ -30,8 +30,6 @@ monaco.languages.setLanguageConfiguration("julia", {
   },
 });
 
-console.log("monaco", monaco);
-console.log("languages", monaco.languages.registerInlineCompletionsProvider);
 function construct_indent(pos, indent) {
   return [
     {
@@ -508,7 +506,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     // });
 
     // bind it to the ytext with pod id
-    // if (monaco.languages.registerInlineCompletionsProvider)
     if (!codeMap.has(id)) {
       codeMap.set(id, new Y.Text());
     }
