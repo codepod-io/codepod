@@ -218,6 +218,12 @@ function RepoHeader({ id }) {
  * Wrap the repo page with a header, a sidebar and a canvas.
  */
 function RepoWrapper({ children, id }) {
+  const store = useContext(RepoContext);
+  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const isSidebarOnLeftHand = useStore(
+    store,
+    (state) => state.isSidebarOnLeftHand
+  );
   const [open, setOpen] = useState(true);
   let sidebar_width = "240px";
   let header_height = "50px";
@@ -241,7 +247,7 @@ function RepoWrapper({ children, id }) {
           },
         }}
         variant="persistent"
-        anchor="right"
+        anchor={isSidebarOnLeftHand ? "left" : "right"}
         open={open}
       >
         <Box
@@ -264,7 +270,8 @@ function RepoWrapper({ children, id }) {
           position: "absolute",
           margin: "5px",
           top: header_height,
-          right: open ? sidebar_width : 0,
+          ...(isSidebarOnLeftHand && { left: open ? sidebar_width : 0 }),
+          ...(!isSidebarOnLeftHand && { right: open ? sidebar_width : 0 }),
           transition: "all .2s",
           zIndex: 100,
         }}
@@ -276,7 +283,17 @@ function RepoWrapper({ children, id }) {
           size="small"
           color="primary"
         >
-          {open ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+          {isSidebarOnLeftHand ? (
+            open ? (
+              <ChevronLeftIcon />
+            ) : (
+              <ChevronRightIcon />
+            )
+          ) : open ? (
+            <ChevronRightIcon />
+          ) : (
+            <ChevronLeftIcon />
+          )}
         </IconButton>
       </Box>
 
@@ -287,6 +304,7 @@ function RepoWrapper({ children, id }) {
           flexGrow: 1,
           verticalAlign: "top",
           height: "100%",
+          ...(isSidebarOnLeftHand && { ml: open ? sidebar_width : 0 }),
           width: open ? `calc(100% - ${sidebar_width})` : "100%",
           overflow: "scroll",
         }}

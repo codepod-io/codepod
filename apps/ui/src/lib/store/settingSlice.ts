@@ -21,6 +21,8 @@ export interface SettingSlice {
   setContextualZoom: (b: boolean) => void;
   showLineNumbers?: boolean;
   setShowLineNumbers: (b: boolean) => void;
+  isSidebarOnLeftHand: boolean;
+  setIsSidebarOnLeftHand: (b: boolean) => void;
 }
 
 export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
@@ -142,5 +144,12 @@ export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
       "contextualZoomParams",
       JSON.stringify({ ...updatedParams })
     );
+  },
+  isSidebarOnLeftHand: localStorage.getItem("isSidebarOnLeftHand")
+    ? JSON.parse(localStorage.getItem("isSidebarOnLeftHand")!)
+    : true,
+  setIsSidebarOnLeftHand: (b: boolean) => {
+    set({ isSidebarOnLeftHand: b });
+    localStorage.setItem("isSidebarOnLeftHand", JSON.stringify(b));
   },
 });
