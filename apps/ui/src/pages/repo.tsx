@@ -9,6 +9,9 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import Button from "@mui/material/Button";
 import { gql, useApolloClient, useMutation, useQuery } from "@apollo/client";
 
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+
 import { useEffect, useState, useRef, useContext, memo } from "react";
 
 import * as React from "react";
@@ -22,13 +25,21 @@ import { Canvas } from "../components/Canvas";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
 import { useLocalStorage } from "../hooks/useLocalStorage";
-import { Stack, TextField, Tooltip } from "@mui/material";
+import {
+  Breadcrumbs,
+  Drawer,
+  IconButton,
+  Stack,
+  TextField,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import { useAuth } from "../lib/auth";
 import { initParser } from "../lib/parser";
 
 import { usePrompt } from "../lib/prompt";
 
-const HeaderItem = memo<any>(({ id }) => {
+const HeaderItem = memo<any>(() => {
   const store = useContext(RepoContext)!;
   const repoName = useStore(store, (state) => state.repoName);
   const repoNameDirty = useStore(store, (state) => state.repoNameDirty);
@@ -136,10 +147,7 @@ const HeaderItem = memo<any>(({ id }) => {
   );
 });
 
-function RepoWrapper({ children, id }) {
-  // this component is used to provide a foldable layout
-  const [open, setOpen] = useLocalStorage("sidebar", true);
-
+function RepoHeader({ id }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
 
@@ -153,70 +161,142 @@ function RepoWrapper({ children, id }) {
     `,
     { variables: { id } }
   );
-  // if(result.data.copyRepo){
-  //   navigate(`/repo/${result.data.copyRepo}`);
-  // }
+  return (
+    <Header>
+      <Breadcrumbs
+        aria-label="breadcrumb"
+        sx={{
+          alignItems: "baseline",
+          display: "flex",
+          flexGrow: 1,
+        }}
+      >
+        <Link component={ReactLink} underline="hover" to="/">
+          <Typography noWrap>CodePod</Typography>
+        </Link>
+        <HeaderItem />
+      </Breadcrumbs>
+      <Box
+        sx={{
+          display: { xs: "none", md: "flex" },
+          alignItems: "center",
+          paddingRight: "10px",
+        }}
+      >
+        <Button
+          endIcon={<ContentCopyIcon />}
+          onClick={async () => {
+            const result = await copyRepo();
+            const newRepoId = result.data.copyRepo;
+            window.open(`/repo/${newRepoId}`);
+          }}
+          variant="contained"
+        >
+          Make a copy
+        </Button>
+      </Box>
+      <Box
+        sx={{
+          display: { xs: "none", md: "flex" },
+          alignItems: "center",
+          paddingRight: "10px",
+        }}
+      >
+        <Button
+          endIcon={<ShareIcon />}
+          onClick={() => setShareOpen(true)}
+          variant="contained"
+        >
+          Share
+        </Button>
+      </Box>
+    </Header>
+  );
+}
 
-  const DrawerWidth = 240;
+/**
+ * Wrap the repo page with a header, a sidebar and a canvas.
+ */
+function RepoWrapper({ children, id }) {
+  const [open, setOpen] = useState(true);
+  let sidebar_width = "240px";
+  let header_height = "50px";
 
   return (
     <Box
       sx={{
-        width: "100%",
         height: "100%",
-        overflow: "hidden",
       }}
     >
-      <Sidebar
-        width={DrawerWidth}
+      {/* The header. */}
+      <RepoHeader id={id} />
+      {/* The sidebar */}
+      <Drawer
+        sx={{
+          width: sidebar_width,
+          flexShrink: 0,
+          "& .MuiDrawer-paper": {
+            width: sidebar_width,
+            boxSizing: "border-box",
+          },
+        }}
+        variant="persistent"
+        anchor="right"
         open={open}
-        onOpen={() => setOpen(true)}
-        onClose={() => setOpen(false)}
-      />
+      >
+        <Box
+          sx={{
+            pt: header_height,
+            verticalAlign: "top",
+            height: "100%",
+            overflow: "auto",
+          }}
+        >
+          <Box sx={{ mx: 2, my: 1 }}>
+            <Sidebar />
+          </Box>
+        </Box>
+      </Drawer>
 
+      {/* The button to toggle sidebar. */}
+      <Box
+        style={{
+          position: "absolute",
+          margin: "5px",
+          top: header_height,
+          right: open ? sidebar_width : 0,
+          transition: "all .2s",
+          zIndex: 100,
+        }}
+      >
+        <IconButton
+          onClick={() => {
+            setOpen(!open);
+          }}
+          size="small"
+          color="primary"
+        >
+          {open ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+        </IconButton>
+      </Box>
+
+      {/* The Canvas */}
       <Box
         sx={{
-          display: "flex",
+          display: "inline-flex",
           flexGrow: 1,
           verticalAlign: "top",
           height: "100%",
-          transition: "margin 195ms cubic-bezier(0.4, 0, 0.6, 1) 0ms",
-          ml: open ? `${DrawerWidth}px` : 0,
+          width: open ? `calc(100% - ${sidebar_width})` : "100%",
+          overflow: "scroll",
         }}
       >
-        <Header
-          open={open}
-          drawerWidth={DrawerWidth}
-          breadcrumbItem={<HeaderItem id={id} />}
-          shareButton={
-            <Button
-              endIcon={<ShareIcon />}
-              onClick={() => setShareOpen(true)}
-              variant="contained"
-            >
-              Share
-            </Button>
-          }
-          forkButton={
-            <Button
-              endIcon={<ContentCopyIcon />}
-              onClick={async () => {
-                const result = await copyRepo();
-                const newRepoId = result.data.copyRepo;
-                window.open(`/repo/${newRepoId}`);
-              }}
-              variant="contained"
-            >
-              Make a copy
-            </Button>
-          }
-        />
         <Box
           sx={{
             boxSizing: "border-box",
             width: "100%",
             height: "100%",
-            pt: `52px`,
+            pt: header_height,
             mx: "auto",
           }}
         >

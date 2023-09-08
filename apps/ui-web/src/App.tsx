@@ -1,4 +1,4 @@
-import "./App.css";
+import "@codepod/ui/src/App.css";
 import "@codepod/ui/src/custom.css";
 
 import {
@@ -48,18 +48,10 @@ const theme = createTheme({
   },
 });
 
-type NormalLayoutProps = {
-  currentPage?: string | null;
-  children: React.ReactNode;
-};
-
-const NormalLayout: React.FC<NormalLayoutProps> = ({
-  currentPage,
-  children,
-}) => {
+const NormalLayout = ({ children }) => {
   return (
     <Box>
-      <Header currentPage={currentPage} />
+      <Header />
       <Box pt="50px">{children}</Box>
       {/* <Footer /> */}
     </Box>
@@ -78,7 +70,7 @@ const router = createBrowserRouter([
   {
     path: "dashboard",
     element: (
-      <NormalLayout currentPage="Dashboard">
+      <NormalLayout>
         <Dashboard />
       </NormalLayout>
     ),
@@ -86,6 +78,9 @@ const router = createBrowserRouter([
   {
     path: "repo/:id",
     element: (
+      // Not wrapperd with NormalLayout (header + padding) because:
+      // 1. Need to use vh to make the Canvas exact full screen
+      // 2. Need to populate more buttons to header.
       <Box height="100vh" width="100%" boxSizing={"border-box"}>
         <Repo yjsWsUrl={yjsWsUrl} />
       </Box>
@@ -110,7 +105,7 @@ const router = createBrowserRouter([
   {
     path: "profile",
     element: (
-      <NormalLayout currentPage="Profile">
+      <NormalLayout>
         <Profile />
       </NormalLayout>
     ),

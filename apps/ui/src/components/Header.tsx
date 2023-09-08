@@ -25,41 +25,7 @@ import { useAuth } from "../lib/auth";
 
 import { useMe } from "../lib/auth";
 
-type HeaderProps = {
-  open?: boolean;
-  drawerWidth?: number;
-  currentPage?: string | null;
-  breadcrumbItem?: React.ReactNode;
-  shareButton?: React.ReactNode;
-  forkButton?: React.ReactNode;
-};
-
-export const Header: React.FC<HeaderProps> = ({
-  open = false,
-  drawerWidth = 0,
-  currentPage = null,
-  breadcrumbItem = null,
-  shareButton = null,
-  forkButton = null,
-}) => {
-  const [anchorElNav, setAnchorElNav] = useState(null);
-  const [anchorElUser, setAnchorElUser] = useState(null);
-
-  const handleOpenNavMenu = (event) => {
-    setAnchorElNav(event.currentTarget);
-  };
-  const handleOpenUserMenu = (event) => {
-    setAnchorElUser(event.currentTarget);
-  };
-
-  const handleCloseNavMenu = () => {
-    setAnchorElNav(null);
-  };
-
-  const handleCloseUserMenu = () => {
-    setAnchorElUser(null);
-  };
-
+export const Header = ({ children }: { children?: any }) => {
   const { isSignedIn, signOut } = useAuth();
   let navigate = useNavigate();
   const { me } = useMe();
@@ -69,8 +35,9 @@ export const Header: React.FC<HeaderProps> = ({
       position="fixed"
       color="inherit"
       sx={{
-        width: `calc(100% - ${open ? drawerWidth : 0}px)`,
-        transition: "width 195ms cubic-bezier(0.4, 0, 0.6, 1) 0ms",
+        // The default zIndex is 1100, but the default zIndex of the drawer is
+        // 1200. Thus we make this 1300 to make sure it is on top of the drawer.
+        zIndex: 1300,
       }}
     >
       <Container maxWidth="xl">
@@ -81,42 +48,7 @@ export const Header: React.FC<HeaderProps> = ({
             maxHeight: "10px",
           }}
         >
-          <Breadcrumbs
-            aria-label="breadcrumb"
-            sx={{
-              alignItems: "baseline",
-              display: "flex",
-              flexGrow: 1,
-            }}
-          >
-            <Link component={ReactLink} underline="hover" to="/">
-              <Typography noWrap>CodePod</Typography>
-            </Link>
-            {currentPage && (
-              <Typography color="text.primary">{currentPage}</Typography>
-            )}
-            {breadcrumbItem}
-          </Breadcrumbs>
-
-          <Box
-            sx={{
-              display: { xs: "none", md: "flex" },
-              alignItems: "center",
-              paddingRight: "10px",
-            }}
-          >
-            {forkButton}
-          </Box>
-
-          <Box
-            sx={{
-              display: { xs: "none", md: "flex" },
-              alignItems: "center",
-              paddingRight: "10px",
-            }}
-          >
-            {shareButton}
-          </Box>
+          {children}
 
           {/* The navigation on desktop */}
           <Box
