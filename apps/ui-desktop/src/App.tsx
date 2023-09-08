@@ -1,4 +1,4 @@
-import "./App.css";
+import "@codepod/ui/src/App.css";
 import "@codepod/ui/src/custom.css";
 
 import {
@@ -40,18 +40,10 @@ const theme = createTheme({
   },
 });
 
-type NormalLayoutProps = {
-  currentPage?: string | null;
-  children: React.ReactNode;
-};
-
-const NormalLayout: React.FC<NormalLayoutProps> = ({
-  currentPage,
-  children,
-}) => {
+const NormalLayout = ({ children }) => {
   return (
     <Box>
-      <Header currentPage={currentPage} />
+      <Header />
       <Box pt="50px">{children}</Box>
       {/* <Footer /> */}
     </Box>

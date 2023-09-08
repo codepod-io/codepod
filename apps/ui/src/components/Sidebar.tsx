@@ -939,19 +939,7 @@ function TableofPods() {
   );
 }
 
-type SidebarProps = {
-  width: number;
-  open: boolean;
-  onOpen: () => void;
-  onClose: () => void;
-};
-
-export const Sidebar: React.FC<SidebarProps> = ({
-  width,
-  open,
-  onOpen,
-  onClose,
-}) => {
+export const Sidebar = () => {
   // never render saving status / runtime module for a guest
   // FIXME: improve the implementation logic
   const store = useContext(RepoContext);
@@ -962,77 +950,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <MyKBar />
       <Box
         sx={{
-          position: "absolute",
-          display: open ? "none" : "block",
-          top: `54px`,
-          left: 1,
+          padding: "8px 16px",
         }}
       >
-        <IconButton
-          onClick={onOpen}
-          sx={{
-            zIndex: 1,
-          }}
-        >
-          <ChevronRightIcon />
-        </IconButton>
+        <Stack>
+          {!isGuest && (
+            <Box>
+              {/* <SyncStatus /> */}
+              <YjsSyncStatus />
+              <Divider />
+              <YjsRuntimeStatus />
+            </Box>
+          )}
+          <Divider />
+          <Typography variant="h6">Export to ..</Typography>
+          <ExportButtons />
+
+          <Divider />
+          <Typography variant="h6">Site Settings</Typography>
+          <SidebarSettings />
+          <ToastError />
+
+          <Divider />
+          <Typography variant="h6">Table of Pods</Typography>
+          <TableofPods />
+        </Stack>
       </Box>
-
-      <Drawer
-        sx={{
-          width: width,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: width,
-            boxSizing: "border-box",
-          },
-        }}
-        variant="persistent"
-        anchor="left"
-        open={open}
-      >
-        <Box
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            paddingLeft: "8px",
-            height: 48,
-          }}
-        >
-          <IconButton onClick={onClose}>
-            <ChevronLeftIcon />
-          </IconButton>
-        </Box>
-        <Divider />
-        <Box
-          sx={{
-            padding: "8px 16px",
-          }}
-        >
-          <Stack>
-            {!isGuest && (
-              <Box>
-                {/* <SyncStatus /> */}
-                <YjsSyncStatus />
-                <Divider />
-                <YjsRuntimeStatus />
-              </Box>
-            )}
-            <Divider />
-            <Typography variant="h6">Export to ..</Typography>
-            <ExportButtons />
-
-            <Divider />
-            <Typography variant="h6">Site Settings</Typography>
-            <SidebarSettings />
-            <ToastError />
-
-            <Divider />
-            <Typography variant="h6">Table of Pods</Typography>
-            <TableofPods />
-          </Stack>
-        </Box>
-      </Drawer>
     </>
   );
 };
