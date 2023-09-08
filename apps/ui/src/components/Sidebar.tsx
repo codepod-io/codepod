@@ -918,15 +918,25 @@ function TableofPods() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const node2children = useStore(store, (state) => state.node2children);
+  // Set all nodes to expanded by default.
+  const allIds = Array.from(node2children.keys());
+  // Use Controlled TreeView
+  const [expanded, setExpanded] = useState<string[]>(allIds);
 
   return (
     <TreeView
       aria-label="multi-select"
       defaultCollapseIcon={<ExpandMoreIcon />}
       defaultExpandIcon={<ChevronRightIcon />}
-      defaultExpanded={Array.from(node2children.keys()).filter(
-        (key) => node2children!.get(key!)!.length > 0
-      )}
+      expanded={expanded}
+      onNodeToggle={(event, nodeIds) => {
+        // Only toggle expansion on the icon, not the label. Ref:
+        // https://github.com/mui/material-ui/issues/19953#issuecomment-635961028
+        const el = event.target as Element;
+        if (el.closest(".MuiTreeItem-iconContainer")) {
+          setExpanded(nodeIds);
+        }
+      }}
       multiSelect
     >
       {node2children.size > 0 &&
