@@ -918,15 +918,15 @@ function TableofPods() {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const node2children = useStore(store, (state) => state.node2children);
+  // Set all nodes to expanded. Disable the collapse/expand for now.
+  const allIds = Array.from(node2children.keys());
 
   return (
     <TreeView
       aria-label="multi-select"
       defaultCollapseIcon={<ExpandMoreIcon />}
       defaultExpandIcon={<ChevronRightIcon />}
-      defaultExpanded={Array.from(node2children.keys()).filter(
-        (key) => node2children!.get(key!)!.length > 0
-      )}
+      expanded={allIds}
       multiSelect
     >
       {node2children.size > 0 &&
