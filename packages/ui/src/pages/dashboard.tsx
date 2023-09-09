@@ -366,7 +366,6 @@ export function Dashboard() {
         Loading ..
       </Box>
     );
-  console.log("me", me);
   // TODO throw errors when graphql query fails
   if (!me) {
     return <NoLogginErrorAlert />;
