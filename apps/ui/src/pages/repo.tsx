@@ -20,7 +20,7 @@ import { useStore } from "zustand";
 
 import { createRepoStore, RepoContext } from "../lib/store";
 
-import { useMe } from "../lib/auth";
+import { useMe } from "../lib/me";
 import { Canvas } from "../components/Canvas";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
@@ -34,7 +34,6 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { useAuth } from "../lib/auth";
 import { initParser } from "../lib/parser";
 
 import { usePrompt } from "../lib/prompt";
@@ -217,7 +216,7 @@ function RepoHeader({ id }) {
 /**
  * Wrap the repo page with a header, a sidebar and a canvas.
  */
-function RepoWrapper({ children, id }) {
+function HeaderWrapper({ children, id }) {
   const [open, setOpen] = useState(true);
   let sidebar_width = "240px";
   let header_height = "50px";
@@ -307,41 +306,22 @@ function RepoWrapper({ children, id }) {
   );
 }
 
-function NotFoundAlert({ error }) {
-  const navigate = useNavigate();
-  const [seconds, setSeconds] = useState<number | null>(3);
-
-  useEffect(() => {
-    if (seconds === 0) {
-      setSeconds(null);
-      navigate("/");
-      return;
-    }
-    if (seconds === null) return;
-
-    const timer = setTimeout(() => {
-      setSeconds((prev) => prev! - 1);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [seconds]);
-
+function NotFoundAlert({}) {
   return (
     <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
       <Alert severity="error">
-        <AlertTitle>Error: {error}</AlertTitle>
+        <AlertTitle>Error</AlertTitle>
         The repo you are looking for is not found. Please check the URL. Go back
         your{" "}
         <Link component={ReactLink} to="/">
           dashboard
-        </Link>{" "}
-        page in {seconds} seconds.
+        </Link>
       </Alert>
     </Box>
   );
 }
 
-function useRepo({ id }) {
+function RepoLoader({ id, children }) {
   // load the repo
   let query = gql`
     query Repo($id: String!) {
@@ -360,7 +340,7 @@ function useRepo({ id }) {
     }
   `;
   // FIXME this should be a mutation as it changes the last access time.
-  const { data, loading } = useQuery(query, {
+  const { data, loading, error } = useQuery(query, {
     variables: {
       id,
     },
@@ -374,23 +354,25 @@ function useRepo({ id }) {
       setRepoData(data.repo);
     }
   }, [data, loading]);
-  return { data, loading };
+  if (loading) return <Box>Loading</Box>;
+  if (error) {
+    console.error("Repo loading error", error);
+    return <Box>Error</Box>;
+  }
+  if (!data || !data.repo) return <NotFoundAlert />;
+  return children;
 }
 
 /**
  * This loads repo metadata.
  */
-function RepoImpl2({ id }) {
+function ParserWrapper({ children }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  useRepo({ id });
-  const providerSynced = useStore(store, (state) => state.providerSynced);
   const parseAllPods = useStore(store, (state) => state.parseAllPods);
   const resolveAllPods = useStore(store, (state) => state.resolveAllPods);
   const [parserLoaded, setParserLoaded] = useState(false);
   const scopedVars = useStore(store, (state) => state.scopedVars);
-  const loadError = useStore(store, (state) => state.loadError);
-  const repoLoaded = useStore(store, (state) => state.repoLoaded);
 
   useEffect(() => {
     initParser("/", () => {
@@ -399,60 +381,35 @@ function RepoImpl2({ id }) {
   }, []);
 
   useEffect(() => {
-    if (repoLoaded && parserLoaded && providerSynced) {
+    if (parserLoaded) {
       parseAllPods();
       resolveAllPods();
     }
-  }, [
-    parseAllPods,
-    parserLoaded,
-    repoLoaded,
-    resolveAllPods,
-    scopedVars,
-    providerSynced,
-  ]);
+  }, [parseAllPods, parserLoaded, resolveAllPods, scopedVars]);
 
-  // TOFIX: consider more types of error and display detailed error message in the future
-  // TOFIX: if the repo is not found, sidebar should not be rendered and runtime should not be lanuched.
-  if (!repoLoaded && loadError) {
-    return <NotFoundAlert error={loadError.message} />;
-  }
+  return children;
+}
 
-  if (!repoLoaded || !providerSynced) return <Box>Loading</Box>;
-
-  return (
-    <RepoWrapper id={id}>
-      <Box
-        height="100%"
-        border="solid 3px black"
-        p={2}
-        boxSizing={"border-box"}
-        // m={2}
-        overflow="auto"
-      >
-        <Canvas />
-      </Box>
-    </RepoWrapper>
-  );
+function WaitForProvider({ children }) {
+  const store = useContext(RepoContext)!;
+  const providerSynced = useStore(store, (state) => state.providerSynced);
+  if (!providerSynced) return <Box>Loading Yjs Doc ..</Box>;
+  return children;
 }
 
 /**
  * This loads users.
  */
-function RepoImpl() {
+function UserWrapper({ children }) {
   let { id } = useParams();
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const loadError = useStore(store, (state) => state.loadError);
-  const repoLoaded = useStore(store, (state) => state.repoLoaded);
   const setUser = useStore(store, (state) => state.setUser);
   const provider = useStore(store, (state) => state.provider);
   const addClient = useStore(store, (state) => state.addClient);
   const deleteClient = useStore(store, (state) => state.deleteClient);
 
   const { loading, me } = useMe();
-  const { hasToken } = useAuth();
-
   useEffect(() => {
     if (provider) {
       const awareness = provider.awareness;
@@ -473,10 +430,8 @@ function RepoImpl() {
   }, [addClient, deleteClient, provider]);
 
   useEffect(() => {
-    if (hasToken()) {
-      if (!loading && me) {
-        setUser(me);
-      }
+    if (!loading && me) {
+      setUser(me);
     }
   }, [loading, me]);
 
@@ -486,7 +441,7 @@ function RepoImpl() {
 
   if (loading) return <Box>Loading</Box>;
 
-  return <RepoImpl2 id={id} />;
+  return children;
 }
 
 export function Repo({ yjsWsUrl }) {
@@ -511,7 +466,26 @@ export function Repo({ yjsWsUrl }) {
   }, [connectYjs, disconnectYjs, id, setRepo]);
   return (
     <RepoContext.Provider value={store}>
-      <RepoImpl />
+      <UserWrapper>
+        <RepoLoader id={id}>
+          <WaitForProvider>
+            <ParserWrapper>
+              <HeaderWrapper id={id}>
+                <Box
+                  height="100%"
+                  border="solid 3px black"
+                  p={2}
+                  boxSizing={"border-box"}
+                  // m={2}
+                  overflow="auto"
+                >
+                  <Canvas />
+                </Box>
+              </HeaderWrapper>
+            </ParserWrapper>
+          </WaitForProvider>
+        </RepoLoader>
+      </UserWrapper>
     </RepoContext.Provider>
   );
 }

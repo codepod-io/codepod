@@ -10,13 +10,17 @@ import {
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
-import { Dashboard, Repo, Test, Profile, Docs } from "@codepod/ui";
+import { Dashboard, Repo, Test } from "@codepod/ui";
 
 import { Header, Footer } from "@codepod/ui";
-import { AuthProvider } from "@codepod/ui";
+import { AuthProvider } from "./lib/auth";
+
+import Link from "@mui/material/Link";
+import { Link as ReactLink } from "react-router-dom";
 
 import Box from "@mui/material/Box";
 import { SnackbarProvider } from "notistack";
+import { Typography } from "@mui/material";
 
 const yjsWsUrl = import.meta.env.VITE_APP_YJS_WS_URL;
 const apiUrl = import.meta.env.VITE_APP_API_URL;
@@ -43,7 +47,19 @@ const theme = createTheme({
 const NormalLayout = ({ children }) => {
   return (
     <Box>
-      <Header />
+      <Header>
+        <Box
+          sx={{
+            alignItems: "baseline",
+            display: "flex",
+            flexGrow: 1,
+          }}
+        >
+          <Link component={ReactLink} underline="hover" to="/">
+            <Typography noWrap>CodePod</Typography>
+          </Link>
+        </Box>
+      </Header>
       <Box pt="50px">{children}</Box>
       {/* <Footer /> */}
     </Box>

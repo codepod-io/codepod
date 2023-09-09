@@ -21,15 +21,7 @@ import Tooltip from "@mui/material/Tooltip";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import AppBar from "@mui/material/AppBar";
 
-import { useAuth } from "../lib/auth";
-
-import { useMe } from "../lib/auth";
-
 export const Header = ({ children }: { children?: any }) => {
-  const { isSignedIn, signOut } = useAuth();
-  let navigate = useNavigate();
-  const { me } = useMe();
-
   return (
     <AppBar
       position="fixed"
@@ -73,45 +65,9 @@ export const Header = ({ children }: { children?: any }) => {
               Docs <OpenInNewIcon fontSize="small" sx={{ ml: "1px" }} />
             </Link>
           </Box>
-
-          {isSignedIn() ? (
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "row",
-                alignItems: "center",
-              }}
-            >
-              <Box sx={{ mr: 2 }}>
-                <Link component={ReactLink} to="/profile" underline="none">
-                  {me?.firstname}
-                </Link>
-              </Box>
-              <Button
-                onClick={() => {
-                  signOut();
-                  navigate("/login");
-                }}
-              >
-                Logout
-              </Button>
-            </Box>
-          ) : (
-            <MyMenuItem to="/login">Login</MyMenuItem>
-          )}
         </Toolbar>
       </Container>
     </AppBar>
-  );
-};
-
-const MyMenuItem = ({ children, to = "/" }) => {
-  return (
-    <Box display="block">
-      <Link to={to} component={ReactLink} underline="none">
-        {children}
-      </Link>
-    </Box>
   );
 };
 
