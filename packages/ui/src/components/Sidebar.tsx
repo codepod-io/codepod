@@ -92,6 +92,14 @@ function SidebarSettings() {
     store,
     (state) => state.restoreParamsDefault
   );
+  const isSidebarOnLeftHand = useStore(
+    store,
+    (state) => state.isSidebarOnLeftHand
+  );
+  const setIsSidebarOnLeftHand = useStore(
+    store,
+    (state) => state.setIsSidebarOnLeftHand
+  );
 
   return (
     <Box>
@@ -112,6 +120,26 @@ function SidebarSettings() {
               label="Show Line Numbers"
             />
           </FormGroup>
+        </Tooltip>
+        <Tooltip
+          title={
+            "When turned off, the Sidebar appears at the right end of the screen."
+          }
+          disableInteractive
+        >
+          <FormControlLabel
+            control={
+              <Switch
+                checked={isSidebarOnLeftHand}
+                size="small"
+                color="warning"
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  setIsSidebarOnLeftHand(event.target.checked);
+                }}
+              />
+            }
+            label="Sidebar on the Lefthand Side"
+          />
         </Tooltip>
         <Tooltip
           title={"Enable Debug Mode, e.g., show pod IDs"}
