@@ -6,25 +6,27 @@ import {
   createRoutesFromElements,
   Route,
   RouterProvider,
+  useNavigate,
 } from "react-router-dom";
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
-import {
-  Dashboard,
-  Repo,
-  Test,
-  Profile,
-  Docs,
-  SignIn,
-  SignUp,
-} from "@codepod/ui";
+import { Dashboard, Repo, Test, Docs } from "@codepod/ui";
+
+import { Profile } from "./pages/profile";
+import { SignIn } from "./pages/login";
+import { SignUp } from "./pages/signup";
 
 import { Header, Footer } from "@codepod/ui";
-import { AuthProvider } from "@codepod/ui";
+import { AuthProvider, useAuth } from "./lib/auth";
+import { useMe } from "@codepod/ui";
+
+import Link from "@mui/material/Link";
+import { Link as ReactLink } from "react-router-dom";
 
 import Box from "@mui/material/Box";
 import { SnackbarProvider } from "notistack";
+import { Button, Typography } from "@mui/material";
 
 const yjsWsUrl = import.meta.env.VITE_APP_YJS_WS_URL;
 const apiUrl = import.meta.env.VITE_APP_API_URL;
@@ -49,9 +51,54 @@ const theme = createTheme({
 });
 
 const NormalLayout = ({ children }) => {
+  const { isSignedIn, signOut } = useAuth();
+  let navigate = useNavigate();
+  const { me } = useMe();
   return (
     <Box>
-      <Header />
+      <Header>
+        <Box
+          sx={{
+            alignItems: "baseline",
+            display: "flex",
+            flexGrow: 1,
+          }}
+        >
+          <Link component={ReactLink} underline="hover" to="/">
+            <Typography noWrap>CodePod</Typography>
+          </Link>
+        </Box>
+
+        {isSignedIn() ? (
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              alignItems: "center",
+            }}
+          >
+            <Box sx={{ mr: 2 }}>
+              <Link component={ReactLink} to="/profile" underline="none">
+                {me?.firstname}
+              </Link>
+            </Box>
+            <Button
+              onClick={() => {
+                signOut();
+                navigate("/login");
+              }}
+            >
+              Logout
+            </Button>
+          </Box>
+        ) : (
+          <Box display="block">
+            <Link to="/login" component={ReactLink} underline="none">
+              Login
+            </Link>
+          </Box>
+        )}
+      </Header>
       <Box pt="50px">{children}</Box>
       {/* <Footer /> */}
     </Box>

@@ -30,7 +30,6 @@ export interface RepoSlice {
   collaborators: any[];
   shareOpen: boolean;
   setShareOpen: (open: boolean) => void;
-  loadError: any;
   role: "OWNER" | "COLLABORATOR" | "GUEST";
   isPublic: boolean;
 }
@@ -43,7 +42,6 @@ export const createRepoSlice: StateCreator<MyState, [], [], RepoSlice> = (
   repoName: null,
   repoNameSyncing: false,
   repoNameDirty: false,
-  loadError: null,
   role: "GUEST",
   collaborators: [],
   isPublic: false,
@@ -118,6 +116,7 @@ export const createRepoSlice: StateCreator<MyState, [], [], RepoSlice> = (
         } else {
           state.role = "GUEST";
         }
+        console.log("Role", state.role);
         // only set the local awareness when the user is an owner or a collaborator
         if (state.provider && state.role !== "GUEST") {
           console.log("set awareness", state.user.firstname);

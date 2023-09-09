@@ -29,23 +29,83 @@ export const typeDefs = gql`
 
   type Query {
     hello: String
+    me: User
+    repo(id: String!): Repo
+    getDashboardRepos: [Repo]
   }
 
   type Mutation {
     world: String
+    createRepo: Repo
+    updateRepo(id: ID!, name: String!): Boolean
+    deleteRepo(id: ID!): Boolean
   }
 `;
+
+// TODO Dummy Data
+const repos = [
+  {
+    id: "repo1",
+    name: "test",
+    userId: "user1",
+    stargazers: [],
+    collaborators: [],
+    public: false,
+    createdAt: "2021-01-01",
+    updatedAt: "2021-01-01",
+    accessedAt: "2021-01-01",
+  },
+  {
+    id: "repo2",
+    name: "test2",
+    userId: "user1",
+    stargazers: [],
+    collaborators: [],
+    public: false,
+    createdAt: "2021-01-01",
+    updatedAt: "2021-01-01",
+    accessedAt: "2021-01-01",
+  },
+];
 
 export const resolvers = {
   Query: {
     hello: () => {
       return "Hello world!";
     },
+    // TODO Dummy Data
+    me: () => {
+      return {
+        id: "user1",
+        username: "test",
+        email: "",
+        firstname: "Local",
+        lastname: "User",
+      };
+    },
+    getDashboardRepos: () => {
+      console.log("returning repos");
+      console.log(repos);
+      return repos;
+    },
+    repo: (_, { id }) => {
+      console.log("finding", id);
+      const res = repos.find((repo) => repo.id === id);
+      repos.forEach((repo) => {
+        console.log(repo.id === id);
+      });
+      console.log("res", res);
+      return repos.find((repo) => repo.id === id);
+    },
   },
   Mutation: {
     world: () => {
       return "World!";
     },
+    // TODO fill APIs
+    createRepo: () => {},
+    updateRepo: () => {},
+    deleteRepo: () => {},
   },
 };
 
