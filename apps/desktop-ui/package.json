@@ -1,5 +1,5 @@
 {
-  "name": "ui-web",
+  "name": "desktop-ui",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -16,7 +16,6 @@
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.10.9",
     "@mui/material": "^5.14.5",
-    "formik": "^2.2.9",
     "notistack": "^2.0.8",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

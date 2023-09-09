@@ -41,9 +41,9 @@ services:
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
 
-  api:
+  web-api:
     image: node:18
-    working_dir: /codepod/apps/api
+    working_dir: /codepod/apps/web-api
     ports:
       - 4000:4000
     volumes:
@@ -55,9 +55,9 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
 
-  file-backend:
+  desktop-api:
     image: node:18
-    working_dir: /codepod/apps/file-backend
+    working_dir: /codepod/apps/desktop-api
     ports:
       - 4001:4001
     volumes:
@@ -117,7 +117,7 @@ services:
       YJS_WS_URL: "ws://yjs-server:4233/socket"
       JWT_SECRET: ${JWT_SECRET}
 
-  yjs-server:
+  yjs:
     image: node:18
     working_dir: /codepod/apps/yjs
     ports:
@@ -131,9 +131,9 @@ services:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
       JWT_SECRET: ${JWT_SECRET}
 
-  ui-web:
+  web-ui:
     image: node:18
-    working_dir: /codepod/apps/ui-web
+    working_dir: /codepod/apps/web-ui
     ports:
       - 3000:3000
     environment:
@@ -150,9 +150,9 @@ services:
       - pnpm-store:/codepod/.pnpm-store
     command: sh -c "corepack enable && pnpm dev"
 
-  ui-desktop:
+  desktop-ui:
     image: node:18
-    working_dir: /codepod/apps/ui-desktop
+    working_dir: /codepod/apps/desktop-ui
     ports:
       - 3001:3001
     environment:
