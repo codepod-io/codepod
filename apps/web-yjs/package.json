@@ -1,18 +1,16 @@
 {
-  "name": "yjs",
+  "name": "web-yjs",
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
     "build": "tsc",
     "start": "node build/run.js",
-    "dev:native": "ts-node-dev src/run-native.ts",
-    "dev:docker": "ts-node-dev src/run-docker.ts",
+    "dev": "ts-node-dev src/run.ts",
     "test": "jest --config jest.config.js"
   },
   "dependencies": {
     "@apollo/client": "^3.7.1",
     "@codepod/prisma": "workspace:*",
-    "@codepod/runtime": "workspace:^",
     "@codepod/yjs": "workspace:^",
     "@kubernetes/client-node": "^0.17.1",
     "apollo-server": "^3.5.0",
