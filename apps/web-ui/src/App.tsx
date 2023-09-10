@@ -50,10 +50,21 @@ const theme = createTheme({
   },
 });
 
+const ProfileButton = () => {
+  const { me } = useMe();
+  return (
+    <Box sx={{ mr: 2 }}>
+      <Link component={ReactLink} to="/profile" underline="none">
+        {me?.firstname}
+      </Link>
+    </Box>
+  );
+};
+
 const NormalLayout = ({ children }) => {
   const { isSignedIn, signOut } = useAuth();
   let navigate = useNavigate();
-  const { me } = useMe();
+
   return (
     <Box>
       <Header>
@@ -77,11 +88,7 @@ const NormalLayout = ({ children }) => {
               alignItems: "center",
             }}
           >
-            <Box sx={{ mr: 2 }}>
-              <Link component={ReactLink} to="/profile" underline="none">
-                {me?.firstname}
-              </Link>
-            </Box>
+            <ProfileButton />
             <Button
               onClick={() => {
                 signOut();
