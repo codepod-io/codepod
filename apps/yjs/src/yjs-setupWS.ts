@@ -6,11 +6,8 @@ import * as syncProtocol from "y-protocols/sync";
 
 import { encoding, decoding, map } from "lib0";
 
-// To test: use yjs-plain to create a legacy document and save to DB
-// Then, use yjs-blob to read back and test if the migration wroks.
-
-import { bindState, writeState } from "./yjs-blob";
-// import { bindState, writeState } from "./yjs-plain";
+let writeState = () => {};
+let bindState = async (doc: Y.Doc, repoId: string) => {};
 
 const wsReadyStateConnecting = 0;
 const wsReadyStateOpen = 1;
@@ -274,105 +271,111 @@ const pingTimeout = 30000;
  * @param {any} req
  * @param {any} opts
  */
-export const setupWSConnection = async (
-  conn,
-  req,
-  {
-    docName = req.url.slice(1).split("?")[0],
-    gc = true,
-    readOnly = false,
-    role = undefined,
-  } = {}
-) => {
-  conn.binaryType = "arraybuffer";
-  if (role) conn.role = role;
-  console.log(`setupWSConnection ${docName}, read-only=${readOnly}`);
-  // get doc, initialize if it does not exist yet
-  const { doc, docLoadedPromise } = getYDoc(docName, gc);
-  doc.conns.set(conn, new Set());
-  if (scheduledDelete.has(doc.name)) {
-    console.log("=== cancel previous scheduled destroy ydoc", doc.name);
-    clearTimeout(scheduledDelete.get(doc.name));
-    scheduledDelete.delete(doc.name);
-  }
-
-  // It might take some time to load the doc, but before then we still need to
-  // listen for websocket events, Ref:
-  // https://github.com/yjs/y-websocket/issues/81#issuecomment-1453185788
-  let isDocLoaded = docLoadedPromise ? false : true;
-  let queuedMessages: Uint8Array[] = [];
-  let isConnectionAlive = true;
-
-  // listen and reply to events
-  conn.on(
-    "message",
-    /** @param {ArrayBuffer} message */ (message) => {
-      if (isDocLoaded)
-        messageListener(conn, doc, new Uint8Array(message), readOnly);
-      else queuedMessages.push(new Uint8Array(message));
+export const createSetupWSConnection = (bindState, writeState) => {
+  // set the writeState and bindState functions
+  writeState = writeState;
+  bindState = bindState;
+  // return the setupWSConnection function
+  return async (
+    conn,
+    req,
+    {
+      docName = req.url.slice(1).split("?")[0],
+      gc = true,
+      readOnly = false,
+      role = undefined,
+    } = {}
+  ) => {
+    conn.binaryType = "arraybuffer";
+    if (role) conn.role = role;
+    console.log(`setupWSConnection ${docName}, read-only=${readOnly}`);
+    // get doc, initialize if it does not exist yet
+    const { doc, docLoadedPromise } = getYDoc(docName, gc);
+    doc.conns.set(conn, new Set());
+    if (scheduledDelete.has(doc.name)) {
+      console.log("=== cancel previous scheduled destroy ydoc", doc.name);
+      clearTimeout(scheduledDelete.get(doc.name));
+      scheduledDelete.delete(doc.name);
     }
-  );
 
-  // Check if connection is still alive
-  let pongReceived = true;
-  const pingInterval = setInterval(() => {
-    if (!pongReceived) {
-      if (doc.conns.has(conn)) {
-        closeConn(doc, conn);
-        isConnectionAlive = false;
+    // It might take some time to load the doc, but before then we still need to
+    // listen for websocket events, Ref:
+    // https://github.com/yjs/y-websocket/issues/81#issuecomment-1453185788
+    let isDocLoaded = docLoadedPromise ? false : true;
+    let queuedMessages: Uint8Array[] = [];
+    let isConnectionAlive = true;
+
+    // listen and reply to events
+    conn.on(
+      "message",
+      /** @param {ArrayBuffer} message */ (message) => {
+        if (isDocLoaded)
+          messageListener(conn, doc, new Uint8Array(message), readOnly);
+        else queuedMessages.push(new Uint8Array(message));
       }
-      clearInterval(pingInterval);
-    } else if (doc.conns.has(conn)) {
-      pongReceived = false;
-      try {
-        conn.ping();
-      } catch (e) {
-        closeConn(doc, conn);
-        isConnectionAlive = false;
+    );
+
+    // Check if connection is still alive
+    let pongReceived = true;
+    const pingInterval = setInterval(() => {
+      if (!pongReceived) {
+        if (doc.conns.has(conn)) {
+          closeConn(doc, conn);
+          isConnectionAlive = false;
+        }
         clearInterval(pingInterval);
+      } else if (doc.conns.has(conn)) {
+        pongReceived = false;
+        try {
+          conn.ping();
+        } catch (e) {
+          closeConn(doc, conn);
+          isConnectionAlive = false;
+          clearInterval(pingInterval);
+        }
       }
-    }
-  }, pingTimeout);
-  conn.on("close", () => {
-    closeConn(doc, conn);
-    isConnectionAlive = false;
-    clearInterval(pingInterval);
-  });
-  conn.on("pong", () => {
-    pongReceived = true;
-  });
-  // put the following in a variables in a block so the interval handlers don't keep in in
-  // scope
-  const sendSyncStep1 = () => {
-    // send sync step 1
-    const encoder = encoding.createEncoder();
-    encoding.writeVarUint(encoder, messageSync);
-    syncProtocol.writeSyncStep1(encoder, doc);
-    send(doc, conn, encoding.toUint8Array(encoder));
-    const awarenessStates = doc.awareness.getStates();
-    if (awarenessStates.size > 0) {
+    }, pingTimeout);
+    conn.on("close", () => {
+      closeConn(doc, conn);
+      isConnectionAlive = false;
+      clearInterval(pingInterval);
+    });
+    conn.on("pong", () => {
+      pongReceived = true;
+    });
+    // put the following in a variables in a block so the interval handlers don't keep in in
+    // scope
+    const sendSyncStep1 = () => {
+      // send sync step 1
       const encoder = encoding.createEncoder();
-      encoding.writeVarUint(encoder, messageAwareness);
-      encoding.writeVarUint8Array(
-        encoder,
-        awarenessProtocol.encodeAwarenessUpdate(
-          doc.awareness,
-          Array.from(awarenessStates.keys())
-        )
-      );
+      encoding.writeVarUint(encoder, messageSync);
+      syncProtocol.writeSyncStep1(encoder, doc);
       send(doc, conn, encoding.toUint8Array(encoder));
+      const awarenessStates = doc.awareness.getStates();
+      if (awarenessStates.size > 0) {
+        const encoder = encoding.createEncoder();
+        encoding.writeVarUint(encoder, messageAwareness);
+        encoding.writeVarUint8Array(
+          encoder,
+          awarenessProtocol.encodeAwarenessUpdate(
+            doc.awareness,
+            Array.from(awarenessStates.keys())
+          )
+        );
+        send(doc, conn, encoding.toUint8Array(encoder));
+      }
+    };
+    if (docLoadedPromise) {
+      docLoadedPromise.then(() => {
+        if (!isConnectionAlive) return;
+
+        isDocLoaded = true;
+        queuedMessages.forEach((message) =>
+          messageListener(conn, doc, message, readOnly)
+        );
+        queuedMessages = [];
+        sendSyncStep1();
+      });
     }
   };
-  if (docLoadedPromise) {
-    docLoadedPromise.then(() => {
-      if (!isConnectionAlive) return;
-
-      isDocLoaded = true;
-      queuedMessages.forEach((message) =>
-        messageListener(conn, doc, message, readOnly)
-      );
-      queuedMessages = [];
-      sendSyncStep1();
-    });
-  }
 };

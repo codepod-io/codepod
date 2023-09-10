@@ -5,12 +5,8 @@ import http from "http";
 
 import jwt from "jsonwebtoken";
 
-import { ApolloServer } from "apollo-server-express";
-
-import { gql } from "apollo-server";
-import { ApolloServerPluginLandingPageLocalDefault } from "apollo-server-core";
-
-import { getYDoc, setupWSConnection } from "./yjs-setupWS";
+import { createSetupWSConnection } from "./yjs-setupWS";
+import { bindState, writeState } from "./yjs-blob";
 
 import prisma from "@codepod/prisma";
 interface TokenInterface {
@@ -58,7 +54,9 @@ export async function startWsServer({ jwtSecret, port }) {
   const http_server = http.createServer(expapp);
   const wss = new WebSocketServer({ noServer: true });
 
-  wss.on("connection", setupWSConnection);
+  wss.on("connection", (...args) =>
+    createSetupWSConnection(bindState, writeState)(...args)
+  );
 
   http_server.on("upgrade", async (request, socket, head) => {
     // You may check auth of request here..
