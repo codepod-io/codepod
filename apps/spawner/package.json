@@ -13,6 +13,7 @@
     "@apollo/client": "^3.7.1",
     "@codepod/prisma": "workspace:*",
     "@codepod/runtime": "workspace:^",
+    "@codepod/ui": "workspace:^",
     "@kubernetes/client-node": "^0.17.1",
     "apollo-server": "^3.5.0",
     "apollo-server-core": "^3.10.3",

@@ -300,6 +300,9 @@ importers:
       '@codepod/runtime':
         specifier: workspace:^
         version: link:../runtime
+      '@codepod/ui':
+        specifier: workspace:^
+        version: link:../../packages/ui
       '@kubernetes/client-node':
         specifier: ^0.17.1
         version: 0.17.1

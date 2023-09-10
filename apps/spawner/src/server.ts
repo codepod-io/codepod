@@ -11,7 +11,7 @@ import { gql } from "apollo-server";
 import { ApolloServerPluginLandingPageLocalDefault } from "apollo-server-core";
 
 import Y from "yjs";
-import { WebsocketProvider } from "./y-websocket";
+import { WebsocketProvider } from "@codepod/ui/src/lib/utils/y-websocket";
 
 import { connectSocket, runtime2socket, RuntimeInfo } from "./yjs-runtime";
 
