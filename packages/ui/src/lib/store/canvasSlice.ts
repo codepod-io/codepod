@@ -397,9 +397,15 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
     ),
 
   getNodesMap() {
-    return get().ydoc.getMap("rootMap").get("nodesMap") as Y.Map<
-      Node<NodeData>
-    >;
+    const rootMap = get().ydoc.getMap<Y.Map<Node<NodeData>>>("rootMap");
+    if (!rootMap) {
+      throw new Error("rootMap not found");
+    }
+    const nodesMap = rootMap.get("nodesMap");
+    if (!nodesMap) {
+      throw new Error("nodesMap not found");
+    }
+    return nodesMap;
   },
   getEdgesMap() {
     return get().ydoc.getMap("rootMap").get("edgesMap") as Y.Map<Edge>;
