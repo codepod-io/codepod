@@ -23,7 +23,7 @@ import { Node as ReactflowNode, Edge as ReactflowEdge } from "reactflow";
 import debounce from "lodash/debounce";
 
 import prisma from "@codepod/prisma";
-import { dbtype2nodetype, json2yxml } from "./yjs-utils";
+import { dbtype2nodetype, json2yxml } from "@codepod/yjs";
 
 const debounceRegistry = new Map<string, any>();
 /**

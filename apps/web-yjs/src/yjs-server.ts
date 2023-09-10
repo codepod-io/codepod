@@ -5,7 +5,7 @@ import http from "http";
 
 import jwt from "jsonwebtoken";
 
-import { createSetupWSConnection } from "./yjs-setupWS";
+import { createSetupWSConnection } from "@codepod/yjs";
 import { bindState, writeState } from "./yjs-blob";
 
 import prisma from "@codepod/prisma";
