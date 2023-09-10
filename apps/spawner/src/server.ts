@@ -38,7 +38,7 @@ async function getMyYDoc({ repoId, token }): Promise<Y.Doc> {
     }
     const ydoc = new Y.Doc();
     // connect to primary database
-    console.log("connecting to y-websocket provider");
+    console.log("connecting to y-websocket provider", yjsServerUrl);
     const provider = new WebsocketProvider(yjsServerUrl, repoId, ydoc, {
       // resyncInterval: 2000,
       //
@@ -48,6 +48,9 @@ async function getMyYDoc({ repoId, token }): Promise<Y.Doc> {
         token,
         role: "runtime",
       },
+    });
+    provider.on("status", ({ status }) => {
+      console.log("provider status", status);
     });
     provider.once("synced", () => {
       console.log("Provider synced");
@@ -113,9 +116,12 @@ export async function startAPIServer({ port, spawnRuntime, killRuntime }) {
           if (!userId) throw new Error("Not authorized.");
           // create the runtime container
           const wsUrl = await spawnRuntime(runtimeId);
+          console.log("Runtime spawned at", wsUrl);
           routingTable.set(runtimeId, wsUrl);
           // set initial runtimeMap info for this runtime
+          console.log("Loading yDoc ..");
           const doc = await getMyYDoc({ repoId, token });
+          console.log("yDoc loaded");
           const rootMap = doc.getMap("rootMap");
           const runtimeMap = rootMap.get("runtimeMap") as Y.Map<RuntimeInfo>;
           runtimeMap.set(runtimeId, {});
