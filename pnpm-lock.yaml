@@ -10,7 +10,7 @@ importers:
     dependencies:
       '@apollo/client':
         specifier: ^3.7.1
-        version: 3.8.3(graphql@16.6.0)
+        version: 3.8.3(graphql@16.6.0)(react-dom@18.2.0)(react@18.2.0)
       '@codepod/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -300,9 +300,9 @@ importers:
       '@codepod/runtime':
         specifier: workspace:^
         version: link:../runtime
-      '@codepod/ui':
+      '@codepod/yjs':
         specifier: workspace:^
-        version: link:../../packages/ui
+        version: link:../../packages/yjs
       '@kubernetes/client-node':
         specifier: ^0.17.1
         version: 0.17.1
@@ -390,7 +390,7 @@ importers:
     dependencies:
       '@apollo/client':
         specifier: ^3.7.1
-        version: 3.8.3(graphql@16.6.0)
+        version: 3.8.3(graphql@16.6.0)(react-dom@18.2.0)(react@18.2.0)
       '@codepod/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
@@ -571,14 +571,17 @@ importers:
         specifier: ^0.6.2
         version: 0.6.2(eslint@8.47.0)(typescript@5.2.2)(vite@4.4.5)
 
-  apps/yjs:
+  apps/web-yjs:
     dependencies:
       '@apollo/client':
         specifier: ^3.7.1
-        version: 3.8.1(graphql@16.6.0)(react-dom@18.2.0)(react@18.2.0)
+        version: 3.8.3(graphql@16.6.0)(react-dom@18.2.0)(react@18.2.0)
       '@codepod/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
+      '@codepod/yjs':
+        specifier: workspace:^
+        version: link:../../packages/yjs
       '@kubernetes/client-node':
         specifier: ^0.17.1
         version: 0.17.1
@@ -680,6 +683,9 @@ importers:
       '@benrbray/prosemirror-math':
         specifier: ^0.2.2
         version: 0.2.2(katex@0.13.0)(prosemirror-commands@1.5.2)(prosemirror-gapcursor@1.3.2)(prosemirror-history@1.3.2)(prosemirror-inputrules@1.2.1)(prosemirror-keymap@1.2.2)(prosemirror-model@1.19.3)(prosemirror-state@1.4.3)(prosemirror-transform@1.7.5)(prosemirror-view@1.31.7)
+      '@codepod/yjs':
+        specifier: workspace:^
+        version: link:../yjs
       '@emotion/react':
         specifier: ^11.11.1
         version: 11.11.1(@types/react@18.2.21)(react@18.2.0)
@@ -868,6 +874,94 @@ importers:
         specifier: ^0.6.2
         version: 0.6.2(eslint@8.47.0)(typescript@5.2.2)(vite@4.4.5)
 
+  packages/yjs:
+    dependencies:
+      '@apollo/client':
+        specifier: ^3.7.1
+        version: 3.8.3(graphql@16.6.0)(react-dom@18.2.0)(react@18.2.0)
+      '@kubernetes/client-node':
+        specifier: ^0.17.1
+        version: 0.17.1
+      apollo-server:
+        specifier: ^3.5.0
+        version: 3.10.3(graphql@16.6.0)
+      apollo-server-core:
+        specifier: ^3.10.3
+        version: 3.12.0(graphql@16.6.0)
+      apollo-server-express:
+        specifier: 3.10.2
+        version: 3.10.2(express@4.18.2)(graphql@16.6.0)
+      dockerode:
+        specifier: ^3.3.1
+        version: 3.3.1
+      express:
+        specifier: ^4.18.2
+        version: 4.18.2
+      graphql:
+        specifier: 16.6.0
+        version: 16.6.0
+      jest:
+        specifier: ^29.0.3
+        version: 29.0.3(@types/node@18.17.10)
+      jsdom:
+        specifier: ^22.1.0
+        version: 22.1.0
+      jsonwebtoken:
+        specifier: ^8.5.1
+        version: 8.5.1
+      lib0:
+        specifier: ^0.2.83
+        version: 0.2.83
+      lodash:
+        specifier: ^4.17.21
+        version: 4.17.21
+      prosemirror-model:
+        specifier: ^1.19.3
+        version: 1.19.3
+      prosemirror-view:
+        specifier: ^1.31.7
+        version: 1.31.7
+      reactflow:
+        specifier: ^11.7.4
+        version: 11.8.3(@types/react@18.2.21)(immer@10.0.2)(react-dom@18.2.0)(react@18.2.0)
+      ws:
+        specifier: ^8.2.3
+        version: 8.13.0
+      y-prosemirror:
+        specifier: ^1.2.1
+        version: 1.2.1(prosemirror-model@1.19.3)(prosemirror-state@1.4.3)(prosemirror-view@1.31.7)(y-protocols@1.0.5)(yjs@13.6.7)
+      y-protocols:
+        specifier: ^1.0.5
+        version: 1.0.5
+      yjs:
+        specifier: ^13.6.7
+        version: 13.6.7
+    devDependencies:
+      '@types/dockerode':
+        specifier: ^3.3.11
+        version: 3.3.11
+      '@types/express':
+        specifier: ^4.17.14
+        version: 4.17.17
+      '@types/jsdom':
+        specifier: ^21.1.1
+        version: 21.1.1
+      '@types/jsonwebtoken':
+        specifier: ^8.5.9
+        version: 8.5.9
+      '@types/node':
+        specifier: ^18.11.2
+        version: 18.17.10
+      '@types/ws':
+        specifier: ^8.5.3
+        version: 8.5.3
+      ts-node-dev:
+        specifier: ^2.0.0
+        version: 2.0.0(@types/node@18.17.10)(typescript@4.8.4)
+      typescript:
+        specifier: ^4.4.4
+        version: 4.8.4
+
 packages:
 
   /@aashutoshrathi/word-wrap@1.2.6:
@@ -952,7 +1046,7 @@ packages:
       zen-observable-ts: 1.2.5
     dev: false
 
-  /@apollo/client@3.8.3(graphql@16.6.0):
+  /@apollo/client@3.8.3(graphql@16.6.0)(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-mK86JM6hCpMEBGDgdO9U8ZYS8r9lPjXE1tVGpJMdSFUsIcXpmEfHUAbbFpPtYmxn8Qa7XsYy0dwDaDhpf4UUPw==}
     peerDependencies:
       graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
@@ -979,6 +1073,8 @@ packages:
       hoist-non-react-statics: 3.3.2
       optimism: 0.17.5
       prop-types: 15.8.1
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
       response-iterator: 0.2.6
       symbol-observable: 4.0.0
       ts-invariant: 0.10.3

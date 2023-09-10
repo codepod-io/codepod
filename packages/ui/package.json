@@ -13,6 +13,7 @@
   "dependencies": {
     "@apollo/client": "^3.8.1",
     "@benrbray/prosemirror-math": "^0.2.2",
+    "@codepod/yjs": "workspace:^",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@mui/icons-material": "^5.10.9",

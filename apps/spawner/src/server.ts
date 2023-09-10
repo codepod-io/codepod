@@ -11,7 +11,8 @@ import { gql } from "apollo-server";
 import { ApolloServerPluginLandingPageLocalDefault } from "apollo-server-core";
 
 import Y from "yjs";
-import { WebsocketProvider } from "@codepod/ui/src/lib/utils/y-websocket";
+import { WebsocketProvider } from "@codepod/yjs/src/y-websocket";
+import WebSocket from "ws";
 
 import { connectSocket, runtime2socket, RuntimeInfo } from "./yjs-runtime";
 
@@ -48,6 +49,8 @@ async function getMyYDoc({ repoId, token }): Promise<Y.Doc> {
         token,
         role: "runtime",
       },
+      // IMPORTANT: import websocket, because we're running it in node.js
+      WebSocketPolyfill: WebSocket as any,
     });
     provider.on("status", ({ status }) => {
       console.log("provider status", status);

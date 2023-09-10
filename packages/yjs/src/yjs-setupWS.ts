@@ -6,8 +6,12 @@ import * as syncProtocol from "y-protocols/sync";
 
 import { encoding, decoding, map } from "lib0";
 
-let writeState = () => {};
-let bindState = async (doc: Y.Doc, repoId: string) => {};
+let writeState = () => {
+  throw new Error("writeState not set");
+};
+let bindState = async (doc: Y.Doc, repoId: string) => {
+  throw new Error("bindState not set");
+};
 
 const wsReadyStateConnecting = 0;
 const wsReadyStateOpen = 1;
@@ -271,10 +275,10 @@ const pingTimeout = 30000;
  * @param {any} req
  * @param {any} opts
  */
-export const createSetupWSConnection = (bindState, writeState) => {
+export const createSetupWSConnection = (_bindState, _writeState) => {
   // set the writeState and bindState functions
-  writeState = writeState;
-  bindState = bindState;
+  writeState = _writeState;
+  bindState = _bindState;
   // return the setupWSConnection function
   return async (
     conn,
