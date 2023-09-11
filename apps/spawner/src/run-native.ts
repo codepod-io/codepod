@@ -1,8 +1,6 @@
 import { startAPIServer } from "./server";
 import { killRuntime, spawnRuntime } from "./spawner-native";
 
-require("dotenv").config();
-
 if (!process.env.JWT_SECRET) {
   throw new Error("JWT_SECRET env variable is not set.");
 }
