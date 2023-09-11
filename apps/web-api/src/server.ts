@@ -15,9 +15,6 @@ import { typeDefs } from "./typedefs";
 import { createUserResolver } from "./resolver_user";
 import { RepoResolver } from "./resolver_repo";
 
-// dotenv
-require("dotenv").config();
-
 if (!process.env.JWT_SECRET) {
   throw new Error("JWT_SECRET env variable is not set.");
 }
