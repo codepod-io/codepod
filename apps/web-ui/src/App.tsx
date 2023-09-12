@@ -26,7 +26,7 @@ import { Link as ReactLink } from "react-router-dom";
 
 import Box from "@mui/material/Box";
 import { SnackbarProvider } from "notistack";
-import { Button, Typography } from "@mui/material";
+import { Alert, Button, Typography } from "@mui/material";
 
 const yjsWsUrl = import.meta.env.VITE_APP_YJS_WS_URL;
 const apiUrl = import.meta.env.VITE_APP_API_URL;
@@ -112,20 +112,34 @@ const NormalLayout = ({ children }) => {
   );
 };
 
+function NoLogginErrorAlert() {
+  return (
+    <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
+      <Alert severity="error">
+        Please{" "}
+        <Link component={ReactLink} to="/login">
+          login
+        </Link>{" "}
+        to view your dashboard.
+      </Alert>
+    </Box>
+  );
+}
+
+const RequireSignIn = ({ children }) => {
+  const { isSignedIn } = useAuth();
+  if (!isSignedIn()) {
+    return <NoLogginErrorAlert />;
+  }
+  return children;
+};
+
 const router = createBrowserRouter([
   {
     path: "docs",
     element: (
       <NormalLayout>
         <Docs />
-      </NormalLayout>
-    ),
-  },
-  {
-    path: "dashboard",
-    element: (
-      <NormalLayout>
-        <Dashboard />
       </NormalLayout>
     ),
   },
@@ -176,8 +190,9 @@ const router = createBrowserRouter([
     path: "/",
     element: (
       <NormalLayout>
-        {/* <Home /> */}
-        <Dashboard />
+        <RequireSignIn>
+          <Dashboard />
+        </RequireSignIn>
       </NormalLayout>
     ),
   },

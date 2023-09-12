@@ -84,7 +84,6 @@ export const createRepoSlice: StateCreator<MyState, [], [], RepoSlice> = (
         id: repoId,
         name: repoName,
       },
-      refetchQueries: ["GetDashboardRepos"],
     });
     set((state) =>
       produce(state, (state) => {
