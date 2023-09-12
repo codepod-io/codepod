@@ -1,9 +1,15 @@
 import express from "express";
 import http from "http";
+import fs from "fs";
 
 import { ApolloServer, gql } from "apollo-server-express";
 
 import { ApolloServerPluginLandingPageLocalDefault } from "apollo-server-core";
+
+import { customAlphabet } from "nanoid/async";
+import { lowercase, numbers } from "nanoid-dictionary";
+
+const nanoid = customAlphabet(lowercase + numbers, 20);
 
 export const typeDefs = gql`
   type User {
@@ -42,31 +48,7 @@ export const typeDefs = gql`
   }
 `;
 
-// TODO Dummy Data
-const repos = [
-  {
-    id: "repo1",
-    name: "test",
-    userId: "user1",
-    stargazers: [],
-    collaborators: [],
-    public: false,
-    createdAt: "2021-01-01",
-    updatedAt: "2021-01-01",
-    accessedAt: "2021-01-01",
-  },
-  {
-    id: "repo2",
-    name: "test2",
-    userId: "user1",
-    stargazers: [],
-    collaborators: [],
-    public: false,
-    createdAt: "2021-01-01",
-    updatedAt: "2021-01-01",
-    accessedAt: "2021-01-01",
-  },
-];
+const repoDirs = "/var/codepod";
 
 export const resolvers = {
   Query: {
@@ -85,17 +67,48 @@ export const resolvers = {
     },
     getDashboardRepos: () => {
       console.log("returning repos");
-      console.log(repos);
+      if (!fs.existsSync(repoDirs)) fs.mkdirSync(repoDirs);
+      // list folders in repoDirs
+      const dirs = fs.readdirSync(repoDirs);
+      // read meta data from dirs
+      const repos = dirs.map((dir) => {
+        const meta = JSON.parse(
+          fs.readFileSync(`${repoDirs}/${dir}/meta.json`, "utf8")
+        );
+        return {
+          id: meta.id,
+          name: meta.name,
+          userId: meta.userId,
+          stargazers: [],
+          collaborators: [],
+          public: meta.public,
+          createdAt: meta.createdAt,
+          updatedAt: meta.updatedAt,
+          accessedAt: meta.accessedAt,
+        };
+      });
       return repos;
     },
     repo: (_, { id }) => {
-      console.log("finding", id);
-      const res = repos.find((repo) => repo.id === id);
-      repos.forEach((repo) => {
-        console.log(repo.id === id);
-      });
-      console.log("res", res);
-      return repos.find((repo) => repo.id === id);
+      console.log("returning repo");
+      // read meta data from dirs
+      const meta = JSON.parse(
+        fs.readFileSync(`${repoDirs}/${id}/meta.json`, "utf8")
+      );
+      // update the accessedAt time
+      meta.accessedAt = new Date().getTime();
+      fs.writeFileSync(`${repoDirs}/${id}/meta.json`, JSON.stringify(meta));
+      return {
+        id: meta.id,
+        name: meta.name,
+        userId: meta.userId,
+        stargazers: [],
+        collaborators: [],
+        public: meta.public,
+        createdAt: meta.createdAt,
+        updatedAt: meta.updatedAt,
+        accessedAt: meta.accessedAt,
+      };
     },
   },
   Mutation: {
@@ -103,9 +116,36 @@ export const resolvers = {
       return "World!";
     },
     // TODO fill APIs
-    createRepo: () => {},
-    updateRepo: () => {},
-    deleteRepo: () => {},
+    createRepo: async () => {
+      const id = await nanoid();
+      // Integer representing the number of milliseconds that have elapsed since the Unix epoch.
+      const time = new Date().getTime();
+      const meta = {
+        id,
+        name: null,
+        userId: "user1",
+        public: false,
+        createdAt: time,
+        updatedAt: time,
+        accessedAt: time,
+      };
+      if (!fs.existsSync(repoDirs)) fs.mkdirSync(repoDirs);
+      fs.mkdirSync(`${repoDirs}/${id}`);
+      fs.writeFileSync(`${repoDirs}/${id}/meta.json`, JSON.stringify(meta));
+      return meta;
+    },
+    updateRepo: (_, { id, name }) => {
+      const meta = JSON.parse(
+        fs.readFileSync(`${repoDirs}/${id}/meta.json`, "utf8")
+      );
+      meta.name = name;
+      fs.writeFileSync(`${repoDirs}/${id}/meta.json`, JSON.stringify(meta));
+      return true;
+    },
+    deleteRepo: (_, { id }) => {
+      fs.rmdirSync(`${repoDirs}/${id}`, { recursive: true });
+      return true;
+    },
   },
 };
 
