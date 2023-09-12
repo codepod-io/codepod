@@ -1,0 +1,3 @@
+dist/
+conns/conn-*.json
+prisma/dev.db
