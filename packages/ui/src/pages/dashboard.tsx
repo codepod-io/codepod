@@ -46,10 +46,7 @@ function CreateRepoForm(props) {
           id
         }
       }
-    `,
-    {
-      refetchQueries: ["GetDashboardRepos"],
-    }
+    `
   );
   const navigate = useNavigate();
   return (
@@ -259,22 +256,32 @@ const RepoCard = ({ repo }) => {
 };
 
 const RepoLists = () => {
-  const { loading, error, data } = useQuery(gql`
-    query GetDashboardRepos {
-      getDashboardRepos {
-        name
-        id
-        userId
-        public
-        stargazers {
+  const { loading, error, data } = useQuery(
+    gql`
+      query GetDashboardRepos {
+        getDashboardRepos {
+          name
           id
+          userId
+          public
+          stargazers {
+            id
+          }
+          updatedAt
+          createdAt
+          accessedAt
         }
-        updatedAt
-        createdAt
-        accessedAt
       }
+    `,
+    {
+      // So that we don't need to manually specify which query/mutation should
+      // refetech the Dashboard repo list query. UPDATE The
+      // star/unstar/delete-repo still needs to specify refetchQueries manually,
+      // because the user don't leave & re-enter the paeg, thus won't trigger
+      // the useQuery hook here.
+      fetchPolicy: "network-only",
     }
-  `);
+  );
 
   if (loading) {
     return <CircularProgress />;
@@ -344,32 +351,14 @@ const RepoLists = () => {
   );
 };
 
-function NoLogginErrorAlert() {
-  return (
-    <Box sx={{ maxWidth: "sm", alignItems: "center", m: "auto" }}>
-      <Alert severity="error">
-        Please{" "}
-        <Link component={ReactLink} to="/login">
-          login
-        </Link>{" "}
-        first!
-      </Alert>
-    </Box>
-  );
-}
-
 export function Dashboard() {
-  const { loading, me } = useMe();
+  const { loading } = useMe();
   if (loading)
     return (
       <Box sx={{ maxWidth: "md", alignItems: "center", m: "auto" }}>
         Loading ..
       </Box>
     );
-  // TODO throw errors when graphql query fails
-  if (!me) {
-    return <NoLogginErrorAlert />;
-  }
   return (
     <Box sx={{ maxWidth: "md", alignItems: "center", m: "auto" }}>
       <Box
@@ -380,8 +369,7 @@ export function Dashboard() {
           position: "relative",
         }}
       >
-        Welcome, {me?.firstname}! Please open or create a repository to get
-        started.
+        Welcome! Please open or create a repository to get started.
       </Box>
       <RepoLists />
     </Box>
