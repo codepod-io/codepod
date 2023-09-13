@@ -71,58 +71,6 @@ export const newNodeShapeConfig = {
 };
 
 /**
- * Creare the temporary nodes as well as the temporary pods based on the given pod.
- * @param pod
- * @param position
- * @param parent
- * @param level
- * @returns
- */
-function createTemporaryNode(pod, position, parent?, level = 0): any {
-  const id = myNanoId();
-  let style = {
-    // create a temporary half-transparent pod
-    opacity: 0.5,
-    width: pod.width,
-  };
-
-  if (pod.type === "SCOPE") {
-    style["height"] = pod.height!;
-    style["backgroundColor"] = level2color[level] || level2color["default"];
-  }
-
-  const newNode = {
-    id,
-    type: pod.type,
-    position,
-    data: {
-      label: id,
-      parent,
-      level,
-    },
-    parentNode: parent,
-    dragHandle: ".custom-drag-handle",
-    width: pod.width,
-    height: pod.height!,
-    // Note: when the temporary node is finally sticked to the canvas, the click
-    // event will trigger drag event/position change of this node once and cause
-    // a bug because the node is not ready in the store and DB. just make it
-    // undraggable during moving to avoid this bug.
-    draggable: false,
-    style,
-  };
-
-  const newPod = { ...pod, parent, id, position, children: [] };
-  const nodes = [[newNode, newPod]];
-  pod.children.forEach((child) => {
-    nodes.push(
-      ...createTemporaryNode(child, { x: child.x, y: child.y }, id, level + 1)
-    );
-  });
-  return nodes;
-}
-
-/**
  * The new reactflow nodes for context-menu's addXXX items.
  */
 function createNewNode(
@@ -918,6 +866,7 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           break;
         case "dimensions":
           {
+            console.log("dimension change", change.dimensions);
             // Since CodeNode doesn't have a height, this dimension change will
             // be filed for CodeNode at the beginning or anytime the node height
             // is changed due to content height changes.

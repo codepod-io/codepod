@@ -391,7 +391,8 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
   const yjsRunChain = useStore(store, (state) => state.yjsRunChain);
   const apolloClient = useApolloClient();
   // right, bottom
-  const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const editMode = useStore(store, (state) => state.editMode);
+  const editing = editMode === "edit";
 
   const zoomLevel = useReactFlowStore((s) => s.transform[2]);
   const iconFontSize = zoomLevel < 1 ? `${1.5 * (1 / zoomLevel)}rem` : `1.5rem`;
@@ -411,7 +412,7 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
       >
         <DragIndicatorIcon fontSize="inherit" />
       </Box>
-      {!isGuest && (
+      {editing && (
         <Tooltip title="Run (shift-enter)">
           <IconButton
             onClick={() => {
@@ -422,7 +423,7 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
           </IconButton>
         </Tooltip>
       )}
-      {!isGuest && (
+      {editing && (
         <Tooltip title="Run chain">
           <IconButton
             onClick={() => {
@@ -433,7 +434,7 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
           </IconButton>
         </Tooltip>
       )}
-      {!isGuest && (
+      {editing && (
         <Tooltip style={{ fontSize: iconFontSize }} title="Delete">
           <ConfirmDeleteButton
             handleConfirm={() => {
@@ -482,16 +483,7 @@ export const CodeNode = memo<NodeProps>(function ({
   // right, bottom
   const [layout, setLayout] = useState("bottom");
   const setPodName = useStore(store, (state) => state.setPodName);
-  const { width, height, parent } = useReactFlowStore((s) => {
-    const node = s.nodeInternals.get(id)!;
-
-    return {
-      width: node.width,
-      height: node.height,
-      parent: node.parentNode,
-    };
-  }, shallow);
-  const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const editMode = useStore(store, (state) => state.editMode);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -589,8 +581,8 @@ export const CodeNode = memo<NodeProps>(function ({
           // Offset the border to prevent the node height from changing.
           margin: "-5px",
           textAlign: "center",
-          height: height,
-          width: width,
+          height: node.height,
+          width: node.width,
           color: "green",
         }}
         className="custom-drag-handle"
@@ -611,8 +603,10 @@ export const CodeNode = memo<NodeProps>(function ({
 
   // onsize is banned for a guest, FIXME: ugly code
   const Wrap = (child) =>
-    isGuest ? (
-      <>{child}</>
+    editMode === "view" ? (
+      <Box height={node.height || 100} width={node.width || 0}>
+        {child}
+      </Box>
     ) : (
       <Box
         sx={{
@@ -623,8 +617,8 @@ export const CodeNode = memo<NodeProps>(function ({
       >
         <ResizableBox
           onResizeStop={onResizeStop}
-          height={height || 100}
-          width={width || 0}
+          height={node.height || 100}
+          width={node.width || 0}
           axis={"x"}
           minConstraints={[200, 200]}
         >
@@ -694,8 +688,8 @@ export const CodeNode = memo<NodeProps>(function ({
               }}
             >
               <Handles
-                width={width}
-                height={height}
+                width={node.width}
+                height={node.height}
                 parent={parent}
                 xPos={xPos}
                 yPos={yPos}
@@ -721,9 +715,9 @@ export const CodeNode = memo<NodeProps>(function ({
                   }}
                   className="nodrag"
                 >
-                  {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w: {width},
-                  h: {height}), parent: {parent} level: {node?.data.level}{" "}
-                  fontSize: {fontSize}
+                  {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w:{" "}
+                  {node.width}, h: {node.height}), parent: {node.parentNode}{" "}
+                  level: {node?.data.level} fontSize: {fontSize}
                 </Box>
               )}
               {/* We actually don't need the name for a pod. Users can just write comments. */}
@@ -742,7 +736,7 @@ export const CodeNode = memo<NodeProps>(function ({
                   inputRef={inputRef}
                   className="nodrag"
                   defaultValue={data.name || ""}
-                  disabled={isGuest}
+                  disabled={editMode === "view"}
                   onBlur={(e) => {
                     const name = e.target.value;
                     if (name === data.name) return;

@@ -102,7 +102,7 @@ function reducer(state, action) {
   }
 }
 
-function CollaboratorList({ repoId, collaborators, dispatch, isOwner }) {
+function CollaboratorList({ repoId, collaborators, dispatch }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const apolloClient = useApolloClient();
@@ -153,22 +153,20 @@ function CollaboratorList({ repoId, collaborators, dispatch, isOwner }) {
       {collaborators?.map((collab) => (
         <ListItem
           secondaryAction={
-            isOwner && (
-              <IconButton
-                edge="end"
-                aria-label="delete"
-                onClick={() =>
-                  deleteCollaborator({
-                    variables: {
-                      repoId: repoId,
-                      collaboratorId: collab.id,
-                    },
-                  })
-                }
-              >
-                <CloseIcon />
-              </IconButton>
-            )
+            <IconButton
+              edge="end"
+              aria-label="delete"
+              onClick={() =>
+                deleteCollaborator({
+                  variables: {
+                    repoId: repoId,
+                    collaboratorId: collab.id,
+                  },
+                })
+              }
+            >
+              <CloseIcon />
+            </IconButton>
           }
           sx={{ "&:hover": { backgroundColor: "#f5f5f5" } }}
           key={collab.id}
@@ -240,7 +238,6 @@ export function ShareProjDialog({
   const isPublic = useStore(store, (state) => state.isPublic);
   const collaborators = useStore(store, (state) => state.collaborators);
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
-  const isOwner = useStore(store, (state) => state.role === "OWNER");
   const title = useStore(store, (state) => state.repoName || "Untitled");
   const url = `${window.location.protocol}//${window.location.host}/repo/${id}`;
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -309,18 +306,16 @@ export function ShareProjDialog({
                 <HelpOutlineOutlinedIcon fontSize="small" />
               </IconButton>
             </Tooltip>
-            {isOwner && (
-              <Button
-                sx={{ float: "right" }}
-                onClick={() => {
-                  updateVisibility({
-                    variables: { repoId: id, isPublic: !isPublic },
-                  });
-                }}
-              >
-                Make it {isPublic ? "private" : "public"}
-              </Button>
-            )}
+            <Button
+              sx={{ float: "right" }}
+              onClick={() => {
+                updateVisibility({
+                  variables: { repoId: id, isPublic: !isPublic },
+                });
+              }}
+            >
+              Make it {isPublic ? "private" : "public"}
+            </Button>
           </DialogContentText>
 
           {showHelp && (
@@ -337,7 +332,6 @@ export function ShareProjDialog({
           <CollaboratorList
             repoId={id}
             collaborators={collaborators}
-            isOwner={isOwner}
             dispatch={dispatch}
           />
 
@@ -355,7 +349,6 @@ export function ShareProjDialog({
             variant="standard"
             fullWidth
             inputRef={inputRef}
-            disabled={!isOwner}
           />
           <DialogActions>
             <Button
@@ -374,7 +367,6 @@ export function ShareProjDialog({
                 }
                 addCollaborator({ variables: { repoId: id, email } });
               }}
-              disabled={!isOwner}
             >
               Share
             </Button>

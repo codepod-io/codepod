@@ -972,7 +972,6 @@ export const Sidebar = () => {
   // FIXME: improve the implementation logic
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const isGuest = useStore(store, (state) => state.role === "GUEST");
   return (
     <>
       <MyKBar />
@@ -982,14 +981,11 @@ export const Sidebar = () => {
         }}
       >
         <Stack>
-          {!isGuest && (
-            <Box>
-              {/* <SyncStatus /> */}
-              <YjsSyncStatus />
-              <Divider />
-              <YjsRuntimeStatus />
-            </Box>
-          )}
+          <Box>
+            <YjsSyncStatus />
+            <Divider />
+            <YjsRuntimeStatus />
+          </Box>
           <Divider />
           <Typography variant="h6">Export to ..</Typography>
           <ExportButtons />

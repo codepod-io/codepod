@@ -48,7 +48,7 @@ const HeaderItem = memo<any>(() => {
     store,
     (state) => state.remoteUpdateRepoName
   );
-  const isOwner = useStore(store, (state) => state.role === "OWNER");
+  const editMode = useStore(store, (state) => state.editMode);
 
   usePrompt(
     "Repo name not saved. Do you want to leave this page?",
@@ -110,7 +110,7 @@ const HeaderItem = memo<any>(() => {
         maxWidth: "500px",
         border: "none",
       }}
-      disabled={!isOwner}
+      disabled={editMode === "view"}
       onChange={(e) => {
         const name = e.target.value;
         setRepoName(name);
@@ -366,9 +366,19 @@ function RepoLoader({ id, children }) {
   });
   const store = useContext(RepoContext)!;
   const setRepoData = useStore(store, (state) => state.setRepoData);
+
+  const { me } = useMe();
+  const setEditMode = useStore(store, (state) => state.setEditMode);
+
   useEffect(() => {
     if (data && data.repo) {
       setRepoData(data.repo);
+      if (
+        me.id === data.repo.userId ||
+        data.repo.collaborators.includes(me.id)
+      ) {
+        setEditMode("edit");
+      }
     }
   }, [data, loading]);
   if (loading) return <Box>Loading</Box>;
@@ -407,9 +417,18 @@ function ParserWrapper({ children }) {
   return children;
 }
 
-function WaitForProvider({ children }) {
+function WaitForProvider({ children, yjsWsUrl }) {
   const store = useContext(RepoContext)!;
   const providerSynced = useStore(store, (state) => state.providerSynced);
+  const disconnectYjs = useStore(store, (state) => state.disconnectYjs);
+  const connectYjs = useStore(store, (state) => state.connectYjs);
+  const { me } = useMe();
+  useEffect(() => {
+    connectYjs({ yjsWsUrl, name: me.firstname });
+    return () => {
+      disconnectYjs();
+    };
+  }, [connectYjs, disconnectYjs]);
   if (!providerSynced) return <Box>Loading Yjs Doc ..</Box>;
   return children;
 }
@@ -418,45 +437,13 @@ function WaitForProvider({ children }) {
  * This loads users.
  */
 function UserWrapper({ children }) {
-  let { id } = useParams();
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const setUser = useStore(store, (state) => state.setUser);
-  const provider = useStore(store, (state) => state.provider);
-  const addClient = useStore(store, (state) => state.addClient);
-  const deleteClient = useStore(store, (state) => state.deleteClient);
 
   const { loading, me } = useMe();
-  useEffect(() => {
-    if (provider) {
-      const awareness = provider.awareness;
-      awareness.on("update", (change) => {
-        const states = awareness.getStates();
-        const nodes = change.added.concat(change.updated);
-        nodes.forEach((clientID) => {
-          const user = states.get(clientID)?.user;
-          if (user) {
-            addClient(clientID, user.name, user.color);
-          }
-        });
-        change.removed.forEach((clientID) => {
-          deleteClient(clientID);
-        });
-      });
-    }
-  }, [addClient, deleteClient, provider]);
 
-  useEffect(() => {
-    if (!loading && me) {
-      setUser(me);
-    }
-  }, [loading, me]);
-
-  // FIXME Removing queueL. This will cause Repo to be re-rendered a lot of
-  // times, particularly the delete pod action would cause syncstatus and repo
-  // to be re-rendered in conflict, which is weird.
-
-  if (loading) return <Box>Loading</Box>;
+  if (loading) return <Box>Loading ..</Box>;
+  if (!me) return <Box>Loading ..</Box>;
 
   return children;
 }
@@ -464,28 +451,17 @@ function UserWrapper({ children }) {
 export function Repo({ yjsWsUrl }) {
   let { id } = useParams();
   const store = useRef(createRepoStore()).current;
-  const disconnectYjs = useStore(store, (state) => state.disconnectYjs);
-  const connectYjs = useStore(store, (state) => state.connectYjs);
+
   const setRepo = useStore(store, (state) => state.setRepo);
   // console.log("load store", useRef(createRepoStore()));
   useEffect(() => {
     setRepo(id!);
-    connectYjs(yjsWsUrl);
-
-    let intervalId = setInterval(() => {
-      connectYjs(yjsWsUrl);
-    }, 1000);
-    return () => {
-      clearInterval(intervalId);
-      // clean up the connected provider after exiting the page
-      disconnectYjs();
-    };
-  }, [connectYjs, disconnectYjs, id, setRepo]);
+  }, []);
   return (
     <RepoContext.Provider value={store}>
       <UserWrapper>
         <RepoLoader id={id}>
-          <WaitForProvider>
+          <WaitForProvider yjsWsUrl={yjsWsUrl}>
             <ParserWrapper>
               <HeaderWrapper id={id}>
                 <Box

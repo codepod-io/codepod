@@ -285,7 +285,7 @@ const MyEditor = ({
   // FIXME this is re-rendered all the time.
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const editMode = useStore(store, (state) => state.editMode);
   // the Yjs extension for Remirror
   const provider = useStore(store, (state) => state.provider)!;
 
@@ -452,7 +452,7 @@ const MyEditor = ({
             <TableComponents />
             <SlashSuggestor />
 
-            {!isGuest && <EditorToolbar />}
+            {editMode === "edit" && <EditorToolbar />}
             <LinkToolbar />
 
             {/* <Menu /> */}
@@ -467,7 +467,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const reactFlowInstance = useReactFlow();
-  const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const editMode = useStore(store, (state) => state.editMode);
   const zoomLevel = useReactFlowStore((s) => s.transform[2]);
   const iconFontSize = zoomLevel < 1 ? `${1.5 * (1 / zoomLevel)}rem` : `1.5rem`;
 
@@ -484,7 +484,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
       >
         <DragIndicatorIcon fontSize="inherit" />
       </Box>
-      {!isGuest && (
+      {editMode === "edit" && (
         <Tooltip title="Delete">
           <ConfirmDeleteButton
             size="small"
@@ -535,7 +535,7 @@ export const RichNode = memo<Props>(function ({
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   // const pod = useStore(store, (state) => state.pods[id]);
   const setPodName = useStore(store, (state) => state.setPodName);
-  const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const editMode = useStore(store, (state) => state.editMode);
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
 
@@ -573,20 +573,6 @@ export const RichNode = memo<Props>(function ({
       }
     },
     [id, nodesMap, updateView, autoLayoutROOT]
-  );
-
-  const { width, height, parent } = useReactFlowStore(
-    (s) => {
-      const node = s.nodeInternals.get(id)!;
-
-      return {
-        width: node.width,
-        height: node.height,
-        parent: node.parentNode,
-      };
-    },
-    // Need to use shallow here. Otherwise, the node will keep re-rendering.
-    shallow
   );
 
   useEffect(() => {
@@ -636,8 +622,8 @@ export const RichNode = memo<Props>(function ({
           // Offset the border to prevent the node height from changing.
           margin: "-5px",
           textAlign: "center",
-          height: height,
-          width: width,
+          height: node.height,
+          width: node.width,
           color: "darkorchid",
         }}
         className="custom-drag-handle"
@@ -658,8 +644,10 @@ export const RichNode = memo<Props>(function ({
 
   // onsize is banned for a guest, FIXME: ugly code
   const Wrap = (child) =>
-    isGuest ? (
-      <>{child}</>
+    editMode === "view" ? (
+      <Box height={node.height || 100} width={node.width || 0}>
+        {child}
+      </Box>
     ) : (
       <Box
         sx={{
@@ -670,8 +658,8 @@ export const RichNode = memo<Props>(function ({
       >
         <ResizableBox
           onResizeStop={onResizeStop}
-          height={height || 100}
-          width={width || 0}
+          height={node.height || 100}
+          width={node.width || 0}
           axis={"x"}
           minConstraints={[200, 200]}
         >
@@ -743,8 +731,8 @@ export const RichNode = memo<Props>(function ({
               }}
             >
               <Handles
-                width={width}
-                height={height}
+                width={node.width}
+                height={node.height}
                 parent={parent}
                 xPos={xPos}
                 yPos={yPos}
@@ -763,8 +751,8 @@ export const RichNode = memo<Props>(function ({
                   }}
                   className="nodrag"
                 >
-                  {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w: {width},
-                  h: {height})
+                  {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w:{" "}
+                  {node.width}, h: {node.height})
                 </Box>
               )}
               <Box
@@ -778,7 +766,7 @@ export const RichNode = memo<Props>(function ({
                   inputRef={inputRef}
                   className="nodrag"
                   defaultValue={data.name || ""}
-                  disabled={isGuest}
+                  disabled={editMode === "view"}
                   onBlur={(e) => {
                     const name = e.target.value;
                     if (name === data.name) return;
