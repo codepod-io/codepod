@@ -182,6 +182,21 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
           });
         }
       );
+      const nodesMap = get().getNodesMap();
+      // FIXME do I need to unobserve it when disconnecting?
+      nodesMap.observe(
+        (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
+          if (transaction.local) return;
+          get().updateView();
+        }
+      );
+      const edgesMap = get().getEdgesMap();
+      edgesMap.observe(
+        (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
+          if (transaction.local) return;
+          get().updateView();
+        }
+      );
       // Set active runtime to the first one.
       const runtimeMap = get().getRuntimeMap();
       if (runtimeMap.size > 0) {

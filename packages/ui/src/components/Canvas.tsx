@@ -324,36 +324,11 @@ export function useCopyPaste() {
   }, [handleCopy, handlePaste, rfDomNode]);
 }
 
-function useYjsObserver() {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const nodesMap = useStore(store, (state) => state.getNodesMap());
-  const updateView = useStore(store, (state) => state.updateView);
-  const resetSelection = useStore(store, (state) => state.resetSelection);
-
-  useEffect(() => {
-    const observer = (YMapEvent: Y.YEvent<any>, transaction: Y.Transaction) => {
-      if (transaction.local) return;
-      updateView();
-    };
-
-    // FIXME need to observe edgesMap as well
-    // FIXME need to observe resultMap as well
-    nodesMap.observe(observer);
-
-    return () => {
-      nodesMap.unobserve(observer);
-      resetSelection();
-    };
-  }, [nodesMap, resetSelection, updateView]);
-}
-
 /**
  * The ReactFlow instance keeps re-rendering when nodes change. Thus, we're
  * using this wrapper component to load the useXXX functions only once.
  */
 function CanvasImplWrap() {
-  useYjsObserver();
   useCopyPaste();
   useJump();
   return (
