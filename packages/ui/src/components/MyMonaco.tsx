@@ -391,7 +391,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   console.debug("[perf] rendering MyMonaco", id);
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
-  const readOnly = useStore(store, (state) => state.role === "GUEST");
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
   const yjsRun = useStore(store, (state) => state.yjsRun);
   const apolloClient = useApolloClient();

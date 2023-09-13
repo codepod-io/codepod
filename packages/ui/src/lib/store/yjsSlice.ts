@@ -15,16 +15,14 @@ export interface YjsSlice {
   error: { type: string; msg: string } | null;
   provider?: WebsocketProvider | null;
   clients: Map<string, any>;
-  user: any;
   ydoc: Doc;
-  setUser: (user: any) => void;
   addClient: (clientId: any, name, color) => void;
   deleteClient: (clientId: any) => void;
   // A variable to avoid duplicate connection requests.
   yjsConnecting: boolean;
   // The status of yjs connection.
   yjsStatus?: string;
-  connectYjs: (yjsWsUrl: string) => void;
+  connectYjs: ({ yjsWsUrl, name }: { yjsWsUrl: string; name: string }) => void;
   disconnectYjs: () => void;
   // The status of the uploading and syncing of actual Y.Doc.
   yjsSyncStatus?: string;
@@ -43,7 +41,6 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
 ) => ({
   error: null,
 
-  user: {},
   ydoc: new Doc(),
   provider: null,
   // keep different seletced info on each user themselves
@@ -71,13 +68,6 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
       clients.delete(clientID);
       return { clients: clients };
     }),
-  setUser: (user) =>
-    set(
-      produce((state: MyState) => {
-        const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
-        state.user = { ...user, color };
-      })
-    ),
 
   yjsConnecting: false,
   yjsStatus: undefined,
@@ -95,7 +85,7 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
         state.resultChanged[id] = !state.resultChanged[id];
       })
     ),
-  connectYjs: (yjsWsUrl) => {
+  connectYjs: ({ yjsWsUrl, name }) => {
     if (get().yjsConnecting) return;
     if (get().provider) return;
     set({ yjsConnecting: true });
@@ -117,6 +107,24 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
       params: {
         token: localStorage.getItem("token") || "",
       },
+    });
+    const color = "#" + Math.floor(Math.random() * 16777215).toString(16);
+    provider.awareness.setLocalStateField("user", {
+      name,
+      color,
+    });
+    provider.awareness.on("update", (change) => {
+      const states = provider.awareness.getStates();
+      const nodes = change.added.concat(change.updated);
+      nodes.forEach((clientID) => {
+        const user = states.get(clientID)?.user;
+        if (user) {
+          get().addClient(clientID, user.name, user.color);
+        }
+      });
+      change.removed.forEach((clientID) => {
+        get().deleteClient(clientID);
+      });
     });
     provider.on("status", ({ status }) => {
       set({ yjsStatus: status });
@@ -223,6 +231,7 @@ export const createYjsSlice: StateCreator<MyState, [], [], YjsSlice> = (
           state.provider = null;
         }
         state.ydoc.destroy();
+        state.providerSynced = false;
       })
     ),
 });

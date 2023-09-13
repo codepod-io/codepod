@@ -431,7 +431,8 @@ function CanvasImpl() {
   );
 
   const repoId = useStore(store, (state) => state.repoId);
-  const isGuest = useStore(store, (state) => state.role === "GUEST");
+
+  const editMode = useStore(store, (state) => state.editMode);
 
   const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
   const shareOpen = useStore(store, (state) => state.shareOpen);
@@ -656,9 +657,9 @@ function CanvasImpl() {
           zoomOnScroll={false}
           panOnScroll={true}
           connectionMode={ConnectionMode.Loose}
-          nodesDraggable={!isGuest}
+          nodesDraggable={editMode === "edit"}
           // disable node delete on backspace when the user is a guest.
-          deleteKeyCode={isGuest ? null : "Backspace"}
+          deleteKeyCode={editMode === "view" ? null : "Backspace"}
           multiSelectionKeyCode={isMac ? "Meta" : "Control"}
           selectionMode={SelectionMode.Partial}
           // TODO restore previous viewport
@@ -682,7 +683,7 @@ function CanvasImpl() {
               }}
               nodeBorderRadius={2}
             />
-            <Controls showInteractive={!isGuest} />
+            <Controls showInteractive={editMode === "edit"} />
 
             <HelperLines
               horizontal={helperLineHorizontal}

@@ -9,6 +9,8 @@ export interface RepoSlice {
   repoNameSyncing: boolean;
   repoNameDirty: boolean;
   repoId: string | null;
+  editMode: "view" | "edit";
+  setEditMode: (mode: "view" | "edit") => void;
   setRepo: (repoId: string) => void;
   setRepoName: (name: string) => void;
   remoteUpdateRepoName: (client) => void;
@@ -26,11 +28,9 @@ export interface RepoSlice {
       }
     ];
   }) => void;
-  repoLoaded: boolean;
   collaborators: any[];
   shareOpen: boolean;
   setShareOpen: (open: boolean) => void;
-  role: "OWNER" | "COLLABORATOR" | "GUEST";
   isPublic: boolean;
 }
 
@@ -42,11 +42,13 @@ export const createRepoSlice: StateCreator<MyState, [], [], RepoSlice> = (
   repoName: null,
   repoNameSyncing: false,
   repoNameDirty: false,
-  role: "GUEST",
   collaborators: [],
   isPublic: false,
   shareOpen: false,
   setShareOpen: (open: boolean) => set({ shareOpen: open }),
+
+  editMode: "view",
+  setEditMode: (mode) => set({ editMode: mode }),
 
   setRepo: (repoId: string) =>
     set(
@@ -95,37 +97,13 @@ export const createRepoSlice: StateCreator<MyState, [], [], RepoSlice> = (
       })
     );
   },
-  repoLoaded: false,
+  // FIXME refactor out this function
   setRepoData: (repo) =>
     set(
       produce((state: MyState) => {
         state.repoName = repo.name;
         state.isPublic = repo.public;
         state.collaborators = repo.collaborators;
-        // set the user role in this repo FIXME this assumes state.user is
-        // loaded. Very prone to errors, e.g., state,.user must be loaded before
-        // repo data is loaded.
-        if (repo.userId === state.user.id) {
-          state.role = "OWNER";
-        } else if (
-          state.user &&
-          repo.collaborators.findIndex(({ id }) => state.user.id === id) >= 0
-        ) {
-          state.role = "COLLABORATOR";
-        } else {
-          state.role = "GUEST";
-        }
-        console.log("Role", state.role);
-        // only set the local awareness when the user is an owner or a collaborator
-        if (state.provider && state.role !== "GUEST") {
-          console.log("set awareness", state.user.firstname);
-          const awareness = state.provider.awareness;
-          awareness.setLocalStateField("user", {
-            name: state.user.firstname,
-            color: state.user.color,
-          });
-        }
-        state.repoLoaded = true;
       })
     ),
 });

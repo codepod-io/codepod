@@ -56,7 +56,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const reactFlowInstance = useReactFlow();
-  const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const editMode = useStore(store, (state) => state.editMode);
   const yjsRun = useStore(store, (state) => state.yjsRun);
   const apolloClient = useApolloClient();
 
@@ -83,7 +83,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
       >
         <DragIndicatorIcon fontSize="inherit" />
       </Box>
-      {!isGuest && (
+      {editMode === "edit" && (
         <Tooltip title="Run (shift-enter)">
           <IconButton
             onClick={() => {
@@ -95,7 +95,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
         </Tooltip>
       )}
       {/* auto force layout */}
-      {!isGuest && (
+      {editMode === "edit" && (
         <Tooltip title="force layout">
           <IconButton
             onClick={() => {
@@ -106,7 +106,7 @@ function MyFloatingToolbar({ id }: { id: string }) {
           </IconButton>
         </Tooltip>
       )}
-      {!isGuest && (
+      {editMode === "edit" && (
         <Tooltip
           style={{ fontSize: iconFontSize }}
           title="Delete"
@@ -154,7 +154,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
   const setPodName = useStore(store, (state) => state.setPodName);
   const nodesMap = useStore(store, (state) => state.getNodesMap());
-  const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const editMode = useStore(store, (state) => state.editMode);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const devMode = useStore(store, (state) => state.devMode);
@@ -341,7 +341,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
                   // setPodName({ id, name });
                 }}
                 inputRef={inputRef}
-                disabled={isGuest}
+                disabled={editMode === "view"}
                 inputProps={{
                   style: {
                     padding: "0px",

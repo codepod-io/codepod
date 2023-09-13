@@ -36,11 +36,12 @@ export function CanvasContextMenu(props) {
   const store = useContext(RepoContext);
   if (!store) throw new Error("Missing BearContext.Provider in the tree");
 
-  const isGuest = useStore(store, (state) => state.role === "GUEST");
+  const editMode = useStore(store, (state) => state.editMode);
+  const editing = editMode === "edit";
   return (
     <Box sx={paneMenuStyle(props.x, props.y)}>
       <MenuList className="paneContextMenu">
-        {!isGuest && (
+        {editing && (
           <MenuItem onClick={props.addCode} sx={ItemStyle}>
             <ListItemIcon sx={{ color: "inherit" }}>
               <CodeIcon />
@@ -48,7 +49,7 @@ export function CanvasContextMenu(props) {
             <ListItemText>New Code</ListItemText>
           </MenuItem>
         )}
-        {!isGuest && (
+        {editing && (
           <MenuItem onClick={props.addRich} sx={ItemStyle}>
             <ListItemIcon sx={{ color: "inherit" }}>
               <NoteIcon />
@@ -56,7 +57,7 @@ export function CanvasContextMenu(props) {
             <ListItemText>New Note</ListItemText>
           </MenuItem>
         )}
-        {!isGuest && (
+        {editing && (
           <MenuItem onClick={props.addScope} sx={ItemStyle}>
             <ListItemIcon sx={{ color: "inherit" }}>
               <PostAddIcon />
@@ -64,7 +65,7 @@ export function CanvasContextMenu(props) {
             <ListItemText>New Scope</ListItemText>
           </MenuItem>
         )}
-        {!isGuest && (
+        {editing && (
           <MenuItem onClick={props.handleImportClick} sx={ItemStyle}>
             <ListItemIcon sx={{ color: "inherit" }}>
               <FileUploadTwoToneIcon />
