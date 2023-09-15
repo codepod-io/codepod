@@ -632,45 +632,47 @@ export const CodeNode = memo<NodeProps>(function ({
               : "#003c8f",
           }}
         >
-          <NodeResizeControl
-            style={{
-              background: "transparent",
-              border: "none",
-              // make it above the pod
-              zIndex: 100,
-              // put it to the right-bottom corner, instead of right-middle.
-              top: "100%",
-              // show on hover
-              opacity: showToolbar ? 1 : 0,
-              color: "red",
-            }}
-            minWidth={300}
-            minHeight={50}
-            // this allows the resize happens in X-axis only.
-            position="right"
-            onResizeEnd={() => {
-              // remove style.height so that the node auto-resizes.
-              const node = nodesMap.get(id);
-              if (node) {
-                nodesMap.set(id, {
-                  ...node,
-                  style: { ...node.style, height: undefined },
-                });
-              }
-              if (autoRunLayout) {
-                autoLayoutROOT();
-              }
-            }}
-          >
-            <HeightIcon
-              sx={{
-                transform: "rotate(90deg)",
-                position: "absolute",
-                right: 5,
-                bottom: 5,
+          {editMode === "edit" && (
+            <NodeResizeControl
+              style={{
+                background: "transparent",
+                border: "none",
+                // make it above the pod
+                zIndex: 100,
+                // put it to the right-bottom corner, instead of right-middle.
+                top: "100%",
+                // show on hover
+                opacity: showToolbar ? 1 : 0,
+                color: "red",
               }}
-            />
-          </NodeResizeControl>
+              minWidth={300}
+              minHeight={50}
+              // this allows the resize happens in X-axis only.
+              position="right"
+              onResizeEnd={() => {
+                // remove style.height so that the node auto-resizes.
+                const node = nodesMap.get(id);
+                if (node) {
+                  nodesMap.set(id, {
+                    ...node,
+                    style: { ...node.style, height: undefined },
+                  });
+                }
+                if (autoRunLayout) {
+                  autoLayoutROOT();
+                }
+              }}
+            >
+              <HeightIcon
+                sx={{
+                  transform: "rotate(90deg)",
+                  position: "absolute",
+                  right: 5,
+                  bottom: 5,
+                }}
+              />
+            </NodeResizeControl>
+          )}
           <Box
             sx={{
               opacity: showToolbar ? 1 : 0,
