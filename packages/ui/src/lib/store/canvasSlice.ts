@@ -869,7 +869,6 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
           break;
         case "dimensions":
           {
-            console.log("dimension change", change.dimensions);
             // There's a weird dimencion change event fired at the end of
             // resizing a node.
             if (!change.dimensions) return;
