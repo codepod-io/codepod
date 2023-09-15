@@ -30,6 +30,8 @@ import ReactFlow, {
   MarkerType,
   Node,
   useStore as useReactFlowStore,
+  NodeResizer,
+  NodeResizeControl,
 } from "reactflow";
 import Ansi from "ansi-to-react";
 
@@ -39,6 +41,7 @@ import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
 import FormatColorResetIcon from "@mui/icons-material/FormatColorReset";
+import HeightIcon from "@mui/icons-material/Height";
 
 import {
   BoldExtension,
@@ -555,26 +558,6 @@ export const RichNode = memo<Props>(function ({
   const autoLayoutROOT = useStore(store, (state) => state.autoLayoutROOT);
   const autoRunLayout = useStore(store, (state) => state.autoRunLayout);
 
-  const onResizeStop = useCallback(
-    (e, data) => {
-      const { size } = data;
-      const node = nodesMap.get(id);
-      if (node) {
-        // new width
-        nodesMap.set(id, {
-          ...node,
-          width: size.width,
-          style: { ...node.style, width: size.width },
-        });
-        updateView();
-        if (autoRunLayout) {
-          autoLayoutROOT();
-        }
-      }
-    },
-    [id, nodesMap, updateView, autoLayoutROOT]
-  );
-
   useEffect(() => {
     if (!data.name) return;
     setPodName({ id, name: data.name });
@@ -642,40 +625,6 @@ export const RichNode = memo<Props>(function ({
     );
   }
 
-  // onsize is banned for a guest, FIXME: ugly code
-  const Wrap = (child) =>
-    editMode === "view" ? (
-      <Box height={node.height || 100} width={node.width || 0}>
-        {child}
-      </Box>
-    ) : (
-      <Box
-        sx={{
-          "& .react-resizable-handle": {
-            opacity: showToolbar ? 1 : 0,
-          },
-        }}
-      >
-        <ResizableBox
-          onResizeStop={onResizeStop}
-          height={node.height || 100}
-          width={node.width || 0}
-          axis={"x"}
-          minConstraints={[200, 200]}
-        >
-          <Box
-            sx={{
-              "& .react-resizable-handle": {
-                opacity: 1,
-              },
-            }}
-          >
-            {child}
-          </Box>
-        </ResizableBox>
-      </Box>
-    );
-
   return (
     <>
       <Box
@@ -707,107 +656,147 @@ export const RichNode = memo<Props>(function ({
         className={focusedEditor === id ? "nodrag" : "custom-drag-handle"}
       >
         {" "}
-        {Wrap(
+        <Box
+          sx={{
+            border: "solid 1px #d6dee6",
+            borderWidth: "2px",
+            borderRadius: "4px",
+            width: "100%",
+            minWidth: "300px",
+            height: "auto",
+            minHeight: "50px",
+            backgroundColor: "white",
+            borderColor: false // FIXME pod.ispublic
+              ? "green"
+              : selected
+              ? "#003c8f"
+              : focusedEditor !== id
+              ? "#d6dee6"
+              : "#003c8f",
+          }}
+        >
+          {editMode === "edit" && (
+            <NodeResizeControl
+              style={{
+                background: "transparent",
+                border: "none",
+                zIndex: 100,
+                // put it to the right-bottom corner, instead of right-middle.
+                top: "100%",
+                // show on hover
+                opacity: showToolbar ? 1 : 0,
+                color: "red",
+              }}
+              minWidth={300}
+              minHeight={50}
+              // this allows the resize happens in X-axis only.
+              position="right"
+              onResizeEnd={() => {
+                // remove style.height so that the node auto-resizes.
+                const node = nodesMap.get(id);
+                if (node) {
+                  nodesMap.set(id, {
+                    ...node,
+                    style: { ...node.style, height: undefined },
+                  });
+                }
+                if (autoRunLayout) {
+                  autoLayoutROOT();
+                }
+              }}
+            >
+              <HeightIcon
+                sx={{
+                  transform: "rotate(90deg)",
+                  position: "absolute",
+                  right: 5,
+                  bottom: 5,
+                }}
+              />
+            </NodeResizeControl>
+          )}
           <Box
             sx={{
-              border: "solid 1px #d6dee6",
-              borderWidth: "2px",
-              borderRadius: "4px",
-              width: "100%",
-              height: "100%",
-              backgroundColor: "white",
-              borderColor: false // FIXME pod.ispublic
-                ? "green"
-                : selected
-                ? "#003c8f"
-                : focusedEditor !== id
-                ? "#d6dee6"
-                : "#003c8f",
+              opacity: showToolbar ? 1 : 0,
             }}
           >
+            <Handles
+              width={node.width}
+              height={node.height}
+              parent={parent}
+              xPos={xPos}
+              yPos={yPos}
+            />
+          </Box>
+
+          <Box>
+            {devMode && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  top: "-48px",
+                  bottom: "0px",
+                  userSelect: "text",
+                  cursor: "auto",
+                }}
+                className="nodrag"
+              >
+                {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w: {node.width}
+                , h: {node.height})
+              </Box>
+            )}
+            <Box
+              sx={{
+                position: "absolute",
+                top: "-24px",
+                width: "50%",
+              }}
+            >
+              <InputBase
+                inputRef={inputRef}
+                className="nodrag"
+                defaultValue={data.name || ""}
+                disabled={editMode === "view"}
+                onBlur={(e) => {
+                  const name = e.target.value;
+                  if (name === data.name) return;
+                  const node = nodesMap.get(id);
+                  if (node) {
+                    nodesMap.set(id, {
+                      ...node,
+                      data: { ...node.data, name },
+                    });
+                  }
+                }}
+                inputProps={{
+                  style: {
+                    padding: "0px",
+                    textOverflow: "ellipsis",
+                  },
+                }}
+              ></InputBase>
+            </Box>
             <Box
               sx={{
                 opacity: showToolbar ? 1 : 0,
+                display: "flex",
+                marginLeft: "10px",
+                borderRadius: "4px",
+                position: "absolute",
+                border: "solid 1px #d6dee6",
+                right: "25px",
+                top: "-15px",
+                background: "white",
+                zIndex: 10,
+                justifyContent: "center",
+                alignItems: "center",
               }}
             >
-              <Handles
-                width={node.width}
-                height={node.height}
-                parent={parent}
-                xPos={xPos}
-                yPos={yPos}
-              />
+              <MyFloatingToolbar id={id} />
             </Box>
-
-            <Box>
-              {devMode && (
-                <Box
-                  sx={{
-                    position: "absolute",
-                    top: "-48px",
-                    bottom: "0px",
-                    userSelect: "text",
-                    cursor: "auto",
-                  }}
-                  className="nodrag"
-                >
-                  {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w:{" "}
-                  {node.width}, h: {node.height})
-                </Box>
-              )}
-              <Box
-                sx={{
-                  position: "absolute",
-                  top: "-24px",
-                  width: "50%",
-                }}
-              >
-                <InputBase
-                  inputRef={inputRef}
-                  className="nodrag"
-                  defaultValue={data.name || ""}
-                  disabled={editMode === "view"}
-                  onBlur={(e) => {
-                    const name = e.target.value;
-                    if (name === data.name) return;
-                    const node = nodesMap.get(id);
-                    if (node) {
-                      nodesMap.set(id, {
-                        ...node,
-                        data: { ...node.data, name },
-                      });
-                    }
-                  }}
-                  inputProps={{
-                    style: {
-                      padding: "0px",
-                      textOverflow: "ellipsis",
-                    },
-                  }}
-                ></InputBase>
-              </Box>
-              <Box
-                sx={{
-                  opacity: showToolbar ? 1 : 0,
-                  display: "flex",
-                  marginLeft: "10px",
-                  borderRadius: "4px",
-                  position: "absolute",
-                  border: "solid 1px #d6dee6",
-                  right: "25px",
-                  top: "-15px",
-                  background: "white",
-                  zIndex: 10,
-                  justifyContent: "center",
-                  alignItems: "center",
-                }}
-              >
-                <MyFloatingToolbar id={id} />
-              </Box>
-            </Box>
-            <MyEditor id={id} />
           </Box>
-        )}
+          <MyEditor id={id} />
+        </Box>
       </Box>
     </>
   );

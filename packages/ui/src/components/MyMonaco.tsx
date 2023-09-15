@@ -449,23 +449,13 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   ) {
     setEditor(editor);
     // console.log(Math.min(1000, editor.getContentHeight()));
-    const updateHeight = () => {
-      // max height: 400
-      const contentHeight = Math.max(
-        100,
-        editor.getContentHeight()
-        // Math.min(400, editor.getContentHeight())
-      );
-      // console.log("target height:", contentHeight);
+    const updateHeight = ({ contentHeight }) => {
       const editorElement = editor.getDomNode();
       if (!editorElement) {
         return;
       }
       editorElement.style.height = `${contentHeight}px`;
-      // width: 800
-      // editor.layout({ width: 800, height: contentHeight });
       editor.layout();
-      // onLayout(`${contentHeight}px`);
     };
     editor.onDidBlurEditorText(() => {
       setFocusedEditor(undefined);
