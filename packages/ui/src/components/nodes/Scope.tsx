@@ -53,8 +53,7 @@ import { CopyToClipboard } from "react-copy-to-clipboard";
 import { useApolloClient } from "@apollo/client";
 
 function MyFloatingToolbar({ id }: { id: string }) {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const reactFlowInstance = useReactFlow();
   const editMode = useStore(store, (state) => state.editMode);
   const yjsRun = useStore(store, (state) => state.yjsRun);
@@ -150,8 +149,7 @@ export const ScopeNode = memo<NodeProps>(function ScopeNode({
 }) {
   // add resize to the node
   const ref = useRef(null);
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const setPodName = useStore(store, (state) => state.setPodName);
   const nodesMap = useStore(store, (state) => state.getNodesMap());
   const editMode = useStore(store, (state) => state.editMode);

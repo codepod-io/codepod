@@ -147,8 +147,7 @@ const HeaderItem = memo<any>(() => {
 });
 
 function RepoHeader({ id }) {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
 
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
   const navigate = useNavigate();
@@ -394,8 +393,7 @@ function RepoLoader({ id, children }) {
  * This loads repo metadata.
  */
 function ParserWrapper({ children }) {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const parseAllPods = useStore(store, (state) => state.parseAllPods);
   const resolveAllPods = useStore(store, (state) => state.resolveAllPods);
   const [parserLoaded, setParserLoaded] = useState(false);
@@ -437,9 +435,6 @@ function WaitForProvider({ children, yjsWsUrl }) {
  * This loads users.
  */
 function UserWrapper({ children }) {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
-
   const { loading, me } = useMe();
 
   if (loading) return <Box>Loading ..</Box>;

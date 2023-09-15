@@ -277,8 +277,7 @@ function useJump() {
 }
 
 export function useCopyPaste() {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const rfDomNode = useRfStore((state) => state.domNode);
   const reactFlowInstance = useReactFlow();
   const handleCopy = useStore(store, (state) => state.handleCopy);
@@ -340,8 +339,7 @@ function CanvasImplWrap() {
 }
 
 function ViewportInfo() {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const { x, y, zoom } = useViewport();
   return (
     <Box
@@ -369,8 +367,7 @@ function ViewportInfo() {
 function CanvasImpl() {
   const reactFlowWrapper = useRef<any>(null);
 
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
 
   const nodes = useStore(store, (state) => state.nodes);
   const edges = useStore(store, (state) => state.edges);

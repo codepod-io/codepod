@@ -384,8 +384,7 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
 });
 
 function MyFloatingToolbar({ id, layout, setLayout }) {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const reactFlowInstance = useReactFlow();
   const devMode = useStore(store, (state) => state.devMode);
   // const pod = useStore(store, (state) => state.pods[id]);
@@ -478,8 +477,7 @@ export const CodeNode = memo<NodeProps>(function ({
   xPos,
   yPos,
 }) {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const reactFlowInstance = useReactFlow();
   const devMode = useStore(store, (state) => state.devMode);
   // right, bottom

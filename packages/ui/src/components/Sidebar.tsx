@@ -57,8 +57,7 @@ import { toSvg } from "html-to-image";
 import { match } from "ts-pattern";
 
 function SidebarSettings() {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const scopedVars = useStore(store, (state) => state.scopedVars);
   const setScopedVars = useStore(store, (state) => state.setScopedVars);
   const showAnnotations = useStore(store, (state) => state.showAnnotations);
@@ -760,8 +759,7 @@ const YjsRuntimeStatus = () => {
 };
 
 function YjsSyncStatus() {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   // FIXME performance issue
   const yjsStatus = useStore(store, (state) => state.yjsStatus);
   const yjsSyncStatus = useStore(store, (state) => state.yjsSyncStatus);
@@ -796,8 +794,7 @@ function YjsSyncStatus() {
 }
 
 function ToastError() {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const { enqueueSnackbar } = useSnackbar();
   const error = useStore(store, (state) => state.error);
   const clearError = useStore(store, (state) => state.clearError);
@@ -815,8 +812,7 @@ function ToastError() {
 
 function ExportJupyterNB() {
   const { id: repoId } = useParams();
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const repoName = useStore(store, (state) => state.repoName);
   const nodesMap = useStore(store, (state) => state.getNodesMap());
   const resultMap = useStore(store, (state) => state.getResultMap());
@@ -858,8 +854,7 @@ function ExportJupyterNB() {
 function ExportSVG() {
   // The name should contain the name of the repo, the ID of the repo, and the current date
   const { id: repoId } = useParams();
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const repoName = useStore(store, (state) => state.repoName);
   const filename = `${repoName?.replaceAll(
     " ",
@@ -912,8 +907,7 @@ function ExportButtons() {
 }
 
 function PodTreeItem({ id, node2children }) {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const selectPod = useStore(store, (state) => state.selectPod);
   const resetSelection = useStore(store, (state) => state.resetSelection);
   const setCenterSelection = useStore(
@@ -943,8 +937,7 @@ function PodTreeItem({ id, node2children }) {
 }
 
 function TableofPods() {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const node2children = useStore(store, (state) => state.node2children);
   // Set all nodes to expanded. Disable the collapse/expand for now.
   const allIds = Array.from(node2children.keys());
@@ -970,8 +963,7 @@ function TableofPods() {
 export const Sidebar = () => {
   // never render saving status / runtime module for a guest
   // FIXME: improve the implementation logic
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   return (
     <>
       <MyKBar />
