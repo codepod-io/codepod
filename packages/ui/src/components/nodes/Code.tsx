@@ -22,6 +22,7 @@ import ReactFlow, {
   Node,
   NodeProps,
   useStore as useReactFlowStore,
+  NodeResizeControl,
 } from "reactflow";
 
 import Box from "@mui/material/Box";
@@ -42,6 +43,7 @@ import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArro
 import PlayDisabledIcon from "@mui/icons-material/PlayDisabled";
 import ViewComfyIcon from "@mui/icons-material/ViewComfy";
 import DragIndicatorIcon from "@mui/icons-material/DragIndicator";
+import HeightIcon from "@mui/icons-material/Height";
 
 import { ResizableBox } from "react-resizable";
 import Ansi from "ansi-to-react";
@@ -506,26 +508,6 @@ export const CodeNode = memo<NodeProps>(function ({
     }
   }, [layout]);
 
-  const onResizeStop = useCallback(
-    (e, data) => {
-      const { size } = data;
-      const node = nodesMap.get(id);
-      if (node) {
-        // new width
-        nodesMap.set(id, {
-          ...node,
-          width: size.width,
-          style: { ...node.style, width: size.width },
-        });
-        updateView();
-        if (autoRunLayout) {
-          autoLayoutROOT();
-        }
-      }
-    },
-    [id, nodesMap, updateView, autoLayoutROOT]
-  );
-
   useEffect(() => {
     if (!data.name) return;
     setPodName({ id, name: data.name });
@@ -601,40 +583,6 @@ export const CodeNode = memo<NodeProps>(function ({
     );
   }
 
-  // onsize is banned for a guest, FIXME: ugly code
-  const Wrap = (child) =>
-    editMode === "view" ? (
-      <Box height={node.height || 100} width={node.width || 0}>
-        {child}
-      </Box>
-    ) : (
-      <Box
-        sx={{
-          "& .react-resizable-handle": {
-            opacity: showToolbar ? 1 : 0,
-          },
-        }}
-      >
-        <ResizableBox
-          onResizeStop={onResizeStop}
-          height={node.height || 100}
-          width={node.width || 0}
-          axis={"x"}
-          minConstraints={[200, 200]}
-        >
-          <Box
-            sx={{
-              "& .react-resizable-handle": {
-                opacity: 1,
-              },
-            }}
-          >
-            {child}
-          </Box>
-        </ResizableBox>
-      </Box>
-    );
-
   return (
     <>
       <Box
@@ -660,148 +608,188 @@ export const CodeNode = memo<NodeProps>(function ({
         }}
         className={focusedEditor === id ? "nodrag" : "custom-drag-handle"}
       >
-        {Wrap(
-          <Box
-            id={"reactflow_node_code_" + id}
-            sx={{
-              border: "1px #d6dee6",
-              borderWidth: false // FIXME pod.ispublic
-                ? "4px"
-                : "2px",
-              borderRadius: "4px",
-              borderStyle: "solid",
-              width: "100%",
-              height: "100%",
-              backgroundColor: "rgb(244, 246, 248)",
-              borderColor: false // FIXME pod.ispublic
-                ? "green"
-                : selected
-                ? "#003c8f"
-                : focusedEditor !== id
-                ? "#d6dee6"
-                : "#003c8f",
+        <Box
+          id={"reactflow_node_code_" + id}
+          sx={{
+            border: "1px #d6dee6",
+            borderWidth: false // FIXME pod.ispublic
+              ? "4px"
+              : "2px",
+            borderRadius: "4px",
+            borderStyle: "solid",
+            width: "100%",
+            minWidth: "300px",
+            // This is the key to let the node auto-resize w.r.t. the content.
+            height: "auto",
+            minHeight: "50px",
+            backgroundColor: "rgb(244, 246, 248)",
+            borderColor: false // FIXME pod.ispublic
+              ? "green"
+              : selected
+              ? "#003c8f"
+              : focusedEditor !== id
+              ? "#d6dee6"
+              : "#003c8f",
+          }}
+        >
+          <NodeResizeControl
+            style={{
+              background: "transparent",
+              border: "none",
+              // make it above the pod
+              zIndex: 100,
+              // put it to the right-bottom corner, instead of right-middle.
+              top: "100%",
+              // show on hover
+              opacity: showToolbar ? 1 : 0,
+              color: "red",
+            }}
+            minWidth={300}
+            minHeight={50}
+            // this allows the resize happens in X-axis only.
+            position="right"
+            onResizeEnd={() => {
+              // remove style.height so that the node auto-resizes.
+              const node = nodesMap.get(id);
+              if (node) {
+                nodesMap.set(id, {
+                  ...node,
+                  style: { ...node.style, height: undefined },
+                });
+              }
+              if (autoRunLayout) {
+                autoLayoutROOT();
+              }
             }}
           >
-            <Box
+            <HeightIcon
               sx={{
-                opacity: showToolbar ? 1 : 0,
+                transform: "rotate(90deg)",
+                position: "absolute",
+                right: 5,
+                bottom: 5,
               }}
-            >
-              <Handles
-                width={node.width}
-                height={node.height}
-                parent={parent}
-                xPos={xPos}
-                yPos={yPos}
-              />
-            </Box>
+            />
+          </NodeResizeControl>
+          <Box
+            sx={{
+              opacity: showToolbar ? 1 : 0,
+            }}
+          >
+            <Handles
+              width={node.width}
+              height={node.height}
+              parent={node.parentNode}
+              xPos={xPos}
+              yPos={yPos}
+            />
+          </Box>
 
-            {/* The header of code pods. */}
-            <Box>
-              {devMode && (
-                <Box
-                  sx={{
-                    position: "absolute",
-                    userSelect: "text",
-                    cursor: "auto",
-                    // place it at the top left corner, above the pod
-                    top: 0,
-                    left: 0,
-                    transform: "translate(0, -100%)",
-                    background: "rgba(255, 255, 255, 0.8)",
-                    padding: "5px",
-                    lineHeight: "1.2",
-                    color: "#000",
-                  }}
-                  className="nodrag"
-                >
-                  {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w:{" "}
-                  {node.width}, h: {node.height}), parent: {node.parentNode}{" "}
-                  level: {node?.data.level} fontSize: {fontSize}
-                </Box>
-              )}
-              {/* We actually don't need the name for a pod. Users can just write comments. */}
+          {/* The header of code pods. */}
+          <Box>
+            {devMode && (
               <Box
                 sx={{
                   position: "absolute",
+                  userSelect: "text",
+                  cursor: "auto",
                   // place it at the top left corner, above the pod
                   top: 0,
                   left: 0,
                   transform: "translate(0, -100%)",
+                  background: "rgba(255, 255, 255, 0.8)",
                   padding: "5px",
                   lineHeight: "1.2",
+                  color: "#000",
                 }}
+                className="nodrag"
               >
-                <InputBase
-                  inputRef={inputRef}
-                  className="nodrag"
-                  defaultValue={data.name || ""}
-                  disabled={editMode === "view"}
-                  onBlur={(e) => {
-                    const name = e.target.value;
-                    if (name === data.name) return;
-                    const node = nodesMap.get(id);
-                    if (node) {
-                      nodesMap.set(id, {
-                        ...node,
-                        data: { ...node.data, name },
-                      });
-                    }
-                  }}
-                  inputProps={{
-                    style: {
-                      padding: "0px",
-                      textOverflow: "ellipsis",
-                    },
-                  }}
-                ></InputBase>
+                {id} at ({Math.round(xPos)}, {Math.round(yPos)}, w: {node.width}
+                , h: {node.height}), parent: {node.parentNode} level:{" "}
+                {node?.data.level} fontSize: {fontSize}
               </Box>
-              <Box
-                sx={{
-                  opacity: showToolbar ? 1 : 0,
-                  borderRadius: "4px",
-                  position: "absolute",
-                  border: "solid 1px #d6dee6",
-                  // put it in the top right corner, above the pod
-                  top: 0,
-                  right: 0,
-                  transform: "translate(0, -100%)",
-                  background: "white",
-                  zIndex: 10,
-                  justifyContent: "center",
+            )}
+            {/* We actually don't need the name for a pod. Users can just write comments. */}
+            <Box
+              sx={{
+                position: "absolute",
+                // place it at the top left corner, above the pod
+                top: 0,
+                left: 0,
+                transform: "translate(0, -100%)",
+                padding: "5px",
+                lineHeight: "1.2",
+              }}
+            >
+              <InputBase
+                inputRef={inputRef}
+                className="nodrag"
+                defaultValue={data.name || ""}
+                disabled={editMode === "view"}
+                onBlur={(e) => {
+                  const name = e.target.value;
+                  if (name === data.name) return;
+                  const node = nodesMap.get(id);
+                  if (node) {
+                    nodesMap.set(id, {
+                      ...node,
+                      data: { ...node.data, name },
+                    });
+                  }
                 }}
-              >
-                <MyFloatingToolbar
-                  id={id}
-                  layout={layout}
-                  setLayout={setLayout}
-                />
-              </Box>
+                inputProps={{
+                  style: {
+                    padding: "0px",
+                    textOverflow: "ellipsis",
+                  },
+                }}
+              ></InputBase>
             </Box>
             <Box
               sx={{
-                height: "90%",
-                py: 1,
+                opacity: showToolbar ? 1 : 0,
+                borderRadius: "4px",
+                position: "absolute",
+                border: "solid 1px #d6dee6",
+                // put it in the top right corner, above the pod
+                top: 0,
+                right: 0,
+                transform: "translate(0, -100%)",
+                background: "white",
+                zIndex: 10,
+                justifyContent: "center",
               }}
             >
-              <Box
-                sx={{
-                  // Put it 100% the width and height, above the following components.
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  width: "100%",
-                  height: "100%",
-                  zIndex: focusedEditor === id ? -1 : 10,
-                }}
-              >
-                {/* Overlay */}
-              </Box>
-              <MyMonaco id={id} fontSize={fontSize} />
-              <ResultBlock id={id} layout={layout} />
+              <MyFloatingToolbar
+                id={id}
+                layout={layout}
+                setLayout={setLayout}
+              />
             </Box>
           </Box>
-        )}
+          <Box
+            sx={{
+              height: "90%",
+              py: 1,
+            }}
+          >
+            <Box
+              sx={{
+                // Put it 100% the width and height, above the following components.
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                zIndex: focusedEditor === id ? -1 : 10,
+              }}
+            >
+              {/* Overlay */}
+            </Box>
+            <MyMonaco id={id} fontSize={fontSize} />
+            <ResultBlock id={id} layout={layout} />
+          </Box>
+        </Box>
       </Box>
     </>
   );

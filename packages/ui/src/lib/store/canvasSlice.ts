@@ -101,13 +101,16 @@ function createNewNode(
           // // specify the height here. Note that this height is a dummy value;
           // // the content height will still be adjusted based on content height.
           height: newNodeShapeConfig.height,
-          // style: {
-          //   width: newNodeShapeConfig.width,
-          //   // It turns out that this height should not be specified to let the
-          //   // height change automatically.
-          //   //
-          //   // height: 200
-          // },
+          style: {
+            // Need to set the style.width here. Otherwise, there could be weird
+            // dimension changes, and may cause a node to keep expanding its
+            // width.
+            width: newNodeShapeConfig.width,
+            //   // It turns out that this height should not be specified to let the
+            //   // height change automatically.
+            //   //
+            //   // height: 200
+          },
         }),
     data: {
       label: id,
@@ -867,6 +870,10 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
         case "dimensions":
           {
             console.log("dimension change", change.dimensions);
+            // There's a weird dimencion change event fired at the end of
+            // resizing a node.
+            if (!change.dimensions) return;
+
             // Since CodeNode doesn't have a height, this dimension change will
             // be filed for CodeNode at the beginning or anytime the node height
             // is changed due to content height changes.
