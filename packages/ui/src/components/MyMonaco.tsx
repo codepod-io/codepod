@@ -389,8 +389,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
 }) {
   // there's no racket language support
   console.debug("[perf] rendering MyMonaco", id);
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
   const yjsRun = useStore(store, (state) => state.yjsRun);
   const apolloClient = useApolloClient();

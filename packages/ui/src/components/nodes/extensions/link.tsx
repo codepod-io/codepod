@@ -183,8 +183,7 @@ function useUpdatePositionerOnMove() {
   // Update (all) the positioners whenever there's a move (pane) on reactflow,
   // so that the toolbar moves with the Rich pod and content.
   const { forceUpdatePositioners, emptySelection } = useCommands();
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const moved = useStore(store, (state) => state.moved);
   const paneClicked = useStore(store, (state) => state.paneClicked);
   useEffect(() => {

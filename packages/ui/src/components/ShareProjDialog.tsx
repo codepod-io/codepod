@@ -103,8 +103,7 @@ function reducer(state, action) {
 }
 
 function CollaboratorList({ repoId, collaborators, dispatch }) {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const apolloClient = useApolloClient();
   const [deleteCollaborator, { data, loading, error }] = useMutation(
     gql`
@@ -230,8 +229,7 @@ export function ShareProjDialog({
   open = false,
   id = "",
 }: ShareProjDialogProps) {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const [showHelp, setShowHelp] = useState(false);
   const [feedback, dispatch] = useReducer(reducer, initialState);
   const apolloClient = useApolloClient();

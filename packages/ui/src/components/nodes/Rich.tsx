@@ -253,8 +253,7 @@ const MyStyledWrapper = styled("div")(
 );
 
 function HotkeyControl({ id }) {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const selectPod = useStore(store, (state) => state.selectPod);
@@ -286,8 +285,7 @@ const MyEditor = ({
   id: string;
 }) => {
   // FIXME this is re-rendered all the time.
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const editMode = useStore(store, (state) => state.editMode);
   // the Yjs extension for Remirror
   const provider = useStore(store, (state) => state.provider)!;
@@ -467,8 +465,7 @@ const MyEditor = ({
 };
 
 function MyFloatingToolbar({ id }: { id: string }) {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const reactFlowInstance = useReactFlow();
   const editMode = useStore(store, (state) => state.editMode);
   const zoomLevel = useReactFlowStore((s) => s.transform[2]);
@@ -534,8 +531,7 @@ export const RichNode = memo<Props>(function ({
   xPos,
   yPos,
 }) {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   // const pod = useStore(store, (state) => state.pods[id]);
   const setPodName = useStore(store, (state) => state.setPodName);
   const editMode = useStore(store, (state) => state.editMode);

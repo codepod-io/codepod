@@ -444,8 +444,7 @@ const WrappedHandle = ({ position, children }) => {
  * The two buttons.
  */
 const HandleButton = ({ position, width, height, parent, xPos, yPos }) => {
-  const store = useContext(RepoContext);
-  if (!store) throw new Error("Missing BearContext.Provider in the tree");
+  const store = useContext(RepoContext)!;
   const addNode = useStore(store, (state) => state.addNode);
   const clickAway = useContext(ClickAwayContext);
   switch (position) {
