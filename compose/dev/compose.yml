@@ -62,6 +62,7 @@ services:
       - 4001:4001
     volumes:
       - ../..:/codepod
+      - desktop-var-codepod:/var/codepod
       - pnpm-store:/codepod/.pnpm-store
     command: sh -c "corepack enable && pnpm dev"
     environment:
@@ -139,6 +140,7 @@ services:
     volumes:
       - ../..:/codepod
       - pnpm-store:/codepod/.pnpm-store
+      - desktop-var-codepod:/var/codepod
       - /var/run/docker.sock:/var/run/docker.sock
     command: sh -c "corepack enable && pnpm dev"
 
@@ -199,6 +201,7 @@ services:
 volumes:
   db-data:
   pnpm-store:
+  desktop-var-codepod:
 
 networks:
   default:

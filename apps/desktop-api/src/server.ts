@@ -48,7 +48,8 @@ export const typeDefs = gql`
   }
 `;
 
-const repoDirs = "/var/codepod";
+const CODEPOD_ROOT = "/var/codepod";
+const repoDirs = `${CODEPOD_ROOT}/repos`;
 
 export const resolvers = {
   Query: {
