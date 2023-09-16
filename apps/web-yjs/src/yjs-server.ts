@@ -66,30 +66,31 @@ export async function startWsServer({ jwtSecret, port }) {
       const docName = request.url.slice(1).split("?")[0];
       const token = url.searchParams.get("token");
       const role = url.searchParams.get("role");
+      let userId = "";
       if (token) {
         const decoded = jwt.verify(token, jwtSecret) as TokenInterface;
-        const userId = decoded.id;
-        const permission = await checkPermission({ docName, userId });
-        switch (permission) {
-          case "read":
-            // TODO I should disable editing in the frontend as well.
-            wss.handleUpgrade(request, socket, head, function done(ws) {
-              wss.emit("connection", ws, request, { readOnly: true, role });
-            });
-            break;
-          case "write":
-            wss.handleUpgrade(request, socket, head, function done(ws) {
-              wss.emit("connection", ws, request, { readOnly: false, role });
-            });
-            break;
-          case "none":
-            // This should not happen. This should be blocked by frontend code.
-            socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
-            socket.destroy();
-            return;
-        }
-        return;
+        userId = decoded.id;
       }
+      const permission = await checkPermission({ docName, userId });
+      switch (permission) {
+        case "read":
+          // TODO I should disable editing in the frontend as well.
+          wss.handleUpgrade(request, socket, head, function done(ws) {
+            wss.emit("connection", ws, request, { readOnly: true, role });
+          });
+          break;
+        case "write":
+          wss.handleUpgrade(request, socket, head, function done(ws) {
+            wss.emit("connection", ws, request, { readOnly: false, role });
+          });
+          break;
+        case "none":
+          // This should not happen. This should be blocked by frontend code.
+          socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
+          socket.destroy();
+          return;
+      }
+      return;
     }
     socket.write("HTTP/1.1 401 Unauthorized\r\n\r\n");
     socket.destroy();
