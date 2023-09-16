@@ -411,14 +411,6 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   useEffect(() => {
     if (focusedEditor === id) {
       editor?.focus();
-      editor?.updateOptions({
-        readOnly: false,
-      });
-    } else {
-      editor?.updateOptions({
-        readOnly: true,
-        //cursorWidth: 0,
-      });
     }
   }, [focusedEditor]);
 
@@ -440,6 +432,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
 
   const selectPod = useStore(store, (state) => state.selectPod);
   const resetSelection = useStore(store, (state) => state.resetSelection);
+  const editMode = useStore(store, (state) => state.editMode);
 
   // FIXME useCallback?
   function onEditorDidMount(
@@ -495,7 +488,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
 
     // bind it to the ytext with pod id
     if (!codeMap.has(id)) {
-      codeMap.set(id, new Y.Text());
+      throw new Error("codeMap doesn't have pod " + id);
     }
     const ytext = codeMap.get(id)!;
     new MonacoBinding(
@@ -514,7 +507,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       theme="codepod"
       options={{
         selectOnLineNumbers: true,
-        readOnly: focusedEditor !== id,
+        readOnly: editMode === "view" || focusedEditor !== id,
         // This scrollBeyondLastLine is super important. Without this, it will
         // try to adjust height infinitely.
         scrollBeyondLastLine: false,
