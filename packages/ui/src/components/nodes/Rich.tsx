@@ -296,9 +296,9 @@ const MyEditor = ({
   const updateView = useStore(store, (state) => state.updateView);
   const richMap = useStore(store, (state) => state.getRichMap());
   if (!richMap.has(id)) {
-    richMap.set(id, new Y.XmlFragment());
+    throw new Error("richMap does not have id" + id);
   }
-  const yXml = richMap.get(id) as Y.XmlFragment;
+  const yXml = richMap.get(id);
 
   const { manager, state, setState } = useRemirror({
     extensions: () => [
@@ -433,6 +433,7 @@ const MyEditor = ({
             {/* Overlay */}
           </Box>
           <Remirror
+            editable={editMode === "edit"}
             manager={manager}
             // Must set initialContent, otherwise the Reactflow will fire two
             // dimension change events at the beginning. This should be caused

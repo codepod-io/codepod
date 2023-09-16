@@ -399,6 +399,15 @@ export const createCanvasSlice: StateCreator<MyState, [], [], CanvasSlice> = (
   addNode: (type, position, parent) => {
     let nodesMap = get().getNodesMap();
     let node = createNewNode(type, position);
+    switch (type) {
+      case "CODE":
+        get().getCodeMap().set(node.id, new Y.Text());
+        break;
+      case "RICH":
+        get().getRichMap().set(node.id, new Y.XmlFragment());
+        break;
+    }
+    // FIXME the above codeMap/richMap should be synced first, which may not be guranteed.
     nodesMap.set(node.id, node);
     if (parent) {
       // we don't assign its parent when created, because we have to adjust its position to make it inside its parent.
