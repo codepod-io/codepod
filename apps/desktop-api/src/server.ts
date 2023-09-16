@@ -45,6 +45,8 @@ export const typeDefs = gql`
     createRepo: Repo
     updateRepo(id: ID!, name: String!): Boolean
     deleteRepo(id: ID!): Boolean
+    star(repoId: ID!): Boolean
+    unstar(repoId: ID!): Boolean
   }
 `;
 
@@ -59,15 +61,14 @@ export const resolvers = {
     // TODO Dummy Data
     me: () => {
       return {
-        id: "user1",
-        username: "test",
+        id: "localUser",
+        username: "localUser",
         email: "",
         firstname: "Local",
         lastname: "User",
       };
     },
     getDashboardRepos: () => {
-      console.log("returning repos");
       if (!fs.existsSync(repoDirs)) fs.mkdirSync(repoDirs);
       // list folders in repoDirs
       const dirs = fs.readdirSync(repoDirs);
@@ -80,7 +81,7 @@ export const resolvers = {
           id: meta.id,
           name: meta.name,
           userId: meta.userId,
-          stargazers: [],
+          stargazers: (meta.stargazers || []).map((id) => ({ id })),
           collaborators: [],
           public: meta.public,
           createdAt: meta.createdAt,
@@ -91,7 +92,6 @@ export const resolvers = {
       return repos;
     },
     repo: (_, { id }) => {
-      console.log("returning repo");
       // read meta data from dirs
       const meta = JSON.parse(
         fs.readFileSync(`${repoDirs}/${id}/meta.json`, "utf8")
@@ -103,7 +103,7 @@ export const resolvers = {
         id: meta.id,
         name: meta.name,
         userId: meta.userId,
-        stargazers: [],
+        stargazers: (meta.stargazers || []).map((id) => ({ id })),
         collaborators: [],
         public: meta.public,
         createdAt: meta.createdAt,
@@ -124,8 +124,10 @@ export const resolvers = {
       const meta = {
         id,
         name: null,
-        userId: "user1",
+        userId: "localUser",
         public: false,
+        stargazers: [],
+        collaborators: [],
         createdAt: time,
         updatedAt: time,
         accessedAt: time,
@@ -145,6 +147,22 @@ export const resolvers = {
     },
     deleteRepo: (_, { id }) => {
       fs.rmdirSync(`${repoDirs}/${id}`, { recursive: true });
+      return true;
+    },
+    star: (_, { repoId }) => {
+      const meta = JSON.parse(
+        fs.readFileSync(`${repoDirs}/${repoId}/meta.json`, "utf8")
+      );
+      meta.stargazers = ["localUser"];
+      fs.writeFileSync(`${repoDirs}/${repoId}/meta.json`, JSON.stringify(meta));
+      return true;
+    },
+    unstar: (_, { repoId }) => {
+      const meta = JSON.parse(
+        fs.readFileSync(`${repoDirs}/${repoId}/meta.json`, "utf8")
+      );
+      meta.stargazers = [];
+      fs.writeFileSync(`${repoDirs}/${repoId}/meta.json`, JSON.stringify(meta));
       return true;
     },
   },
