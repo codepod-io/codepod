@@ -88,7 +88,7 @@ const StarButton = ({ repo }) => {
       refetchQueries: ["GetDashboardRepos"],
     }
   );
-  const isStarred = repo.stargazers?.map((_) => _.id).includes(me.id);
+  const isStarred = repo.stargazers?.map((_) => _.id).includes(me?.id);
   return (
     <>
       {isStarred ? (
@@ -237,7 +237,7 @@ const RepoCard = ({ repo }) => {
       </CardContent>
       <CardActions disableSpacing>
         <Box>
-          {repo.userId !== me.id && (
+          {repo.userId !== me?.id && (
             <Tooltip title="Shared with me">
               <GroupsIcon fontSize="small" color="primary" />
             </Tooltip>

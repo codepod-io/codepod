@@ -15,12 +15,10 @@ const PROFILE_QUERY = gql`
 
 export function useMe() {
   /* eslint-disable no-unused-vars */
-  const { loading, data, error } = useQuery(PROFILE_QUERY, {
+  const { loading, data, error } = useQuery<{
+    me: { id: string; firstname: string; lastname: string; email: string };
+  }>(PROFILE_QUERY, {
     // fetchPolicy: "network-only",
   });
-  if (error) {
-    console.error(error);
-    throw new Error("Error fetching user profile.");
-  }
-  return { loading, me: data?.me };
+  return { loading, error, me: data?.me };
 }

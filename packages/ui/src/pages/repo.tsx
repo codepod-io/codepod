@@ -373,8 +373,8 @@ function RepoLoader({ id, children }) {
     if (data && data.repo) {
       setRepoData(data.repo);
       if (
-        me.id === data.repo.userId ||
-        data.repo.collaborators.includes(me.id)
+        me?.id === data.repo.userId ||
+        data.repo.collaborators.includes(me?.id)
       ) {
         setEditMode("edit");
       }
@@ -382,8 +382,7 @@ function RepoLoader({ id, children }) {
   }, [data, loading]);
   if (loading) return <Box>Loading</Box>;
   if (error) {
-    console.error("Repo loading error", error);
-    return <Box>Error</Box>;
+    return <Box>Error: Repo not found</Box>;
   }
   if (!data || !data.repo) return <NotFoundAlert />;
   return children;
@@ -422,7 +421,7 @@ function WaitForProvider({ children, yjsWsUrl }) {
   const connectYjs = useStore(store, (state) => state.connectYjs);
   const { me } = useMe();
   useEffect(() => {
-    connectYjs({ yjsWsUrl, name: me.firstname });
+    connectYjs({ yjsWsUrl, name: me?.firstname || "Anonymous" });
     return () => {
       disconnectYjs();
     };
@@ -435,10 +434,9 @@ function WaitForProvider({ children, yjsWsUrl }) {
  * This loads users.
  */
 function UserWrapper({ children }) {
-  const { loading, me } = useMe();
+  const { loading } = useMe();
 
   if (loading) return <Box>Loading ..</Box>;
-  if (!me) return <Box>Loading ..</Box>;
 
   return children;
 }
