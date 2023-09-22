@@ -55,20 +55,6 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
 
-  desktop-api:
-    image: node:18
-    working_dir: /codepod/apps/desktop-api
-    ports:
-      - 4001:4001
-    volumes:
-      - ../..:/codepod
-      - desktop-var-codepod:/var/codepod
-      - pnpm-store:/codepod/.pnpm-store
-    command: sh -c "corepack enable && pnpm dev"
-    environment:
-      JWT_SECRET: ${JWT_SECRET}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-
   spawner-native:
     # This image has python and ipykernel installed.
     build:
@@ -132,18 +118,6 @@ services:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
       JWT_SECRET: ${JWT_SECRET}
 
-  desktop-yjs:
-    image: node:18
-    working_dir: /codepod/apps/desktop-yjs
-    ports:
-      - 4234:4233
-    volumes:
-      - ../..:/codepod
-      - pnpm-store:/codepod/.pnpm-store
-      - desktop-var-codepod:/var/codepod
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: sh -c "corepack enable && pnpm dev"
-
   web-ui:
     image: node:18
     working_dir: /codepod/apps/web-ui
@@ -154,23 +128,6 @@ services:
       VITE_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       VITE_APP_YJS_WS_URL: "ws://localhost:4233/socket"
       VITE_APP_API_URL: "http://localhost:4000/graphql"
-      # Native spawner
-      VITE_APP_SPAWNER_API_URL: "http://localhost:4022/graphql"
-      # Docker spawner
-      # VITE_APP_SPAWNER_API_URL: "http://localhost:4021/graphql"
-    volumes:
-      - ../..:/codepod
-      - pnpm-store:/codepod/.pnpm-store
-    command: sh -c "corepack enable && pnpm dev"
-
-  desktop-ui:
-    image: node:18
-    working_dir: /codepod/apps/desktop-ui
-    ports:
-      - 3001:3001
-    environment:
-      VITE_APP_YJS_WS_URL: "ws://localhost:4234/socket"
-      VITE_APP_API_URL: "http://localhost:4001/graphql"
       # Native spawner
       VITE_APP_SPAWNER_API_URL: "http://localhost:4022/graphql"
       # Docker spawner
@@ -201,7 +158,6 @@ services:
 volumes:
   db-data:
   pnpm-store:
-  desktop-var-codepod:
 
 networks:
   default:
