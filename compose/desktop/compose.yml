@@ -17,7 +17,7 @@ services:
       - pnpm-store:/codepod/.pnpm-store
     command: sh -c "corepack enable && pnpm install && echo '=== Setup Finished, idling ===' && tail -f /dev/null"
 
-  desktop-api:
+  api:
     image: node:18
     working_dir: /codepod/apps/desktop-api
     ports:
@@ -28,7 +28,7 @@ services:
       - pnpm-store:/codepod/.pnpm-store
     command: sh -c "corepack enable && pnpm dev"
 
-  desktop-yjs:
+  yjs:
     image: node:18
     working_dir: /codepod/apps/desktop-yjs
     ports:
@@ -40,7 +40,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     command: sh -c "corepack enable && pnpm dev"
 
-  desktop-ui:
+  ui:
     image: node:18
     working_dir: /codepod/apps/desktop-ui
     ports:
