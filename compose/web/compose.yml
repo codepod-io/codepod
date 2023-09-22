@@ -41,7 +41,7 @@ services:
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
 
-  web-api:
+  api:
     image: node:18
     working_dir: /codepod/apps/web-api
     ports:
@@ -69,7 +69,7 @@ services:
     environment:
       KERNEL_TTL: "43200000"
       LOOP_INTERVAL: "60000"
-      YJS_WS_URL: "ws://web-yjs:4233/socket"
+      YJS_WS_URL: "ws://yjs:4233/socket"
       JWT_SECRET: ${JWT_SECRET}
 
   spawner-docker:
@@ -101,10 +101,10 @@ services:
       WS_RUNTIME_IMAGE: "lihebi/codepod-runtime:0.4.13-alpha.49"
       # spawner need to add routes to proxy server
       # PROXY_API_URL: "http://proxy:4011/graphql"
-      YJS_WS_URL: "ws://web-yjs:4233/socket"
+      YJS_WS_URL: "ws://yjs:4233/socket"
       JWT_SECRET: ${JWT_SECRET}
 
-  web-yjs:
+  yjs:
     image: node:18
     working_dir: /codepod/apps/web-yjs
     ports:
@@ -118,7 +118,7 @@ services:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
       JWT_SECRET: ${JWT_SECRET}
 
-  web-ui:
+  ui:
     image: node:18
     working_dir: /codepod/apps/web-ui
     ports:
