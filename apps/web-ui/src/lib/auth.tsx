@@ -74,7 +74,6 @@ function useProvideAuth({ apiUrl, spawnerApiUrl }) {
   };
 
   const handleGoogle = async (response) => {
-    console.log("Google Encoded JWT ID token: " + response.credential);
     const client = createApolloClient(false);
     const LoginMutation = gql`
       mutation LoginWithGoogleMutation($idToken: String!) {
