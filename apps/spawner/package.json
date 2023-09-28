@@ -1,5 +1,5 @@
 {
-  "name": "yjs",
+  "name": "spawner",
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
@@ -12,8 +12,8 @@
   "dependencies": {
     "@apollo/client": "^3.7.1",
     "@codepod/prisma": "workspace:*",
-    "@codepod/runtime": "workspace:^",
-    "@codepod/yjs": "workspace:^",
+    "@codepod/runtime": "workspace:*",
+    "@codepod/yjs": "workspace:*",
     "@kubernetes/client-node": "^0.17.1",
     "apollo-server": "^3.5.0",
     "apollo-server-core": "^3.10.3",
