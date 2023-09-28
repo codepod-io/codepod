@@ -2,21 +2,6 @@
 version: "3.5"
 
 services:
-  # Run: docker compose up setup
-  # Then run: docker compose up -d
-  setup:
-    image: node:18
-    working_dir: /codepod
-    volumes:
-      - ../..:/codepod
-      # pnpm-store serves two purposes:
-      # 1. without it, pnpm install will throw error. Ref:
-      #    https://github.com/pnpm/pnpm/issues/3952#issuecomment-1262136483
-      # 2. it is mounted to all service containers, and will cache and speed up
-      #    pnpm install and pnpm add/remove
-      - pnpm-store:/codepod/.pnpm-store
-    command: sh -c "corepack enable && pnpm install && echo '=== Setup Finished, idling ===' && tail -f /dev/null"
-
   api:
     image: node:18
     working_dir: /codepod/apps/desktop-api
@@ -25,8 +10,7 @@ services:
     volumes:
       - ../..:/codepod
       - desktop-var-codepod:/var/codepod
-      - pnpm-store:/codepod/.pnpm-store
-    command: sh -c "corepack enable && pnpm dev"
+    command: sh -c "npm run dev"
 
   yjs:
     image: node:18
@@ -35,10 +19,9 @@ services:
       - 4234:4233
     volumes:
       - ../..:/codepod
-      - pnpm-store:/codepod/.pnpm-store
       - desktop-var-codepod:/var/codepod
       - /var/run/docker.sock:/var/run/docker.sock
-    command: sh -c "corepack enable && pnpm dev"
+    command: sh -c "npm run dev"
 
   ui:
     image: node:18
@@ -54,11 +37,9 @@ services:
       # VITE_APP_SPAWNER_API_URL: "http://localhost:4021/graphql"
     volumes:
       - ../..:/codepod
-      - pnpm-store:/codepod/.pnpm-store
-    command: sh -c "corepack enable && pnpm dev"
+    command: sh -c "npm run dev"
 
 volumes:
-  pnpm-store:
   desktop-var-codepod:
 
 networks:
