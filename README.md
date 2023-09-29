@@ -36,7 +36,6 @@ plugin](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vsco
 to format your code before checking in.
 Last but not least, give us a star on Github!
 
-
 # Citation
 
 https://arxiv.org/abs/2301.02410

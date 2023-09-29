@@ -29,6 +29,12 @@ RUN pip install ipykernel
 
 ENV HOME /root
 
+# Install bun
+RUN apt-get install -y unzip
+RUN curl -fsSL https://bun.sh/install | bash
+ENV BUN_INSTALL="/root/.bun"
+ENV PATH=$BUN_INSTALL/bin:$PATH
+
 # Docker won't let us source nvm.sh directly, so we have several options: (ref:
 # https://stackoverflow.com/a/55922307)
 # 1. Avoid env. But nodejs binary package is hard to install.

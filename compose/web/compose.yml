@@ -12,29 +12,10 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
 
-  # Run: docker compose up setup
-  # Then run: docker compose up -d
-  setup:
-    image: node:18
-    working_dir: /codepod
-    depends_on:
-      - db
-    volumes:
-      - ../..:/codepod
-      # pnpm-store serves two purposes:
-      # 1. without it, pnpm install will throw error. Ref:
-      #    https://github.com/pnpm/pnpm/issues/3952#issuecomment-1262136483
-      # 2. it is mounted to all service containers, and will cache and speed up
-      #    pnpm install and pnpm add/remove
-      - pnpm-store:/codepod/.pnpm-store
-    command: sh -c "corepack enable && pnpm install && cd packages/prisma && pnpm dlx prisma migrate dev && echo '=== Setup Finished, idling ===' && tail -f /dev/null"
-    environment:
-      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
-
   prisma:
     image: node:18
     restart: always
-    command: sh -c "corepack enable && pnpm dlx prisma studio"
+    command: sh -c "npx prisma studio"
     working_dir: /codepod/packages/prisma
     volumes:
       - ../..:/codepod
@@ -48,8 +29,7 @@ services:
       - 4000:4000
     volumes:
       - ../..:/codepod
-      - pnpm-store:/codepod/.pnpm-store
-    command: sh -c "corepack enable && pnpm dev"
+    command: sh -c "npm run dev"
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
       JWT_SECRET: ${JWT_SECRET}
@@ -64,8 +44,7 @@ services:
     working_dir: /codepod/apps/spawner
     volumes:
       - ../..:/codepod
-      - pnpm-store:/codepod/.pnpm-store
-    command: bash -c "corepack enable && pnpm dev:native"
+    command: bash -c "npm run dev:native"
     environment:
       KERNEL_TTL: "43200000"
       LOOP_INTERVAL: "60000"
@@ -79,9 +58,8 @@ services:
       - 4021:4021
     volumes:
       - ../..:/codepod
-      - pnpm-store:/codepod/.pnpm-store
       - /var/run/docker.sock:/var/run/docker.sock
-    command: sh -c "corepack enable && pnpm dev:docker"
+    command: sh -c "npm run dev:docker"
     environment:
       # Set PROJECT_ROOT to the absolute path of your codepod local repo if you
       # want to debug the runtime code.
@@ -111,9 +89,8 @@ services:
       - 4233:4233
     volumes:
       - ../..:/codepod
-      - pnpm-store:/codepod/.pnpm-store
       - /var/run/docker.sock:/var/run/docker.sock
-    command: sh -c "corepack enable && pnpm dev"
+    command: sh -c "npm run dev"
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
       JWT_SECRET: ${JWT_SECRET}
@@ -134,8 +111,7 @@ services:
       # VITE_APP_SPAWNER_API_URL: "http://localhost:4021/graphql"
     volumes:
       - ../..:/codepod
-      - pnpm-store:/codepod/.pnpm-store
-    command: sh -c "corepack enable && pnpm dev"
+    command: sh -c "npm run dev"
 
   # This container is only used for installing node_modules into the volume, so
   # that the docker spawner can use the image without waiting for installing.
@@ -144,8 +120,7 @@ services:
     working_dir: /codepod/apps/runtime
     volumes:
       - ../..:/codepod
-      - pnpm-store:/codepod/.pnpm-store
-    command: sh -c "corepack enable && pnpm dev"
+    command: sh -c "npm run dev"
 
   example-runtime-prod:
     image: lihebi/codepod-runtime:0.4.13-alpha.49
@@ -157,7 +132,6 @@ services:
 
 volumes:
   db-data:
-  pnpm-store:
 
 networks:
   default:
