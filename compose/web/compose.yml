@@ -12,34 +12,34 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
 
+  # DEPRECATED 2023-09-28: Install bun on your host and run bun install and bunx prisma migrate dev instead.
+  #
   # First run:
   # - docker compose up setup -d
   # 
   # After the setup container finished, then run:
   # - docker compose up -d
-  setup:
-    # The first time you run docker compose up, the image will be built. After
-    # that, to run compose up with rebuilding of the images, use:
-    # - docker compose up -d --build
-    build:
-      context: .
-      dockerfile: node-with-bun.Dockerfile
-    working_dir: /codepod
-    depends_on:
-      - db
-    volumes:
-      - ../..:/codepod
-      - bun-cache:/root/.bun/install/cache
-    command: sh -c "bun install && cd packages/prisma && bunx prisma migrate dev && echo '=== Setup Finished, idling ===' && tail -f /dev/null"
-    environment:
-      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
+  # setup:
+  #   # The first time you run docker compose up, the image will be built. After
+  #   # that, to run compose up with rebuilding of the images, use:
+  #   # - docker compose up -d --build
+  #   build:
+  #     context: .
+  #     dockerfile: node-with-bun.Dockerfile
+  #   working_dir: /codepod
+  #   depends_on:
+  #     - db
+  #   volumes:
+  #     - ../..:/codepod
+  #     - bun-cache:/root/.bun/install/cache
+  #   command: sh -c "bun install && cd packages/prisma && bunx prisma migrate dev && echo '=== Setup Finished, idling ===' && tail -f /dev/null"
+  #   environment:
+  #     DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
 
   prisma:
-    build:
-      context: .
-      dockerfile: node-with-bun.Dockerfile
+    image: node:18
     restart: always
-    command: sh -c "bunx prisma studio"
+    command: sh -c "npx prisma studio"
     working_dir: /codepod/packages/prisma
     volumes:
       - ../..:/codepod
@@ -47,15 +47,13 @@ services:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
 
   api:
-    build:
-      context: .
-      dockerfile: node-with-bun.Dockerfile
+    image: node:18
     working_dir: /codepod/apps/web-api
     ports:
       - 4000:4000
     volumes:
       - ../..:/codepod
-    command: sh -c "bun dev"
+    command: sh -c "npm run dev"
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
       JWT_SECRET: ${JWT_SECRET}
@@ -70,7 +68,7 @@ services:
     working_dir: /codepod/apps/spawner
     volumes:
       - ../..:/codepod
-    command: bash -c "bun dev:native"
+    command: bash -c "npm run dev:native"
     environment:
       KERNEL_TTL: "43200000"
       LOOP_INTERVAL: "60000"
@@ -78,16 +76,14 @@ services:
       JWT_SECRET: ${JWT_SECRET}
 
   spawner-docker:
-    build:
-      context: .
-      dockerfile: node-with-bun.Dockerfile
+    image: node:18
     working_dir: /codepod/apps/spawner
     ports:
       - 4021:4021
     volumes:
       - ../..:/codepod
       - /var/run/docker.sock:/var/run/docker.sock
-    command: sh -c "bun dev:docker"
+    command: sh -c "npm run dev:docker"
     environment:
       # Set PROJECT_ROOT to the absolute path of your codepod local repo if you
       # want to debug the runtime code.
@@ -111,24 +107,20 @@ services:
       JWT_SECRET: ${JWT_SECRET}
 
   yjs:
-    build:
-      context: .
-      dockerfile: node-with-bun.Dockerfile
+    image: node:18
     working_dir: /codepod/apps/web-yjs
     ports:
       - 4233:4233
     volumes:
       - ../..:/codepod
       - /var/run/docker.sock:/var/run/docker.sock
-    command: sh -c "bun dev"
+    command: sh -c "npm run dev"
     environment:
       DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=public"
       JWT_SECRET: ${JWT_SECRET}
 
   ui:
-    build:
-      context: .
-      dockerfile: node-with-bun.Dockerfile
+    image: node:18
     working_dir: /codepod/apps/web-ui
     ports:
       - 3000:3000
@@ -143,18 +135,16 @@ services:
       # VITE_APP_SPAWNER_API_URL: "http://localhost:4021/graphql"
     volumes:
       - ../..:/codepod
-    command: sh -c "bun dev"
+    command: sh -c "npm run dev"
 
   # This container is only used for installing node_modules into the volume, so
   # that the docker spawner can use the image without waiting for installing.
   example-runtime-dev:
-    build:
-      context: .
-      dockerfile: node-with-bun.Dockerfile
+    image: node:18
     working_dir: /codepod/apps/runtime
     volumes:
       - ../..:/codepod
-    command: sh -c "bun dev"
+    command: sh -c "npm run dev"
 
   example-runtime-prod:
     image: lihebi/codepod-runtime:0.4.13-alpha.49
@@ -166,7 +156,7 @@ services:
 
 volumes:
   db-data:
-  bun-cache:
+  # bun-cache:
 
 networks:
   default:
