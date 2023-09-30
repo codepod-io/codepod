@@ -13,6 +13,7 @@
     "@codepod/prisma": "workspace:*",
     "@kubernetes/client-node": "^0.17.1",
     "@prisma/client": "4.3.1",
+    "@trpc/server": "^10.38.5",
     "apollo-server": "^3.5.0",
     "apollo-server-core": "^3.10.3",
     "apollo-server-express": "3.10.2",
@@ -34,7 +35,8 @@
     "ws": "^8.2.3",
     "y-prosemirror": "^1.2.1",
     "y-protocols": "^1.0.5",
-    "yjs": "^13.6.7"
+    "yjs": "^13.6.7",
+    "zod": "^3.22.2"
   },
   "devDependencies": {
     "@jest/globals": "^29.6.4",
