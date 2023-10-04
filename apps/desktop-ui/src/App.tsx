@@ -10,7 +10,7 @@ import {
 
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 
-import { Dashboard, Repo, Test } from "@codepod/ui";
+import { Repo } from "./pages/repo";
 
 import { Header, Footer } from "@codepod/ui";
 import { AuthProvider } from "./lib/auth";
@@ -22,19 +22,9 @@ import Box from "@mui/material/Box";
 import { SnackbarProvider } from "notistack";
 import { Typography } from "@mui/material";
 
-const yjsWsUrl = import.meta.env.VITE_APP_YJS_WS_URL;
-const apiUrl = import.meta.env.VITE_APP_API_URL;
-const spawnerApiUrl = import.meta.env.VITE_APP_SPAWNER_API_URL;
-
-if (!yjsWsUrl) {
-  throw new Error("VITE_APP_YJS_WS_URL is not defined");
-}
-if (!apiUrl) {
-  throw new Error("VITE_APP_API_URL is not defined");
-}
-if (!spawnerApiUrl) {
-  throw new Error("VITE_APP_RUNTIME_API_URL is not defined");
-}
+const yjsWsUrl = "http://localhost:4233/socket";
+const apiUrl = "http://localhost:4000/graphql";
+const spawnerApiUrl = null;
 
 const theme = createTheme({
   typography: {
@@ -44,51 +34,13 @@ const theme = createTheme({
   },
 });
 
-const NormalLayout = ({ children }) => {
-  return (
-    <Box>
-      <Header>
-        <Box
-          sx={{
-            alignItems: "baseline",
-            display: "flex",
-            flexGrow: 1,
-          }}
-        >
-          <Link component={ReactLink} underline="hover" to="/">
-            <Typography noWrap>CodePod</Typography>
-          </Link>
-        </Box>
-      </Header>
-      <Box pt="50px">{children}</Box>
-      {/* <Footer /> */}
-    </Box>
-  );
-};
-
 const router = createBrowserRouter([
   {
-    path: "repo/:id",
+    path: "/",
     element: (
       <Box height="100vh" width="100%" boxSizing={"border-box"}>
         <Repo yjsWsUrl={yjsWsUrl} />
       </Box>
-    ),
-  },
-  {
-    path: "test",
-    element: (
-      <NormalLayout>
-        <Test />
-      </NormalLayout>
-    ),
-  },
-  {
-    path: "/",
-    element: (
-      <NormalLayout>
-        <Dashboard />
-      </NormalLayout>
     ),
   },
 ]);

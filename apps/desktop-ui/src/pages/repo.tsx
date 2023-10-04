@@ -340,10 +340,18 @@ function NotFoundAlert({}) {
 function RepoLoader({ id, children }) {
   // load the repo
   let query = gql`
-    query Repo {
-      repo {
+    query Repo($id: String!) {
+      repo(id: $id) {
         id
         name
+        userId
+        collaborators {
+          id
+          email
+          firstname
+          lastname
+        }
+        public
       }
     }
   `;
@@ -356,14 +364,27 @@ function RepoLoader({ id, children }) {
     fetchPolicy: "no-cache",
   });
   const store = useContext(RepoContext)!;
+  const setRepoData = useStore(store, (state) => state.setRepoData);
+
+  const { me } = useMe();
   const setEditMode = useStore(store, (state) => state.setEditMode);
 
+  useEffect(() => {
+    if (data && data.repo) {
+      setRepoData(data.repo);
+      if (
+        me?.id === data.repo.userId ||
+        data.repo.collaborators.includes(me?.id)
+      ) {
+        setEditMode("edit");
+      }
+    }
+  }, [data, loading]);
   if (loading) return <Box>Loading</Box>;
   if (error) {
-    return <Box>Error: Repo not found, {error.message}</Box>;
+    return <Box>Error: Repo not found</Box>;
   }
   if (!data || !data.repo) return <NotFoundAlert />;
-  setEditMode("edit");
   return children;
 }
 

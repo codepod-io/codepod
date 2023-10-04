@@ -1,3 +1,3 @@
 import { startServer } from "./server";
 
-startServer({ port: 4001 });
+startServer({ port: 4000 });

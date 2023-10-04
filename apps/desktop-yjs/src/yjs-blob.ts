@@ -56,13 +56,11 @@ type NodeData = {
   name?: string;
 };
 
-const CODEPOD_ROOT = "/var/codepod";
-const repoDirs = `${CODEPOD_ROOT}/repos`;
+const blobDir = "/tmp/example-repo";
 
 async function handleSaveBlob({ repoId, yDocBlob }) {
   console.log("save blob", repoId, yDocBlob.length);
   // create the yjs-blob folder if not exists
-  const blobDir = `${repoDirs}/${repoId}`;
   if (!fs.existsSync(blobDir)) {
     fs.mkdirSync(blobDir);
   }
@@ -112,7 +110,6 @@ async function loadFromFS(ydoc: Y.Doc, repoId: string) {
   // load from the database and write to the ydoc
   console.log("=== loadFromFS");
   // read the blob from file system
-  const blobDir = `${repoDirs}/${repoId}`;
   const binFile = `${blobDir}/yjs.bin`;
   if (fs.existsSync(binFile)) {
     const yDocBlob = fs.readFileSync(binFile);
