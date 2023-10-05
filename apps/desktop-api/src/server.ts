@@ -1,91 +1,21 @@
 import express from "express";
 import http from "http";
-import fs from "fs";
 import { WebSocketServer } from "ws";
 
 import { createSetupWSConnection } from "@codepod/yjs";
 import { bindState, writeState } from "./yjs-blob";
 
-import { ApolloServer, gql } from "apollo-server-express";
-
-import { ApolloServerPluginLandingPageLocalDefault } from "apollo-server-core";
-
 import cors from "cors";
 
-import { customAlphabet } from "nanoid/async";
-import { lowercase, numbers } from "nanoid-dictionary";
-
-const nanoid = customAlphabet(lowercase + numbers, 20);
-
-export const typeDefs = gql`
-  type User {
-    id: ID!
-    username: String
-    email: String!
-    password: String!
-    firstname: String!
-    lastname: String!
-  }
-
-  type Repo {
-    id: ID!
-    name: String
-    userId: ID!
-    stargazers: [User]
-    collaborators: [User]
-    public: Boolean
-    createdAt: String
-    updatedAt: String
-    accessedAt: String
-  }
-
-  type Query {
-    hello: String
-    me: User
-    repo: Repo
-    getDashboardRepos: [Repo]
-  }
-
-  type Mutation {
-    world: String
-    createRepo: Repo
-    updateRepo(id: ID!, name: String!): Boolean
-    deleteRepo(id: ID!): Boolean
-    star(repoId: ID!): Boolean
-    unstar(repoId: ID!): Boolean
-  }
-`;
-
-export const resolvers = {
-  Query: {
-    hello: () => {
-      return "Hello world!";
-    },
-  },
-  Mutation: {
-    world: () => {
-      return "World!";
-    },
-  },
-};
-
 export async function startServer({ port }) {
-  const apollo = new ApolloServer({
-    typeDefs,
-    resolvers,
-    plugins: [ApolloServerPluginLandingPageLocalDefault({ embed: true })],
-  });
-  const expapp = express();
-  expapp.use(express.json({ limit: "20mb" }));
+  const app = express();
+  app.use(express.json({ limit: "20mb" }));
   // support cors
-  expapp.use(cors());
+  app.use(cors());
   // serve static files generated from UI
-  expapp.use(express.static("../../packages/ui/dist"));
+  app.use(express.static("../../packages/ui/dist"));
 
-  const http_server = http.createServer(expapp);
-
-  await apollo.start();
-  apollo.applyMiddleware({ app: expapp });
+  const http_server = http.createServer(app);
 
   // Yjs websocket
   const wss = new WebSocketServer({ noServer: true });
