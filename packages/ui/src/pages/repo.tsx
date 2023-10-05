@@ -20,7 +20,6 @@ import { useStore } from "zustand";
 
 import { createRepoStore, RepoContext } from "../lib/store";
 
-import { useMe } from "../lib/me";
 import { Canvas } from "../components/Canvas";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
@@ -375,25 +374,13 @@ function WaitForProvider({ children, yjsWsUrl }) {
   const providerSynced = useStore(store, (state) => state.providerSynced);
   const disconnectYjs = useStore(store, (state) => state.disconnectYjs);
   const connectYjs = useStore(store, (state) => state.connectYjs);
-  const { me } = useMe();
   useEffect(() => {
-    connectYjs({ yjsWsUrl, name: me?.firstname || "Anonymous" });
+    connectYjs({ yjsWsUrl, name: "Local" });
     return () => {
       disconnectYjs();
     };
   }, [connectYjs, disconnectYjs]);
   if (!providerSynced) return <Box>Loading Yjs Doc ..</Box>;
-  return children;
-}
-
-/**
- * This loads users.
- */
-function UserWrapper({ children }) {
-  const { loading } = useMe();
-
-  if (loading) return <Box>Loading ..</Box>;
-
   return children;
 }
 
@@ -408,26 +395,24 @@ export function Repo({ yjsWsUrl }) {
   }, []);
   return (
     <RepoContext.Provider value={store}>
-      <UserWrapper>
-        <RepoLoader id={id}>
-          <WaitForProvider yjsWsUrl={yjsWsUrl}>
-            <ParserWrapper>
-              <HeaderWrapper id={id}>
-                <Box
-                  height="100%"
-                  border="solid 3px black"
-                  p={2}
-                  boxSizing={"border-box"}
-                  // m={2}
-                  overflow="auto"
-                >
-                  <Canvas />
-                </Box>
-              </HeaderWrapper>
-            </ParserWrapper>
-          </WaitForProvider>
-        </RepoLoader>
-      </UserWrapper>
+      <RepoLoader id={id}>
+        <WaitForProvider yjsWsUrl={yjsWsUrl}>
+          <ParserWrapper>
+            <HeaderWrapper id={id}>
+              <Box
+                height="100%"
+                border="solid 3px black"
+                p={2}
+                boxSizing={"border-box"}
+                // m={2}
+                overflow="auto"
+              >
+                <Canvas />
+              </Box>
+            </HeaderWrapper>
+          </ParserWrapper>
+        </WaitForProvider>
+      </RepoLoader>
     </RepoContext.Provider>
   );
 }
