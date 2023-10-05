@@ -23,7 +23,21 @@ Thanks to our community, we now have CodePod showcases ranging from analytical g
 
 # Run CodePod Locally
 
-Please refer to the [developer manual](https://codepod.io/docs/developer) for how to run CodePod locally.
+Open two terminals. On one:
+
+```
+cd apps/api
+pnpm dev
+```
+
+On the other:
+
+```
+cd apps/ui
+pnpm dev
+```
+
+Now go to `http://localhost:3000` to see the app.
 
 # Contributing
 
