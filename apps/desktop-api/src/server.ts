@@ -56,31 +56,10 @@ export const typeDefs = gql`
   }
 `;
 
-const CODEPOD_ROOT = "/var/codepod";
-const repoDirs = `${CODEPOD_ROOT}/repos`;
-
-const repoPath = "/tmp/example-repo";
-
 export const resolvers = {
   Query: {
     hello: () => {
       return "Hello world!";
-    },
-    // TODO Dummy Data
-    me: () => {
-      return {
-        id: "localUser",
-        username: "localUser",
-        email: "",
-        firstname: "Local",
-        lastname: "User",
-      };
-    },
-    repo: (_, {}) => {
-      return {
-        id: repoPath,
-        name: repoPath,
-      };
     },
   },
   Mutation: {

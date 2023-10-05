@@ -338,31 +338,8 @@ function NotFoundAlert({}) {
 }
 
 function RepoLoader({ id, children }) {
-  // load the repo
-  let query = gql`
-    query Repo {
-      repo {
-        id
-        name
-      }
-    }
-  `;
-  // FIXME this should be a mutation as it changes the last access time.
-  const { data, loading, error } = useQuery(query, {
-    variables: {
-      id,
-    },
-    // CAUTION I must set this because refetechQueries does not work.
-    fetchPolicy: "no-cache",
-  });
   const store = useContext(RepoContext)!;
   const setEditMode = useStore(store, (state) => state.setEditMode);
-
-  if (loading) return <Box>Loading</Box>;
-  if (error) {
-    return <Box>Error: Repo not found, {error.message}</Box>;
-  }
-  if (!data || !data.repo) return <NotFoundAlert />;
   setEditMode("edit");
   return children;
 }

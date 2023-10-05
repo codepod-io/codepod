@@ -50,11 +50,7 @@ function getDebouncedCallback(key) {
   return debounceRegistry.get(key);
 }
 
-type NodeData = {
-  level: number;
-  name?: string;
-};
-
+// FIXME hard-coded path.
 const blobDir = "/tmp/example-repo";
 
 async function handleSaveBlob({ repoId, yDocBlob }) {
