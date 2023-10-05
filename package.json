@@ -2,12 +2,10 @@
   "name": "codepod",
   "module": "index.ts",
   "type": "module",
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
-  "devDependencies": {
-    "bun-types": "latest"
+  "scripts": {
+    "dev:ui": "cd apps/desktop-ui && pnpm run dev",
+    "dev:api": "cd apps/desktop-api && pnpm run dev",
+    "dev:yjs": "cd apps/desktop-yjs && pnpm run dev"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

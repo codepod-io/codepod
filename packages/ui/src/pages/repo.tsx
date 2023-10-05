@@ -20,7 +20,6 @@ import { useStore } from "zustand";
 
 import { createRepoStore, RepoContext } from "../lib/store";
 
-import { useMe } from "../lib/me";
 import { Canvas } from "../components/Canvas";
 import { Header } from "../components/Header";
 import { Sidebar } from "../components/Sidebar";
@@ -172,7 +171,7 @@ function RepoHeader({ id }) {
         <Link component={ReactLink} underline="hover" to="/">
           <Typography noWrap>CodePod</Typography>
         </Link>
-        <HeaderItem />
+        {/* <HeaderItem /> */}
       </Breadcrumbs>
       <Box
         sx={{
@@ -338,53 +337,9 @@ function NotFoundAlert({}) {
 }
 
 function RepoLoader({ id, children }) {
-  // load the repo
-  let query = gql`
-    query Repo($id: String!) {
-      repo(id: $id) {
-        id
-        name
-        userId
-        collaborators {
-          id
-          email
-          firstname
-          lastname
-        }
-        public
-      }
-    }
-  `;
-  // FIXME this should be a mutation as it changes the last access time.
-  const { data, loading, error } = useQuery(query, {
-    variables: {
-      id,
-    },
-    // CAUTION I must set this because refetechQueries does not work.
-    fetchPolicy: "no-cache",
-  });
   const store = useContext(RepoContext)!;
-  const setRepoData = useStore(store, (state) => state.setRepoData);
-
-  const { me } = useMe();
   const setEditMode = useStore(store, (state) => state.setEditMode);
-
-  useEffect(() => {
-    if (data && data.repo) {
-      setRepoData(data.repo);
-      if (
-        me?.id === data.repo.userId ||
-        data.repo.collaborators.includes(me?.id)
-      ) {
-        setEditMode("edit");
-      }
-    }
-  }, [data, loading]);
-  if (loading) return <Box>Loading</Box>;
-  if (error) {
-    return <Box>Error: Repo not found</Box>;
-  }
-  if (!data || !data.repo) return <NotFoundAlert />;
+  setEditMode("edit");
   return children;
 }
 
@@ -419,25 +374,13 @@ function WaitForProvider({ children, yjsWsUrl }) {
   const providerSynced = useStore(store, (state) => state.providerSynced);
   const disconnectYjs = useStore(store, (state) => state.disconnectYjs);
   const connectYjs = useStore(store, (state) => state.connectYjs);
-  const { me } = useMe();
   useEffect(() => {
-    connectYjs({ yjsWsUrl, name: me?.firstname || "Anonymous" });
+    connectYjs({ yjsWsUrl, name: "Local" });
     return () => {
       disconnectYjs();
     };
   }, [connectYjs, disconnectYjs]);
   if (!providerSynced) return <Box>Loading Yjs Doc ..</Box>;
-  return children;
-}
-
-/**
- * This loads users.
- */
-function UserWrapper({ children }) {
-  const { loading } = useMe();
-
-  if (loading) return <Box>Loading ..</Box>;
-
   return children;
 }
 
@@ -452,26 +395,24 @@ export function Repo({ yjsWsUrl }) {
   }, []);
   return (
     <RepoContext.Provider value={store}>
-      <UserWrapper>
-        <RepoLoader id={id}>
-          <WaitForProvider yjsWsUrl={yjsWsUrl}>
-            <ParserWrapper>
-              <HeaderWrapper id={id}>
-                <Box
-                  height="100%"
-                  border="solid 3px black"
-                  p={2}
-                  boxSizing={"border-box"}
-                  // m={2}
-                  overflow="auto"
-                >
-                  <Canvas />
-                </Box>
-              </HeaderWrapper>
-            </ParserWrapper>
-          </WaitForProvider>
-        </RepoLoader>
-      </UserWrapper>
+      <RepoLoader id={id}>
+        <WaitForProvider yjsWsUrl={yjsWsUrl}>
+          <ParserWrapper>
+            <HeaderWrapper id={id}>
+              <Box
+                height="100%"
+                border="solid 3px black"
+                p={2}
+                boxSizing={"border-box"}
+                // m={2}
+                overflow="auto"
+              >
+                <Canvas />
+              </Box>
+            </HeaderWrapper>
+          </ParserWrapper>
+        </WaitForProvider>
+      </RepoLoader>
     </RepoContext.Provider>
   );
 }
