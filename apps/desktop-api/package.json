@@ -11,6 +11,7 @@
   "dependencies": {
     "@apollo/client": "^3.7.1",
     "@codepod/prisma": "workspace:*",
+    "@codepod/yjs": "workspace:^",
     "@kubernetes/client-node": "^0.17.1",
     "@prisma/client": "4.3.1",
     "apollo-server": "^3.5.0",

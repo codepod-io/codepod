@@ -172,7 +172,7 @@ function RepoHeader({ id }) {
         <Link component={ReactLink} underline="hover" to="/">
           <Typography noWrap>CodePod</Typography>
         </Link>
-        <HeaderItem />
+        {/* <HeaderItem /> */}
       </Breadcrumbs>
       <Box
         sx={{

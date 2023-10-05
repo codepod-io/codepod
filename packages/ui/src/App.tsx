@@ -21,7 +21,7 @@ import Box from "@mui/material/Box";
 import { SnackbarProvider } from "notistack";
 import { Typography } from "@mui/material";
 
-const yjsWsUrl = "ws://localhost:4233/socket";
+const yjsWsUrl = "ws://localhost:4000/socket";
 const apiUrl = "http://localhost:4000/graphql";
 const spawnerApiUrl = null;
 

@@ -20,6 +20,9 @@ importers:
       '@codepod/prisma':
         specifier: workspace:*
         version: link:../../packages/prisma
+      '@codepod/yjs':
+        specifier: workspace:^
+        version: link:../../packages/yjs
       '@kubernetes/client-node':
         specifier: ^0.17.1
         version: 0.17.1
