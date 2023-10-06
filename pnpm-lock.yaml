@@ -17,9 +17,6 @@ importers:
       '@codepod/ui':
         specifier: workspace:^
         version: link:../ui
-      '@codepod/yjs':
-        specifier: workspace:^
-        version: link:../../packages/yjs
       commander:
         specifier: ^11.0.0
         version: 11.0.0
@@ -32,12 +29,18 @@ importers:
       jest:
         specifier: ^29.0.3
         version: 29.0.3(@types/node@18.11.7)
+      lib0:
+        specifier: ^0.2.83
+        version: 0.2.83
       lodash:
         specifier: ^4.17.21
         version: 4.17.21
       ws:
         specifier: ^8.2.3
         version: 8.10.0
+      y-protocols:
+        specifier: ^1.0.5
+        version: 1.0.5
       yjs:
         specifier: ^13.6.7
         version: 13.6.7

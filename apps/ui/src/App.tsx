@@ -23,11 +23,14 @@ import { Typography } from "@mui/material";
 
 // the url should be ws://<host>:<port>/socket
 let yjsWsUrl;
-if (import.meta.env.NODE_ENV === "development") {
-  yjsWsUrl = `ws://${window.location.hostname}:${window.location.port}/socket`;
-} else {
+
+if (import.meta.env.DEV) {
   yjsWsUrl = `ws://localhost:4000/socket`;
+} else {
+  yjsWsUrl = `ws://${window.location.hostname}:${window.location.port}/socket`;
 }
+
+console.log("yjsWsUrl", yjsWsUrl);
 const apiUrl = null;
 const spawnerApiUrl = null;
 

@@ -2,7 +2,7 @@ import express from "express";
 import http from "http";
 import { WebSocketServer } from "ws";
 
-import { createSetupWSConnection } from "@codepod/yjs";
+import { createSetupWSConnection } from "./yjs/yjs-setupWS";
 import { bindState, writeState } from "./yjs-blob";
 
 import cors from "cors";
@@ -14,9 +14,9 @@ export async function startServer({ port, blobDir }) {
   // support cors
   app.use(cors());
   // serve static files generated from UI
-  // app.use(express.static("../../packages/ui/dist"));
-  // app.use(express.static("/Users/hebi/git/codepod-cloud/codepod/apps/ui/dist"));
-  app.use(express.static("node_modules/@codepod/ui/dist"));
+  const path = `${__dirname}/../public`;
+  console.log("html path: ", path);
+  app.use(express.static(path));
 
   const http_server = http.createServer(app);
 
