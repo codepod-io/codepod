@@ -2,18 +2,21 @@ import express from "express";
 import http from "http";
 import { WebSocketServer } from "ws";
 
-import { createSetupWSConnection } from "@codepod/yjs";
+import { createSetupWSConnection } from "./yjs/yjs-setupWS";
 import { bindState, writeState } from "./yjs-blob";
 
 import cors from "cors";
 
-export async function startServer({ port }) {
+export async function startServer({ port, blobDir }) {
+  console.log("starting server ..");
   const app = express();
   app.use(express.json({ limit: "20mb" }));
   // support cors
   app.use(cors());
   // serve static files generated from UI
-  app.use(express.static("../../packages/ui/dist"));
+  const path = `${__dirname}/../public`;
+  console.log("html path: ", path);
+  app.use(express.static(path));
 
   const http_server = http.createServer(app);
 
@@ -21,7 +24,10 @@ export async function startServer({ port }) {
   const wss = new WebSocketServer({ noServer: true });
 
   wss.on("connection", (...args) =>
-    createSetupWSConnection(bindState, writeState)(...args)
+    createSetupWSConnection(
+      (doc, repoId) => bindState(doc, repoId, blobDir),
+      writeState
+    )(...args)
   );
 
   http_server.on("upgrade", async (request, socket, head) => {

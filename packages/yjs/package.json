@@ -2,7 +2,7 @@
   "name": "@codepod/yjs",
   "version": "1.0.0",
   "license": "MIT",
-  "main": "src/index.ts",
+  "main": "./src/index.ts",
   "scripts": {
     "build": "tsc",
     "start": "node build/run.js",

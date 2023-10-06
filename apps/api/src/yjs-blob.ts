@@ -50,10 +50,7 @@ function getDebouncedCallback(key) {
   return debounceRegistry.get(key);
 }
 
-// FIXME hard-coded path.
-const blobDir = "/tmp/example-repo";
-
-async function handleSaveBlob({ repoId, yDocBlob }) {
+async function handleSaveBlob({ repoId, yDocBlob, blobDir }) {
   console.log("save blob", repoId, yDocBlob.length);
   // create the yjs-blob folder if not exists
   if (!fs.existsSync(blobDir)) {
@@ -67,7 +64,7 @@ async function handleSaveBlob({ repoId, yDocBlob }) {
  * This function is called when setting up the WS connection, after the loadFromCodePod step.
  * TODO need to make sure this is only called once per repo, regardless of how many users are connected later.
  */
-function setupObserversToDB(ydoc: Y.Doc, repoId: string) {
+function setupObserversToDB(ydoc: Y.Doc, repoId: string, blobDir: string) {
   console.log("setupObserversToDB for repo", repoId);
   //   just observe and save the entire doc
   function observer(_, transaction) {
@@ -82,7 +79,7 @@ function setupObserversToDB(ydoc: Y.Doc, repoId: string) {
       // FIXME it may be too expensive to update the entire doc.
       // FIXME history is discarded
       const update = Y.encodeStateAsUpdate(ydoc);
-      handleSaveBlob({ repoId, yDocBlob: Buffer.from(update) });
+      handleSaveBlob({ repoId, yDocBlob: Buffer.from(update), blobDir });
     });
   }
   const rootMap = ydoc.getMap("rootMap");
@@ -101,7 +98,7 @@ function setupObserversToDB(ydoc: Y.Doc, repoId: string) {
 /**
  * This function is called when setting up the WS connection, as a first step.
  */
-async function loadFromFS(ydoc: Y.Doc, repoId: string) {
+async function loadFromFS(ydoc: Y.Doc, repoId: string, blobDir: string) {
   // load from the database and write to the ydoc
   console.log("=== loadFromFS");
   // read the blob from file system
@@ -124,11 +121,11 @@ async function loadFromFS(ydoc: Y.Doc, repoId: string) {
   }
 }
 
-export async function bindState(doc: Y.Doc, repoId: string) {
+export async function bindState(doc: Y.Doc, repoId: string, blobDir: string) {
   // Load persisted document state from the database.
-  await loadFromFS(doc, repoId);
+  await loadFromFS(doc, repoId, blobDir);
   // Observe changes and write to the database.
-  setupObserversToDB(doc, repoId);
+  setupObserversToDB(doc, repoId, blobDir);
   // setupObserversToRuntime(doc, repoId);
   // reset runtime status
   // clear runtimeMap status/commands but keep the ID
