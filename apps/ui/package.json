@@ -1,6 +1,5 @@
 {
-  "name": "ui",
-  "private": true,
+  "name": "@codepod/ui",
   "version": "0.0.0",
   "type": "module",
   "main": "src/index.tsx",

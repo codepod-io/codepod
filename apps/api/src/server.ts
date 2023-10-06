@@ -7,13 +7,16 @@ import { bindState, writeState } from "./yjs-blob";
 
 import cors from "cors";
 
-export async function startServer({ port }) {
+export async function startServer({ port, blobDir }) {
+  console.log("starting server ..");
   const app = express();
   app.use(express.json({ limit: "20mb" }));
   // support cors
   app.use(cors());
   // serve static files generated from UI
-  app.use(express.static("../../packages/ui/dist"));
+  // app.use(express.static("../../packages/ui/dist"));
+  // app.use(express.static("/Users/hebi/git/codepod-cloud/codepod/apps/ui/dist"));
+  app.use(express.static("node_modules/@codepod/ui/dist"));
 
   const http_server = http.createServer(app);
 
@@ -21,7 +24,10 @@ export async function startServer({ port }) {
   const wss = new WebSocketServer({ noServer: true });
 
   wss.on("connection", (...args) =>
-    createSetupWSConnection(bindState, writeState)(...args)
+    createSetupWSConnection(
+      (doc, repoId) => bindState(doc, repoId, blobDir),
+      writeState
+    )(...args)
   );
 
   http_server.on("upgrade", async (request, socket, head) => {

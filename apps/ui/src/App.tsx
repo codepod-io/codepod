@@ -21,8 +21,14 @@ import Box from "@mui/material/Box";
 import { SnackbarProvider } from "notistack";
 import { Typography } from "@mui/material";
 
-const yjsWsUrl = "ws://localhost:4000/socket";
-const apiUrl = "http://localhost:4000/graphql";
+// the url should be ws://<host>:<port>/socket
+let yjsWsUrl;
+if (import.meta.env.NODE_ENV === "development") {
+  yjsWsUrl = `ws://${window.location.hostname}:${window.location.port}/socket`;
+} else {
+  yjsWsUrl = `ws://localhost:4000/socket`;
+}
+const apiUrl = null;
 const spawnerApiUrl = null;
 
 const theme = createTheme({

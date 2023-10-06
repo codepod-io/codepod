@@ -1,3 +1,4 @@
 dist/
 conns/conn-*.json
 prisma/dev.db
+example-repo/

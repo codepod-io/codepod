@@ -1,5 +1,5 @@
 {
-  "name": "spawner",
+  "name": "@codepod/spawner",
   "version": "1.0.0",
   "license": "MIT",
   "scripts": {
