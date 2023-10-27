@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "Repo" ADD COLUMN     "dummyCount" INTEGER NOT NULL DEFAULT 0;
