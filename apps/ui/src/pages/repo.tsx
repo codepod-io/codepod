@@ -145,19 +145,11 @@ const HeaderItem = memo<any>(() => {
   );
 });
 
-function RepoHeader({ id }) {
+function RepoHeader() {
   const store = useContext(RepoContext)!;
 
   const setShareOpen = useStore(store, (state) => state.setShareOpen);
   const navigate = useNavigate();
-  const [copyRepo] = useMutation(
-    gql`
-      mutation CopyRepo($id: String!) {
-        copyRepo(repoId: $id)
-      }
-    `,
-    { variables: { id } }
-  );
   return (
     <Header>
       <Breadcrumbs
@@ -181,25 +173,6 @@ function RepoHeader({ id }) {
         }}
       >
         <Button
-          endIcon={<ContentCopyIcon />}
-          onClick={async () => {
-            const result = await copyRepo();
-            const newRepoId = result.data.copyRepo;
-            window.open(`/repo/${newRepoId}`);
-          }}
-          variant="contained"
-        >
-          Make a copy
-        </Button>
-      </Box>
-      <Box
-        sx={{
-          display: { xs: "none", md: "flex" },
-          alignItems: "center",
-          paddingRight: "10px",
-        }}
-      >
-        <Button
           endIcon={<ShareIcon />}
           onClick={() => setShareOpen(true)}
           variant="contained"
@@ -214,7 +187,7 @@ function RepoHeader({ id }) {
 /**
  * Wrap the repo page with a header, a sidebar and a canvas.
  */
-function HeaderWrapper({ children, id }) {
+function HeaderWrapper({ children }) {
   const store = useContext(RepoContext)!;
   const isSidebarOnLeftHand = useStore(
     store,
@@ -231,7 +204,7 @@ function HeaderWrapper({ children, id }) {
       }}
     >
       {/* The header. */}
-      <RepoHeader id={id} />
+      <RepoHeader />
       {/* The sidebar */}
       <Drawer
         sx={{
@@ -336,7 +309,7 @@ function NotFoundAlert({}) {
   );
 }
 
-function RepoLoader({ id, children }) {
+function RepoLoader({ children }) {
   const store = useContext(RepoContext)!;
   const setEditMode = useStore(store, (state) => state.setEditMode);
   setEditMode("edit");
@@ -385,20 +358,14 @@ function WaitForProvider({ children, yjsWsUrl }) {
 }
 
 export function Repo({ yjsWsUrl }) {
-  let { id } = useParams();
   const store = useRef(createRepoStore()).current;
 
-  const setRepo = useStore(store, (state) => state.setRepo);
-  // console.log("load store", useRef(createRepoStore()));
-  useEffect(() => {
-    setRepo(id!);
-  }, []);
   return (
     <RepoContext.Provider value={store}>
-      <RepoLoader id={id}>
+      <RepoLoader>
         <WaitForProvider yjsWsUrl={yjsWsUrl}>
           <ParserWrapper>
-            <HeaderWrapper id={id}>
+            <HeaderWrapper>
               <Box
                 height="100%"
                 border="solid 3px black"

@@ -11,6 +11,7 @@ import { MonacoBinding } from "y-monaco";
 import { useReactFlow } from "reactflow";
 import { Annotation } from "../lib/parser";
 import { useApolloClient } from "@apollo/client";
+import { trpc } from "../lib/trpc";
 
 const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",
@@ -391,8 +392,11 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   console.debug("[perf] rendering MyMonaco", id);
   const store = useContext(RepoContext)!;
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
-  const yjsRun = useStore(store, (state) => state.yjsRun);
-  const apolloClient = useApolloClient();
+  const preprocessChain = useStore(store, (state) => state.preprocessChain);
+
+  const runChain = trpc.spawner.runChain.useMutation();
+  const activeRuntime = useStore(store, (state) => state.activeRuntime);
+
   const focusedEditor = useStore(store, (state) => state.focusedEditor);
   const setFocusedEditor = useStore(store, (state) => state.setFocusedEditor);
   const annotations = useStore(
@@ -464,7 +468,10 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       label: "Run",
       keybindings: [monaco.KeyMod.Shift | monaco.KeyCode.Enter],
       run: () => {
-        yjsRun(id, apolloClient);
+        if (activeRuntime) {
+          const specs = preprocessChain([id]);
+          if (specs) runChain.mutate({ runtimeId: activeRuntime, specs });
+        }
       },
     });
     editor.addAction({

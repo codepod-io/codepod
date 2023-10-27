@@ -2,10 +2,13 @@ import express from "express";
 import http from "http";
 import { WebSocketServer } from "ws";
 
+import * as trpcExpress from "@trpc/server/adapters/express";
+
 import { createSetupWSConnection } from "./yjs/yjs-setupWS";
 import { bindState, writeState } from "./yjs-blob";
 
 import cors from "cors";
+import { appRouter } from "./trpc";
 
 export async function startServer({ port, blobDir }) {
   console.log("starting server ..");
@@ -17,6 +20,13 @@ export async function startServer({ port, blobDir }) {
   const path = `${__dirname}/../public`;
   console.log("html path: ", path);
   app.use(express.static(path));
+
+  app.use(
+    "/trpc",
+    trpcExpress.createExpressMiddleware({
+      router: appRouter,
+    })
+  );
 
   const http_server = http.createServer(app);
 
