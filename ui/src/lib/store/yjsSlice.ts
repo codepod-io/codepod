@@ -6,7 +6,7 @@ import { produce } from "immer";
 import { Doc, Transaction } from "yjs";
 import * as Y from "yjs";
 // import { WebsocketProvider } from "../y-websocket";
-import { WebsocketProvider } from "../../../../api/src/y-websocket";
+import { WebsocketProvider } from "../../../../api/src/yjs/y-websocket";
 import { addAwarenessStyle } from "../utils/utils";
 import { MyState, Pod } from ".";
 
