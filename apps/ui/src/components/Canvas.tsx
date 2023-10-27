@@ -49,6 +49,7 @@ import CustomConnectionLine from "./nodes/CustomConnectionLine";
 import HelperLines from "./HelperLines";
 import { getAbsPos, newNodeShapeConfig } from "../lib/store/canvasSlice";
 import { useApolloClient } from "@apollo/client";
+import { trpc } from "../lib/trpc";
 
 const nodeTypes = { SCOPE: ScopeNode, CODE: CodeNode, RICH: RichNode };
 const edgeTypes = {
@@ -149,8 +150,11 @@ function useJump() {
   const resetSelection = useStore(store, (state) => state.resetSelection);
   const selectPod = useStore(store, (state) => state.selectPod);
 
-  const yjsRun = useStore(store, (state) => state.yjsRun);
-  const apolloClient = useApolloClient();
+  const preprocessChain = useStore(store, (state) => state.preprocessChain);
+  const getScopeChain = useStore(store, (state) => state.getScopeChain);
+
+  const runChain = trpc.spawner.runChain.useMutation();
+  const activeRuntime = useStore(store, (state) => state.activeRuntime);
 
   const setCenterSelection = useStore(
     store,
@@ -240,7 +244,10 @@ function useJump() {
         if (pod.type == "CODE") {
           if (event.shiftKey) {
             // Hitting "SHIFT"+"Enter" will run the code pod
-            yjsRun(id, apolloClient);
+            if (activeRuntime) {
+              const specs = preprocessChain([id]);
+              if (specs) runChain.mutate({ runtimeId: activeRuntime, specs });
+            }
           } else {
             // Hitting "Enter" on a Code pod will go to "Edit" mode.
             setFocusedEditor(id);
@@ -248,7 +255,11 @@ function useJump() {
         } else if (pod.type === "SCOPE") {
           if (event.shiftKey) {
             // Hitting "SHIFT"+"Enter" on a Scope will run the scope.
-            yjsRun(id, apolloClient);
+            if (activeRuntime) {
+              const chain = getScopeChain(id);
+              const specs = preprocessChain(chain);
+              if (specs) runChain.mutate({ runtimeId: activeRuntime, specs });
+            }
           }
         } else if (pod.type === "RICH") {
           // Hitting "Enter" on a Rich pod will go to "Edit" mode.

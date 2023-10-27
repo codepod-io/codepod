@@ -1,5 +1,4 @@
 import { produce } from "immer";
-import { ApolloClient, gql } from "@apollo/client";
 import { createStore, StateCreator, StoreApi } from "zustand";
 
 import { Edge, Node } from "reactflow";
@@ -176,8 +175,8 @@ export interface RuntimeSlice {
   parseAllPods: () => void;
   resolvePod: (id) => void;
   resolveAllPods: () => void;
-  yjsRun: (id: string, apolloClient: ApolloClient<any>) => void;
-  yjsRunChain: (id: string, apolloClient: ApolloClient<any>) => void;
+  getScopeChain: (id: string) => string[];
+  getEdgeChain: (id: string) => string[];
   clearResults: (id) => void;
   setRunning: (id) => void;
   parseResult: Record<
@@ -193,7 +192,7 @@ export interface RuntimeSlice {
   getResultMap(): Y.Map<PodResult>;
   activeRuntime?: string;
   setActiveRuntime(id?: string): void;
-  yjsSendRun(ids: string[], apolloClient: ApolloClient<any>): void;
+  preprocessChain(ids: string[]): { podId: string; code: string }[];
   isRuntimeReady(): boolean;
 }
 
@@ -301,8 +300,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
     }
     return true;
   },
-  yjsSendRun(ids, apolloClient) {
-    const activeRuntime = get().activeRuntime!;
+  preprocessChain(ids) {
     let specs = ids.map((id) => {
       // Actually send the run request.
       // Analyze code and set symbol table
@@ -310,7 +308,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       // update anontations according to st
       get().resolvePod(id);
       const newcode = rewriteCode(id, get);
-      return { podId: id, code: newcode };
+      return { podId: id, code: newcode || "" };
     });
     // FIXME there's no control over duplicate runnings. This causes two
     // problems:
@@ -323,47 +321,31 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
     //   console.warn(`Pod ${id} is already running.`);
     //   return;
     // }
-    specs = specs.filter(({ podId, code }) => {
-      if (code) {
+    return specs.filter(({ podId, code }) => {
+      if (code.length > 0) {
         get().clearResults(podId);
         get().setRunning(podId);
         return true;
       }
       return false;
     });
-    if (specs) {
-      apolloClient.mutate({
-        mutation: gql`
-          mutation RunChain($specs: [RunSpecInput], $runtimeId: String) {
-            runChain(specs: $specs, runtimeId: $runtimeId)
-          }
-        `,
-        variables: {
-          runtimeId: activeRuntime,
-          specs,
-        },
-        context: {
-          clientName: "spawner",
-        },
-      });
-    }
   },
-  yjsRun: (id, apolloClient) => {
-    if (!get().isRuntimeReady()) return;
+  getScopeChain: (id) => {
+    if (!get().isRuntimeReady()) return [];
     const nodesMap = get().getNodesMap();
     const nodes = Array.from<Node>(nodesMap.values());
     const node = nodesMap.get(id);
-    if (!node) return;
+    if (!node) return [];
     const chain = getDescendants(node, nodes);
-    get().yjsSendRun(chain, apolloClient);
+    return chain;
   },
   /**
    * Add the pod and all its downstream pods (defined by edges) to the chain and run the chain.
    * @param id the id of the pod to start the chain
    * @returns
    */
-  yjsRunChain: async (id, apolloClient) => {
-    if (!get().isRuntimeReady()) return;
+  getEdgeChain: (id) => {
+    if (!get().isRuntimeReady()) return [];
     // Get the chain: get the edges, and then get the pods
     const edgesMap = get().getEdgesMap();
     let edges = Array.from<Edge>(edgesMap.values());
@@ -382,7 +364,7 @@ export const createRuntimeSlice: StateCreator<MyState, [], [], RuntimeSlice> = (
       chain.push(nodeid);
       nodeid = node2target[nodeid];
     }
-    get().yjsSendRun(chain, apolloClient);
+    return chain;
   },
   clearResults: (id) => {
     const resultMap = get().getResultMap();

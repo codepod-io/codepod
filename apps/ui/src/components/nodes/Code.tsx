@@ -61,6 +61,7 @@ import { ButtonGroup } from "@mui/material";
 
 import { ConfirmDeleteButton } from "./utils";
 import { useApolloClient } from "@apollo/client";
+import { trpc } from "../../lib/trpc";
 
 function Timer({ lastExecutedAt }) {
   const [counter, setCounter] = useState(0);
@@ -383,14 +384,24 @@ export const ResultBlock = memo<any>(function ResultBlock({ id, layout }) {
   );
 });
 
-function MyFloatingToolbar({ id, layout, setLayout }) {
+function MyFloatingToolbar({
+  id,
+  layout,
+  setLayout,
+}: {
+  id: string;
+  layout: string;
+  setLayout: any;
+}) {
   const store = useContext(RepoContext)!;
   const reactFlowInstance = useReactFlow();
   const devMode = useStore(store, (state) => state.devMode);
   // const pod = useStore(store, (state) => state.pods[id]);
-  const yjsRun = useStore(store, (state) => state.yjsRun);
-  const yjsRunChain = useStore(store, (state) => state.yjsRunChain);
-  const apolloClient = useApolloClient();
+  const preprocessChain = useStore(store, (state) => state.preprocessChain);
+  const getEdgeChain = useStore(store, (state) => state.getEdgeChain);
+  const runChain = trpc.spawner.runChain.useMutation();
+  const activeRuntime = useStore(store, (state) => state.activeRuntime);
+
   // right, bottom
   const editMode = useStore(store, (state) => state.editMode);
   const editing = editMode === "edit";
@@ -417,7 +428,10 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
         <Tooltip title="Run (shift-enter)">
           <IconButton
             onClick={() => {
-              yjsRun(id, apolloClient);
+              if (activeRuntime) {
+                const specs = preprocessChain([id]);
+                if (specs) runChain.mutate({ runtimeId: activeRuntime, specs });
+              }
             }}
           >
             <PlayCircleOutlineIcon style={{ fontSize: iconFontSize }} />
@@ -428,7 +442,11 @@ function MyFloatingToolbar({ id, layout, setLayout }) {
         <Tooltip title="Run chain">
           <IconButton
             onClick={() => {
-              yjsRunChain(id, apolloClient);
+              if (activeRuntime) {
+                const chain = getEdgeChain(id);
+                const specs = preprocessChain(chain);
+                if (specs) runChain.mutate({ runtimeId: activeRuntime, specs });
+              }
             }}
           >
             <KeyboardDoubleArrowRightIcon style={{ fontSize: iconFontSize }} />

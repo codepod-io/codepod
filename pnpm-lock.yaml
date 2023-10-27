@@ -14,9 +14,18 @@ importers:
 
   apps/api:
     dependencies:
+      '@codepod/runtime':
+        specifier: workspace:^
+        version: link:../runtime
       '@codepod/ui':
         specifier: workspace:^
         version: link:../ui
+      '@codepod/yjs':
+        specifier: workspace:^
+        version: link:../../packages/yjs
+      '@trpc/server':
+        specifier: ^10.43.0
+        version: 10.43.0
       commander:
         specifier: ^11.0.0
         version: 11.0.0
@@ -44,6 +53,9 @@ importers:
       yjs:
         specifier: ^13.6.7
         version: 13.6.7
+      zod:
+        specifier: ^3.22.4
+        version: 3.22.4
     devDependencies:
       '@types/express':
         specifier: ^4.17.14
@@ -248,6 +260,18 @@ importers:
       '@remirror/theme':
         specifier: ^2.0.9
         version: 2.0.9(@remirror/pm@2.0.5)
+      '@tanstack/react-query':
+        specifier: ^4.18.0
+        version: 4.18.0(react-dom@18.2.0)(react@18.2.0)
+      '@trpc/client':
+        specifier: ^10.43.0
+        version: 10.43.0(@trpc/server@10.43.0)
+      '@trpc/react-query':
+        specifier: ^10.43.0
+        version: 10.43.0(@tanstack/react-query@4.18.0)(@trpc/client@10.43.0)(@trpc/server@10.43.0)(react-dom@18.2.0)(react@18.2.0)
+      '@trpc/server':
+        specifier: ^10.43.0
+        version: 10.43.0
       ansi-to-react:
         specifier: ^6.1.6
         version: 6.1.6(react-dom@18.2.0)(react@18.2.0)
@@ -4051,9 +4075,59 @@ packages:
     resolution: {integrity: sha512-myfUej5naTBWnqOCc/MdVOLVjXUXtIA+NpDrDBKJtLLg2shUjBu3cZmB/85RyitKc55+lUUyl7oRfLOvkr2hsw==}
     dev: true
 
+  /@tanstack/query-core@4.18.0:
+    resolution: {integrity: sha512-PP4mG8MD08sq64RZCqMfXMYfaj7+Oulwg7xZ/fJoEOdTZNcPIgaOkHajZvUBsNLbi/0ViMvJB4cFkL2Jg2WPbw==}
+    dev: false
+
+  /@tanstack/react-query@4.18.0(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-s1kdbGMdVcfUIllzsHUqVUdktBT5uuIRgnvrqFNLjl9TSOXEoBSDrhjsGjao0INQZv8cMpQlgOh3YH9YtN6cKw==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-dom: ^16.8.0 || ^17.0.0 || ^18.0.0
+      react-native: '*'
+    peerDependenciesMeta:
+      react-dom:
+        optional: true
+      react-native:
+        optional: true
+    dependencies:
+      '@tanstack/query-core': 4.18.0
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+      use-sync-external-store: 1.2.0(react@18.2.0)
+    dev: false
+
   /@tootallnate/once@2.0.0:
     resolution: {integrity: sha512-XCuKFP5PS55gnMVu3dty8KPatLqUoy/ZYzDzAGCQ8JNFCkLXzmI7vNHCR+XpbZaMWQK/vQubr7PkYq8g470J/A==}
     engines: {node: '>= 10'}
+    dev: false
+
+  /@trpc/client@10.43.0(@trpc/server@10.43.0):
+    resolution: {integrity: sha512-8LbSpPHmIseb/Ke+GzL45y0itkKunGQWfxqHf2uy69RSRvER0vj+Gu67L8YD86FBgc/nsX/6GBuJiUet5lIDIw==}
+    peerDependencies:
+      '@trpc/server': 10.43.0
+    dependencies:
+      '@trpc/server': 10.43.0
+    dev: false
+
+  /@trpc/react-query@10.43.0(@tanstack/react-query@4.18.0)(@trpc/client@10.43.0)(@trpc/server@10.43.0)(react-dom@18.2.0)(react@18.2.0):
+    resolution: {integrity: sha512-5+pBnnV9QqnwpO5Li9T60hXHylV1USEjFkRjrnd7mJul/t2dKxs5ouv+YDRnOJ36oD9wDki5lBGk2sOgFrzGUw==}
+    peerDependencies:
+      '@tanstack/react-query': ^4.18.0
+      '@trpc/client': 10.43.0
+      '@trpc/server': 10.43.0
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+    dependencies:
+      '@tanstack/react-query': 4.18.0(react-dom@18.2.0)(react@18.2.0)
+      '@trpc/client': 10.43.0(@trpc/server@10.43.0)
+      '@trpc/server': 10.43.0
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+    dev: false
+
+  /@trpc/server@10.43.0:
+    resolution: {integrity: sha512-1/h9KCPkTNNmpN5VKfKO4kPcl/W4Y9VQla4YGg4pydSh/+4b//0IPfvk3Oz4tz/tvWyAUlBKkBVhD3GfDLcAQA==}
     dev: false
 
   /@tsconfig/node10@1.0.9:
@@ -10424,6 +10498,10 @@ packages:
     requiresBuild: true
     dependencies:
       node-gyp-build: 4.6.1
+    dev: false
+
+  /zod@3.22.4:
+    resolution: {integrity: sha512-iC+8Io04lddc+mVqQ9AZ7OQ2MrUKGN+oIQyq1vemgt46jwCwLfhq7/pwnBnNXXXZb8VTVLKwp9EDkx+ryxIWmg==}
     dev: false
 
   /zustand@4.4.1(@types/react@18.2.15)(immer@10.0.2)(react@18.2.0):

@@ -51,13 +51,17 @@ import {
 } from "./utils";
 import { CopyToClipboard } from "react-copy-to-clipboard";
 import { useApolloClient } from "@apollo/client";
+import { trpc } from "../../lib/trpc";
 
 function MyFloatingToolbar({ id }: { id: string }) {
   const store = useContext(RepoContext)!;
   const reactFlowInstance = useReactFlow();
   const editMode = useStore(store, (state) => state.editMode);
-  const yjsRun = useStore(store, (state) => state.yjsRun);
-  const apolloClient = useApolloClient();
+  const preprocessChain = useStore(store, (state) => state.preprocessChain);
+  const getScopeChain = useStore(store, (state) => state.getScopeChain);
+
+  const runChain = trpc.spawner.runChain.useMutation();
+  const activeRuntime = useStore(store, (state) => state.activeRuntime);
 
   const autoLayout = useStore(store, (state) => state.autoLayout);
 
@@ -86,7 +90,11 @@ function MyFloatingToolbar({ id }: { id: string }) {
         <Tooltip title="Run (shift-enter)">
           <IconButton
             onClick={() => {
-              yjsRun(id, apolloClient);
+              if (activeRuntime) {
+                const chain = getScopeChain(id);
+                const specs = preprocessChain(chain);
+                if (specs) runChain.mutate({ runtimeId: activeRuntime, specs });
+              }
             }}
           >
             <PlayCircleOutlineIcon style={{ fontSize: iconFontSize }} />

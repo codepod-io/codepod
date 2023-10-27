@@ -8,10 +8,9 @@ export interface RepoSlice {
   repoName: string | null;
   repoNameSyncing: boolean;
   repoNameDirty: boolean;
-  repoId: string | null;
+  repoId: string;
   editMode: "view" | "edit";
   setEditMode: (mode: "view" | "edit") => void;
-  setRepo: (repoId: string) => void;
   setRepoName: (name: string) => void;
   remoteUpdateRepoName: (client) => void;
   setRepoData: (repo: {
@@ -38,7 +37,7 @@ export const createRepoSlice: StateCreator<MyState, [], [], RepoSlice> = (
   set,
   get
 ) => ({
-  repoId: null,
+  repoId: "DUMMY",
   repoName: null,
   repoNameSyncing: false,
   repoNameDirty: false,
@@ -50,12 +49,6 @@ export const createRepoSlice: StateCreator<MyState, [], [], RepoSlice> = (
   editMode: "view",
   setEditMode: (mode) => set({ editMode: mode }),
 
-  setRepo: (repoId: string) =>
-    set(
-      produce((state: MyState) => {
-        state.repoId = repoId;
-      })
-    ),
   setRepoName: (name) => {
     set(
       produce((state: MyState) => {

@@ -1,6 +1,5 @@
 import * as Y from "yjs";
 import WebSocket from "ws";
-import { ApolloClient, InMemoryCache, gql } from "@apollo/client";
 
 export type PodResult = {
   exec_count?: number;

@@ -27,11 +27,6 @@ import TreeItem from "@mui/lab/TreeItem";
 
 import { useSnackbar, VariantType } from "notistack";
 
-import { Node as ReactflowNode } from "reactflow";
-import { NodeData } from "../lib/store/canvasSlice";
-import * as Y from "yjs";
-
-import { gql, useQuery, useMutation, useApolloClient } from "@apollo/client";
 import { useStore } from "zustand";
 import { MyKBar } from "./MyKBar";
 
@@ -55,6 +50,8 @@ import {
 import { getUpTime, myNanoId } from "../lib/utils/utils";
 import { toSvg } from "html-to-image";
 import { match } from "ts-pattern";
+
+import { trpc } from "../lib/trpc";
 
 function SidebarSettings() {
   const store = useContext(RepoContext)!;
@@ -523,23 +520,8 @@ const RuntimeMoreMenu = ({ runtimeId }) => {
   const runtimeMap = useStore(store, (state) => state.getRuntimeMap());
   const repoId = useStore(store, (state) => state.repoId);
 
-  const [killRuntime] = useMutation(
-    gql`
-      mutation KillRuntime($runtimeId: String, $repoId: String) {
-        killRuntime(runtimeId: $runtimeId, repoId: $repoId)
-      }
-    `,
-    { context: { clientName: "spawner" } }
-  );
-
-  const [disconnectRuntime] = useMutation(
-    gql`
-      mutation DisconnectRuntime($runtimeId: String, $repoId: String) {
-        disconnectRuntime(runtimeId: $runtimeId, repoId: $repoId)
-      }
-    `,
-    { context: { clientName: "spawner" } }
-  );
+  const killRuntime = trpc.spawner.killRuntime.useMutation();
+  const disconnectRuntime = trpc.spawner.disconnectRuntime.useMutation();
 
   return (
     <Box component="span">
@@ -573,7 +555,7 @@ const RuntimeMoreMenu = ({ runtimeId }) => {
         </MenuItem>
         <MenuItem
           onClick={() => {
-            disconnectRuntime({ variables: { runtimeId, repoId } });
+            disconnectRuntime.mutate({ runtimeId, repoId });
             handleClose();
           }}
         >
@@ -581,7 +563,7 @@ const RuntimeMoreMenu = ({ runtimeId }) => {
         </MenuItem>
         <MenuItem
           onClick={() => {
-            killRuntime({ variables: { runtimeId, repoId: repoId } });
+            killRuntime.mutate({ runtimeId, repoId: repoId });
             handleClose();
           }}
         >
@@ -602,30 +584,10 @@ const RuntimeItem = ({ runtimeId }) => {
   const activeRuntime = useStore(store, (state) => state.activeRuntime);
   const runtime = runtimeMap.get(runtimeId)!;
   const repoId = useStore(store, (state) => state.repoId);
-  const [connect] = useMutation(
-    gql`
-      mutation ConnectRuntime($runtimeId: String, $repoId: String) {
-        connectRuntime(runtimeId: $runtimeId, repoId: $repoId)
-      }
-    `,
-    { context: { clientName: "spawner" } }
-  );
-  const [requestKernelStatus] = useMutation(
-    gql`
-      mutation RequestKernelStatus($runtimeId: String) {
-        requestKernelStatus(runtimeId: $runtimeId)
-      }
-    `,
-    { context: { clientName: "spawner" } }
-  );
-  const [interruptKernel] = useMutation(
-    gql`
-      mutation InterruptKernel($runtimeId: String) {
-        interruptKernel(runtimeId: $runtimeId)
-      }
-    `,
-    { context: { clientName: "spawner" } }
-  );
+
+  const connect = trpc.spawner.connectRuntime.useMutation();
+  const requestKernelStatus = trpc.spawner.requestKernelStatus.useMutation();
+  const interruptKernel = trpc.spawner.interruptKernel.useMutation();
 
   useEffect(() => {
     // if the runtime is disconnected, keep trying to connect.
@@ -633,11 +595,9 @@ const RuntimeItem = ({ runtimeId }) => {
       const interval = setInterval(
         () => {
           console.log("try connecting to runtime", runtimeId);
-          connect({
-            variables: {
-              runtimeId,
-              repoId,
-            },
+          connect.mutate({
+            runtimeId,
+            repoId,
           });
         },
         // ping every 3 seconds
@@ -695,10 +655,8 @@ const RuntimeItem = ({ runtimeId }) => {
           <IconButton
             size="small"
             onClick={() => {
-              requestKernelStatus({
-                variables: {
-                  runtimeId,
-                },
+              requestKernelStatus.mutate({
+                runtimeId,
               });
             }}
           >
@@ -708,10 +666,8 @@ const RuntimeItem = ({ runtimeId }) => {
             <IconButton
               size="small"
               onClick={() => {
-                interruptKernel({
-                  variables: {
-                    runtimeId,
-                  },
+                interruptKernel.mutate({
+                  runtimeId,
                 });
               }}
             >
@@ -724,28 +680,22 @@ const RuntimeItem = ({ runtimeId }) => {
   );
 };
 
-const YjsRuntimeStatus = () => {
+const RuntimeStatus = () => {
   const store = useContext(RepoContext)!;
   const repoId = useStore(store, (state) => state.repoId);
   const runtimeMap = useStore(store, (state) => state.getRuntimeMap());
   // Observe runtime change
   const runtimeChanged = useStore(store, (state) => state.runtimeChanged);
   const ids = Array.from<string>(runtimeMap.keys());
-  const [spawnRuntime] = useMutation(
-    gql`
-      mutation SpawnRuntime($runtimeId: String, $repoId: String) {
-        spawnRuntime(runtimeId: $runtimeId, repoId: $repoId)
-      }
-    `,
-    { context: { clientName: "spawner" } }
-  );
+  const spawnRuntime = trpc.spawner.spawnRuntime.useMutation();
+
   return (
     <>
       <Typography variant="h6">Runtime</Typography>
       <Button
         onClick={() => {
           const id = myNanoId();
-          spawnRuntime({ variables: { runtimeId: id, repoId: repoId } });
+          spawnRuntime.mutate({ runtimeId: id, repoId: repoId });
         }}
       >
         Create New Runtime
@@ -976,7 +926,7 @@ export const Sidebar = () => {
           <Box>
             <YjsSyncStatus />
             <Divider />
-            <YjsRuntimeStatus />
+            <RuntimeStatus />
           </Box>
           <Divider />
           <Typography variant="h6">Export to ..</Typography>
