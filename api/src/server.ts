@@ -5,10 +5,10 @@ import { WebSocketServer } from "ws";
 import * as trpcExpress from "@trpc/server/adapters/express";
 
 import { createSetupWSConnection } from "./yjs/yjs-setupWS";
-import { bindState, writeState } from "./yjs-blob";
+import { bindState, writeState } from "./yjs/yjs-blob";
 
 import cors from "cors";
-import { appRouter } from "./trpc";
+import { appRouter } from "./spawner/trpc";
 
 export async function startServer({ port, blobDir }) {
   console.log("starting server ..");
