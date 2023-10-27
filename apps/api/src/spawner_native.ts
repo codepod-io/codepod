@@ -3,7 +3,7 @@ import { writeFileSync } from "fs";
 import net from "net";
 import http from "http";
 
-import { startServer } from "@codepod/runtime";
+import { startServer } from "./runtime/server";
 
 type KernelInfo = {
   // the kernel

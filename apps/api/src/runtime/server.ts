@@ -3,8 +3,6 @@ import { WebSocket, WebSocketServer } from "ws";
 import express from "express";
 import http from "http";
 
-import { ApolloClient, InMemoryCache } from "@apollo/client/core";
-
 import {
   ZmqWire,
   constructExecuteRequest,
@@ -16,12 +14,6 @@ import {
   handleIOPub_stream,
   handleIOPub_display_data,
 } from "./zmq-utils";
-
-interface TokenInterface {
-  id: string;
-}
-
-const cache: InMemoryCache = new InMemoryCache({});
 
 function bindZMQ(zmq_wire: ZmqWire, socket: WebSocket) {
   zmq_wire.setOnIOPub((topic, msgs) => {

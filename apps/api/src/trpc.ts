@@ -7,7 +7,8 @@ import Y from "yjs";
 import WebSocket from "ws";
 import { z } from "zod";
 
-import { WebsocketProvider } from "@codepod/yjs/src/y-websocket";
+// import { WebsocketProvider } from "../../ui/src/lib/y-websocket";
+import { WebsocketProvider } from "./y-websocket";
 
 import { killRuntime, spawnRuntime } from "./spawner_native";
 
