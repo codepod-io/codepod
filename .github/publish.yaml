@@ -1,0 +1,44 @@
+name: Build and Publish
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 14 # Change this to your desired Node.js version
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Build UI
+        working-directory: ui
+        run: |
+          pnpm install
+          pnpm build
+        env:
+          NODE_ENV: production
+
+      - name: Build API
+        working-directory: api
+        run: |
+          pnpm install
+          pnpm build
+        env:
+          NODE_ENV: production
+
+      - name: Publish to npm
+        working-directory: api
+        run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} # NPM_TOKEN is a GitHub secret containing your npm token
