@@ -37,7 +37,8 @@ Step 3: launch CodePod from terminal:
 ```
 
 Open this URL in your browser to see the app. The files will be saved to the
-directory `/path/to/repo/.codepod/yjs.[bin|json]`.
+directory `/path/to/repo/codepod.bin|json`. The `codepod.bin` is the source of
+truth, and `codepod.json` is for human-readability only.
 
 In the future, you can update the app:
 

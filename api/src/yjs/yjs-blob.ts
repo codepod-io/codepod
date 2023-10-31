@@ -53,12 +53,11 @@ function getDebouncedCallback(key) {
 function handleSaveBlob({ repoId, yDocBlob, repoDir }) {
   console.log("save blob", repoId, yDocBlob.length);
   // create the yjs-blob folder if not exists
-  const dir = `${repoDir}/.codepod`;
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(repoDir)) {
+    fs.mkdirSync(repoDir, { recursive: true });
   }
   // save the blob to file system
-  fs.writeFileSync(`${dir}/yjs.bin`, yDocBlob);
+  fs.writeFileSync(`${repoDir}/codepod.bin`, yDocBlob);
 }
 
 function handleSavePlain({ repoId, ydoc, repoDir }) {
@@ -82,11 +81,10 @@ function handleSavePlain({ repoId, ydoc, repoDir }) {
     resultMap: resultMap.toJSON(),
     runtimeMap: runtimeMap.toJSON(),
   };
-  const dir = `${repoDir}/.codepod`;
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+  if (!fs.existsSync(repoDir)) {
+    fs.mkdirSync(repoDir, { recursive: true });
   }
-  fs.writeFileSync(`${dir}/yjs.json`, JSON.stringify(plain, null, 2));
+  fs.writeFileSync(`${repoDir}/codepod.json`, JSON.stringify(plain, null, 2));
 }
 
 /**
@@ -132,7 +130,7 @@ async function loadFromFS(ydoc: Y.Doc, repoId: string, repoDir: string) {
   // load from the database and write to the ydoc
   console.log("=== loadFromFS");
   // read the blob from file system
-  const binFile = `${repoDir}/.codepod/yjs.bin`;
+  const binFile = `${repoDir}/codepod.bin`;
   if (fs.existsSync(binFile)) {
     const yDocBlob = fs.readFileSync(binFile);
     Y.applyUpdate(ydoc, yDocBlob);
