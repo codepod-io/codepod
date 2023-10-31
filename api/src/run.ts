@@ -1,6 +1,6 @@
 import { startServer } from "./server";
 
-const blobDir = `${process.cwd()}/example-repo`;
-console.log("blobDir", blobDir);
+const repoDir = `${process.cwd()}/example-repo`;
+console.log("repoDir", repoDir);
 
-startServer({ port: 4000, blobDir });
+startServer({ port: 4000, repoDir });

@@ -38,10 +38,10 @@ function getDebouncedCallback(key) {
           cb();
         },
         // write if no new activity in 10s
-        10000,
+        1000,
         {
           // write at least every 20s
-          maxWait: 20000,
+          maxWait: 5000,
         }
       )
     );
@@ -50,21 +50,50 @@ function getDebouncedCallback(key) {
   return debounceRegistry.get(key);
 }
 
-async function handleSaveBlob({ repoId, yDocBlob, blobDir }) {
+function handleSaveBlob({ repoId, yDocBlob, repoDir }) {
   console.log("save blob", repoId, yDocBlob.length);
   // create the yjs-blob folder if not exists
-  if (!fs.existsSync(blobDir)) {
-    fs.mkdirSync(blobDir);
+  const dir = `${repoDir}/.codepod`;
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
   // save the blob to file system
-  fs.writeFileSync(`${blobDir}/yjs.bin`, yDocBlob);
+  fs.writeFileSync(`${dir}/yjs.bin`, yDocBlob);
+}
+
+function handleSavePlain({ repoId, ydoc, repoDir }) {
+  console.log("save plain", repoId);
+  // save the plain to file system
+  const rootMap = ydoc.getMap("rootMap");
+  const nodesMap = rootMap.get("nodesMap") as Y.Map<any>;
+  const edgesMap = rootMap.get("edgesMap") as Y.Map<any>;
+  const codeMap = rootMap.get("codeMap") as Y.Map<Y.Text>;
+  const richMap = rootMap.get("richMap") as Y.Map<Y.XmlFragment>;
+  const resultMap = rootMap.get("resultMap") as Y.Map<any>;
+  const runtimeMap = rootMap.get("runtimeMap") as Y.Map<any>;
+  const metaMap = rootMap.get("metaMap") as Y.Map<any>;
+  const plain = {
+    lastUpdate: new Date().toISOString(),
+    metaMap: metaMap.toJSON(),
+    nodesMap: nodesMap.toJSON(),
+    edgesMap: edgesMap.toJSON(),
+    codeMap: codeMap.toJSON(),
+    richMap: richMap.toJSON(),
+    resultMap: resultMap.toJSON(),
+    runtimeMap: runtimeMap.toJSON(),
+  };
+  const dir = `${repoDir}/.codepod`;
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  fs.writeFileSync(`${dir}/yjs.json`, JSON.stringify(plain, null, 2));
 }
 
 /**
  * This function is called when setting up the WS connection, after the loadFromCodePod step.
  * TODO need to make sure this is only called once per repo, regardless of how many users are connected later.
  */
-function setupObserversToDB(ydoc: Y.Doc, repoId: string, blobDir: string) {
+function setupObserversToDB(ydoc: Y.Doc, repoId: string, repoDir: string) {
   console.log("setupObserversToDB for repo", repoId);
   //   just observe and save the entire doc
   function observer(_, transaction) {
@@ -79,7 +108,8 @@ function setupObserversToDB(ydoc: Y.Doc, repoId: string, blobDir: string) {
       // FIXME it may be too expensive to update the entire doc.
       // FIXME history is discarded
       const update = Y.encodeStateAsUpdate(ydoc);
-      handleSaveBlob({ repoId, yDocBlob: Buffer.from(update), blobDir });
+      handleSaveBlob({ repoId, yDocBlob: Buffer.from(update), repoDir });
+      handleSavePlain({ repoId, ydoc, repoDir });
     });
   }
   const rootMap = ydoc.getMap("rootMap");
@@ -98,11 +128,11 @@ function setupObserversToDB(ydoc: Y.Doc, repoId: string, blobDir: string) {
 /**
  * This function is called when setting up the WS connection, as a first step.
  */
-async function loadFromFS(ydoc: Y.Doc, repoId: string, blobDir: string) {
+async function loadFromFS(ydoc: Y.Doc, repoId: string, repoDir: string) {
   // load from the database and write to the ydoc
   console.log("=== loadFromFS");
   // read the blob from file system
-  const binFile = `${blobDir}/yjs.bin`;
+  const binFile = `${repoDir}/.codepod/yjs.bin`;
   if (fs.existsSync(binFile)) {
     const yDocBlob = fs.readFileSync(binFile);
     Y.applyUpdate(ydoc, yDocBlob);
@@ -121,11 +151,11 @@ async function loadFromFS(ydoc: Y.Doc, repoId: string, blobDir: string) {
   }
 }
 
-export async function bindState(doc: Y.Doc, repoId: string, blobDir: string) {
+export async function bindState(doc: Y.Doc, repoId: string, repoDir: string) {
   // Load persisted document state from the database.
-  await loadFromFS(doc, repoId, blobDir);
+  await loadFromFS(doc, repoId, repoDir);
   // Observe changes and write to the database.
-  setupObserversToDB(doc, repoId, blobDir);
+  setupObserversToDB(doc, repoId, repoDir);
   // setupObserversToRuntime(doc, repoId);
   // reset runtime status
   // clear runtimeMap status/commands but keep the ID

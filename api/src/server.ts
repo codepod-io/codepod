@@ -10,7 +10,7 @@ import { bindState, writeState } from "./yjs/yjs-blob";
 import cors from "cors";
 import { createSpawnerRouter, router } from "./spawner/trpc";
 
-export async function startServer({ port, blobDir }) {
+export async function startServer({ port, repoDir }) {
   console.log("starting server ..");
   const app = express();
   app.use(express.json({ limit: "20mb" }));
@@ -39,7 +39,7 @@ export async function startServer({ port, blobDir }) {
 
   wss.on("connection", (...args) =>
     createSetupWSConnection(
-      (doc, repoId) => bindState(doc, repoId, blobDir),
+      (doc, repoId) => bindState(doc, repoId, repoDir),
       writeState
     )(...args)
   );
