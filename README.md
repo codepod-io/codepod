@@ -14,17 +14,25 @@ overwhelmed by the great number of code snippets as the projects grow.
 
 ![screenshot](./screenshot-canvas.png)
 
-# Gallery
+<!-- # Gallery
 
 Thanks to our community, we now have CodePod showcases ranging from analytical geometry to bioinformatics.
 
 - [plotting common functions](https://app.codepod.io/repo/2ncnioylo9abo3otdxjs)
 - [image operations using skimage](https://user-images.githubusercontent.com/44469195/239033643-decbd7ae-29bb-44b9-af33-d4cb7c2bce46.png)
-- [tel-siRNA sequence detector](https://app.codepod.io/repo/b94n7n00a9395xwhv1o8)
+- [tel-siRNA sequence detector](https://app.codepod.io/repo/b94n7n00a9395xwhv1o8) -->
 
 # Install
 
-You can install codepod CLI app with npm::
+Step 1: install prerequisite: [nodejs](https://nodejs.org/en/download) runtime
+and python & ipykernel:
+
+```
+brew install node # example for MacOS
+pip3 install ipykernel
+```
+
+Step 2: Install codepod CLI app from [npm registry](https://www.npmjs.com/package/codepod):
 
 ```
 > npm install -g codepod
@@ -32,16 +40,17 @@ You can install codepod CLI app with npm::
 # 0.0.7
 ```
 
-You can use it like this:
+Step 3: launch CodePod from terminal:
 
 ```
-> codepod /path/to/repo
+> codepod /path/to/local/repo
 # ... 🚀 Server ready at http://localhost:4001
 ```
 
-Open this URL in your browser to see the app. The files will be saved to the directory `/path/to/repo/.codepod/yjs.[bin|json]`.
+Open this URL in your browser to see the app. The files will be saved to the
+directory `/path/to/repo/.codepod/yjs.[bin|json]`.
 
-Update the app:
+In the future, you can update the app:
 
 ```
 > npm update -g codepod
