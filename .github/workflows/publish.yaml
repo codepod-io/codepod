@@ -1,9 +1,6 @@
 name: Build and Publish
 
-# on:
-#   push:
-#     tags:
-#       - "v*.*.*"
+on: workflow_dispatch
 
 jobs:
   build-and-publish:
