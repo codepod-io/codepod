@@ -8,7 +8,8 @@ overwhelmed by the great number of code snippets as the projects grow.
 <div align="center"><h3><a href="https://codepod.io" target="_blank"> homepage</a> | 
   <a href="https://codepod.io/docs/manual/" target="_blank">manual</a> |
   <a href="https://app.codepod.io" target="_blank">try online</a>
-</h3>  <a href="https://discord.gg/W4B4gQdZZS"><img src="https://dcbadge.vercel.app/api/server/W4B4gQdZZS?style=flat" /></a>
+</h3>
+<!-- <a href="https://discord.gg/W4B4gQdZZS"><img src="https://dcbadge.vercel.app/api/server/W4B4gQdZZS?style=flat" /></a> -->
  </div>
 
 ![screenshot](./screenshot-canvas.png)
@@ -21,7 +22,32 @@ Thanks to our community, we now have CodePod showcases ranging from analytical g
 - [image operations using skimage](https://user-images.githubusercontent.com/44469195/239033643-decbd7ae-29bb-44b9-af33-d4cb7c2bce46.png)
 - [tel-siRNA sequence detector](https://app.codepod.io/repo/b94n7n00a9395xwhv1o8)
 
-# Run CodePod Locally
+# Install
+
+You can install codepod CLI app with npm::
+
+```
+> npm install -g codepod
+> codepod --version
+# 0.0.7
+```
+
+You can use it like this:
+
+```
+> codepod /path/to/repo
+# ... 🚀 Server ready at http://localhost:4001
+```
+
+Open this URL in your browser to see the app. The files will be saved to the directory `/path/to/repo/.codepod/yjs.[bin|json]`.
+
+Update the app:
+
+```
+> npm update -g codepod
+```
+
+# Develop
 
 Open two terminals. On one:
 
