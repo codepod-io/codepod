@@ -57,3 +57,7 @@ codepod /path/to/repo
 # option 2: run with npx without install
 npx codepod /path/to/repo
 ```
+
+# Publish using GitHub CI
+
+The CI is triggered by v*.*.\* tags. Update the version in `api/package.json`, then push a new tag to trigger the CI.

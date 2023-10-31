@@ -22,11 +22,11 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm
 
-      # - name: Build UI
-      #   working-directory: ui
-      #   run: |
-      #     pnpm install
-      #     pnpm build
+      - name: Build UI
+        working-directory: ui
+        run: |
+          pnpm install
+          pnpm build
 
       - name: Build API
         working-directory: api
