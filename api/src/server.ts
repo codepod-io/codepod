@@ -8,7 +8,7 @@ import { createSetupWSConnection } from "./yjs/yjs-setupWS";
 import { bindState, writeState } from "./yjs/yjs-blob";
 
 import cors from "cors";
-import { appRouter } from "./spawner/trpc";
+import { createSpawnerRouter, router } from "./spawner/trpc";
 
 export async function startServer({ port, blobDir }) {
   console.log("starting server ..");
@@ -21,10 +21,14 @@ export async function startServer({ port, blobDir }) {
   console.log("html path: ", path);
   app.use(express.static(path));
 
+  const yjsServerUrl = `ws://localhost:${port}/socket`;
+
   app.use(
     "/trpc",
     trpcExpress.createExpressMiddleware({
-      router: appRouter,
+      router: router({
+        spawner: createSpawnerRouter(yjsServerUrl),
+      }),
     })
   );
 

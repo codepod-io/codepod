@@ -1,6 +1,6 @@
 {
   "name": "codepod",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "license": "MIT",
   "scripts": {
     "build": "tsc",
@@ -9,7 +9,7 @@
     "test": "jest --config jest.config.js"
   },
   "bin": {
-    "codepod": "./build/bin.js"
+    "codepod": "./build/cli.js"
   },
   "dependencies": {
     "@trpc/server": "^10.43.0",
