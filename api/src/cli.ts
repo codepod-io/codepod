@@ -9,7 +9,8 @@ import { startServer } from "./server";
 // CMD: codepod /path/to/repo
 
 program
-  .version("0.0.1")
+  // get the version from package.json
+  .version(require("../package.json").version)
   .arguments("<repoPath>")
   .action(function (repoPath) {
     console.log("repoPath", repoPath);

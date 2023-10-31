@@ -27,13 +27,24 @@ import React, { useState } from "react";
 
 import { trpc } from "./lib/trpc";
 
+let remoteUrl;
+
+if (import.meta.env.DEV) {
+  remoteUrl = `localhost:4000`;
+} else {
+  remoteUrl = `${window.location.hostname}:${window.location.port}`;
+}
+let trpcUrl = `http://${remoteUrl}/trpc`;
+// the url should be ws://<host>:<port>/socket
+let yjsWsUrl = `ws://${remoteUrl}/socket`;
+
 export function TrpcProvider({ children }) {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() =>
     trpc.createClient({
       links: [
         httpBatchLink({
-          url: "http://localhost:4000/trpc",
+          url: trpcUrl,
         }),
       ],
     })
@@ -45,16 +56,6 @@ export function TrpcProvider({ children }) {
   );
 }
 
-// the url should be ws://<host>:<port>/socket
-let yjsWsUrl;
-
-if (import.meta.env.DEV) {
-  yjsWsUrl = `ws://localhost:4000/socket`;
-} else {
-  yjsWsUrl = `ws://${window.location.hostname}:${window.location.port}/socket`;
-}
-
-console.log("yjsWsUrl", yjsWsUrl);
 const apiUrl = null;
 const spawnerApiUrl = null;
 
