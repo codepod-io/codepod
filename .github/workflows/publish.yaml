@@ -1,9 +1,9 @@
 name: Build and Publish
 
-on:
-  push:
-    tags:
-      - "v*.*.*"
+# on:
+#   push:
+#     tags:
+#       - "v*.*.*"
 
 jobs:
   build-and-publish:
