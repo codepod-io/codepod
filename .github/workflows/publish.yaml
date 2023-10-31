@@ -26,16 +26,12 @@ jobs:
         run: |
           pnpm install
           pnpm build
-        env:
-          NODE_ENV: production
 
       - name: Build API
         working-directory: api
         run: |
           pnpm install
           pnpm build
-        env:
-          NODE_ENV: production
 
       - name: Publish to npm
         working-directory: api
