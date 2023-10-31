@@ -15,7 +15,7 @@ program
   .action(function (repoPath) {
     console.log("repoPath", repoPath);
     // start the server
-    startServer({ port: 4001, blobDir: repoPath });
+    startServer({ port: 4001, repoDir: repoPath });
   });
 
 program.parse(process.argv);
