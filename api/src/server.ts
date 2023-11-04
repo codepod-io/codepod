@@ -10,9 +10,6 @@ import { bindState, writeState } from "./yjs/yjs-blob";
 import cors from "cors";
 import { createSpawnerRouter, router } from "./spawner/trpc";
 
-export const copilotIpAddress = "127.0.0.1";
-export const copilotPort = 9090;
-
 export async function startServer({
   port,
   repoDir,
@@ -35,14 +32,16 @@ export async function startServer({
     "/trpc",
     trpcExpress.createExpressMiddleware({
       router: router({
-        spawner: createSpawnerRouter(yjsServerUrl),
+        spawner: createSpawnerRouter(
+          yjsServerUrl,
+          copilotIpAddress,
+          copilotPort
+        ),
       }),
     })
   );
 
   const http_server = http.createServer(app);
-  copilotIpAddress = copilotIpAddress;
-  copilotPort = copilotPort;
 
   // Yjs websocket
   const wss = new WebSocketServer({ noServer: true });

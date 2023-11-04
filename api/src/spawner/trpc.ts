@@ -8,8 +8,6 @@ import Y from "yjs";
 import WebSocket from "ws";
 import { z } from "zod";
 
-import { copilotIpAddress, copilotPort } from "../server";
-
 // import { WebsocketProvider } from "../../ui/src/lib/y-websocket";
 import { WebsocketProvider } from "../yjs/y-websocket";
 
@@ -61,7 +59,11 @@ async function getMyYDoc({ repoId, yjsServerUrl }): Promise<Y.Doc> {
 
 const routingTable: Map<string, string> = new Map();
 
-export function createSpawnerRouter(yjsServerUrl) {
+export function createSpawnerRouter(
+  yjsServerUrl,
+  copilotIpAddress,
+  copilotPort
+) {
   return router({
     spawnRuntime: publicProcedure
       .input(z.object({ runtimeId: z.string(), repoId: z.string() }))
@@ -282,7 +284,7 @@ export function createSpawnerRouter(yjsServerUrl) {
                 resolve(""); // Resolve with an empty string if no data
               }
               const resData = JSON.parse(responseData.toString());
-              console.log(req.statusCode, resData["content"]);
+              console.log(res.statusCode, resData["content"]);
               resolve(resData["content"]); // Resolve the Promise with the response data
             });
           });
@@ -301,6 +303,6 @@ export function createSpawnerRouter(yjsServerUrl) {
 
 // This is only used for frontend to get the type of router.
 const _appRouter_for_type = router({
-  spawner: createSpawnerRouter(null), // put procedures under "post" namespace
+  spawner: createSpawnerRouter(null, null, null), // put procedures under "post" namespace
 });
 export type AppRouter = typeof _appRouter_for_type;

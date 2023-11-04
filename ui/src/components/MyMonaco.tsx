@@ -429,23 +429,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     } else {
       highlightAnnotations(editor, []);
     }
-
-    let llamaCompletionProvider; // Define the provider reference
-    let decompose;
-    if (copilotEnabled) {
-      llamaCompletionProvider = new llamaInlineCompletionProvider(id, editor);
-      decompose = monaco.languages.registerInlineCompletionsProvider(
-        "python",
-        llamaCompletionProvider
-      );
-    }
-    return () => {
-      if (llamaCompletionProvider && !copilotEnabled) {
-        // Unregister the provider if it exists
-        decompose();
-      }
-    };
-  }, [annotations, editor, showAnnotations, scopedVars, copilotEnabled]);
+  }, [annotations, editor, showAnnotations, scopedVars]);
 
   if (lang === "racket") {
     lang = "scheme";
@@ -512,6 +496,16 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     //   // content is value?
     //   updateGitGutter(editor);
     // });
+    if (copilotEnabled) {
+      const llamaCompletionProvider = new llamaInlineCompletionProvider(
+        id,
+        editor
+      );
+      monaco.languages.registerInlineCompletionsProvider(
+        "python",
+        llamaCompletionProvider
+      );
+    }
     // bind it to the ytext with pod id
     if (!codeMap.has(id)) {
       throw new Error("codeMap doesn't have pod " + id);
