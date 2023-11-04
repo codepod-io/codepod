@@ -64,6 +64,9 @@ function SidebarSettings() {
   );
   const devMode = useStore(store, (state) => state.devMode);
   const setDevMode = useStore(store, (state) => state.setDevMode);
+  const copilotEnabled = useStore(store, (state) => state.copilotEnabled);
+  const setCopilotEnabled = useStore(store, (state) => state.setCopilotEnabled);
+
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
   const setShowLineNumbers = useStore(
     store,
@@ -485,6 +488,23 @@ function SidebarSettings() {
                 />
               }
               label="Enable Annotations"
+            />
+          </FormGroup>
+        </Tooltip>
+        <Tooltip title={"Enable Codepod Copilot"} disableInteractive>
+          <FormGroup>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={copilotEnabled}
+                  size="small"
+                  color="warning"
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setCopilotEnabled(event.target.checked);
+                  }}
+                />
+              }
+              label="Enable Codepod Copilot"
             />
           </FormGroup>
         </Tooltip>
