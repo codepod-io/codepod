@@ -3,9 +3,12 @@ const t = initTRPC.create();
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
+import express from "express";
 import Y from "yjs";
 import WebSocket from "ws";
 import { z } from "zod";
+
+import { copilotIpAddress, copilotPort } from "../server";
 
 // import { WebsocketProvider } from "../../ui/src/lib/y-websocket";
 import { WebsocketProvider } from "../yjs/y-websocket";
@@ -16,6 +19,12 @@ import { connectSocket, runtime2socket, RuntimeInfo } from "./yjs_runtime";
 
 // FIXME need to have a TTL to clear the ydoc.
 const docs: Map<string, Y.Doc> = new Map();
+
+// FIXME hard-coded yjs server url
+const yjsServerUrl = `ws://localhost:4000/socket`;
+
+const app = express();
+const http = require("http");
 
 async function getMyYDoc({ repoId, yjsServerUrl }): Promise<Y.Doc> {
   return new Promise((resolve, reject) => {
@@ -226,6 +235,66 @@ export function createSpawnerRouter(yjsServerUrl) {
           })
         );
         return true;
+      }),
+    codeAutoComplete: publicProcedure
+      .input(
+        z.object({
+          code: z.string(),
+          podId: z.string(),
+        })
+      )
+      .mutation(async ({ input: { code, podId } }) => {
+        console.log(
+          `======= codeAutoComplete of pod ${podId} ========\n`,
+          code
+        );
+        const data = JSON.stringify({
+          prompt: code,
+          temperature: 0.1,
+          top_k: 40,
+          top_p: 0.9,
+          repeat_penalty: 1.05,
+          // large n_predict significantly slows down the server, a small value is good enough for testing purposes
+          n_predict: 128,
+          stream: false,
+        });
+
+        const options = {
+          hostname: copilotIpAddress,
+          port: copilotPort,
+          path: "/completion",
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Content-Length": data.length,
+          },
+        };
+        return new Promise((resolve, reject) => {
+          const req = http.request(options, (res) => {
+            let responseData = "";
+
+            res.on("data", (chunk) => {
+              responseData += chunk;
+            });
+
+            res.on("end", () => {
+              if (responseData.toString() === "") {
+                resolve(""); // Resolve with an empty string if no data
+              }
+              const resData = JSON.parse(responseData.toString());
+              console.log(req.statusCode, resData["content"]);
+              resolve(resData["content"]); // Resolve the Promise with the response data
+            });
+          });
+
+          req.on("error", (error) => {
+            console.error(error);
+            reject(error); // Reject the Promise if an error occurs
+          });
+
+          req.write(data);
+          req.end();
+        });
       }),
   });
 }

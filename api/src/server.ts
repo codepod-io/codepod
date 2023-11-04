@@ -10,7 +10,15 @@ import { bindState, writeState } from "./yjs/yjs-blob";
 import cors from "cors";
 import { createSpawnerRouter, router } from "./spawner/trpc";
 
-export async function startServer({ port, repoDir }) {
+export const copilotIpAddress = "127.0.0.1";
+export const copilotPort = 9090;
+
+export async function startServer({
+  port,
+  repoDir,
+  copilotIpAddress = "127.0.0.1",
+  copilotPort = 9090,
+}) {
   console.log("starting server ..");
   const app = express();
   app.use(express.json({ limit: "20mb" }));
@@ -33,6 +41,8 @@ export async function startServer({ port, repoDir }) {
   );
 
   const http_server = http.createServer(app);
+  copilotIpAddress = copilotIpAddress;
+  copilotPort = copilotPort;
 
   // Yjs websocket
   const wss = new WebSocketServer({ noServer: true });
@@ -59,6 +69,8 @@ export async function startServer({ port, repoDir }) {
   });
 
   http_server.listen({ port }, () => {
-    console.log(`🚀 Server ready at http://localhost:${port}`);
+    console.log(
+      `🚀 Server ready at http://localhost:${port}, LLM Copilot is hosted at ${copilotIpAddress}:${copilotPort}`
+    );
   });
 }

@@ -13,6 +13,8 @@ import { Annotation } from "../lib/parser";
 import { useApolloClient } from "@apollo/client";
 import { trpc } from "../lib/trpc";
 
+import { llamaInlineCompletionProvider } from "../lib/llamaCompletionProvider";
+
 const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",
   inherit: true,
@@ -492,7 +494,14 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     //   // content is value?
     //   updateGitGutter(editor);
     // });
-
+    const llamaCompletionProvider = new llamaInlineCompletionProvider(
+      id,
+      editor
+    );
+    monaco.languages.registerInlineCompletionsProvider(
+      "python",
+      llamaCompletionProvider
+    );
     // bind it to the ytext with pod id
     if (!codeMap.has(id)) {
       throw new Error("codeMap doesn't have pod " + id);
