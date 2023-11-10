@@ -441,6 +441,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const selectPod = useStore(store, (state) => state.selectPod);
   const resetSelection = useStore(store, (state) => state.resetSelection);
   const editMode = useStore(store, (state) => state.editMode);
+  const { client } = trpc.useUtils();
 
   // FIXME useCallback?
   function onEditorDidMount(
@@ -499,7 +500,8 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     if (copilotEnabled) {
       const llamaCompletionProvider = new llamaInlineCompletionProvider(
         id,
-        editor
+        editor,
+        client
       );
       monaco.languages.registerInlineCompletionsProvider(
         "python",

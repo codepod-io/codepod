@@ -1,16 +1,21 @@
 import { monaco } from "react-monaco-editor";
-import { trpcProxyClient } from "./trpc";
 
 export class llamaInlineCompletionProvider
   implements monaco.languages.InlineCompletionsProvider
 {
   private readonly podId: string;
   private readonly editor: monaco.editor.IStandaloneCodeEditor;
+  private readonly trpc: any;
   private isFetchingSuggestions: boolean; // Flag to track if a fetch operation is in progress
 
-  constructor(podId: string, editor: monaco.editor.IStandaloneCodeEditor) {
+  constructor(
+    podId: string,
+    editor: monaco.editor.IStandaloneCodeEditor,
+    trpc: any
+  ) {
     this.podId = podId;
     this.editor = editor;
+    this.trpc = trpc;
     this.isFetchingSuggestions = false; // Initialize the flag
   }
 
@@ -19,7 +24,7 @@ export class llamaInlineCompletionProvider
       return "";
     }
 
-    const suggestion = await trpcProxyClient.spawner.codeAutoComplete.mutate({
+    const suggestion = await this.trpc.spawner.codeAutoComplete.mutate({
       code: input,
       podId: this.podId,
     });
