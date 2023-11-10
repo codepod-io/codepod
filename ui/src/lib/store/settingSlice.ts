@@ -8,8 +8,8 @@ export interface SettingSlice {
   setShowAnnotations: (b: boolean) => void;
   devMode?: boolean;
   setDevMode: (b: boolean) => void;
-  copilotEnabled?: boolean;
-  setCopilotEnabled: (b: boolean) => void;
+  copilotManualMode?: boolean;
+  setCopilotManualMode: (b: boolean) => void;
   autoRunLayout?: boolean;
   setAutoRunLayout: (b: boolean) => void;
   contextualZoomParams: Record<any, number>;
@@ -59,14 +59,14 @@ export const createSettingSlice: StateCreator<MyState, [], [], SettingSlice> = (
     localStorage.setItem("devMode", JSON.stringify(b));
   },
 
-  copilotEnabled: localStorage.getItem("copilotEnabled")
-    ? JSON.parse(localStorage.getItem("copilotEnabled")!)
+  copilotManualMode: localStorage.getItem("copilotManualMode")
+    ? JSON.parse(localStorage.getItem("copilotManualMode")!)
     : false,
-  setCopilotEnabled: (b: boolean) => {
+  setCopilotManualMode: (b: boolean) => {
     // set it
-    set({ copilotEnabled: b });
+    set({ copilotManualMode: b });
     // also write to local storage
-    localStorage.setItem("copilotEnabled", JSON.stringify(b));
+    localStorage.setItem("copilotManualMode", JSON.stringify(b));
   },
 
   autoRunLayout: localStorage.getItem("autoRunLayout")

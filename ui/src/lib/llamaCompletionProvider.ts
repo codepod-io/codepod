@@ -6,16 +6,19 @@ export class llamaInlineCompletionProvider
   private readonly podId: string;
   private readonly editor: monaco.editor.IStandaloneCodeEditor;
   private readonly trpc: any;
+  private readonly manualMode: boolean;
   private isFetchingSuggestions: boolean; // Flag to track if a fetch operation is in progress
 
   constructor(
     podId: string,
     editor: monaco.editor.IStandaloneCodeEditor,
-    trpc: any
+    trpc: any,
+    manualMode: boolean
   ) {
     this.podId = podId;
     this.editor = editor;
     this.trpc = trpc;
+    this.manualMode = manualMode;
     this.isFetchingSuggestions = false; // Initialize the flag
   }
 
@@ -36,10 +39,14 @@ export class llamaInlineCompletionProvider
     context: monaco.languages.InlineCompletionContext,
     token: monaco.CancellationToken
   ): Promise<monaco.languages.InlineCompletions | undefined> {
-    if (!this.editor.hasTextFocus()) {
+    if (!this.editor.hasTextFocus() || token.isCancellationRequested) {
       return;
     }
-    if (token.isCancellationRequested) {
+    if (
+      context.triggerKind ===
+        monaco.languages.InlineCompletionTriggerKind.Automatic &&
+      this.manualMode
+    ) {
       return;
     }
 

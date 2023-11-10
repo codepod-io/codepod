@@ -64,8 +64,11 @@ function SidebarSettings() {
   );
   const devMode = useStore(store, (state) => state.devMode);
   const setDevMode = useStore(store, (state) => state.setDevMode);
-  const copilotEnabled = useStore(store, (state) => state.copilotEnabled);
-  const setCopilotEnabled = useStore(store, (state) => state.setCopilotEnabled);
+  const copilotManualMode = useStore(store, (state) => state.copilotManualMode);
+  const setCopilotManualMode = useStore(
+    store,
+    (state) => state.setCopilotManualMode
+  );
 
   const showLineNumbers = useStore(store, (state) => state.showLineNumbers);
   const setShowLineNumbers = useStore(
@@ -491,20 +494,23 @@ function SidebarSettings() {
             />
           </FormGroup>
         </Tooltip>
-        <Tooltip title={"Enable Codepod Copilot"} disableInteractive>
+        <Tooltip
+          title={"Ctrl+Shift+Space to trigger Copilot manually"}
+          disableInteractive
+        >
           <FormGroup>
             <FormControlLabel
               control={
                 <Switch
-                  checked={copilotEnabled}
+                  checked={copilotManualMode}
                   size="small"
                   color="warning"
                   onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setCopilotEnabled(event.target.checked);
+                    setCopilotManualMode(event.target.checked);
                   }}
                 />
               }
-              label="Enable Codepod Copilot"
+              label="Trigger Copilot Manually"
             />
           </FormGroup>
         </Tooltip>

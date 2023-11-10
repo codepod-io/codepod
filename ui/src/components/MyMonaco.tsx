@@ -406,7 +406,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     (state) => state.parseResult[id]?.annotations
   );
   const showAnnotations = useStore(store, (state) => state.showAnnotations);
-  const copilotEnabled = useStore(store, (state) => state.copilotEnabled);
+  const copilotManualMode = useStore(store, (state) => state.copilotManualMode);
 
   const scopedVars = useStore(store, (state) => state.scopedVars);
   const updateView = useStore(store, (state) => state.updateView);
@@ -493,21 +493,33 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       },
     });
 
+    editor.addAction({
+      id: "trigger-inline-suggest",
+      label: "Trigger Suggest",
+      keybindings: [
+        monaco.KeyMod.WinCtrl | monaco.KeyMod.Shift | monaco.KeyCode.Space,
+      ],
+      run: () => {
+        editor.trigger(null, "editor.action.inlineSuggest.trigger", null);
+      },
+    });
+
     // editor.onDidChangeModelContent(async (e) => {
     //   // content is value?
     //   updateGitGutter(editor);
     // });
-    if (copilotEnabled) {
-      const llamaCompletionProvider = new llamaInlineCompletionProvider(
-        id,
-        editor,
-        client
-      );
-      monaco.languages.registerInlineCompletionsProvider(
-        "python",
-        llamaCompletionProvider
-      );
-    }
+
+    const llamaCompletionProvider = new llamaInlineCompletionProvider(
+      id,
+      editor,
+      client,
+      copilotManualMode || false
+    );
+    monaco.languages.registerInlineCompletionsProvider(
+      "python",
+      llamaCompletionProvider
+    );
+
     // bind it to the ytext with pod id
     if (!codeMap.has(id)) {
       throw new Error("codeMap doesn't have pod " + id);
