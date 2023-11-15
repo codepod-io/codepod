@@ -13,6 +13,8 @@ import { Annotation } from "../lib/parser";
 import { useApolloClient } from "@apollo/client";
 import { trpc } from "../lib/trpc";
 
+import { llamaInlineCompletionProvider } from "../lib/llamaCompletionProvider";
+
 const theme: monaco.editor.IStandaloneThemeData = {
   base: "vs",
   inherit: true,
@@ -404,6 +406,8 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
     (state) => state.parseResult[id]?.annotations
   );
   const showAnnotations = useStore(store, (state) => state.showAnnotations);
+  const copilotManualMode = useStore(store, (state) => state.copilotManualMode);
+
   const scopedVars = useStore(store, (state) => state.scopedVars);
   const updateView = useStore(store, (state) => state.updateView);
 
@@ -437,6 +441,7 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
   const selectPod = useStore(store, (state) => state.selectPod);
   const resetSelection = useStore(store, (state) => state.resetSelection);
   const editMode = useStore(store, (state) => state.editMode);
+  const { client } = trpc.useUtils();
 
   // FIXME useCallback?
   function onEditorDidMount(
@@ -488,10 +493,32 @@ export const MyMonaco = memo<MyMonacoProps>(function MyMonaco({
       },
     });
 
+    editor.addAction({
+      id: "trigger-inline-suggest",
+      label: "Trigger Suggest",
+      keybindings: [
+        monaco.KeyMod.WinCtrl | monaco.KeyMod.Shift | monaco.KeyCode.Space,
+      ],
+      run: () => {
+        editor.trigger(null, "editor.action.inlineSuggest.trigger", null);
+      },
+    });
+
     // editor.onDidChangeModelContent(async (e) => {
     //   // content is value?
     //   updateGitGutter(editor);
     // });
+
+    const llamaCompletionProvider = new llamaInlineCompletionProvider(
+      id,
+      editor,
+      client,
+      copilotManualMode || false
+    );
+    monaco.languages.registerInlineCompletionsProvider(
+      "python",
+      llamaCompletionProvider
+    );
 
     // bind it to the ytext with pod id
     if (!codeMap.has(id)) {

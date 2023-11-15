@@ -3,6 +3,7 @@ const t = initTRPC.create();
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
+import express from "express";
 import Y from "yjs";
 import WebSocket from "ws";
 import { z } from "zod";
@@ -16,6 +17,12 @@ import { connectSocket, runtime2socket, RuntimeInfo } from "./yjs_runtime";
 
 // FIXME need to have a TTL to clear the ydoc.
 const docs: Map<string, Y.Doc> = new Map();
+
+// FIXME hard-coded yjs server url
+const yjsServerUrl = `ws://localhost:4000/socket`;
+
+const app = express();
+const http = require("http");
 
 async function getMyYDoc({ repoId, yjsServerUrl }): Promise<Y.Doc> {
   return new Promise((resolve, reject) => {
@@ -52,7 +59,11 @@ async function getMyYDoc({ repoId, yjsServerUrl }): Promise<Y.Doc> {
 
 const routingTable: Map<string, string> = new Map();
 
-export function createSpawnerRouter(yjsServerUrl) {
+export function createSpawnerRouter(
+  yjsServerUrl,
+  copilotIpAddress,
+  copilotPort
+) {
   return router({
     spawnRuntime: publicProcedure
       .input(z.object({ runtimeId: z.string(), repoId: z.string() }))
@@ -227,11 +238,100 @@ export function createSpawnerRouter(yjsServerUrl) {
         );
         return true;
       }),
+    codeAutoComplete: publicProcedure
+      .input(
+        z.object({
+          inputPrefix: z.string(),
+          inputSuffix: z.string(),
+          podId: z.string(),
+        })
+      )
+      .mutation(async ({ input: { inputPrefix, inputSuffix, podId } }) => {
+        console.log(
+          `======= codeAutoComplete of pod ${podId} ========\n`,
+          inputPrefix,
+          inputSuffix
+        );
+        let data = "";
+        let options = {};
+        if (inputSuffix.length == 0) {
+          data = JSON.stringify({
+            prompt: inputPrefix,
+            temperature: 0.1,
+            top_k: 40,
+            top_p: 0.9,
+            repeat_penalty: 1.05,
+            // large n_predict significantly slows down the server, a small value is good enough for testing purposes
+            n_predict: 128,
+            stream: false,
+          });
+
+          options = {
+            hostname: copilotIpAddress,
+            port: copilotPort,
+            path: "/completion",
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Content-Length": data.length,
+            },
+          };
+        } else {
+          data = JSON.stringify({
+            input_prefix: inputPrefix,
+            input_suffix: inputSuffix,
+            temperature: 0.1,
+            top_k: 40,
+            top_p: 0.9,
+            repeat_penalty: 1.05,
+            // large n_predict significantly slows down the server, a small value is good enough for testing purposes
+            n_predict: 128,
+          });
+
+          options = {
+            hostname: copilotIpAddress,
+            port: copilotPort,
+            path: "/infill",
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Content-Length": data.length,
+            },
+          };
+        }
+
+        return new Promise((resolve, reject) => {
+          const req = http.request(options, (res) => {
+            let responseData = "";
+
+            res.on("data", (chunk) => {
+              responseData += chunk;
+            });
+
+            res.on("end", () => {
+              if (responseData.toString() === "") {
+                resolve(""); // Resolve with an empty string if no data
+              }
+              const resData = JSON.parse(responseData.toString());
+              console.log(res.statusCode, resData["content"]);
+              resolve(resData["content"]); // Resolve the Promise with the response data
+            });
+          });
+
+          req.on("error", (error) => {
+            console.error(error);
+            reject(error); // Reject the Promise if an error occurs
+          });
+
+          req.write(data);
+          req.end();
+        });
+      }),
   });
 }
 
 // This is only used for frontend to get the type of router.
 const _appRouter_for_type = router({
-  spawner: createSpawnerRouter(null), // put procedures under "post" namespace
+  spawner: createSpawnerRouter(null, null, null), // put procedures under "post" namespace
 });
 export type AppRouter = typeof _appRouter_for_type;
