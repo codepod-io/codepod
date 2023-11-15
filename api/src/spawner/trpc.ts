@@ -241,36 +241,65 @@ export function createSpawnerRouter(
     codeAutoComplete: publicProcedure
       .input(
         z.object({
-          code: z.string(),
+          inputPrefix: z.string(),
+          inputSuffix: z.string(),
           podId: z.string(),
         })
       )
-      .mutation(async ({ input: { code, podId } }) => {
+      .mutation(async ({ input: { inputPrefix, inputSuffix, podId } }) => {
         console.log(
           `======= codeAutoComplete of pod ${podId} ========\n`,
-          code
+          inputPrefix,
+          inputSuffix
         );
-        const data = JSON.stringify({
-          prompt: code,
-          temperature: 0.1,
-          top_k: 40,
-          top_p: 0.9,
-          repeat_penalty: 1.05,
-          // large n_predict significantly slows down the server, a small value is good enough for testing purposes
-          n_predict: 128,
-          stream: false,
-        });
+        let data = "";
+        let options = {};
+        if (inputSuffix.length == 0) {
+          data = JSON.stringify({
+            prompt: inputPrefix,
+            temperature: 0.1,
+            top_k: 40,
+            top_p: 0.9,
+            repeat_penalty: 1.05,
+            // large n_predict significantly slows down the server, a small value is good enough for testing purposes
+            n_predict: 128,
+            stream: false,
+          });
 
-        const options = {
-          hostname: copilotIpAddress,
-          port: copilotPort,
-          path: "/completion",
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Content-Length": data.length,
-          },
-        };
+          options = {
+            hostname: copilotIpAddress,
+            port: copilotPort,
+            path: "/completion",
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Content-Length": data.length,
+            },
+          };
+        } else {
+          data = JSON.stringify({
+            input_prefix: inputPrefix,
+            input_suffix: inputSuffix,
+            temperature: 0.1,
+            top_k: 40,
+            top_p: 0.9,
+            repeat_penalty: 1.05,
+            // large n_predict significantly slows down the server, a small value is good enough for testing purposes
+            n_predict: 128,
+          });
+
+          options = {
+            hostname: copilotIpAddress,
+            port: copilotPort,
+            path: "/infill",
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Content-Length": data.length,
+            },
+          };
+        }
+
         return new Promise((resolve, reject) => {
           const req = http.request(options, (res) => {
             let responseData = "";

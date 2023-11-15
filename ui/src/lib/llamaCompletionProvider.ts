@@ -22,13 +22,10 @@ export class llamaInlineCompletionProvider
     this.isFetchingSuggestions = false; // Initialize the flag
   }
 
-  private async provideSuggestions(input: string) {
-    if (/^\s*$/.test(input || " ")) {
-      return "";
-    }
-
+  private async provideSuggestions(prefix: string, suffix: string) {
     const suggestion = await this.trpc.spawner.codeAutoComplete.mutate({
-      code: input,
+      inputPrefix: prefix,
+      inputSuffix: suffix,
       podId: this.podId,
     });
     return suggestion;
@@ -53,8 +50,38 @@ export class llamaInlineCompletionProvider
     if (!this.isFetchingSuggestions) {
       this.isFetchingSuggestions = true;
       try {
+        // Get text before the position
+        let inputPrefix = model.getValueInRange({
+          startLineNumber: 1,
+          startColumn: 1,
+          endLineNumber: position.lineNumber,
+          endColumn: position.column,
+        });
+
+        // Get text after the position
+        let inputSuffix = model.getValueInRange({
+          startLineNumber: position.lineNumber,
+          startColumn: position.column,
+          endLineNumber: model.getLineCount(),
+          endColumn: model.getLineMaxColumn(model.getLineCount()),
+        });
+
+        console.log(inputPrefix);
+        console.log(inputSuffix);
+
+        if (/^\s*$/.test(inputPrefix || " ")) {
+          inputPrefix = inputPrefix.trim();
+        }
+        if (/^\s*$/.test(inputSuffix || " ")) {
+          inputSuffix = inputSuffix.trim();
+        }
+
+        if (inputPrefix === "" && inputSuffix === "") {
+          return;
+        }
         const suggestion = await this.provideSuggestions(
-          model.getValue() || " "
+          inputPrefix,
+          inputSuffix
         );
 
         return {
